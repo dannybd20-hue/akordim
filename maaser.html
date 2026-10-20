@@ -1236,5 +1236,6 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
     if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 
+<script src="presence.js"></script><script>dbdPresence('maaser')</script>
 </body>
 </html>
