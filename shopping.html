@@ -2,6 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<script>try{if(sessionStorage.getItem('gate_shopping')!=='1'){document.documentElement.style.display='none';location.replace('./?open=shopping')}}catch(e){location.replace('./')}</script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>קניות לבית</title>
 <link rel="manifest" href="manifest.json">
@@ -404,7 +405,12 @@ function toast(msg,btn,fn){
 (function(){
   const t=get('akordim_theme');if(t)document.documentElement.dataset.theme=t;
   if(!SHOP_CLOUD){$('demo').style.display='';shopAuto(st,Date.now());seed();persist()}
-  else if(!pw)document.body.classList.add('locked');
+  else if(!pw){
+    document.body.classList.add('locked');
+    /* נכנסו מדף הבית: מנסים להתחבר לענן עם אותה סיסמה, כדי לא לבקש אותה פעמיים */
+    let hp='';try{hp=sessionStorage.getItem('hub_pw')||''}catch(e){}
+    if(hp){$('lpw').value=hp;login().then(()=>{if(document.body.classList.contains('locked')){$('lpw').value='';$('lerr').textContent='הקלד פעם אחת את הסיסמה המשפחתית של הקניות';$('lerr').style.display='block'}})}
+  }
   $('ntfChk').checked=get('shop_ntf')!=='0';
   render();
   if(!me&&(!SHOP_CLOUD||pw))askMe();
