@@ -19,11 +19,12 @@
 body{margin:0;background:var(--bg);color:var(--tx);font-family:Heebo,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:48px 16px}
 h1{margin:0 0 6px;font:900 28px Rubik,Heebo,sans-serif;text-align:center}
 .sub{margin:0 0 32px;color:var(--mut);font-size:14px;text-align:center}
-.apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;width:100%;max-width:560px}
+.apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;width:100%;max-width:760px}
 .app{background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:28px 20px;text-align:center;cursor:pointer;font:inherit;color:inherit;box-shadow:0 4px 20px #0000000d;transition:.2s}
 .app:hover{transform:translateY(-2px);border-color:var(--pr)}
 .ic{width:64px;height:64px;margin:0 auto 14px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:30px;color:#fff}
 .ic.ch{background:linear-gradient(to top right,#0284c7,#0ea5e9,#22d3ee)}
+.ic.tr{background:linear-gradient(135deg,#a1887f,#795548)}
 .ic.ms{background:linear-gradient(135deg,#1b5e20,#2e7d32)}
 .app b{display:block;font:800 19px Rubik,Heebo,sans-serif;margin-bottom:4px}
 .app span{font-size:13px;color:var(--mut)}
@@ -51,6 +52,7 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
 <div class="apps">
   <button class="app" onclick="ask('chords')"><div class="ic ch">♬</div><b>ספריית אקורדים</b><span>שירים, טרנספוזיציה וקאפו</span><div class="lock">🔒 נדרשת סיסמה</div></button>
   <button class="app" onclick="ask('maaser')"><div class="ic ms">₪</div><b>מעשר כספי</b><span>חישוב ומעקב מעשרות</span><div class="lock">🔒 נדרשת סיסמה</div></button>
+  <button class="app" onclick="ask('tromot')"><div class="ic tr">🕍</div><b>תרומות בית כנסת</b><span>מי תרם, על מה, ומה שומש</span><div class="lock">🔒 נדרשת סיסמה</div></button>
 </div>
 
 <dialog id="dlg">
@@ -68,7 +70,9 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
    הסיסמה של המעשר נקבעת בכניסה הראשונה ונשמרת במכשיר כגיבוב בלבד, כמו נתוני המעשר עצמם.
    אחרי כניסה מוצלחת נשמר סימון ל-sessionStorage, והאפליקציה עצמה בודקת אותו. */
 const CLOUD='https://script.google.com/macros/s/AKfycbw7yTUBMzmoOx1D2ZQI8lvjMeYauUqxHhdgOtkcEMb61mwqUBkcxynOOgMfgbtkBz1u/exec';
-const PAGES={chords:'chords.html',maaser:'maaser.html'};
+const PAGES={chords:'chords.html',maaser:'maaser.html',tromot:'tromot.html'};
+/* סיסמת התרומות קבועה (1234); נשמר כאן רק הגיבוב שלה */
+const TROMOT_HASH='f88d20e9aaa147427706f242d11b143befcf2038efdd026d1e890fea9ce1535c';
 const $=id=>document.getElementById(id),dlg=$('dlg');
 let app='',mode='';
 
@@ -98,6 +102,7 @@ function setMode(m){
   $('ok').textContent=setNew?'שמור סיסמה':(m==='reset'?'אישור':'כניסה');
   $('p1').placeholder=setNew?'סיסמה חדשה':'סיסמה';
   if(m==='chords'){$('dt').textContent='♬ ספריית אקורדים';$('dh').textContent='הזן את הסיסמה כדי להיכנס:'}
+  if(m==='tromot'){$('dt').textContent='🕍 תרומות בית כנסת';$('dh').textContent='הזן את הסיסמה כדי להיכנס:'}
   if(m==='maaser'){$('dt').textContent='₪ מעשר כספי';$('dh').textContent='הזן את סיסמת המעשר:'}
   if(m==='new'){$('dt').textContent='₪ מעשר כספי';$('dh').textContent='בחר סיסמה לאפליקציית המעשר במכשיר הזה:'}
   if(m==='reset'){$('dt').textContent='איפוס סיסמת המעשר';$('dh').textContent='הזן את סיסמת האקורדים (מצב עריכה) כדי לקבוע סיסמת מעשר חדשה. הנתונים לא יימחקו.'}
@@ -125,6 +130,8 @@ async function submit(){
         ok=h===await hash(v);
       }
       if(ok)enter('chords');else err('סיסמה שגויה');
+    }else if(mode==='tromot'){
+      if(await hash(v)===TROMOT_HASH)enter('tromot');else err('סיסמה שגויה');
     }else if(mode==='maaser'){
       if(get('gate_maaser_hash')===await hash(v))enter('maaser');else err('סיסמה שגויה');
     }else if(mode==='new'){

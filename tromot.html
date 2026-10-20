@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<script>try{if(sessionStorage.getItem('gate_tromot')!=='1'){document.documentElement.style.display='none';location.replace('./?open=tromot')}}catch(e){location.replace('./')}
+function goHome(){try{sessionStorage.removeItem('gate_tromot')}catch(e){}location.href='./'}</script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>תרומות בית כנסת</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#8d6e63">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="דני בן דוד">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8f3ee;--card:#fffdfb;--tx:#3e2c23;--mut:#8a7464;--bd:#eadfd4;
+  --pr:#8d6e63;--prd:#6d4c41;--pl:#efe5dc;--acc:#a1887f;
+  --ok:#5d7b4f;--okl:#e9f0e3;--warn:#b26a2e;
+  --grad:linear-gradient(135deg,#a1887f 0%,#8d6e63 55%,#795548 100%);
+  --sh:0 4px 18px rgba(93,64,55,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:Assistant,system-ui,sans-serif}
+body{background:var(--bg);color:var(--tx);min-height:100vh;padding-bottom:60px}
+button,input,select,textarea{font:inherit;color:inherit}
+header{background:var(--grad);color:#fff;padding:52px 16px 46px;text-align:center;position:relative}
+header h1{font-size:30px;font-weight:800}
+header p{opacity:.9;font-size:14px;margin-top:4px}
+.home-btn{position:absolute;top:12px;right:12px;background:#ffffff2e;border:1px solid #ffffff59;color:#fff;border-radius:10px;padding:6px 12px;font-weight:700;font-size:14px;cursor:pointer}
+.wrap{max-width:820px;margin:-26px auto 0;padding:0 16px}
+.sum{background:var(--card);border:1px solid var(--bd);border-radius:20px;box-shadow:var(--sh);padding:22px 18px;text-align:center;margin-bottom:18px}
+.sum .lbl{color:var(--mut);font-weight:700;font-size:14px}
+.sum .big{font-size:42px;font-weight:800;color:var(--prd);margin:4px 0 14px}
+.sum .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;border-top:1px dashed var(--bd);padding-top:14px}
+.sum .row b{display:block;font-size:19px}
+.sum .row span{font-size:12px;color:var(--mut);font-weight:700}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.btn{border:0;border-radius:14px;padding:14px;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 2px 8px #0000000f;transition:.2s}
+.btn:hover{transform:translateY(-1px)}
+.btn.pr{background:var(--grad);color:#fff}
+.btn.sec{background:var(--card);color:var(--prd);border:1.5px solid var(--pr)}
+.btn.sm{padding:9px 14px;font-size:14px;border-radius:11px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 18px}
+.tools button{flex:1;min-width:120px;background:var(--card);border:1px solid var(--bd);border-radius:11px;padding:9px;font-weight:700;font-size:13px;color:var(--prd);cursor:pointer}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.filters input,.filters select{background:var(--card);border:1px solid var(--bd);border-radius:11px;padding:9px 12px;font-size:14px;outline:none}
+.filters input{flex:1;min-width:160px}
+.filters input:focus,.filters select:focus{border-color:var(--pr)}
+.tabs{display:flex;background:var(--pl);border-radius:12px;padding:3px;gap:3px}
+.tabs button{border:0;background:none;border-radius:9px;padding:7px 12px;font-weight:700;font-size:13px;color:var(--mut);cursor:pointer}
+.tabs button.on{background:var(--card);color:var(--prd);box-shadow:0 1px 3px #0001}
+.selbar{display:none;position:sticky;top:0;z-index:5;background:var(--prd);color:#fff;border-radius:14px;padding:10px 14px;margin-bottom:10px;align-items:center;gap:10px;flex-wrap:wrap}
+.selbar.on{display:flex}
+.selbar b{flex:1}
+.selbar button{background:#fff;color:var(--prd);border:0;border-radius:10px;padding:7px 12px;font-weight:800;cursor:pointer}
+.selbar button.gh{background:#ffffff26;color:#fff}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;box-shadow:var(--sh)}
+.card .chk{width:22px;height:22px;margin-top:3px;accent-color:var(--prd);flex-shrink:0;display:none}
+body.selecting .card:not(.used) .chk{display:block}
+.card .main{flex:1;min-width:0}
+.card .top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.card .nm{font-weight:800;font-size:16px}
+.card .amt{font-weight:800;font-size:18px;color:var(--prd);white-space:nowrap}
+.card .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:12px;color:var(--mut);align-items:center}
+.chip{background:var(--pl);color:var(--prd);border-radius:7px;padding:2px 8px;font-weight:700}
+.chip.m-ביט{background:#e8eef7;color:#3d5a80}
+.chip.m-מזומן{background:#eef3e6;color:#55703f}
+.chip.m-העברה{background:#f4ece2;color:#8a5a2b}
+.card .pur{margin-top:6px;font-size:14px}
+.card .note{margin-top:4px;font-size:12px;color:var(--mut)}
+.card .ops{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.card .ops button{background:none;border:1px solid var(--bd);border-radius:9px;padding:4px 10px;font-size:12px;font-weight:700;color:var(--mut);cursor:pointer}
+.card .ops button.use{border-color:var(--pr);color:var(--prd)}
+.card.used{background:#f6f1ec;box-shadow:none}
+.card.used .nm,.card.used .amt,.card.used .pur{text-decoration:line-through;text-decoration-color:#8d6e63aa;text-decoration-thickness:1.5px;color:#a8968a}
+.card.used .meta,.card.used .note{opacity:.75}
+.usedtag{margin-top:7px;display:inline-block;background:var(--okl);color:var(--ok);border-radius:8px;padding:4px 9px;font-size:12px;font-weight:800}
+.empty{text-align:center;color:var(--mut);padding:34px 16px;border:1px dashed var(--bd);border-radius:14px;background:var(--card)}
+.more{display:block;margin:6px auto 0;background:var(--card);border:1px solid var(--bd);border-radius:11px;padding:9px 18px;font-weight:700;color:var(--prd);cursor:pointer}
+dialog{border:0;border-radius:20px;padding:22px;width:min(440px,calc(100% - 24px));max-height:90vh;background:var(--card);color:var(--tx);box-shadow:0 20px 40px #0003;margin:auto}
+dialog::backdrop{background:#3e2c2399;backdrop-filter:blur(3px)}
+dialog h2{font-size:20px;font-weight:800;margin-bottom:14px}
+.fg{margin-bottom:13px}
+.fg label{display:block;font-weight:700;font-size:13px;margin-bottom:6px;color:var(--prd)}
+.fg input,.fg textarea{width:100%;border:1.5px solid var(--bd);border-radius:10px;padding:11px 12px;font-size:16px;background:#fff;outline:none}
+.fg input:focus,.fg textarea:focus{border-color:var(--pr)}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;border:1.5px solid var(--bd);background:#fff;border-radius:10px;padding:10px 4px;font-weight:800;font-size:14px;cursor:pointer;color:var(--mut)}
+.seg button.on{border-color:var(--pr);background:var(--pl);color:var(--prd)}
+.dl{display:flex;gap:10px;margin-top:16px}
+.dl .btn{flex:1;padding:12px}
+.hint{font-size:13px;color:var(--mut);margin-bottom:12px}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--prd);color:#fff;padding:10px 18px;border-radius:12px;font-weight:700;font-size:14px;opacity:0;transition:.3s;pointer-events:none;z-index:99}
+.toast.on{opacity:1}
+@media (max-width:480px){.sum .big{font-size:36px}.acts{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <button class="home-btn" onclick="goHome()" title="נעילה וחזרה לדף הבית">🔒 נעילה</button>
+  <h1>🕍 תרומות בית כנסת</h1>
+  <p>מי תרם, איך, מתי ועל מה, ומה כבר שומש</p>
+</header>
+
+<div class="wrap">
+  <div class="sum">
+    <div class="lbl">יתרה זמינה (לא שומשה)</div>
+    <div class="big" id="sAvail">₪0</div>
+    <div class="row">
+      <div><span>סה"כ נתרם</span><b id="sTotal">₪0</b></div>
+      <div><span>סה"כ שומש</span><b id="sUsed" style="color:var(--ok)">₪0</b></div>
+    </div>
+  </div>
+
+  <div class="acts">
+    <button class="btn pr" onclick="openAdd()">➕ תרומה חדשה</button>
+    <button class="btn sec" onclick="startSelect()">✔️ השתמשתי בכסף</button>
+  </div>
+  <div class="tools">
+    <button onclick="exportExcel()">📊 ייצוא לאקסל</button>
+    <button onclick="exportBackup()">💾 שמירת גיבוי</button>
+    <button onclick="$('imp').click()">📂 ייבוא גיבוי</button>
+    <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importBackup(this)">
+  </div>
+
+  <div class="selbar" id="selbar">
+    <b id="selInfo">בחר תרומות ששומשו</b>
+    <button onclick="openUse()">סמן כמשומש</button>
+    <button class="gh" onclick="stopSelect()">ביטול</button>
+  </div>
+
+  <div class="filters">
+    <input id="q" type="search" placeholder="🔎 חיפוש לפי שם, מטרה או שימוש" oninput="page=1;render()">
+    <select id="fm" onchange="page=1;render()"><option value="">כל אמצעי התשלום</option><option>העברה</option><option>מזומן</option><option>ביט</option><option value="-">לא צוין</option></select>
+    <div class="tabs" id="tabs">
+      <button data-f="all" class="on">הכול</button><button data-f="open">זמין</button><button data-f="used">שומש</button>
+    </div>
+  </div>
+  <div id="list"></div>
+</div>
+
+<dialog id="dAdd">
+  <h2 id="addT">➕ תרומה חדשה</h2>
+  <div class="fg"><label>מי תרם?</label><input id="fName" placeholder="לדוגמה: אלחנן ורטהיימר" list="names"></div>
+  <datalist id="names"></datalist>
+  <div class="fg"><label>סכום (₪)</label><input id="fAmt" type="number" inputmode="decimal" step="any" placeholder="0"></div>
+  <div class="fg"><label>איך נתן?</label><div class="seg" id="fMethod"><button data-m="העברה">🏦 העברה</button><button data-m="מזומן">💵 מזומן</button><button data-m="ביט">📱 ביט</button></div></div>
+  <div class="fg"><label>תאריך</label><input id="fDate" type="date"></div>
+  <div class="fg"><label>על מה נתן?</label><input id="fPur" placeholder="לדוגמה: בעל קורא, קידוש, חשמל שבת" list="purposes"></div>
+  <datalist id="purposes"></datalist>
+  <div class="fg"><label>הערה (לא חובה)</label><input id="fNote"></div>
+  <div class="dl"><button class="btn sec" onclick="$('dAdd').close()">ביטול</button><button class="btn pr" style="flex:2" onclick="saveDonation()">שמור</button></div>
+</dialog>
+
+<dialog id="dUse">
+  <h2>✔️ סימון כמשומש</h2>
+  <p class="hint" id="useInfo"></p>
+  <div class="fg"><label>על מה הכסף נלקח?</label><input id="uFor" placeholder="לדוגמה: קניות לקידוש, תשלום לבעל קורא" list="purposes"></div>
+  <div class="fg"><label>תאריך השימוש</label><input id="uDate" type="date"></div>
+  <div class="dl"><button class="btn sec" onclick="$('dUse').close()">ביטול</button><button class="btn pr" style="flex:2" onclick="saveUse()">אישור</button></div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* תרומה: {id, name, amount, method, date, purpose, note, used, usedFor, usedDate}
+   הכול נשמר במכשיר (localStorage). גיבוי JSON מאפשר להעביר בין מכשירים. */
+const KEY='tromot_data',$=id=>document.getElementById(id);
+let D=[],filter='all',page=1,editId=null,method='',useIds=[];
+const PAGE=60;
+
+try{D=JSON.parse(localStorage.getItem(KEY))||[]}catch(e){D=[]}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(D));return true}catch(e){toast('⚠️ השמירה במכשיר נכשלה');return false}}
+const ils=n=>'₪'+Number(n||0).toLocaleString('he-IL',{maximumFractionDigits:2});
+const today=()=>new Date().toISOString().slice(0,10);
+const fmtDate=d=>d?d.split('-').reverse().join('/'):'';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),2200)}
+
+/* חדשים למעלה: לפי תאריך, ובתוך אותו תאריך לפי סדר ההוספה */
+function sorted(){return [...D].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.seq??b.id)-(a.seq??a.id))}
+
+function render(){
+  const tot=D.reduce((s,d)=>s+d.amount,0),used=D.filter(d=>d.used).reduce((s,d)=>s+d.amount,0);
+  $('sTotal').textContent=ils(tot);$('sUsed').textContent=ils(used);$('sAvail').textContent=ils(tot-used);
+  const q=$('q').value.trim(),fm=$('fm').value;
+  let L=sorted().filter(d=>filter==='all'||(filter==='used')===!!d.used);
+  if(fm)L=L.filter(d=>fm==='-'?!d.method:d.method===fm);
+  if(q)L=L.filter(d=>[d.name,d.purpose,d.note,d.usedFor,String(d.amount)].join(' ').includes(q));
+  const box=$('list');
+  if(!L.length){box.innerHTML=`<div class="empty">${D.length?'לא נמצאו תרומות':'אין תרומות עדיין.<br>לחץ "תרומה חדשה", או ייבא קובץ גיבוי.'}</div>`;return}
+  box.innerHTML=L.slice(0,page*PAGE).map(d=>`
+    <div class="card${d.used?' used':''}" data-id="${d.id}">
+      <input type="checkbox" class="chk" ${useIds.includes(d.id)?'checked':''} onchange="toggleSel(${d.id},this.checked)">
+      <div class="main">
+        <div class="top"><span class="nm">${esc(d.name)||'<span style="color:var(--mut)">ללא שם</span>'}</span><span class="amt">${ils(d.amount)}</span></div>
+        <div class="meta">${d.method?`<span class="chip m-${d.method}">${d.method}</span>`:''}${d.date?`<span>📅 ${fmtDate(d.date)}</span>`:''}</div>
+        ${d.purpose?`<div class="pur">🎯 ${esc(d.purpose)}</div>`:''}
+        ${d.note?`<div class="note">${esc(d.note)}</div>`:''}
+        ${d.used?`<div class="usedtag">✔ שומש${d.usedFor?' עבור: '+esc(d.usedFor):''}${d.usedDate?' · '+fmtDate(d.usedDate):''}</div>`:''}
+        <div class="ops">
+          ${d.used?`<button onclick="unuse(${d.id})">↩️ בטל שימוש</button>`:`<button class="use" onclick="openUse([${d.id}])">✔️ שומש</button>`}
+          <button onclick="openAdd(${d.id})">✏️ עריכה</button>
+          <button onclick="del(${d.id})">🗑️ מחיקה</button>
+        </div>
+      </div>
+    </div>`).join('')+(L.length>page*PAGE?`<button class="more" onclick="page++;render()">הצג עוד (${L.length-page*PAGE})</button>`:'');
+}
+
+$('tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;filter=b.dataset.f;page=1;[...$('tabs').children].forEach(x=>x.classList.toggle('on',x===b));render()};
+$('fMethod').onclick=e=>{const b=e.target.closest('button');if(!b)return;setMethod(method===b.dataset.m?'':b.dataset.m)};
+function setMethod(m){method=m;[...$('fMethod').children].forEach(x=>x.classList.toggle('on',x.dataset.m===m))}
+
+function fillLists(){
+  const opt=a=>[...new Set(a.filter(Boolean))].sort().map(x=>`<option value="${esc(x)}">`).join('');
+  $('names').innerHTML=opt(D.map(d=>d.name));$('purposes').innerHTML=opt(D.flatMap(d=>[d.purpose,d.usedFor]));
+}
+function openAdd(id){
+  editId=id??null;const d=D.find(x=>x.id===id);fillLists();
+  $('addT').textContent=d?'✏️ עריכת תרומה':'➕ תרומה חדשה';
+  $('fName').value=d?.name||'';$('fAmt').value=d?.amount??'';$('fDate').value=d?d.date:today();
+  $('fPur').value=d?.purpose||'';$('fNote').value=d?.note||'';setMethod(d?.method||'');
+  $('dAdd').showModal();if(!d)$('fName').focus();
+}
+function saveDonation(){
+  const amount=parseFloat($('fAmt').value);
+  if(!(amount>0)){toast('נא להזין סכום');return}
+  const f={name:$('fName').value.trim(),amount,method,date:$('fDate').value,purpose:$('fPur').value.trim(),note:$('fNote').value.trim()};
+  if(editId!=null)Object.assign(D.find(x=>x.id===editId),f);
+  else{const id=Date.now();D.push({id,seq:id,...f,used:false,usedFor:'',usedDate:''})}
+  save();$('dAdd').close();render();toast(editId!=null?'התרומה עודכנה':'התרומה נשמרה ✓');
+}
+function del(id){
+  const d=D.find(x=>x.id===id);
+  if(!confirm(`למחוק את התרומה של ${d.name||'ללא שם'} (${ils(d.amount)})?`))return;
+  D=D.filter(x=>x.id!==id);save();render();
+}
+
+/* בחירת כמה תרומות וסימון שכולן שומשו לאותה מטרה */
+function startSelect(){
+  useIds=[];document.body.classList.add('selecting');$('selbar').classList.add('on');
+  filter='open';[...$('tabs').children].forEach(x=>x.classList.toggle('on',x.dataset.f==='open'));page=1;render();selInfo();
+  $('selbar').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function stopSelect(){useIds=[];document.body.classList.remove('selecting');$('selbar').classList.remove('on');render()}
+function toggleSel(id,on){useIds=on?[...useIds,id]:useIds.filter(x=>x!==id);selInfo()}
+function selInfo(){const s=D.filter(d=>useIds.includes(d.id)).reduce((a,d)=>a+d.amount,0);$('selInfo').textContent=useIds.length?`נבחרו ${useIds.length} · ${ils(s)}`:'סמן את התרומות ששומשו'}
+function openUse(ids){
+  if(ids)useIds=ids;
+  if(!useIds.length){toast('בחר לפחות תרומה אחת');return}
+  const s=D.filter(d=>useIds.includes(d.id)).reduce((a,d)=>a+d.amount,0);
+  $('useInfo').textContent=`${useIds.length===1?'תרומה אחת':useIds.length+' תרומות'} בסך ${ils(s)}`;
+  fillLists();$('uFor').value='';$('uDate').value=today();$('dUse').showModal();$('uFor').focus();
+}
+function saveUse(){
+  const f=$('uFor').value.trim(),dt=$('uDate').value;
+  D.forEach(d=>{if(useIds.includes(d.id)){d.used=true;d.usedFor=f;d.usedDate=dt}});
+  save();$('dUse').close();toast('סומן כמשומש ✓');stopSelect();
+}
+function unuse(id){const d=D.find(x=>x.id===id);if(!confirm('לבטל את סימון השימוש?'))return;d.used=false;d.usedFor='';d.usedDate='';save();render()}
+
+/* גיבוי, ייבוא ואקסל */
+function download(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+function exportBackup(){download(`גיבוי_תרומות_${today()}.json`,new Blob([JSON.stringify({app:'tromot',version:1,donations:D})],{type:'application/json'}))}
+function importBackup(inp){
+  const f=inp.files[0];inp.value='';if(!f)return;
+  f.text().then(t=>{
+    const j=JSON.parse(t),L=Array.isArray(j)?j:j.donations;
+    if(!Array.isArray(L))throw 0;
+    const ids=new Set(D.map(d=>d.id)),add=L.filter(d=>d&&d.amount>0&&!ids.has(d.id));
+    if(!confirm(`לייבא ${add.length} תרומות מהקובץ?${L.length-add.length?` (${L.length-add.length} כבר קיימות ולא ייובאו שוב)`:''}`))return;
+    D.push(...add.map(d=>({name:'',method:'',date:'',purpose:'',note:'',used:false,usedFor:'',usedDate:'',...d})));
+    save();render();toast(`יובאו ${add.length} תרומות ✓`);
+  }).catch(()=>alert('הקובץ לא תקין'));
+}
+function exportExcel(){
+  if(typeof XLSX==='undefined'){alert('צריך חיבור לאינטרנט לייצוא לאקסל');return}
+  const rows=[['תאריך','שם התורם','סכום','אמצעי תשלום','על מה נתן','הערה','שומש?','שומש עבור','תאריך שימוש']];
+  sorted().forEach(d=>rows.push([fmtDate(d.date),d.name,d.amount,d.method,d.purpose,d.note,d.used?'כן':'לא',d.usedFor,fmtDate(d.usedDate)]));
+  const tot=D.reduce((s,d)=>s+d.amount,0),used=D.filter(d=>d.used).reduce((s,d)=>s+d.amount,0);
+  const wb=XLSX.utils.book_new(),ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[10,18,9,11,22,30,7,22,11].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws,'תרומות');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['סה"כ נתרם',tot],['סה"כ שומש',used],['יתרה זמינה',tot-used]]),'סיכום');
+  wb.Workbook={Views:[{RTL:true}]};
+  XLSX.writeFile(wb,`תרומות_בית_כנסת_${today()}.xlsx`);
+}
+
+render();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
