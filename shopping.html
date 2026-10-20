@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>קניות לבית</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#db2777">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=Rubik:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fdf7fa;--card:#fff;--tx:#1e293b;--mut:#64748b;--bd:#f1e4ea;--pr:#db2777;--pl:#fdf2f8;--pk:#fde8f0;--pkb:#f9c9da;--in:#fff;--ib:#e9d5df;--ok:#16a34a}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0f0a10;--card:#1a1219;--tx:#f8fafc;--mut:#a59aa3;--bd:#2c2029;--pl:rgba(219,39,119,.14);--pk:rgba(236,72,153,.13);--pkb:rgba(236,72,153,.32);--in:#221821;--ib:#3a2b36}}
+:root[data-theme=dark]{--bg:#0f0a10;--card:#1a1219;--tx:#f8fafc;--mut:#a59aa3;--bd:#2c2029;--pl:rgba(219,39,119,.14);--pk:rgba(236,72,153,.13);--pkb:rgba(236,72,153,.32);--in:#221821;--ib:#3a2b36}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:Heebo,sans-serif;min-height:100vh}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--bd)}
+.hin{max-width:760px;margin:auto;padding:10px 16px;display:flex;align-items:center;gap:10px}
+.back{padding:7px 11px;border-radius:12px;background:var(--pl);color:var(--pr);border:1px solid var(--pkb);font-size:13px;font-weight:700;white-space:nowrap}
+.lg{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#f472b6,#db2777);display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+h1{margin:0;font:900 19px Rubik,Heebo,sans-serif;flex:1}
+.me{border:1px solid var(--ib);background:var(--in);border-radius:99px;padding:5px 11px;font-size:12px;font-weight:700}
+.dot{width:9px;height:9px;border-radius:50%;background:#cbd5e1;flex:none}
+.dot.ok{background:var(--ok)}.dot.off{background:#f59e0b}.dot.err{background:#e11d48}
+.tabs{max-width:760px;margin:auto;display:flex;gap:6px;padding:0 16px 10px}
+.tabs button{flex:1;border:0;background:none;padding:9px;border-radius:12px;font-weight:800;font-size:15px;color:var(--mut)}
+.tabs button.on{background:var(--pl);color:var(--pr)}
+.tabs b{display:inline-block;min-width:22px;padding:0 6px;border-radius:99px;background:var(--pr);color:#fff;font-size:12px;margin-inline-start:4px}
+main{max-width:760px;margin:auto;padding:16px 16px 90px}
+.add{display:flex;gap:8px;background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:6px;box-shadow:0 6px 20px #db27770f}
+.add input{flex:1;min-width:0;border:0;background:none;font-size:17px;padding:10px 12px;outline:none}
+.add button,.pbtn{border:0;border-radius:14px;background:var(--pr);color:#fff;font-weight:800;padding:10px 18px;font-size:15px}
+.note{font-size:12px;color:var(--mut);margin:8px 4px 0}
+.banner{background:#fef3c7;color:#92400e;border-radius:12px;padding:9px 12px;font-size:13px;margin-bottom:12px}
+:root[data-theme=dark] .banner{background:#3b2f0b;color:#fcd34d}
+h3{font:800 14px Heebo,sans-serif;color:var(--mut);margin:22px 4px 8px}
+.items{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.it{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:8px 10px;transition:.25s}
+.it.gone{opacity:0;transform:translateX(-30px)}
+.chk{width:30px;height:30px;border-radius:50%;border:2px solid var(--pkb);background:none;flex:none;font-size:15px;color:#fff;padding:0}
+.chk:hover{border-color:var(--ok);background:#16a34a22}
+.pic{width:42px;height:42px;border-radius:12px;background:var(--pk);display:flex;align-items:center;justify-content:center;font-size:24px;flex:none;overflow:hidden}
+.pic img{width:100%;height:100%;object-fit:cover}
+.nm{flex:1;min-width:0}
+.nm b{display:block;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nm small{color:var(--mut);font-size:12px}
+.qty{width:62px;border:1px solid var(--ib);background:var(--in);border-radius:10px;padding:5px;text-align:center;font-size:13px}
+.x{border:0;background:none;color:var(--mut);font-size:16px;padding:6px;border-radius:10px}
+.x:hover{background:var(--pl);color:#e11d48}
+.empty{text-align:center;color:var(--mut);padding:40px 10px}
+.empty div{font-size:46px}
+.rec{display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 10px;border-radius:12px;background:var(--card);border:1px dashed var(--ib);margin-bottom:6px}
+.rec span{flex:1}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;margin-top:14px}
+.pc{position:relative;background:var(--pk);border:1px solid var(--pkb);border-radius:18px;padding:10px 6px 8px;text-align:center;transition:.15s}
+.pc:active{transform:scale(.96)}
+.pc .ph{width:64px;height:64px;margin:0 auto 6px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:40px;overflow:hidden;background:#ffffff8c}
+:root[data-theme=dark] .pc .ph{background:#ffffff14}
+.pc .ph img{width:100%;height:100%;object-fit:cover}
+.pc b{display:block;font-size:14px;line-height:1.2}
+.pc.in{outline:2px solid var(--pr)}
+.pc .tg{position:absolute;top:6px;inset-inline-start:6px;background:var(--pr);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:1px 7px}
+.pc .ed{position:absolute;top:4px;inset-inline-end:4px;border:0;background:none;font-size:13px;opacity:.55;padding:4px}
+.pc.new{border-style:dashed;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--pr);font-weight:800;min-height:120px}
+.pc.new div{font-size:30px}
+.psearch{width:100%;border:1px solid var(--ib);background:var(--in);border-radius:14px;padding:10px 12px;font-size:15px;outline:none}
+dialog{border:0;border-radius:20px;padding:20px;width:min(380px,calc(100% - 28px));background:var(--card);color:var(--tx);box-shadow:0 20px 40px #0004}
+dialog::backdrop{background:#1e0b1599;backdrop-filter:blur(3px)}
+dialog h2{margin:0 0 10px;font:800 19px Rubik,Heebo,sans-serif}
+.fld{width:100%;border:1px solid var(--ib);background:var(--in);border-radius:12px;padding:10px;font-size:16px;margin-bottom:10px;outline:none}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row.end{justify-content:flex-end;margin-top:12px}
+.b{border:1px solid var(--ib);background:var(--in);border-radius:12px;padding:9px 14px;font-weight:700;font-size:14px}
+.b.pr{background:var(--pr);border-color:var(--pr);color:#fff}
+.b.dn{color:#e11d48}
+.prev{width:96px;height:96px;border-radius:18px;background:var(--pk);border:1px solid var(--pkb);display:flex;align-items:center;justify-content:center;font-size:54px;overflow:hidden;flex:none}
+.prev img{width:100%;height:100%;object-fit:cover}
+.who{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px}
+.who button{flex:1;min-width:90px;padding:14px 8px;border-radius:14px;border:1px solid var(--pkb);background:var(--pk);font-weight:800;font-size:16px}
+.pw{position:relative}.pw .fld{padding-inline:44px;text-align:center}
+.eye{position:absolute;inset-inline-end:6px;top:5px;width:34px;height:34px;border:0;background:none;font-size:18px;opacity:.75}
+.err{color:#e11d48;font-size:13px;margin:0 0 8px;display:none}
+#toast{position:fixed;bottom:18px;left:50%;transform:translate(-50%,120px);background:#1e293b;color:#fff;border-radius:14px;padding:10px 14px;display:flex;gap:14px;align-items:center;font-size:14px;transition:.25s;z-index:50;max-width:calc(100% - 32px)}
+#toast.on{transform:translate(-50%,0)}
+#toast button{background:none;border:0;color:#f9a8d4;font-weight:800}
+#login{display:none;max-width:360px;margin:60px auto;text-align:center}
+body.locked #login{display:block}body.locked main,body.locked .tabs{display:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="hin">
+    <button class="back" onclick="location.href='./'">→ אפליקציות</button>
+    <div class="lg">🛒</div><h1>קניות לבית</h1>
+    <span class="dot" id="dot" title="סנכרון"></span>
+    <button class="me" id="meb" onclick="askMe()"></button>
+  </div>
+  <div class="tabs">
+    <button id="t_list" onclick="setTab('list')">🧺 רשימת קניות<b id="cnt">0</b></button>
+    <button id="t_home" onclick="setTab('home')">🏠 מוצרים בבית</button>
+  </div>
+</header>
+
+<section id="login">
+  <div style="font-size:52px">🛒</div>
+  <h2 style="font:900 22px Rubik,Heebo,sans-serif;margin:8px 0">קניות לבית</h2>
+  <p class="note" style="margin-bottom:14px">הזינו את הסיסמה המשפחתית. היא נשמרת במכשיר, כך שצריך להקליד אותה רק פעם אחת.</p>
+  <div class="pw"><input class="fld" id="lpw" type="password" placeholder="סיסמה" onkeyup="if(event.key==='Enter')login()"><button type="button" class="eye" onclick="eye(this)">👁️</button></div>
+  <p class="err" id="lerr"></p>
+  <button class="b pr" style="width:100%" onclick="login()">כניסה</button>
+</section>
+
+<main>
+  <section id="v_list">
+    <div class="banner" id="demo" style="display:none">מצב הדגמה: עדיין לא מחובר לענן, ולכן הרשימה נשמרת רק במכשיר הזה.</div>
+    <div class="add"><input id="newItem" list="names" placeholder="מה צריך לקנות?" autocomplete="off" onkeyup="if(event.key==='Enter')addTyped()"><button onclick="addTyped()">הוסף</button></div>
+    <datalist id="names"></datalist>
+    <div class="items" id="items"></div>
+    <div id="recBox"></div>
+  </section>
+  <section id="v_home" style="display:none">
+    <input class="psearch" id="psearch" type="search" placeholder="🔎 חיפוש מוצר" oninput="renderHome()">
+    <p class="note">נגמר משהו? לוחצים על המוצר והוא נכנס לרשימת הקניות. ✏️ לעריכה ולהוספת תמונה.</p>
+    <div class="grid" id="grid"></div>
+  </section>
+</main>
+
+<dialog id="dMe">
+  <h2>מי משתמש במכשיר הזה?</h2>
+  <p class="note" style="margin:0 0 6px">השם יופיע ליד כל פריט שתוסיפו לרשימה.</p>
+  <div class="who"><button onclick="setMe('דני')">דני</button><button onclick="setMe('אשתי')">אשתי</button><button onclick="setMe('הילד')">הילד</button></div>
+  <input class="fld" id="meOther" placeholder="או כתבו שם אחר ולחצו Enter" onkeyup="if(event.key==='Enter'&&this.value.trim())setMe(this.value.trim())">
+  <div class="row end" id="meLogout"><button class="b dn" onclick="logout()">התנתקות מהמכשיר</button><button class="b" onclick="dMe.close()">סגור</button></div>
+</dialog>
+
+<dialog id="dProd">
+  <h2 id="pTitle">מוצר חדש</h2>
+  <div class="row" style="align-items:flex-start;flex-wrap:nowrap;gap:12px;margin-bottom:10px">
+    <div class="prev" id="pPrev">🛒</div>
+    <div style="flex:1">
+      <input class="fld" id="pName" placeholder="שם המוצר (למשל: חלב)" oninput="prevUpd()">
+      <div class="row">
+        <label class="b" style="cursor:pointer">📷 תמונה<input type="file" accept="image/*" hidden onchange="pickImg(event)"></label>
+        <button class="b" id="pNoImg" onclick="pImg='';prevUpd()">הסר תמונה</button>
+      </div>
+    </div>
+  </div>
+  <input class="fld" id="pEmoji" placeholder="אימוג'י במקום תמונה (לא חובה)" oninput="prevUpd()" style="font-size:14px">
+  <div class="row end"><button class="b dn" id="pDel" onclick="delProd()">מחק מוצר</button><span style="flex:1"></span><button class="b" onclick="dProd.close()">ביטול</button><button class="b pr" onclick="saveProd()">שמור</button></div>
+</dialog>
+
+<div id="toast"><span id="tmsg"></span><button id="tbtn"></button></div>
+
+<script src="shop-core.js"></script>
+<script>
+/* כתובת ה-Web App של סקריפט הקניות בגוגל. ריק = מצב הדגמה, הכול נשמר רק במכשיר */
+const SHOP_CLOUD='';
+const $=id=>document.getElementById(id);
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+const dMe=$('dMe'),dProd=$('dProd');
+function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function put(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}
+function getJ(k){try{return JSON.parse(get(k))}catch(e){return null}}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+let st=getJ('shop_state')||shopNew(),queue=getJ('shop_queue')||[],pw=get('shop_pw')||'',me=get('shop_me')||'',tab=get('shop_tab')||'list',busy=false;
+function persist(){put('shop_state',JSON.stringify(st));put('shop_queue',JSON.stringify(queue))}
+
+/* ---------- תמונות ואימוג'י ---------- */
+const EMO=[['חלב|שוקו|יוגורט|לבן|אשל|מעדן','🥛'],['לחם|לחמני|פיתה|חלה|באגט','🍞'],['ביצ','🥚'],['גבינ|קוטג|צהובה|שמנת','🧀'],['חמאה|מרגרינה','🧈'],
+['עגבני','🍅'],['מלפפו','🥒'],['בננ','🍌'],['תפוח עץ|תפוחים|תפוח$','🍎'],['תפוז|קלמנטינ','🍊'],['אבטיח|מלון','🍉'],['ענב','🍇'],['תות','🍓'],['לימו','🍋'],['אבוקדו','🥑'],
+['בצל','🧅'],['שום','🧄'],['תפוחי אדמה|תפו"א|בטטה','🥔'],['גזר','🥕'],['פלפל','🫑'],['חסה|כרוב|עלים','🥬'],['ברוקולי|כרובית','🥦'],['תירס','🌽'],['פטרי','🍄'],
+['אורז','🍚'],['פסטה|ספגטי|אטריות|פתיתים','🍝'],['קמח','🌾'],['סוכר|ממתק','🍬'],['שמן|זית','🫒'],['מלח|תבלין|פפריקה','🧂'],['קפה|נס','☕'],['תה','🍵'],['דבש|ריבה|ממרח','🍯'],
+['מים','💧'],['שתיה|קולה|סודה|ספרייט','🥤'],['מיץ|פטל','🧃'],['יין','🍷'],['בירה','🍺'],['עוף|שניצל|כרעיים|חזה','🍗'],['בשר|טחון|סטייק|אנטריקוט','🥩'],['דג|סלמון|טונה','🐟'],['נקניק|פסטרמה','🌭'],
+['שוקולד|נוטלה','🍫'],['עוגי|ופל|ביסקוו','🍪'],['במבה|בוטנ','🥜'],['ביסלי|חטיף|צ׳יפס|ציפס|תפוציפס','🍿'],['גלידה|ארטיק','🍦'],['עוג','🍰'],['קורנפלקס|דגני','🥣'],['חומוס|שעועית|עדשים','🫘'],['פיצה','🍕'],
+['נייר טואלט|טישו|מגבות נייר|מפיות','🧻'],['מגבונ','🧻'],['סבון','🧼'],['שמפו|מרכך שיער|קרם|דאודורנט','🧴'],['כביסה|מרכך כביסה','🧺'],['ספוג|סקוטש','🧽'],['חיתול','👶'],['אשפה|זבל','🗑️'],
+['שקיות|שקית','🛍️'],['משחת שיניים|מברשת שיניים','🪥'],['כלים|פיירי','🫧'],['נרות','🕯️'],['סוללות','🔋'],['תרופ|אקמול','💊']];
+function emojiFor(n){n=shopKey(n);for(const[re,e]of EMO)if(new RegExp(re).test(n))return e;return '🛒'}
+function prodFor(name){const k=shopKey(name);return st.products.find(p=>shopKey(p.name)===k)}
+function picEl(cls,name,p){
+  const d=el('div',cls);p=p||prodFor(name);
+  if(p&&p.img){const i=new Image();i.src=p.img;i.alt='';d.append(i)}else d.textContent=(p&&p.emoji)||emojiFor(name);
+  return d;
+}
+
+/* ---------- פעולות ---------- */
+function act(o){
+  const now=Date.now();shopApply(st,o,now);
+  if(SHOP_CLOUD)queue.push(o);else shopAuto(st,now);
+  persist();render();sync();
+}
+function addName(name,src){
+  name=String(name||'').trim();if(!name)return false;
+  if(st.items.some(x=>shopKey(x.name)===shopKey(name))){toast('„'+name+'” כבר ברשימה');return false}
+  act({type:'add',iid:uid(),name,by:me,src:src||''});return true;
+}
+function addTyped(){const i=$('newItem');if(addName(i.value)){i.value='';toast('נוסף לרשימה ✓')}i.focus()}
+function bought(it,row){
+  row.classList.add('gone');
+  setTimeout(()=>{act({type:'bought',iid:it.id});toast('„'+it.name+'” נקנה ✓','ביטול',()=>act({type:'restore',item:it}))},220);
+}
+
+/* ---------- סנכרון עם הענן ---------- */
+function dot(s){$('dot').className='dot '+s;$('dot').title={ok:'מסונכרן',off:'אין חיבור, השינויים יישלחו כשיחזור',err:'שגיאה בסנכרון'}[s]||''}
+async function sync(){
+  if(!SHOP_CLOUD||!pw||busy)return;
+  busy=true;const sent=queue.slice();
+  try{
+    const r=await fetch(SHOP_CLOUD,{method:'POST',body:JSON.stringify({password:pw,ops:sent,rev:sent.length?-1:st.rev})}).then(r=>r.json());
+    if(!r.ok){if(r.error==='password')logout('הסיסמה השתנתה, נא להיכנס שוב');else dot('err');return}
+    queue=queue.slice(sent.length);
+    if(r.state){st=r.state;const now=Date.now();queue.forEach(o=>shopApply(st,o,now))}
+    persist();render();dot('ok');
+  }catch(e){dot('off')}
+  finally{busy=false;if(queue.length)setTimeout(sync,2000)}
+}
+async function login(){
+  const v=$('lpw').value.trim(),e=$('lerr');e.style.display='none';if(!v)return;
+  try{
+    const r=await fetch(SHOP_CLOUD,{method:'POST',body:JSON.stringify({password:v,ops:[],rev:-1})}).then(r=>r.json());
+    if(!r.ok){e.textContent='סיסמה שגויה';e.style.display='block';return}
+    pw=v;put('shop_pw',v);st=r.state;persist();document.body.classList.remove('locked');seed();render();dot('ok');if(!me)askMe();
+  }catch(x){e.textContent='אין חיבור לאינטרנט, נסו שוב';e.style.display='block'}
+}
+function logout(msg){pw='';put('shop_pw',null);dMe.close();document.body.classList.add('locked');if(msg){$('lerr').textContent=msg;$('lerr').style.display='block'}}
+
+/* בפעם הראשונה ממלאים את "מוצרים בבית" במוצרים נפוצים. אפשר לערוך ולמחוק אותם */
+const STARTER=['חלב','לחם','ביצים','גבינה צהובה','קוטג׳','יוגורט','חמאה','עגבניות','מלפפונים','בננות','תפוחים','בצל','תפוחי אדמה','אורז','פסטה','שמן','קפה','סוכר','במבה','מים','נייר טואלט','סבון כלים','אבקת כביסה','שקיות אשפה'];
+function seed(){if(st.products.length||get('shop_seeded'))return;put('shop_seeded','1');STARTER.forEach(n=>act({type:'padd',pid:uid(),name:n}))}
+
+/* ---------- תצוגה ---------- */
+function ago(t){const m=Math.round((Date.now()-t)/60e3);if(m<1)return'עכשיו';if(m<60)return'לפני '+m+' דק׳';const h=Math.round(m/60);if(h<24)return'לפני '+h+' שע׳';const d=Math.round(h/24);return d===1?'אתמול':'לפני '+d+' ימים'}
+function days(ms){const d=Math.round(ms/864e5);return d<=1?'יום':d===2?'יומיים':d+' ימים'}
+function render(){
+  $('cnt').textContent=st.items.length;$('cnt').style.display=st.items.length?'':'none';
+  $('meb').textContent='👤 '+(me||'מי אני?');
+  $('t_list').className=tab==='list'?'on':'';$('t_home').className=tab==='home'?'on':'';
+  $('v_list').style.display=tab==='list'?'':'none';$('v_home').style.display=tab==='home'?'':'none';
+  const dl=$('names');dl.innerHTML='';
+  [...new Set([...st.products.map(p=>p.name),...Object.values(st.hist).map(h=>h.n)])].forEach(n=>dl.append(new Option(n)));
+  renderList();renderHome();
+}
+function renderList(){
+  const box=$('items');box.innerHTML='';
+  if(!st.items.length){const e=el('div','empty');e.append(el('div',null,'🧺'),el('p',null,'הרשימה ריקה. מה צריך לקנות?'));box.append(e)}
+  [...st.items].sort((a,b)=>b.at-a.at).forEach(it=>{
+    const row=el('div','it'),c=el('button','chk','✓');c.title='נקנה';c.onclick=()=>bought(it,row);
+    const nm=el('div','nm');nm.append(el('b',null,it.name),el('small',null,it.auto?'🔁 נוסף אוטומטית · '+ago(it.at):(it.src==='pantry'?'🏠 נגמר בבית · ':'')+(it.by?it.by+' · ':'')+ago(it.at)));
+    const q=el('input','qty');q.placeholder='כמות';q.value=it.qty||'';q.onchange=()=>act({type:'edit',iid:it.id,qty:q.value.trim()});
+    const x=el('button','x','✕');x.title='מחק בלי לסמן כנקנה';x.onclick=()=>{act({type:'del',iid:it.id});toast('„'+it.name+'” נמחק','ביטול',()=>act({type:'add',iid:it.id,name:it.name,qty:it.qty,by:it.by}))};
+    row.append(c,picEl('pic',it.name),nm,q,x);box.append(row);
+  });
+  const rb=$('recBox');rb.innerHTML='';const rec=shopAllRecurring(st);
+  if(rec.length){
+    rb.append(el('h3',null,'🔁 פריטים קבועים (מתווספים לבד)'));
+    rec.forEach(r=>{
+      const d=el('div','rec'),left=r.next-Date.now();
+      d.append(el('span',null,r.name+' · בערך כל '+days(r.every)+' · '+(left<=0?'הגיע הזמן':'הבא בעוד '+days(left))));
+      const x=el('button','x','✕');x.title='להפסיק להוסיף אוטומטית';x.onclick=()=>{if(confirm('להפסיק להוסיף את „'+r.name+'” אוטומטית?'))act({type:'forget',key:r.key})};
+      d.append(x);rb.append(d);
+    });
+  }
+}
+function renderHome(){
+  const g=$('grid'),k=shopKey($('psearch').value);g.innerHTML='';
+  [...st.products].sort((a,b)=>a.name.localeCompare(b.name,'he')).filter(p=>!k||shopKey(p.name).includes(k)).forEach(p=>{
+    const inList=st.items.some(x=>shopKey(x.name)===shopKey(p.name));
+    const c=el('div','pc'+(inList?' in':''));
+    c.append(picEl('ph',p.name,p),el('b',null,p.name));
+    if(inList)c.append(el('span','tg','ברשימה'));
+    const ed=el('button','ed','✏️');ed.onclick=e=>{e.stopPropagation();openProd(p)};c.append(ed);
+    c.onclick=()=>{if(addName(p.name,'pantry'))toast('🛒 „'+p.name+'” נוסף לרשימת הקניות')};
+    g.append(c);
+  });
+  const n=el('div','pc new');n.append(el('div',null,'＋'),el('span',null,'מוצר חדש'));n.onclick=()=>openProd(null);g.append(n);
+}
+function setTab(t){tab=t;put('shop_tab',t);render();window.scrollTo({top:0})}
+
+/* ---------- עריכת מוצר ---------- */
+let editP=null,pImg='';
+function openProd(p){
+  editP=p;pImg=p?p.img||'':'';
+  $('pTitle').textContent=p?'עריכת מוצר':'מוצר חדש';$('pName').value=p?p.name:'';$('pEmoji').value=p?p.emoji||'':'';
+  $('pDel').style.display=p?'':'none';prevUpd();dProd.showModal();if(!p)$('pName').focus();
+}
+function prevUpd(){
+  const v=$('pPrev');v.innerHTML='';$('pNoImg').style.display=pImg?'':'none';
+  if(pImg){const i=new Image();i.src=pImg;v.append(i)}else v.textContent=$('pEmoji').value.trim()||emojiFor($('pName').value);
+}
+/* מקטין את התמונה ל-200 פיקסלים כדי שהרשימה תישאר קלה ומהירה */
+function pickImg(e){
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  const img=new Image();img.onload=()=>{
+    const s=200,c=document.createElement('canvas');c.width=c.height=s;
+    const m=Math.min(img.width,img.height);c.getContext('2d').drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,s,s);
+    pImg=c.toDataURL('image/jpeg',.72);URL.revokeObjectURL(img.src);prevUpd();
+  };img.src=URL.createObjectURL(f);
+}
+function saveProd(){
+  const name=$('pName').value.trim(),emoji=$('pEmoji').value.trim();if(!name){$('pName').focus();return}
+  if(editP)act({type:'pedit',pid:editP.id,name,emoji,img:pImg});
+  else{if(prodFor(name)){toast('המוצר כבר קיים');return}act({type:'padd',pid:uid(),name,emoji,img:pImg})}
+  dProd.close();
+}
+function delProd(){if(editP&&confirm('למחוק את „'+editP.name+'” מהמוצרים בבית?')){act({type:'pdel',pid:editP.id});dProd.close()}}
+
+/* ---------- שונות ---------- */
+function askMe(){$('meOther').value='';$('meLogout').style.display=pw?'':'none';dMe.showModal()}
+function setMe(n){me=n;put('shop_me',n);dMe.close();render()}
+function eye(b){const i=b.previousElementSibling,s=i.type==='password';i.type=s?'text':'password';b.textContent=s?'🙈':'👁️'}
+let tt;
+function toast(msg,btn,fn){
+  const t=$('toast');$('tmsg').textContent=msg;const b=$('tbtn');b.style.display=btn?'':'none';b.textContent=btn||'';
+  b.onclick=()=>{t.classList.remove('on');fn&&fn()};t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),btn?5000:2200);
+}
+
+(function(){
+  const t=get('akordim_theme');if(t)document.documentElement.dataset.theme=t;
+  if(!SHOP_CLOUD){$('demo').style.display='';shopAuto(st,Date.now());seed();persist()}
+  else if(!pw)document.body.classList.add('locked');
+  render();
+  if(!me&&(!SHOP_CLOUD||pw))askMe();
+  sync();
+  setInterval(()=>{if(!document.hidden)sync()},15000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>
