@@ -494,10 +494,10 @@ async function restore(e){
   const r=new FileReader();
   r.onload=()=>{
     try{
-      const p=JSON.parse(r.result);
+      const j=JSON.parse(r.result),p=Array.isArray(j)?j:j&&j.songs; /* גם קובץ גיבוי מהדרייב: {songs,seen} */
       if(!Array.isArray(p)||!p.length||!p.every(s=>s.id&&s.title&&typeof s.text==='string'))throw 0;
       songs=p;cur=songs[0].id;save();fill();pick(cur);
-    }catch(x){alert('הקובץ לא תקין. נדרש קובץ גיבוי של גרסה 2 (עם שדה text).')}
+    }catch(x){alert('הקובץ לא תקין. נדרש קובץ גיבוי JSON מהאתר או מתיקיית הגיבויים בדרייב.')}
   };
   r.readAsText(f);
 }
