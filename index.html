@@ -86,7 +86,6 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
   <div class="pw" id="p2w" style="display:none"><input id="p2" type="password" autocomplete="new-password" placeholder="הקלד שוב את הסיסמה"><button type="button" class="eye" onclick="eye(this)" title="הצג סיסמה">👁️</button></div>
   <p class="err" id="er"></p>
   <div class="row"><button class="b" onclick="dlg.close()">ביטול</button><button class="b pr" id="ok" onclick="submit()">כניסה</button></div>
-  <button class="link" id="forgot" onclick="forgot()" style="display:none">שכחתי את הסיסמה</button>
 </dialog>
 
 <script>
@@ -130,7 +129,6 @@ function setMode(m){
   const setNew=m==='new';
   $('p2w').style.display=setNew?'':'none';
   document.querySelectorAll('.eye').forEach(b=>eye(b,false));
-  $('forgot').style.display=m==='maaser'?'':'none';
   $('ok').textContent=setNew?'שמור סיסמה':(m==='reset'?'אישור':'כניסה');
   $('p1').placeholder=setNew?'סיסמה חדשה':'סיסמה';
   if(m==='chords'){$('dt').textContent='♬ ספריית אקורדים';$('dh').textContent='הזן את הסיסמה כדי להיכנס:'}
@@ -145,7 +143,6 @@ function ask(a){
   setMode(a==='maaser'&&!get('gate_maaser_hash')?'new':a);
   if(!dlg.open)dlg.showModal();
 }
-function forgot(){setMode('reset')}
 
 async function submit(){
   const v=$('p1').value.trim();err('');
