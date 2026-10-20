@@ -86,6 +86,10 @@ body:not(.editing) .adm{display:none!important}
 #edit .r{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
 #etext{width:100%;min-height:260px;border:1px solid #475569;border-radius:12px;padding:10px;font-family:'Space Mono',monospace;font-size:14px;line-height:1.7;direction:rtl}
 .hint{font-size:12px;color:var(--mut);margin:4px 0}
+.pw{position:relative;margin:0}
+.pw input{margin:0;padding-inline:44px}
+.eye{position:absolute;inset-inline-end:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;padding:0;border:0;border-radius:10px;background:none;font-size:18px;line-height:1;cursor:pointer;opacity:.75}
+.eye:hover{opacity:1;background:#0284c71a}
 .srch{position:relative}
 .sug{display:none;position:absolute;top:calc(100% + 6px);inset-inline-start:0;width:260px;max-height:340px;overflow:auto;background:var(--card);border:1px solid var(--bd);border-radius:14px;box-shadow:0 10px 25px #0003;padding:6px;z-index:40;text-align:start}
 .sug.on{display:block}
@@ -187,7 +191,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
 </main>
 <footer>כל הזכויות שמורות לדני בן דוד ©</footer>
 
-<dialog id="pw"><b>🔒 כניסת מנהל</b><p class="hint">הזן קוד לפתיחת עריכה:</p><input id="pwi" type="password" style="width:100%;text-align:center" onkeyup="if(event.key==='Enter')submitPw()"><p id="pwerr" class="hint" style="color:#e11d48;display:none">סיסמה שגויה</p><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button onclick="$('pw').close()">ביטול</button><button class="pr" onclick="submitPw()">אישור</button></div></dialog>
+<dialog id="pw"><b>🔒 כניסת מנהל</b><p class="hint">הזן קוד לפתיחת עריכה:</p><div class="pw"><input id="pwi" type="password" style="width:100%;text-align:center" onkeyup="if(event.key==='Enter')submitPw()"><button type="button" class="eye" onclick="eye(this)" title="הצג סיסמה">👁️</button></div><p id="pwerr" class="hint" style="color:#e11d48;display:none">סיסמה שגויה</p><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button onclick="$('pw').close()">ביטול</button><button class="pr" onclick="submitPw()">אישור</button></div></dialog>
 <dialog id="dlg">
   <div style="display:flex;justify-content:space-between"><b style="font-size:18px">🎹 דיאגרמת אקורדים</b><button onclick="dlg.close()">✕</button></div>
   <div class="grp" style="width:max-content;margin:8px 0"><button id="tp" class="pr" onclick="inst('p')">פסנתר / אורגן</button><button id="tg" onclick="inst('g')">גיטרה</button></div>
@@ -385,6 +389,8 @@ function zoom(n){fz=Math.max(14,Math.min(40,fz+n));render()}
 function syncEdit(){
   const s=song();$('etitle').value=s.title;$('efolder').value=s.folder||'';$('ekey').value=s.key||'';$('etext').value=s.text;
 }
+/* כפתור העין: מציג או מסתיר את הסיסמה שמקלידים */
+function eye(b,show){const i=b.previousElementSibling;show=show===undefined?i.type==='password':show;i.type=show?'text':'password';b.textContent=show?'🙈':'👁️';b.title=show?'הסתר סיסמה':'הצג סיסמה'}
 let authed=false;
 function setEdit(on){
   editing=on;document.body.classList.toggle('editing',on);$('eb').textContent=on?'🔓 סיום עריכה':'🔒 מצב עריכה';
@@ -395,7 +401,7 @@ function setEdit(on){
 function toggleEdit(){
   if(editing){setEdit(false);return}
   if(authed){setEdit(true);return}
-  $('pwerr').style.display='none';$('pwi').value='';$('pw').showModal();$('pwi').focus();
+  $('pwerr').style.display='none';$('pwi').value='';eye($('pwi').nextElementSibling,false);$('pw').showModal();$('pwi').focus();
 }
 async function submitPw(){
   const v=$('pwi').value,e=$('pwerr');e.style.display='none';
