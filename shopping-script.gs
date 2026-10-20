@@ -1,11 +1,10 @@
 // Apps Script לאפליקציית הקניות לבית.
 // מתקינים בפרויקט Apps Script חדש ונפרד (לא בסקריפט של האקורדים). ההוראות המלאות בצ'אט.
 // SHOP_PASSWORD: הסיסמה המשפחתית לאפליקציה.
-// NTFY_TOPIC: שם ערוץ ההתראות באפליקציית ntfy. בוחרים שם ארוך שקשה לנחש. ריק = בלי התראות.
+// NOTIFY_EMAILS: לאן לשלוח מייל כשמשהו נוסף לרשימה. רשימה ריקה = בלי התראות.
 const SHOP_PASSWORD = 'כתוב-כאן-סיסמה';
-const NTFY_TOPIC = '';
-// NTFY_TOKEN: מפתח גישה מחשבון חינמי ב-ntfy.sh. בלעדיו גוגל מגיע מהר למכסה היומית של ntfy.
-const NTFY_TOKEN = '';
+const NOTIFY_EMAILS = [];
+const APP_URL = 'https://dannybd20-hue.github.io/akordim/shopping.html';
 const DATA_FILE = 'shopping_data.json';
 
 function out_(o) {
@@ -23,24 +22,24 @@ function save_(f, st) {
   if (f) f.setContent(body); else DriveApp.createFile(DATA_FILE, body, MimeType.PLAIN_TEXT);
 }
 
-// שולח התראה לכל הטלפונים שנרשמו לערוץ באפליקציית ntfy
+// שולח מייל לבני המשפחה. אפליקציית Gmail בטלפון מקפיצה עליו התראה
 function notify_(lines) {
-  if (!NTFY_TOPIC || !lines.length) return;
+  if (!NOTIFY_EMAILS.length || !lines.length) return;
   try {
-    const r = UrlFetchApp.fetch('https://ntfy.sh/', {
-      method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-      headers: NTFY_TOKEN ? { Authorization: 'Bearer ' + NTFY_TOKEN } : {},
-      payload: JSON.stringify({ topic: NTFY_TOPIC, title: '🛒 קניות לבית', message: lines.join('\n'), tags: ['shopping_cart'] })
+    MailApp.sendEmail({
+      to: NOTIFY_EMAILS.join(','),
+      subject: '🛒 ' + lines[0] + (lines.length > 1 ? ' (+' + (lines.length - 1) + ')' : ''),
+      body: lines.join('\n') + '\n\nלרשימת הקניות: ' + APP_URL,
+      name: 'קניות לבית'
     });
-    if (r.getResponseCode() !== 200) console.warn('ntfy ' + r.getResponseCode() + ': ' + r.getContentText());
-    return r;
-  } catch (x) { console.warn('ntfy: ' + x); }
+    return true;
+  } catch (x) { console.warn('mail: ' + x); }
 }
 
-// בדיקה: מריצים מהעורך ורואים ביומן מה שרת ההתראות ענה (200 = נשלח)
-function testNtfy() {
-  const r = notify_(['🔔 בדיקה מהסקריפט']);
-  Logger.log(r ? r.getResponseCode() + ' ' + r.getContentText() : 'לא נשלח: NTFY_TOPIC ריק או שגיאת רשת (ראו אזהרה למעלה)');
+// בדיקה: מריצים מהעורך, ואמור להגיע מייל לכל הכתובות
+function testMail() {
+  Logger.log(notify_(['🔔 בדיקה מהסקריפט']) ? 'נשלח ל: ' + NOTIFY_EMAILS.join(', ') + ' (נשארו היום: ' + MailApp.getRemainingDailyQuota() + ')'
+                                           : 'לא נשלח: NOTIFY_EMAILS ריק או שגיאה (ראו אזהרה למעלה)');
 }
 
 function doGet() { return out_({ ok: true, app: 'shopping' }); }
@@ -99,7 +98,7 @@ function setup() {
   const l = load_();
   if (!l.f) save_(null, l.st);
   notify_(['✅ ההתראות של קניות לבית עובדות']);
-  Logger.log('מוכן. ' + (NTFY_TOPIC ? 'נשלחה התראת ניסיון לערוץ ' + NTFY_TOPIC : 'התראות כבויות (NTFY_TOPIC ריק)'));
+  Logger.log('מוכן. ' + (NOTIFY_EMAILS.length ? 'נשלח מייל ניסיון ל: ' + NOTIFY_EMAILS.join(', ') : 'התראות כבויות (NOTIFY_EMAILS ריק)'));
 }
 
 /* ---------------- ליבה משותפת (זהה ל-shop-core.js באתר) ---------------- */

@@ -131,7 +131,7 @@ body.locked #login{display:block}body.locked main,body.locked .tabs{display:none
 <dialog id="dMe">
   <h2>מי משתמש במכשיר הזה?</h2>
   <p class="note" style="margin:0 0 6px">השם יופיע ליד כל פריט שתוסיפו לרשימה.</p>
-  <div class="who"><button onclick="setMe('דני')">דני</button><button onclick="setMe('אשתי')">אשתי</button><button onclick="setMe('הילד')">הילד</button></div>
+  <div class="who"><button onclick="setMe('דני')">דני</button><button onclick="setMe('ציפי')">ציפי</button><button onclick="setMe('הילד')">הילד</button></div>
   <input class="fld" id="meOther" placeholder="או כתבו שם אחר ולחצו Enter" onkeyup="if(event.key==='Enter'&&this.value.trim())setMe(this.value.trim())">
   <div class="row end" id="meLogout"><button class="b dn" onclick="logout()">התנתקות מהמכשיר</button><button class="b" onclick="dMe.close()">סגור</button></div>
 </dialog>
@@ -166,6 +166,7 @@ function put(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,
 function getJ(k){try{return JSON.parse(get(k))}catch(e){return null}}
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
+if(get('shop_me')==='אשתי')put('shop_me','ציפי');
 let st=getJ('shop_state')||shopNew(),queue=getJ('shop_queue')||[],pw=get('shop_pw')||'',me=get('shop_me')||'',tab=get('shop_tab')||'list',busy=false;
 function persist(){put('shop_state',JSON.stringify(st));put('shop_queue',JSON.stringify(queue))}
 
@@ -249,7 +250,7 @@ function renderList(){
   if(!st.items.length){const e=el('div','empty');e.append(el('div',null,'🧺'),el('p',null,'הרשימה ריקה. מה צריך לקנות?'));box.append(e)}
   [...st.items].sort((a,b)=>b.at-a.at).forEach(it=>{
     const row=el('div','it'),c=el('button','chk','✓');c.title='נקנה';c.onclick=()=>bought(it,row);
-    const nm=el('div','nm');nm.append(el('b',null,it.name),el('small',null,it.auto?'🔁 נוסף אוטומטית · '+ago(it.at):(it.src==='pantry'?'🏠 נגמר בבית · ':'')+(it.by?it.by+' · ':'')+ago(it.at)));
+    const nm=el('div','nm');nm.append(el('b',null,it.name),el('small',null,it.auto?'🔁 נוסף אוטומטית · '+ago(it.at):(it.src==='pantry'?'🏠 נגמר בבית · ':'')+(it.by?(it.by==='אשתי'?'ציפי':it.by)+' · ':'')+ago(it.at)));
     const q=el('input','qty');q.placeholder='כמות';q.value=it.qty||'';q.onchange=()=>act({type:'edit',iid:it.id,qty:q.value.trim()});
     const x=el('button','x','✕');x.title='מחק בלי לסמן כנקנה';x.onclick=()=>{act({type:'del',iid:it.id});toast('„'+it.name+'” נמחק','ביטול',()=>act({type:'add',iid:it.id,name:it.name,qty:it.qty,by:it.by}))};
     row.append(c,picEl('pic',it.name),nm,q,x);box.append(row);
