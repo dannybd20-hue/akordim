@@ -99,10 +99,10 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
     <button class="ic" onclick="theme()" title="יום/לילה">🌙</button>
     <details><summary>⚙️</summary><div>
     <button onclick="openChords()">🎹 דיאגרמת אורגן / גיטרה</button>
-    <button onclick="pasteSong()">📝 הדבקת שיר (אקורדים מעל מילים)</button>
+    <button class="adm" onclick="pasteSong()">📝 הדבקת שיר (אקורדים מעל מילים)</button>
     <button onclick="window.print()">🖨️ הדפסה / PDF</button>
-    <button onclick="backupSheet()">📊 גיבוי עכשיו ל-Google Sheets</button>
-    <button onclick="backup()">💾 גיבוי JSON</button>
+    <button class="adm" onclick="backupSheet()">📊 גיבוי עכשיו ל-Google Sheets</button>
+    <button class="adm" onclick="backup()">💾 גיבוי JSON</button>
     <label class="adm">📂 ייבוא JSON<input type="file" accept=".json" onchange="restore(event)" hidden></label>
     <button class="adm" onclick="resetAll()">🔄 שחזר ברירת מחדל</button>
   </div></details>
