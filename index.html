@@ -72,6 +72,7 @@ h2{margin:0;font:900 30px Rubik,Heebo,sans-serif}
 #edit input,#edit select,#edit textarea{background:#020617;border-color:#475569;color:#fff}
 #edit .hint{color:#94a3b8}
 body.editing #edit{display:block}
+body:not(.editing) .adm{display:none!important}
 #edit .r{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
 #etext{width:100%;min-height:260px;border:1px solid #475569;border-radius:12px;padding:10px;font-family:'Space Mono',monospace;font-size:14px;line-height:1.7;direction:rtl}
 .hint{font-size:12px;color:var(--mut);margin:4px 0}
@@ -102,8 +103,8 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
     <button onclick="window.print()">🖨️ הדפסה / PDF</button>
     <button onclick="backupSheet()">📊 גיבוי עכשיו ל-Google Sheets</button>
     <button onclick="backup()">💾 גיבוי JSON</button>
-    <label>📂 ייבוא JSON<input type="file" accept=".json" onchange="restore(event)" hidden></label>
-    <button onclick="resetAll()">🔄 שחזר ברירת מחדל</button>
+    <label class="adm">📂 ייבוא JSON<input type="file" accept=".json" onchange="restore(event)" hidden></label>
+    <button class="adm" onclick="resetAll()">🔄 שחזר ברירת מחדל</button>
   </div></details>
   </div></div></header>
 
@@ -294,7 +295,7 @@ async function submitPw(){
   const v=$('pwi').value,e=$('pwerr');e.style.display='none';
   try{
     const r=await post({action:'check',password:v});
-    if(r.ok){pw=v;authed=true;$('pw').close();setEdit(true);if(dirty&&synced)push();return}
+    if(r.ok){pw=v;authed=true;$('pw').close();setEdit(true);(async()=>{if(dirty&&synced)await push();backupSheet('daily')})();return}
     e.textContent='סיסמה שגויה';
   }catch(x){e.textContent='אין חיבור לענן, נסה שוב'}
   e.style.display='block';
@@ -456,23 +457,40 @@ function stage(){
 function theme(){const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('akordim_theme',r.dataset.theme)}catch(e){}}
 
 /* ---------- גיבוי ---------- */
-async function backupSheet(){
-  if(!authed){toggleEdit();return}
+/* auto==='daily': גיבוי אוטומטי פעם ביום, בכניסה הראשונה למצב עריכה */
+async function backupSheet(auto){
+  if(!authed){toggleEdit();return false}
+  const day=new Date().toISOString().slice(0,10);
+  if(auto==='daily'){let l='';try{l=localStorage.getItem('akordim_lastbk')}catch(e){}if(l===day)return true}
   if(dirty&&synced)await push();
-  setSt('מגבה ל-Sheets…');
+  setSt(auto==='daily'?'מגבה אוטומטית ל-Sheets…':'מגבה ל-Sheets…');
   try{
     const r=await post({action:'backup',password:pw});
-    if(r.ok){const st=$('st');st.textContent='הגיבוי נוצר ✓ ';const a=document.createElement('a');a.href=r.url;a.target='_blank';a.textContent='פתח את הגיליון';a.style.color='var(--pr)';st.append(a)}
-    else setSt('⚠️ הגיבוי נכשל: '+(r.error||''));
+    if(r.ok){
+      try{localStorage.setItem('akordim_lastbk',day)}catch(e){}
+      const st=$('st');st.textContent=(auto==='daily'?'גיבוי יומי נוצר ✓ ':'הגיבוי נוצר ✓ ');const a=document.createElement('a');a.href=r.url;a.target='_blank';a.textContent='פתח את הגיליון';a.style.color='var(--pr)';st.append(a);
+      return true;
+    }
+    setSt('⚠️ הגיבוי נכשל: '+(r.error||''));
   }catch(e){setSt('⚠️ אין חיבור לענן')}
+  return false;
+}
+/* לפני פעולה שמחליפה את כל הספרייה: אישור כפול וגיבוי */
+async function guard(msg){
+  if(!authed){toggleEdit();return false}
+  if(!confirm(msg))return false;
+  if(!confirm('בטוח? כל הספרייה בענן תוחלף. לפני כן ייווצר גיבוי.'))return false;
+  if(await backupSheet())return true;
+  return confirm('הגיבוי נכשל. להמשיך בכל זאת?');
 }
 function backup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(songs,null,2)],{type:'application/json'}));
   a.download='songs_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();
 }
-function restore(e){
-  const f=e.target.files[0];if(!f)return;
+async function restore(e){
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  if(!await guard('לייבא את הקובץ '+f.name+'? הוא יחליף את כל השירים.'))return;
   const r=new FileReader();
   r.onload=()=>{
     try{
@@ -483,8 +501,8 @@ function restore(e){
   };
   r.readAsText(f);
 }
-function resetAll(){
-  if(!confirm('לשחזר את שירי ברירת המחדל? שינויים שלא גובו יימחקו.'))return;
+async function resetAll(){
+  if(!await guard('לשחזר את שירי ברירת המחדל? כל השירים שהוספת או ערכת יימחקו.'))return;
   songs=JSON.parse(JSON.stringify(DEFAULTS));cur=songs[0].id;save();fill();pick(cur);
 }
 
