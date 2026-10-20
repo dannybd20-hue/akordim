@@ -187,6 +187,9 @@ body.locked #login{display:block}body.locked main,body.locked .tabs{display:none
 
 <script src="shop-core.js?v=4"></script><!-- להעלות את המספר בכל שינוי ב-shop-core.js, כדי שהדפדפן לא ישתמש בגרסה ישנה -->
 <script>
+/* אם הדפדפן טען גרסה ישנה של shop-core.js, טוענים מחדש פעם אחת בלי זיכרון */
+if(typeof shopPending!=='function'){try{if(!sessionStorage.getItem('shop_reload')){sessionStorage.setItem('shop_reload','1');location.reload()}}catch(e){}}
+else try{sessionStorage.removeItem('shop_reload')}catch(e){}
 /* כתובת ה-Web App של סקריפט הקניות בגוגל. ריק = מצב הדגמה, הכול נשמר רק במכשיר */
 const SHOP_CLOUD='https://script.google.com/macros/s/AKfycbw_ZAnKnbqY_G0pRA186ylvFoUOpEVtL9rHYEDJGtfmcX2eYlAzIIamDschjgnKCXtuXw/exec';
 const $=id=>document.getElementById(id);
