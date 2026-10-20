@@ -117,6 +117,16 @@ body.home #songCard,body.home #edit,body.home #bar{display:none!important}
 .slist button small{display:block;color:var(--mut);font-size:12px;font-weight:500;margin-top:2px}
 .slist button:hover{border-color:var(--pr);transform:translateY(-1px)}
 dialog{border:1px solid var(--bd);border-radius:24px;background:var(--card);color:var(--tx);max-width:460px;width:92%;padding:24px}
+#plb{display:none;position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:25;align-items:center;gap:8px;background:#0c4a6e;color:#fff;padding:6px 8px;border-radius:999px;box-shadow:0 8px 24px #0005;font-size:13px;white-space:nowrap}
+#plb>div{text-align:center;min-width:92px;line-height:1.2}#plb small{display:block;font-size:11px;opacity:.85}
+#plb button{width:38px;height:38px;padding:0;border-radius:99px;background:#ffffff1f;border-color:#ffffff40;color:#fff;font-size:15px}
+#pl .row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:10px;cursor:pointer;font-size:14px}
+#pl .row:hover{background:var(--pl)}
+#pl .row small{color:var(--mut);font-size:11px;margin-inline-start:auto}
+#pl .n{min-width:22px;height:22px;border-radius:99px;background:var(--pr);color:#fff;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+#pl .n.off{background:none;border:1.5px solid var(--ib)}
+#plsel .row{cursor:default;background:var(--pl);margin-bottom:4px}
+#plsel .row button{padding:2px 8px}
 dialog::backdrop{background:#0f172ab3;backdrop-filter:blur(4px)}
 #pills{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
 #pn{display:flex;justify-content:center;direction:ltr}
@@ -134,7 +144,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
     <div class="srch"><input id="q" type="search" placeholder="🔎 חיפוש שיר" autocomplete="off" oninput="q=this.value;fill();sug('q')" onfocus="sug('q')" onblur="setTimeout(()=>hideSug('q'),150)" onkeydown="sugKey(event,'q')" style="width:140px"><div class="sug" id="q_s"></div></div>
     <div class="grp"><button onclick="setTone(-1)" title="חצי טון למטה">−</button><div class="lab"><small>טון</small><b id="tb">0</b></div><button onclick="setTone(1)" title="חצי טון למעלה">+</button></div>
     <div class="grp"><button onclick="setCapo(-1)">−</button><div class="lab"><small>קאפו</small><b id="cb">0</b></div><button onclick="setCapo(1)">+</button></div>
-    <button class="stg" onclick="stage()">▶️ מצב נגינה</button>
+    <button class="stg" onclick="playDlg()">▶️ מצב נגינה</button>
     <button id="eb" class="ed" onclick="toggleEdit()">🔒 מצב עריכה</button>
     <button class="ic" onclick="songsHome()" title="כל השירים">🏠</button>
     <button class="ic" onclick="theme()" title="יום/לילה">🌙</button>
@@ -191,6 +201,21 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
 </main>
 <footer>כל הזכויות שמורות לדני בן דוד ©</footer>
 
+<div id="plb" class="no-print"><button onclick="plGo(-1)" title="השיר הקודם">⏮</button><div><b id="pli"></b><small id="plc"></small></div><button id="plp" onclick="toggleScroll()" title="עצור / המשך גלילה">⏸</button><button onclick="plGo(1)" title="השיר הבא">⏭</button></div>
+<dialog id="pl">
+  <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">▶️ רשימת נגינה</b><button onclick="$('pl').close()">✕</button></div>
+  <p class="hint">בחר שירים לפי הסדר שתנגן אותם. כשהגלילה מגיעה לסוף השיר, עוברים לבד לשיר הבא.</p>
+  <div id="plsel"></div>
+  <input id="plq" type="search" placeholder="🔎 חיפוש שיר" autocomplete="off" oninput="plList()" style="width:100%;margin:6px 0">
+  <div id="plall" style="max-height:38vh;overflow:auto;border:1px solid var(--bd);border-radius:12px;padding:4px"></div>
+  <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-top:10px">המתנה בסוף כל שיר:
+    <select id="plw" onchange="plSave()"><option value="5">5 שניות</option><option value="10">10 שניות</option><option value="20">20 שניות</option><option value="30">30 שניות</option><option value="60">דקה</option></select></label>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:14px">
+    <button onclick="plIds=[];plSave();plDraw()">נקה</button>
+    <button onclick="$('pl').close();stage()">שיר נוכחי בלבד</button>
+    <button class="pr" id="plgo" onclick="plStart()">▶️ התחל</button>
+  </div>
+</dialog>
 <dialog id="pw"><b>🔒 כניסת מנהל</b><p class="hint">הזן קוד לפתיחת עריכה:</p><div class="pw"><input id="pwi" type="password" style="width:100%;text-align:center" onkeyup="if(event.key==='Enter')submitPw()"><button type="button" class="eye" onclick="eye(this)" title="הצג סיסמה">👁️</button></div><p id="pwerr" class="hint" style="color:#e11d48;display:none">סיסמה שגויה</p><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button onclick="$('pw').close()">ביטול</button><button class="pr" onclick="submitPw()">אישור</button></div></dialog>
 <dialog id="dlg">
   <div style="display:flex;justify-content:space-between"><b style="font-size:18px">🎹 דיאגרמת אקורדים</b><button onclick="dlg.close()">✕</button></div>
@@ -552,10 +577,13 @@ function tick(t){
   if(!sc)return;
   acc+=spd*(t-last)/1000;last=t;
   if(acc>=1){const px=Math.floor(acc);window.scrollBy(0,px);acc-=px}
+  if(pl.length&&innerHeight+scrollY>=document.documentElement.scrollHeight-2){plEnd();if(!sc)return}
   raf=requestAnimationFrame(tick);
 }
 function toggleScroll(){
   sc=!sc;$('sb').textContent=sc?'עצור גלילה':'הפעל גלילה';
+  if(!sc)plStop();
+  $('plp').textContent=sc?'⏸':'▶️';
   cancelAnimationFrame(raf);
   if(sc){last=performance.now();acc=0;raf=requestAnimationFrame(tick)}
 }
@@ -565,7 +593,67 @@ function stage(){
   document.body.classList.toggle('stage',on);
   fz=Math.max(14,Math.min(40,fz+(on?6:-6)));
   if(!on&&sc)toggleScroll();
-  render();
+  if(!on){pl=[];plStop()}
+  plBar();render();
+}
+
+/* ---------- רשימת נגינה ----------
+   plIds: השירים שנבחרו בחלון (נשמר במכשיר), pl: הרשימה שמתנגנת עכשיו, pi: מיקום בה.
+   כשהגלילה מגיעה לתחתית הדף מחכים plWait שניות ועוברים לשיר הבא. */
+let plIds=[],pl=[],pi=0,plWait=10,plT=0,plLeft=0;
+try{plIds=JSON.parse(localStorage.getItem('akordim_playlist'))||[];plWait=+localStorage.getItem('akordim_plwait')||10}catch(e){}
+function plSave(){plWait=+$('plw').value||10;try{localStorage.setItem('akordim_playlist',JSON.stringify(plIds));localStorage.setItem('akordim_plwait',plWait)}catch(e){}}
+function playDlg(){
+  if(document.body.classList.contains('stage')){stage();return}
+  plIds=plIds.filter(id=>songs.some(s=>s.id===id));
+  $('plq').value='';$('plw').value=String(plWait);plDraw();$('pl').showModal();
+}
+function plDraw(){
+  const box=$('plsel');box.innerHTML='';
+  plIds.forEach((id,i)=>{
+    const s=songs.find(x=>x.id===id),r=el('div','row');
+    r.append(el('span','n',i+1),el('span',null,s.title));
+    const sp=el('small');
+    [['▲',-1],['▼',1]].forEach(([t,d])=>{const b=el('button',null,t);b.disabled=!plIds[i+d];b.onclick=()=>{[plIds[i],plIds[i+d]]=[plIds[i+d],plIds[i]];plSave();plDraw()};sp.append(b)});
+    const x=el('button',null,'✕');x.onclick=()=>{plIds.splice(i,1);plSave();plDraw()};sp.append(x);
+    r.append(sp);box.append(r);
+  });
+  $('plgo').textContent=plIds.length?`▶️ התחל (${plIds.length} שירים)`:'▶️ התחל';
+  $('plgo').disabled=!plIds.length;
+  plList();
+}
+function plList(){
+  const k=norm($('plq').value),box=$('plall');box.innerHTML='';
+  songs.filter(s=>!k||norm(s.title).includes(k)).forEach(s=>{
+    const i=plIds.indexOf(s.id),r=el('div','row');
+    r.append(el('span','n'+(i<0?' off':''),i<0?'':i+1),el('span',null,s.title),el('small',null,s.folder||''));
+    r.onclick=()=>{i<0?plIds.push(s.id):plIds.splice(i,1);plSave();plDraw()};
+    box.append(r);
+  });
+}
+function plStart(){
+  if(!plIds.length)return;
+  $('pl').close();pl=[...plIds];pi=0;pick(pl[0]);
+  if(!document.body.classList.contains('stage'))stage();else plBar();
+  window.scrollTo({top:0});if(!sc)toggleScroll();
+}
+function plStop(){clearInterval(plT);plT=0;$('plc').textContent=''}
+function plGo(d){
+  plStop();const n=pi+d;if(n<0||n>=pl.length)return;
+  pi=n;pick(pl[pi]);window.scrollTo({top:0});acc=0;last=performance.now();plBar();
+  if(sc){cancelAnimationFrame(raf);raf=requestAnimationFrame(tick)}
+}
+function plBar(){
+  const on=pl.length>0&&document.body.classList.contains('stage');
+  $('plb').style.display=on?'flex':'none';
+  if(on)$('pli').textContent=`שיר ${pi+1} מתוך ${pl.length}`;
+}
+/* נקרא מהגלילה כשמגיעים לתחתית: ספירה לאחור ואז השיר הבא */
+function plEnd(){
+  if(plT||!pl.length)return;
+  if(pi>=pl.length-1){toggleScroll();$('plc').textContent='✓ סוף הרשימה';return}
+  plLeft=plWait;$('plc').textContent=`הבא בעוד ${plLeft}…`;
+  plT=setInterval(()=>{plLeft--;if(plLeft<=0)plGo(1);else $('plc').textContent=`הבא בעוד ${plLeft}…`},1000);
 }
 function theme(){const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('akordim_theme',r.dataset.theme)}catch(e){}}
 
