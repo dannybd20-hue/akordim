@@ -103,6 +103,15 @@ dialog h2{margin:0 0 10px;font:800 19px Rubik,Heebo,sans-serif}
 .addb:disabled{background:var(--card);color:var(--pr);border:1px solid var(--pkb);cursor:default}
 .pc small{display:block;color:var(--mut);font-size:11px;margin-top:2px}
 .pc.out .stk span{color:#e11d48}
+/* צבע הכרטיס לפי מה שיש בבית: 0 אדום חלש, 1 ומעלה ירוק חלש */
+.pc.out{background:#fee2e2;border-color:#fecaca}
+.pc.has{background:#dcfce7;border-color:#bbf7d0}
+.pc.has .stk span{color:#15803d}
+.pc.has .stk button{border-color:#bbf7d0;color:#15803d}
+.pc.out .stk button{border-color:#fecaca}
+:root[data-theme=dark] .pc.out{background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.35)}
+:root[data-theme=dark] .pc.has{background:rgba(34,197,94,.13);border-color:rgba(34,197,94,.35)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .pc.out{background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.35)}:root:not([data-theme=light]) .pc.has{background:rgba(34,197,94,.13);border-color:rgba(34,197,94,.35)}}
 #newItem::-webkit-calendar-picker-indicator{display:none!important}
 .pc .tg.out{background:#94a3b8}
 #login{display:none;max-width:360px;margin:60px auto;text-align:center}
@@ -331,7 +340,7 @@ function renderHome(){
   const g=$('grid'),k=shopKey($('psearch').value);g.innerHTML='';
   [...st.products].sort((a,b)=>a.name.localeCompare(b.name,'he')).filter(p=>!k||shopKey(p.name).includes(k)).forEach(p=>{
     const inList=st.items.some(x=>shopKey(x.name)===shopKey(p.name));
-    const n=p.stock||0,c=el('div','pc'+(inList?' in':'')+(n?'':' out'));
+    const n=p.stock||0,c=el('div','pc'+(inList?' in':'')+(n?' has':' out'));
     c.append(picEl('ph',p.name,p),el('b',null,p.name),el('small',null,'כמה יש בבית'));
     const k=el('div','stk'),minus=el('button',null,'−'),num=el('span',null,n),plus=el('button',null,'+');
     plus.onclick=e=>{e.stopPropagation();act({type:'pstock',pid:p.id,delta:1})};
