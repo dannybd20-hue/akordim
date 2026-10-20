@@ -83,13 +83,26 @@ function testMail() {
                 : 'לא נשלח: FAMILY ריק או שגיאה (ראו אזהרה למעלה)');
 }
 
+
+/* חסימה נגד ניחוש סיסמאות: אחרי 5 סיסמאות שגויות הסקריפט לא מקבל שום סיסמה
+   עד שעוברות 15 דקות בלי ניסיון שגוי. */
+const MAX_FAILS = 5, LOCK_MINUTES = 15;
+function locked_(scope) { return Number(CacheService.getScriptCache().get('fails_' + scope) || 0) >= MAX_FAILS; }
+function failed_(scope) {
+  const c = CacheService.getScriptCache(), k = 'fails_' + scope;
+  c.put(k, String(Number(c.get(k) || 0) + 1), LOCK_MINUTES * 60);
+}
+function passed_(scope) { CacheService.getScriptCache().remove('fails_' + scope); }
+
 function doGet() { return out_({ ok: true, app: 'shopping' }); }
 
 function doPost(e) {
   let d;
   try { d = JSON.parse(e.postData.contents); } catch (x) { return out_({ ok: false, error: 'bad' }); }
   if (d.app === 'maaser') return maaserPost_(d);
-  if (d.password !== SHOP_PASSWORD) return out_({ ok: false, error: 'password' });
+  if (locked_('shop')) return out_({ ok: false, error: 'locked' });
+  if (d.password !== SHOP_PASSWORD) { failed_('shop'); return out_({ ok: false, error: 'password' }); }
+  passed_('shop');
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   const lines = [];
@@ -151,7 +164,9 @@ function maaserSave_(f, st) {
   if (f) f.setContent(body); else DriveApp.createFile(MAASER_FILE, body, MimeType.PLAIN_TEXT);
 }
 function maaserPost_(d) {
-  if (!MAASER_PASSWORD || d.password !== MAASER_PASSWORD) return out_({ ok: false, error: 'password' });
+  if (locked_('maaser')) return out_({ ok: false, error: 'locked' });
+  if (!MAASER_PASSWORD || d.password !== MAASER_PASSWORD) { failed_('maaser'); return out_({ ok: false, error: 'password' }); }
+  passed_('maaser');
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   let st;

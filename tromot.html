@@ -375,7 +375,6 @@ function exportExcel(){
 /* ---------- גיבוי לענן (Google Apps Script, ראה tromot-script.gs) ----------
    הכתובת והסיסמה נשמרות רק במכשיר. כל שינוי נשלח לענן אחרי שנייה וחצי.
    בפתיחה: אם בענן יש גרסה חדשה יותר ממה שבמכשיר, לוקחים אותה. */
-const DEFAULT_CLOUD='https://script.google.com/macros/s/AKfycbxAljbfqSrQrVU1EmGvu21eQsFllWXJH86Kg-TrvX3lJbQ1f8IbZxG_atR_yGa_Vp7SXQ/exec';
 let cloud=null,pushT=0,pushing=false,again=false;
 try{cloud=JSON.parse(localStorage.getItem('tromot_cloud'))}catch(e){}
 const lget=k=>{try{return +localStorage.getItem(k)||0}catch(e){return 0}};
@@ -383,6 +382,11 @@ const lset=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 function cst(t){const e=$('cst');e.textContent=t;e.className='cst'+(/✓/.test(t)?' ok':/⚠️|💾/.test(t)?' bad':'')}
 function cloudPost(o,c){c=c||cloud;return fetch(c.url,{method:'POST',body:JSON.stringify({...o,password:c.pw})}).then(r=>r.json())}
 const hm=t=>new Date(t).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+/* סיסמה שגויה: מנתקים את הענן במכשיר, כדי שהמכשיר לא ינסה שוב ושוב ויגרום לחסימה */
+function cloudErr(e,other){
+  if(e==='password'){cloud=null;try{localStorage.removeItem('tromot_cloud')}catch(x){}cst('⚠️ סיסמת הסקריפט השתנתה. לחץ כאן לחיבור מחדש');return}
+  cst(e==='locked'?'🔒 יותר מדי ניסיונות שגויים. נסה שוב בעוד רבע שעה':other);
+}
 function schedulePush(){if(!cloud)return;cst('☁️ שומר בענן…');clearTimeout(pushT);pushT=setTimeout(push,1500)}
 async function push(){
   if(!cloud)return;if(pushing){again=true;return}
@@ -390,7 +394,7 @@ async function push(){
   try{
     const r=await cloudPost({action:'save',donations:D});
     if(r.ok){lset('tromot_cloudAt',r.savedAt);lset('tromot_changed',r.savedAt);cst('☁️ מגובה בענן ✓ '+hm(r.savedAt))}
-    else cst(r.error==='password'?'⚠️ סיסמת הסקריפט שגויה':'⚠️ הגיבוי לענן נכשל');
+    else cloudErr(r.error,'⚠️ הגיבוי לענן נכשל');
   }catch(e){cst('⚠️ אין חיבור לענן. נשמר במכשיר, יגובה בפעם הבאה')}
   pushing=false;if(again){again=false;push()}
 }
@@ -399,21 +403,21 @@ async function cloudSync(){
   cst('☁️ בודק בענן…');
   try{
     const r=await cloudPost({action:'load'});
-    if(!r.ok){cst(r.error==='password'?'⚠️ סיסמת הסקריפט שגויה':'⚠️ שגיאה בענן');return}
+    if(!r.ok){cloudErr(r.error,'⚠️ שגיאה בענן');return}
     const local=lget('tromot_changed'),synced=lget('tromot_cloudAt');
     if(r.savedAt>synced&&r.savedAt>=local){D=r.donations||[];try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}lset('tromot_cloudAt',r.savedAt);lset('tromot_changed',r.savedAt);render();cst('☁️ עודכן מהענן ✓ '+hm(r.savedAt))}
     else if(local>synced)push();
     else cst('☁️ מגובה בענן ✓ '+hm(r.savedAt));
   }catch(e){cst('⚠️ אין חיבור לענן. מוצג מה שנשמר במכשיר')}
 }
-function openCloud(){$('cUrl').value=cloud?.url||DEFAULT_CLOUD;$('cPw').value=cloud?.pw||'';$('cMsg').textContent=cloud?'מחובר ✓':'';$('cOff').style.display=cloud?'':'none';$('dCloud').showModal()}
+function openCloud(){$('cUrl').value=cloud?.url||'';$('cPw').value=cloud?.pw||'';$('cMsg').textContent=cloud?'מחובר ✓':'';$('cOff').style.display=cloud?'':'none';$('dCloud').showModal()}
 async function connect(){
   const c={url:$('cUrl').value.trim(),pw:$('cPw').value.trim()},m=$('cMsg');
   if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(c.url)){m.textContent='⚠️ הכתובת צריכה להתחיל ב-https://script.google.com';return}
   m.textContent='מתחבר…';
   let r;
   try{r=await cloudPost({action:'load'},c)}catch(e){m.textContent='⚠️ אין חיבור לסקריפט. בדוק את הכתובת ושהפריסה היא "כל אחד"';return}
-  if(!r.ok){m.textContent=r.error==='password'?'⚠️ סיסמה שגויה':'⚠️ שגיאה: '+r.error;return}
+  if(!r.ok){m.textContent=r.error==='password'?'⚠️ סיסמה שגויה':r.error==='locked'?'🔒 יותר מדי ניסיונות שגויים. נסה שוב בעוד רבע שעה':'⚠️ שגיאה: '+r.error;return}
   const inCloud=(r.donations||[]).length;
   if(inCloud&&D.length&&!confirm(`בענן כבר יש ${inCloud} תרומות ובמכשיר יש ${D.length}.\n\nאישור = להשתמש במה שבענן (מה שבמכשיר יוחלף)\nביטול = להעלות לענן את מה שבמכשיר`)){
     cloud=c;lset('tromot_cloud',JSON.stringify(c));await push();

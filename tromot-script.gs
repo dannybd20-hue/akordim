@@ -14,6 +14,8 @@
  *     "הפעלה בתור": אני.  "למי יש גישה": כל אחד.  ואז "פריסה" ואישור ההרשאות.
  *  5. העתק את "כתובת האפליקציה" (מתחילה ב-https://script.google.com/macros/s/...)
  *     והדבק אותה באפליקציה, בכפתור "☁️ גיבוי לענן", יחד עם הסיסמה.
+ *
+ * עדכון קוד: אחרי הדבקת גרסה חדשה צריך "פריסה" ← "ניהול פריסות" ← ✏️ ← "גרסה חדשה" ← "פריסה".
  */
 
 const PASSWORD = '1234'; // ← שנה לסיסמה משלך
@@ -23,7 +25,9 @@ const KEEP_DAYS = 60;
 function doPost(e) {
   let req = {};
   try { req = JSON.parse(e.postData.contents); } catch (x) { return out({ ok: false, error: 'bad request' }); }
-  if (String(req.password || '').trim() !== PASSWORD) return out({ ok: false, error: 'password' });
+  if (locked_('tromot')) return out({ ok: false, error: 'locked' });
+  if (String(req.password || '').trim() !== PASSWORD) { failed_('tromot'); return out({ ok: false, error: 'password' }); }
+  passed_('tromot');
 
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -46,6 +50,16 @@ function doPost(e) {
     lock.releaseLock();
   }
 }
+
+/* חסימה נגד ניחוש סיסמאות: אחרי 5 סיסמאות שגויות הסקריפט לא מקבל שום סיסמה
+   עד שעוברות 15 דקות בלי ניסיון שגוי. */
+const MAX_FAILS = 5, LOCK_MINUTES = 15;
+function locked_(scope) { return Number(CacheService.getScriptCache().get('fails_' + scope) || 0) >= MAX_FAILS; }
+function failed_(scope) {
+  const c = CacheService.getScriptCache(), k = 'fails_' + scope;
+  c.put(k, String(Number(c.get(k) || 0) + 1), LOCK_MINUTES * 60);
+}
+function passed_(scope) { CacheService.getScriptCache().remove('fails_' + scope); }
 
 function doGet() {
   return out({ ok: true, app: 'tromot-backup' });
