@@ -77,7 +77,10 @@ body.selecting .card:not(.used) .chk{display:block}
 .card.used .meta,.card.used .note{opacity:.75}
 .usedtag{margin-top:7px;display:inline-block;background:var(--okl);color:var(--ok);border-radius:8px;padding:4px 9px;font-size:12px;font-weight:800}
 .hidden-nm{color:var(--mut);font-weight:700}
-.cst{font-size:12px;color:var(--mut);text-align:center;margin:-8px 0 14px;font-weight:700}
+.cst{display:inline-block;margin-top:14px;font-size:14px;font-weight:800;padding:7px 14px;border-radius:99px;background:var(--pl);color:var(--prd);cursor:pointer}
+.cst:empty{display:none}
+.cst.ok{background:var(--okl);color:var(--ok)}
+.cst.bad{background:#fbe9e7;color:#b3261e}
 .donor{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:11px 14px;margin-bottom:8px;cursor:pointer;box-shadow:var(--sh)}
 .donor:hover{border-color:var(--pr)}
 .donor .rk{min-width:28px;height:28px;border-radius:99px;background:var(--pl);color:var(--prd);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
@@ -119,6 +122,7 @@ dialog h2{font-size:20px;font-weight:800;margin-bottom:14px}
       <div><span>סה"כ נתרם</span><b id="sTotal">₪0</b></div>
       <div><span>סה"כ שומש</span><b id="sUsed" style="color:var(--ok)">₪0</b></div>
     </div>
+    <div class="cst" id="cst" onclick="needNames(openCloud)"></div>
   </div>
 
   <div class="acts">
@@ -134,7 +138,6 @@ dialog h2{font-size:20px;font-weight:800;margin-bottom:14px}
     <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importBackup(this)">
   </div>
 
-  <div class="cst" id="cst"></div>
   <div class="selbar" id="selbar">
     <b id="selInfo">בחר תרומות ששומשו</b>
     <button onclick="openUse()">סמן כמשומש</button>
@@ -374,7 +377,7 @@ let cloud=null,pushT=0,pushing=false,again=false;
 try{cloud=JSON.parse(localStorage.getItem('tromot_cloud'))}catch(e){}
 const lget=k=>{try{return +localStorage.getItem(k)||0}catch(e){return 0}};
 const lset=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
-function cst(t){$('cst').textContent=t}
+function cst(t){const e=$('cst');e.textContent=t;e.className='cst'+(/✓/.test(t)?' ok':/⚠️|💾/.test(t)?' bad':'')}
 function cloudPost(o,c){c=c||cloud;return fetch(c.url,{method:'POST',body:JSON.stringify({...o,password:c.pw})}).then(r=>r.json())}
 const hm=t=>new Date(t).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
 function schedulePush(){if(!cloud)return;cst('☁️ שומר בענן…');clearTimeout(pushT);pushT=setTimeout(push,1500)}
@@ -389,7 +392,7 @@ async function push(){
   pushing=false;if(again){again=false;push()}
 }
 async function cloudSync(){
-  if(!cloud){cst('💾 נשמר במכשיר בלבד. לחץ "☁️ גיבוי לענן" והקלד את הסיסמה כדי לחבר');return}
+  if(!cloud){cst('💾 נשמר במכשיר בלבד · לחץ כאן לחיבור לענן');return}
   cst('☁️ בודק בענן…');
   try{
     const r=await cloudPost({action:'load'});
