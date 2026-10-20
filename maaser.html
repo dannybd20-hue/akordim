@@ -613,6 +613,15 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
 
 <div class="container">
 
+    <div id="cloudLogin" style="display:none;background:#e3f2fd;border:1px solid #90caf9;border-radius:14px;padding:14px;margin-bottom:14px">
+        <b>☁️ חיבור לענן</b>
+        <div style="font-size:13px;color:#555;margin:4px 0 10px">כדי לראות את אותם נתונים בטלפון ובמחשב, הזן את סיסמת המעשר בענן (פעם אחת בכל מכשיר).</div>
+        <div style="display:flex;gap:8px"><input id="cloudPw" type="password" placeholder="סיסמת מעשר בענן" style="flex:1;padding:10px;border:1px solid #90caf9;border-radius:10px;font:inherit" onkeyup="if(event.key==='Enter')cloudLogin()">
+        <button onclick="cloudLogin()" style="border:0;border-radius:10px;background:#1976d2;color:#fff;font:inherit;font-weight:700;padding:0 16px;cursor:pointer">חבר</button></div>
+        <div id="cloudErr" style="font-size:13px;color:#c62828;margin-top:6px"></div>
+    </div>
+    <div id="cloudStatus" style="text-align:center;font-size:12px;font-weight:700;margin:-4px 0 10px"></div>
+
     <!-- כרטיס יתרה -->
     <div class="balance-card">
         <div class="balance-title">יתרת מעשר נוכחית לתשלום</div>
@@ -790,13 +799,56 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="maaser-core.js?v=1"></script><!-- להעלות את המספר בכל שינוי ב-maaser-core.js -->
 
 <script>
     // ============================
     // נתונים
     // ============================
-    let transactions = JSON.parse(localStorage.getItem('maaser_transactions') || '[]');
-    let payments = JSON.parse(localStorage.getItem('maaser_payments') || '[]');
+    /* הנתונים נשמרים בענן (אותו סקריפט של הקניות, קובץ וסיסמה נפרדים) וגם במכשיר.
+       כל שינוי הוא פעולה (op) שמוחלת מיד במכשיר ונשלחת לענן. החיוב החודשי נעשה בענן. */
+    const MZ_CLOUD = 'https://script.google.com/macros/s/AKfycbw_ZAnKnbqY_G0pRA186ylvFoUOpEVtL9rHYEDJGtfmcX2eYlAzIIamDschjgnKCXtuXw/exec';
+    const lsGet = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
+    const lsPut = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+    const todayT = () => { const n = new Date(); return { y: n.getFullYear(), m: n.getMonth() + 1, d: n.getDate() }; };
+    let st = lsGet('maaser_state'), queue = lsGet('maaser_queue') || [], mzPw = lsGet('maaser_cloud_pw') || '', mzBusy = false;
+    if (!st) st = maaserSeed(todayT());
+    let transactions, payments, recurring;
+    function bind() { transactions = st.transactions; payments = st.payments; recurring = st.recurring; }
+    bind();
+    function persist() { lsPut('maaser_state', st); lsPut('maaser_queue', queue); }
+    function commit(o) {
+        const t = todayT();
+        maaserApply(st, o, t);
+        if (mzPw) queue.push(o); else maaserAuto(st, t);
+        persist(); bind(); updateDisplay(); syncMaaser();
+    }
+    function cloudStatus(text, color) { const e = document.getElementById('cloudStatus'); e.textContent = text; e.style.color = color || ''; }
+    async function syncMaaser() {
+        if (!mzPw || mzBusy) return;
+        mzBusy = true; const sent = queue.slice();
+        try {
+            const r = await fetch(MZ_CLOUD, { method: 'POST', body: JSON.stringify({ app: 'maaser', password: mzPw, ops: sent, rev: sent.length ? -1 : st.rev }) }).then(r => r.json());
+            if (!r.ok) { if (r.error === 'password') { mzPw = ''; lsPut('maaser_cloud_pw', null); showCloudLogin('הסיסמה לענן השתנתה, נא להזין שוב'); } else cloudStatus('⚠️ שגיאה בסנכרון', '#c62828'); return; }
+            queue = queue.slice(sent.length);
+            if (r.state) { st = r.state; const t = todayT(); queue.forEach(o => maaserApply(st, o, t)); }
+            persist(); bind(); updateDisplay(); cloudStatus('☁️ מסונכרן בענן', '#2e7d32');
+        } catch (e) { cloudStatus('📴 אין חיבור, השינויים יישלחו כשיחזור', '#ef6c00'); }
+        finally { mzBusy = false; if (queue.length) setTimeout(syncMaaser, 2000); }
+    }
+    function showCloudLogin(msg) { document.getElementById('cloudLogin').style.display = ''; document.getElementById('cloudErr').textContent = msg || ''; cloudStatus(''); }
+    async function cloudLogin() {
+        const v = document.getElementById('cloudPw').value.trim(), e = document.getElementById('cloudErr');
+        if (!v) return;
+        e.textContent = 'מתחבר…';
+        try {
+            const r = await fetch(MZ_CLOUD, { method: 'POST', body: JSON.stringify({ app: 'maaser', password: v, ops: [], rev: -1 }) }).then(r => r.json());
+            if (!r.ok) { e.textContent = r.error === 'password' ? 'סיסמה שגויה (או שהסקריפט בגוגל עוד לא עודכן)' : 'שגיאה: ' + r.error; return; }
+            // הענן הוא המקור: מה שהיה רק במכשיר הזה מוחלף בנתונים מהענן
+            mzPw = v; lsPut('maaser_cloud_pw', v); queue = []; st = r.state; persist(); bind();
+            document.getElementById('cloudLogin').style.display = 'none'; updateDisplay(); cloudStatus('☁️ מסונכרן בענן', '#2e7d32');
+        } catch (x) { e.textContent = 'אין חיבור לאינטרנט, נסה שוב'; }
+    }
     let selectedPercent = 10;
     const VAT_RATE = 1.18; // מע"מ 18%
 
@@ -862,7 +914,7 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
                 <div class="card-meta">
                     <div class="maaser-badge">₪${t.maaserAmount.toFixed(2)}</div>
                     <div class="card-date">${t.date}</div>
-                    <button class="delete-btn" title="מחק עסקה" onclick="deleteTransaction(${t.id})">
+                    <button class="delete-btn" title="מחק עסקה" onclick="deleteTransaction('${t.id}')">
                         <i class="fa-regular fa-trash-can"></i>
                     </button>
                 </div>
@@ -900,7 +952,7 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
                 <div class="card-meta">
                     <div class="paid-badge">₪${p.amount.toFixed(2)}</div>
                     <div class="card-date">${p.date}</div>
-                    <button class="delete-btn" title="מחק תשלום" onclick="deletePayment(${p.id})">
+                    <button class="delete-btn" title="מחק תשלום" onclick="deletePayment('${p.id}')">
                         <i class="fa-regular fa-trash-can"></i>
                     </button>
                 </div>
@@ -954,7 +1006,7 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
     const today = () => { const n = new Date(); return `${String(n.getDate()).padStart(2, '0')}/${String(n.getMonth() + 1).padStart(2, '0')}/${n.getFullYear()}`; };
     // חיוב מעשר בסכום ידוע, בלי חישוב קנייה ומכירה
     function directTx(productName, amount) {
-        return { id: Date.now() + Math.random(), productName, buyPrice: 0, buyPriceNoVat: 0, sellPrice: 0, profit: 0,
+        return { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), productName, buyPrice: 0, buyPriceNoVat: 0, sellPrice: 0, profit: 0,
                  maaserPercent: 0, maaserAmount: amount, date: today(), direct: true };
     }
 
@@ -963,9 +1015,8 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
         if (txMode === 'direct') {
             const amount = parseFloat(document.getElementById('directAmount').value);
             if (!productName || !(amount > 0)) { alert('נא למלא תיאור וסכום'); return; }
-            transactions.push(directTx(productName, amount));
-            localStorage.setItem('maaser_transactions', JSON.stringify(transactions));
-            closeModals(); updateDisplay(); clearTransactionForm();
+            commit({ type: 'txadd', tx: directTx(productName, amount) });
+            closeModals(); clearTransactionForm();
             return;
         }
         const buy = parseFloat(document.getElementById('buyPrice').value);
@@ -983,8 +1034,8 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
         const now = new Date();
         const date = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
 
-        transactions.push({
-            id: Date.now(),
+        commit({ type: 'txadd', tx: {
+            id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
             productName,
             buyPrice: buy,
             buyPriceNoVat: buyNoVat,
@@ -993,11 +1044,9 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
             maaserPercent: selectedPercent,
             maaserAmount: maaser,
             date
-        });
+        } });
 
-        localStorage.setItem('maaser_transactions', JSON.stringify(transactions));
         closeModals();
-        updateDisplay();
         clearTransactionForm();
     }
 
@@ -1022,17 +1071,8 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
         const now = new Date();
         const date = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
 
-        payments.push({
-            id: Date.now(),
-            recipient,
-            amount,
-            note,
-            date
-        });
-
-        localStorage.setItem('maaser_payments', JSON.stringify(payments));
+        commit({ type: 'payadd', pay: { id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), recipient, amount, note, date } });
         closeModals();
-        updateDisplay();
         document.getElementById('paymentRecipient').value = '';
         document.getElementById('paymentAmount').value = '';
         document.getElementById('paymentNote').value = '';
@@ -1043,17 +1083,13 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
     // ============================
     function deleteTransaction(id) {
         if (confirm('האם אתה בטוח שברצונך למחוק עסקה זו?')) {
-            transactions = transactions.filter(t => t.id !== id);
-            localStorage.setItem('maaser_transactions', JSON.stringify(transactions));
-            updateDisplay();
+            commit({ type: 'txdel', id });
         }
     }
 
     function deletePayment(id) {
         if (confirm('האם אתה בטוח שברצונך למחוק תשלום זה?')) {
-            payments = payments.filter(p => p.id !== id);
-            localStorage.setItem('maaser_payments', JSON.stringify(payments));
-            updateDisplay();
+            commit({ type: 'paydel', id });
         }
     }
 
@@ -1145,73 +1181,31 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
     // כל תרומה נרשמת כתשלום מעשר פעם בחודש, ביום שנקבע לה (ברירת מחדל: 10).
     // last = החודש האחרון שנרשם ('2026-10'). בפתיחת האפליקציה נרשמים כל החודשים שהגיע זמנם.
     // ============================
-    const monthKey = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-    const nextMonth = k => { const [y, m] = k.split('-').map(Number); return monthKey(new Date(y, m, 1)); };
-    let recurring = JSON.parse(localStorage.getItem('maaser_recurring') || 'null');
-    if (!recurring) {
-        // החודש הנוכחי נחשב כבר "נרשם" אם היום כבר עבר, כדי לא לחייב פעמיים מה שכבר שולם
-        const now = new Date(), cur = monthKey(now);
-        const prev = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-        recurring = [['הרב איתן', 2000], ['בית הכנסת המרכזי', 100], ['קהילת רמת בית שמש', 200], ['בית חב"ד', 200],
-                     ['מלך עוזר', 200], ['תפארת יעקב', 200], ['שיחת השבוע', 195]]
-            .map(([name, amount], i) => ({ id: Date.now() + i, name, amount, day: 10, active: true, last: now.getDate() >= 10 ? cur : prev }));
-        saveRecurring();
-    }
-    function saveRecurring() { localStorage.setItem('maaser_recurring', JSON.stringify(recurring)); }
-    function due(r, now) {
-        const out = [], cur = monthKey(now);
-        for (let k = nextMonth(r.last); k <= cur; k = nextMonth(k)) {
-            if (k === cur && now.getDate() < r.day) break;
-            out.push(k);
-        }
-        return out;
-    }
-    function postMonth(r, k) {
-        const [y, m] = k.split('-');
-        payments.push({ id: Date.now() + Math.random(), recipient: r.name, amount: r.amount,
-                        note: 'תרומה קבועה · חודש ' + m + '/' + y, date: String(r.day).padStart(2, '0') + '/' + m + '/' + y, recurring: r.id });
-        r.last = k;
-    }
-    function applyRecurring() {
-        const now = new Date();
-        let n = 0;
-        recurring.filter(r => r.active).forEach(r => due(r, now).forEach(k => { postMonth(r, k); n++; }));
-        if (n) { localStorage.setItem('maaser_payments', JSON.stringify(payments)); saveRecurring(); }
-        return n;
-    }
+    const monthKey = d => mzMonth(d.getFullYear(), d.getMonth() + 1);
+    const nextMonth = mzNext;
     /* רישום ידני של החודש הנוכחי, למקרה שהתרומות של החודש עוד לא נרשמו */
     function postRecurringNow() {
-        const cur = monthKey(new Date()), list = recurring.filter(r => r.active && r.last < cur);
-        if (!list.length || !confirm('לרשום עכשיו את התרומות הקבועות של החודש הזה (' + list.length + ')?')) return;
-        list.forEach(r => postMonth(r, cur));
-        localStorage.setItem('maaser_payments', JSON.stringify(payments)); saveRecurring(); updateDisplay();
+        const cur = monthKey(new Date()), n = recurring.filter(r => r.active && r.last < cur).length;
+        if (n && confirm('לרשום עכשיו את התרומות הקבועות של החודש הזה (' + n + ')?')) commit({ type: 'recnow' });
     }
     function addRecurring() {
         const name = document.getElementById('recName').value.trim(), amount = parseFloat(document.getElementById('recAmount').value);
         const day = Math.min(28, Math.max(1, parseInt(document.getElementById('recDay').value, 10) || 10));
         if (!name || !(amount > 0)) { alert('נא למלא למי ואת הסכום'); return; }
-        const now = new Date();
-        recurring.push({ id: Date.now(), name, amount, day, active: true,
-                         last: now.getDate() >= day ? monthKey(now) : monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1)) });
-        saveRecurring();
+        commit({ type: 'recadd', rec: { id: 'r' + Date.now().toString(36), name, amount, day, active: true } });
         document.getElementById('recName').value = ''; document.getElementById('recAmount').value = '';
-        updateDisplay();
     }
     function editRecurring(id, field, value) {
-        const r = recurring.find(x => x.id === id); if (!r) return;
-        if (field === 'amount') { const v = parseFloat(value); if (!(v >= 0)) { updateDisplay(); return; } r.amount = v; }
-        if (field === 'active') r.active = value;
-        saveRecurring(); updateDisplay();
+        if (field === 'amount') { const v = parseFloat(value); if (!(v >= 0)) { updateDisplay(); return; } value = v; }
+        commit({ type: 'recedit', id, [field]: value });
     }
     function renameRecurring(id) {
-        const r = recurring.find(x => x.id === id), n = r && prompt('שם התרומה:', r.name);
-        if (n && n.trim()) { r.name = n.trim(); saveRecurring(); updateDisplay(); }
+        const r = recurring.find(x => String(x.id) === String(id)), n = r && prompt('שם התרומה:', r.name);
+        if (n && n.trim()) commit({ type: 'recedit', id, name: n.trim() });
     }
     function deleteRecurring(id) {
-        const r = recurring.find(x => x.id === id);
-        if (r && confirm('להפסיק את התרומה הקבועה ל"' + r.name + '"? תשלומים שכבר נרשמו יישארו.')) {
-            recurring = recurring.filter(x => x.id !== id); saveRecurring(); updateDisplay();
-        }
+        const r = recurring.find(x => String(x.id) === String(id));
+        if (r && confirm('להפסיק את התרומה הקבועה ל"' + r.name + '"? תשלומים שכבר נרשמו יישארו.')) commit({ type: 'recdel', id });
     }
     function renderRecurring() {
         const now = new Date(), cur = monthKey(now);
@@ -1226,29 +1220,19 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
         btn.textContent = '➕ לרשום עכשיו את התרומות של החודש הזה (' + pend + ')';
         document.getElementById('recList').innerHTML = recurring.length ? recurring.map(r => `
             <div class="rec-row${r.active ? '' : ' off'}">
-                <div class="rec-name" title="לחץ לשינוי השם" style="cursor:pointer" onclick="renameRecurring(${r.id})">${esc(r.name)} ✏️<small>${r.active ? 'הבא: ' + nextDate(r) : 'מושהה'}</small></div>
-                <input class="rec-amt" type="number" step="any" value="${r.amount}" title="סכום חודשי" onchange="editRecurring(${r.id},'amount',this.value)">
-                <button title="${r.active ? 'השהה' : 'הפעל'}" onclick="editRecurring(${r.id},'active',${!r.active})">${r.active ? '⏸️' : '▶️'}</button>
-                <button title="מחק" onclick="deleteRecurring(${r.id})"><i class="fa-regular fa-trash-can"></i></button>
+                <div class="rec-name" title="לחץ לשינוי השם" style="cursor:pointer" onclick="renameRecurring('${r.id}')">${esc(r.name)} ✏️<small>${r.active ? 'הבא: ' + nextDate(r) : 'מושהה'}</small></div>
+                <input class="rec-amt" type="number" step="any" value="${r.amount}" title="סכום חודשי" onchange="editRecurring('${r.id}','amount',this.value)">
+                <button title="${r.active ? 'השהה' : 'הפעל'}" onclick="editRecurring('${r.id}','active',${!r.active})">${r.active ? '⏸️' : '▶️'}</button>
+                <button title="מחק" onclick="deleteRecurring('${r.id}')"><i class="fa-regular fa-trash-can"></i></button>
             </div>`).join('') : '<div class="empty-state" style="border:0">אין תרומות קבועות</div>';
     }
 
-    // עדכון חד-פעמי (אוקטובר 2026): יתרת פתיחה, עסקת המצלמות ותרומת 770 החודשית
-    if (!localStorage.getItem('maaser_update_2026_10')) {
-        transactions.push(directTx('יתרת מעשר (פתיחה)', 7065), directTx('התקנת מצלמות', 160));
-        localStorage.setItem('maaser_transactions', JSON.stringify(transactions));
-        if (!recurring.some(r => r.amount === 770)) {
-            const now = new Date();
-            recurring.splice(4, 0, { id: Date.now() + 99, name: 'בית חב"ד (770)', amount: 770, day: 10, active: true,
-                last: now.getDate() >= 10 ? monthKey(now) : monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1)) });
-            saveRecurring();
-        }
-        localStorage.setItem('maaser_update_2026_10', '1');
-    }
-
     // טעינה ראשונית
-    applyRecurring();
+    if (!mzPw) { maaserAuto(st, todayT()); persist(); bind(); }
     updateDisplay();
+    if (mzPw) syncMaaser(); else showCloudLogin();
+    setInterval(() => { if (!document.hidden) syncMaaser(); }, 30000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) syncMaaser(); });
     if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 
