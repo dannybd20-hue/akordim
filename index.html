@@ -60,7 +60,7 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
 </dialog>
 
 <script>
-/* הסיסמה של האקורדים נבדקת בענן (אותה סיסמה של מצב עריכה).
+/* סיסמת הכניסה לאקורדים נבדקת בענן (ENTRY_PASSWORD בסקריפט), והיא שונה מסיסמת מצב העריכה.
    הסיסמה של המעשר נקבעת בכניסה הראשונה ונשמרת במכשיר כגיבוב בלבד, כמו נתוני המעשר עצמם.
    אחרי כניסה מוצלחת נשמר סימון ל-sessionStorage, והאפליקציה עצמה בודקת אותו. */
 const CLOUD='https://script.google.com/macros/s/AKfycbw7yTUBMzmoOx1D2ZQI8lvjMeYauUqxHhdgOtkcEMb61mwqUBkcxynOOgMfgbtkBz1u/exec';
@@ -74,8 +74,8 @@ async function hash(s){
   const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('dbd-gate:'+s));
   return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
-async function cloudCheck(p){
-  const r=await fetch(CLOUD,{method:'POST',body:JSON.stringify({action:'check',password:p})}).then(r=>r.json());
+async function cloudCheck(p,action){
+  const r=await fetch(CLOUD,{method:'POST',body:JSON.stringify({action:action||'check',password:p})}).then(r=>r.json());
   return !!r.ok;
 }
 function enter(a){
@@ -110,10 +110,10 @@ async function submit(){
   try{
     if(mode==='chords'){
       let ok=false;
-      try{ok=await cloudCheck(v);if(ok)put('gate_chords_hash',await hash(v))}
+      try{ok=await cloudCheck(v,'enter');if(ok)put('gate_entry_hash',await hash(v))}
       catch(x){
         /* אין אינטרנט: בודקים מול הסיסמה האחרונה שאושרה בענן במכשיר הזה */
-        const h=get('gate_chords_hash');
+        const h=get('gate_entry_hash');
         if(!h){err('אין חיבור לאינטרנט, נסה שוב');return}
         ok=h===await hash(v);
       }
