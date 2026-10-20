@@ -46,6 +46,8 @@ body::after{width:380px;height:380px;bottom:-160px;left:-120px;background:radial
 .app .go{position:absolute;top:22px;left:18px;width:32px;height:32px;border-radius:99px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--c) 12%,transparent);color:var(--c);font-size:17px;font-style:normal;font-weight:900;transition:.2s}
 .app:hover .go{transform:translateX(-3px)}
 .gate{width:100%;max-width:360px;background:var(--card);border:1px solid var(--bd);border-radius:22px;padding:24px 20px;box-shadow:0 10px 30px #312e811a;text-align:center}
+.rem{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:600;color:var(--mut);margin:4px 0 6px;cursor:pointer}
+.rem input{width:18px;height:18px;margin:0;accent-color:#4f46e5}
 .gt{margin:0 0 14px;font:800 17px Rubik,Heebo,sans-serif}
 .gate .pw{margin-bottom:6px}
 button.b.big{width:100%;padding:12px;font-size:16px;border-radius:14px;margin-top:6px;background:linear-gradient(90deg,#4f46e5,#0ea5e9);border:0;color:#fff}
@@ -80,6 +82,7 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
   <p class="gt">🔒 הזן סיסמה כדי להיכנס</p>
   <div class="pw"><input id="p1" type="password" autocomplete="current-password" placeholder="סיסמה"><button type="button" class="eye" onclick="eye(this)" title="הצג סיסמה">👁️</button></div>
   <p class="err" id="er"></p>
+  <label class="rem"><input type="checkbox" id="rem" checked> 📱 לזכור במכשיר הזה (לא לבקש שוב)</label>
   <button class="b pr big" id="ok" onclick="submit()">כניסה</button>
 </section>
 
@@ -112,6 +115,9 @@ function eye(b,show){const i=b.previousElementSibling;show=show===undefined?i.ty
 function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function sget(k){try{return sessionStorage.getItem(k)}catch(e){return null}}
 function sput(k,v){try{v==null?sessionStorage.removeItem(k):sessionStorage.setItem(k,v)}catch(e){}}
+function lput(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}
+/* פותח גישה בדפדפן הנוכחי: הסימונים שהאפליקציות בודקות */
+function grant(A,pw){sput('hub_access',JSON.stringify(A));A.forEach(a=>sput('gate_'+a,'1'));if(pw&&A.includes('shopping'))sput('hub_pw',pw)}
 async function hash(s){
   const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('dbd-gate:'+s));
   return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
@@ -136,15 +142,17 @@ async function submit(){
   if(!v){err('נא להקליד סיסמה');return}
   const A=ACCESS[await hash(v)];
   if(!A){err('סיסמה שגויה');$('p1').select();return}
-  sput('hub_access',JSON.stringify(A));
-  A.forEach(a=>sput('gate_'+a,'1'));
   /* אפליקציית הקניות מתחברת לענן עם הסיסמה המשפחתית; מנסים קודם את מה שהוקלד כאן */
-  if(A.includes('shopping'))sput('hub_pw',v);
+  grant(A,v);
+  /* "לזכור במכשיר": הגישה נשמרת גם אחרי סגירת הדפדפן, עד שלוחצים יציאה */
+  if($('rem').checked){lput('hub_access',JSON.stringify(A));lput('hub_pw',A.includes('shopping')?v:null)}
+  sput('hub_seen','1');
   $('p1').value='';
   if(A.length===1){location.href=PAGES[A[0]];return}
   show();
 }
 function logout(){
+  lput('hub_access',null);lput('hub_pw',null);lput('tromot_names',null);
   sput('hub_access',null);sput('hub_pw',null);Object.keys(PAGES).forEach(a=>sput('gate_'+a,null));show();
 }
 $('p1').addEventListener('keyup',e=>{if(e.key==='Enter')submit()});
@@ -160,6 +168,12 @@ $('p1').addEventListener('keyup',e=>{if(e.key==='Enter')submit()});
     dd.push(gem(+v('day'))+' ב'+v('month').replace(/^ב/,'')+' '+gem(+v('year')%1000));
   }catch(e){}
   $('date').innerHTML=dd.map(x=>'<b>'+x+'</b>').join('');
+  /* גישה שנשמרה במכשיר: משחזרים אותה, ונכנסים ישר לאפליקציה שביקשו או לאפליקציה היחידה (פעם אחת בכל פתיחה) */
+  if(!access().length){let A=[];try{A=JSON.parse(get('hub_access'))||[]}catch(e){}if(A.length)grant(A,get('hub_pw'))}
+  const A=access(),want=new URLSearchParams(location.search).get('open');
+  if(A.includes(want)){location.replace(PAGES[want]);return}
+  if(A.length===1&&!sget('hub_seen')){sput('hub_seen','1');location.replace(PAGES[A[0]]);return}
+  sput('hub_seen','1');
   show();
 })();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});

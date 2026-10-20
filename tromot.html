@@ -204,23 +204,23 @@ let D=[],filter='open',page=1,editId=null,method='',useIds=[];
 const PAGE=60;
 
 /* שמות התורמים וכל פעולה שמשנה נתונים חסומים עד שמקלידים את הקוד (2014; נשמר כאן רק הגיבוב שלו).
-   הקוד נזכר עד סגירת הדפדפן. כשהשמות מוסתרים גם ההערות, החיפוש לפי שם והייצוא חסומים. */
+   הקוד נזכר במכשיר עד שלוחצים נעילה. כשהשמות מוסתרים גם ההערות, החיפוש לפי שם והייצוא חסומים. */
 const MASTER_HASH='d8acc45287fb852ef048950cf2edfc575614ffa5437f90d6780ae251058d723a';
 const NAMES_HASH='52357890d3a4c5b58f8f260db71bc3fbeaa6a52168e0d3bdd24023455612c596';
 let showNames=false,afterCode=null;
-try{showNames=sessionStorage.getItem('tromot_names')==='1'}catch(e){}
+try{showNames=localStorage.getItem('tromot_names')==='1'||sessionStorage.getItem('tromot_names')==='1'}catch(e){}
 async function sha(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 function needNames(fn){if(showNames){fn();return}afterCode=fn;$('codeIn').value='';$('codeErr').style.display='none';$('dCode').showModal();$('codeIn').focus()}
 async function submitCode(){
   const cv=$('codeIn').value.trim();
   /* גם הקוד הראשי של האתר פותח את השמות והעריכה */
   if(await sha('dbd-names:'+cv)!==NAMES_HASH&&await sha('dbd-gate:'+cv)!==MASTER_HASH){$('codeErr').style.display='block';return}
-  showNames=true;try{sessionStorage.setItem('tromot_names','1')}catch(e){}
+  showNames=true;try{localStorage.setItem('tromot_names','1')}catch(e){}
   $('dCode').close();nmBtn();render();const f=afterCode;afterCode=null;if(f)f();
 }
 function toggleNames(){
   if(!showNames){needNames(()=>{});return}
-  showNames=false;try{sessionStorage.removeItem('tromot_names')}catch(e){}
+  showNames=false;try{localStorage.removeItem('tromot_names');sessionStorage.removeItem('tromot_names')}catch(e){}
   if(document.body.classList.contains('selecting'))stopSelect();
   if(filter==='donors')setTab('all');nmBtn();render();
 }
