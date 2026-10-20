@@ -48,6 +48,12 @@ body::after{width:380px;height:380px;bottom:-160px;left:-120px;background:radial
 .gate{width:100%;max-width:360px;background:var(--card);border:1px solid var(--bd);border-radius:22px;padding:24px 20px;box-shadow:0 10px 30px #312e811a;text-align:center}
 .rem{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:600;color:var(--mut);margin:4px 0 6px;cursor:pointer}
 .rem input{width:18px;height:18px;margin:0;accent-color:#4f46e5}
+.live{position:fixed;top:12px;inset-inline-start:12px;z-index:5;display:flex;align-items:center;gap:7px;flex-wrap:wrap;max-width:230px;background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:7px 12px;font:inherit;font-size:13px;font-weight:700;color:var(--tx);box-shadow:0 6px 18px #0f172a14;cursor:pointer;text-align:start}
+.live[hidden]{display:none}
+.live i{width:9px;height:9px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 #22c55e88;animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 8px #22c55e00}100%{box-shadow:0 0 0 0 #22c55e00}}
+.live span{display:none;width:100%;font-size:12px;font-weight:600;color:var(--mut);line-height:1.6}
+.live.open span{display:block}
 .gt{margin:0 0 14px;font:800 17px Rubik,Heebo,sans-serif}
 .gate .pw{margin-bottom:6px}
 button.b.big{width:100%;padding:12px;font-size:16px;border-radius:14px;margin-top:6px;background:linear-gradient(90deg,#4f46e5,#0ea5e9);border:0;color:#fff}
@@ -73,6 +79,7 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
 </style>
 </head>
 <body>
+<button class="live" id="live" hidden onclick="this.classList.toggle('open')"><i></i><b id="liveN"></b><span id="liveD"></span></button>
 <header class="top">
   <img class="logo" src="icons/apps-192.png" alt="">
   <h1 class="hello"><span id="greet">שלום</span></h1>
@@ -177,6 +184,16 @@ $('p1').addEventListener('keyup',e=>{if(e.key==='Enter')submit()});
   show();
 })();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+<script src="presence.js"></script>
+<script>
+/* כמה מכשירים מחוברים עכשיו, ובאיזו אפליקציה (לחיצה על התווית מציגה פירוט) */
+const LIVE_NAMES={home:'בדף הבית',chords:'באקורדים',maaser:'במעשר',tromot:'בתרומות',shopping:'בקניות'};
+dbdPresence('home',r=>{
+  const n=r.total||0;if(!n)return;
+  $('live').hidden=false;$('liveN').textContent=n===1?'מחובר אחד עכשיו':n+' מחוברים עכשיו';
+  $('liveD').innerHTML=Object.keys(LIVE_NAMES).filter(k=>r.counts[k]).map(k=>LIVE_NAMES[k]+': '+r.counts[k]).join('<br>');
+});
 </script>
 </body>
 </html>

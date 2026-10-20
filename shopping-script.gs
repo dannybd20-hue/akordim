@@ -94,11 +94,32 @@ function failed_(scope) {
 }
 function passed_(scope) { CacheService.getScriptCache().remove('fails_' + scope); }
 
+/* "מי מחובר עכשיו" בדף הבית: כל דף פתוח באתר שולח מזהה מכשיר אקראי ושם האפליקציה.
+   לא צריך סיסמה, ומוחזר רק מספר המכשירים בכל אפליקציה. */
+const PRESENCE_PAGES = ['home', 'chords', 'maaser', 'tromot', 'shopping'];
+function presence_(d) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return out_({ ok: false, error: 'busy' });
+  try {
+    const c = CacheService.getScriptCache(), now = Date.now();
+    let m = {};
+    try { m = JSON.parse(c.get('presence') || '{}'); } catch (x) {}
+    Object.keys(m).forEach(k => { if (now - m[k].t > 100000) delete m[k]; });
+    const id = String(d.id || '').slice(0, 40);
+    if (id && PRESENCE_PAGES.indexOf(d.page) >= 0) { if (d.leave) delete m[id]; else m[id] = { a: d.page, t: now }; }
+    c.put('presence', JSON.stringify(m), 600);
+    const counts = {};
+    Object.keys(m).forEach(k => { counts[m[k].a] = (counts[m[k].a] || 0) + 1; });
+    return out_({ ok: true, total: Object.keys(m).length, counts: counts });
+  } finally { lock.releaseLock(); }
+}
+
 function doGet() { return out_({ ok: true, app: 'shopping' }); }
 
 function doPost(e) {
   let d;
   try { d = JSON.parse(e.postData.contents); } catch (x) { return out_({ ok: false, error: 'bad' }); }
+  if (d.app === 'presence') return presence_(d);
   if (d.app === 'maaser') return maaserPost_(d);
   if (locked_('shop')) return out_({ ok: false, error: 'locked' });
   if (d.password !== SHOP_PASSWORD) { failed_('shop'); return out_({ ok: false, error: 'password' }); }
