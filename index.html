@@ -104,7 +104,7 @@ function ask(a){
 function forgot(){setMode('reset')}
 
 async function submit(){
-  const v=$('p1').value;err('');
+  const v=$('p1').value.trim();err('');
   if(!v){err('נא להקליד סיסמה');return}
   $('ok').disabled=true;
   try{
