@@ -76,6 +76,14 @@ body.selecting .card:not(.used) .chk{display:block}
 .card.used .nm,.card.used .amt,.card.used .pur{text-decoration:line-through;text-decoration-color:#8d6e63aa;text-decoration-thickness:1.5px;color:#a8968a}
 .card.used .meta,.card.used .note{opacity:.75}
 .usedtag{margin-top:7px;display:inline-block;background:var(--okl);color:var(--ok);border-radius:8px;padding:4px 9px;font-size:12px;font-weight:800}
+.hidden-nm{color:var(--mut);font-weight:700}
+.cst{font-size:12px;color:var(--mut);text-align:center;margin:-8px 0 14px;font-weight:700}
+.donor{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:11px 14px;margin-bottom:8px;cursor:pointer;box-shadow:var(--sh)}
+.donor:hover{border-color:var(--pr)}
+.donor .rk{min-width:28px;height:28px;border-radius:99px;background:var(--pl);color:var(--prd);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+.donor .dn{flex:1;min-width:0}.donor .dn b{display:block;font-size:16px}.donor .dn small{color:var(--mut);font-size:12px}
+.donor .dt{text-align:left;font-weight:800;color:var(--prd);font-size:17px;white-space:nowrap}.donor .dt small{display:block;font-size:11px;color:var(--ok);font-weight:700}
+.dhead{display:flex;justify-content:space-between;font-size:12px;color:var(--mut);font-weight:700;padding:0 14px 6px}
 .empty{text-align:center;color:var(--mut);padding:34px 16px;border:1px dashed var(--bd);border-radius:14px;background:var(--card)}
 .more{display:block;margin:6px auto 0;background:var(--card);border:1px solid var(--bd);border-radius:11px;padding:9px 18px;font-weight:700;color:var(--prd);cursor:pointer}
 dialog{border:0;border-radius:20px;padding:22px;width:min(440px,calc(100% - 24px));max-height:90vh;background:var(--card);color:var(--tx);box-shadow:0 20px 40px #0003;margin:auto}
@@ -118,12 +126,15 @@ dialog h2{font-size:20px;font-weight:800;margin-bottom:14px}
     <button class="btn sec" onclick="startSelect()">✔️ השתמשתי בכסף</button>
   </div>
   <div class="tools">
-    <button onclick="exportExcel()">📊 ייצוא לאקסל</button>
-    <button onclick="exportBackup()">💾 שמירת גיבוי</button>
+    <button onclick="needNames(exportExcel)">📊 ייצוא לאקסל</button>
+    <button onclick="needNames(exportBackup)">💾 שמירת גיבוי</button>
     <button onclick="$('imp').click()">📂 ייבוא גיבוי</button>
+    <button onclick="openCloud()">☁️ גיבוי לענן</button>
+    <button id="nmBtn" onclick="toggleNames()">👁️ הצג שמות</button>
     <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importBackup(this)">
   </div>
 
+  <div class="cst" id="cst"></div>
   <div class="selbar" id="selbar">
     <b id="selInfo">בחר תרומות ששומשו</b>
     <button onclick="openUse()">סמן כמשומש</button>
@@ -134,7 +145,7 @@ dialog h2{font-size:20px;font-weight:800;margin-bottom:14px}
     <input id="q" type="search" placeholder="🔎 חיפוש לפי שם, מטרה או שימוש" oninput="page=1;render()">
     <select id="fm" onchange="page=1;render()"><option value="">כל אמצעי התשלום</option><option>העברה</option><option>מזומן</option><option>ביט</option><option value="-">לא צוין</option></select>
     <div class="tabs" id="tabs">
-      <button data-f="all" class="on">הכול</button><button data-f="open">זמין</button><button data-f="used">שומש</button>
+      <button data-f="all" class="on">הכול</button><button data-f="open">זמין</button><button data-f="used">שומש</button><button data-f="donors">👥 תורמים</button>
     </div>
   </div>
   <div id="list"></div>
@@ -161,6 +172,24 @@ dialog h2{font-size:20px;font-weight:800;margin-bottom:14px}
   <div class="dl"><button class="btn sec" onclick="$('dUse').close()">ביטול</button><button class="btn pr" style="flex:2" onclick="saveUse()">אישור</button></div>
 </dialog>
 
+<dialog id="dCloud">
+  <h2>☁️ גיבוי לענן</h2>
+  <p class="hint">הנתונים יישמרו בגוגל דרייב שלך, בגיליון "תרומות בית כנסת", עם עותק יומי. כך אפשר לפתוח אותם גם במכשיר אחר. מתקינים פעם אחת את <a href="tromot-script.gs" target="_blank" style="color:var(--prd);font-weight:700">סקריפט הגיבוי</a> (ההוראות כתובות בראש הקוד).</p>
+  <div class="fg"><label>כתובת הסקריפט</label><input id="cUrl" dir="ltr" placeholder="https://script.google.com/macros/s/.../exec"></div>
+  <div class="fg"><label>סיסמת הסקריפט</label><input id="cPw" type="password"></div>
+  <p class="hint" id="cMsg" style="font-weight:700"></p>
+  <div class="dl"><button class="btn sec" onclick="disconnect()" id="cOff">ניתוק</button><button class="btn pr" style="flex:2" onclick="connect()">חיבור וגיבוי</button></div>
+  <button class="btn sec sm" style="width:100%;margin-top:10px" onclick="$('dCloud').close()">סגירה</button>
+</dialog>
+
+<dialog id="dCode">
+  <h2>👁️ הצגת שמות התורמים</h2>
+  <p class="hint">הקלד את הקוד כדי לראות את שמות התורמים:</p>
+  <div class="fg"><input id="codeIn" type="password" inputmode="numeric" style="text-align:center" onkeyup="if(event.key==='Enter')submitCode()"></div>
+  <p class="hint" id="codeErr" style="color:#b3261e;font-weight:700;display:none">קוד שגוי</p>
+  <div class="dl"><button class="btn sec" onclick="$('dCode').close()">ביטול</button><button class="btn pr" style="flex:2" onclick="submitCode()">הצג</button></div>
+</dialog>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -171,8 +200,30 @@ const KEY='tromot_data',$=id=>document.getElementById(id);
 let D=[],filter='all',page=1,editId=null,method='',useIds=[];
 const PAGE=60;
 
+/* שמות התורמים מוסתרים עד שמקלידים את הקוד (2014; נשמר כאן רק הגיבוב שלו).
+   הקוד נזכר עד סגירת הדפדפן. כשהשמות מוסתרים גם ההערות, החיפוש לפי שם והייצוא חסומים. */
+const NAMES_HASH='52357890d3a4c5b58f8f260db71bc3fbeaa6a52168e0d3bdd24023455612c596';
+let showNames=false,afterCode=null;
+try{showNames=sessionStorage.getItem('tromot_names')==='1'}catch(e){}
+async function sha(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+function needNames(fn){if(showNames){fn();return}afterCode=fn;$('codeIn').value='';$('codeErr').style.display='none';$('dCode').showModal();$('codeIn').focus()}
+async function submitCode(){
+  if(await sha('dbd-names:'+$('codeIn').value.trim())!==NAMES_HASH){$('codeErr').style.display='block';return}
+  showNames=true;try{sessionStorage.setItem('tromot_names','1')}catch(e){}
+  $('dCode').close();nmBtn();render();const f=afterCode;afterCode=null;if(f)f();
+}
+function toggleNames(){
+  if(!showNames){needNames(()=>{});return}
+  showNames=false;try{sessionStorage.removeItem('tromot_names')}catch(e){}
+  if(filter==='donors')setTab('all');nmBtn();render();
+}
+function nmBtn(){$('nmBtn').textContent=showNames?'🙈 הסתר שמות':'👁️ הצג שמות'}
+
 try{D=JSON.parse(localStorage.getItem(KEY))||[]}catch(e){D=[]}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(D));return true}catch(e){toast('⚠️ השמירה במכשיר נכשלה');return false}}
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(D));localStorage.setItem('tromot_changed',Date.now())}catch(e){toast('⚠️ השמירה במכשיר נכשלה');return false}
+  schedulePush();return true;
+}
 const ils=n=>'₪'+Number(n||0).toLocaleString('he-IL',{maximumFractionDigits:2});
 const today=()=>new Date().toISOString().slice(0,10);
 const fmtDate=d=>d?d.split('-').reverse().join('/'):'';
@@ -186,19 +237,20 @@ function render(){
   const tot=D.reduce((s,d)=>s+d.amount,0),used=D.filter(d=>d.used).reduce((s,d)=>s+d.amount,0);
   $('sTotal').textContent=ils(tot);$('sUsed').textContent=ils(used);$('sAvail').textContent=ils(tot-used);
   const q=$('q').value.trim(),fm=$('fm').value;
+  if(filter==='donors'){renderDonors(q,fm);return}
   let L=sorted().filter(d=>filter==='all'||(filter==='used')===!!d.used);
   if(fm)L=L.filter(d=>fm==='-'?!d.method:d.method===fm);
-  if(q)L=L.filter(d=>[d.name,d.purpose,d.note,d.usedFor,String(d.amount)].join(' ').includes(q));
+  if(q)L=L.filter(d=>(showNames?[d.name,d.purpose,d.note,d.usedFor,String(d.amount)]:[d.purpose,d.usedFor,String(d.amount)]).join(' ').includes(q));
   const box=$('list');
   if(!L.length){box.innerHTML=`<div class="empty">${D.length?'לא נמצאו תרומות':'אין תרומות עדיין.<br>לחץ "תרומה חדשה", או ייבא קובץ גיבוי.'}</div>`;return}
   box.innerHTML=L.slice(0,page*PAGE).map(d=>`
     <div class="card${d.used?' used':''}" data-id="${d.id}">
       <input type="checkbox" class="chk" ${useIds.includes(d.id)?'checked':''} onchange="toggleSel(${d.id},this.checked)">
       <div class="main">
-        <div class="top"><span class="nm">${esc(d.name)||'<span style="color:var(--mut)">ללא שם</span>'}</span><span class="amt">${ils(d.amount)}</span></div>
+        <div class="top"><span class="nm">${showNames?(esc(d.name)||'<span class="hidden-nm">ללא שם</span>'):'<span class="hidden-nm">🔒 שם מוסתר</span>'}</span><span class="amt">${ils(d.amount)}</span></div>
         <div class="meta">${d.method?`<span class="chip m-${d.method}">${d.method}</span>`:''}${d.date?`<span>📅 ${fmtDate(d.date)}</span>`:''}</div>
         ${d.purpose?`<div class="pur">🎯 ${esc(d.purpose)}</div>`:''}
-        ${d.note?`<div class="note">${esc(d.note)}</div>`:''}
+        ${d.note&&showNames?`<div class="note">${esc(d.note)}</div>`:''}
         ${d.used?`<div class="usedtag">✔ שומש${d.usedFor?' עבור: '+esc(d.usedFor):''}${d.usedDate?' · '+fmtDate(d.usedDate):''}</div>`:''}
         <div class="ops">
           ${d.used?`<button onclick="unuse(${d.id})">↩️ בטל שימוש</button>`:`<button class="use" onclick="openUse([${d.id}])">✔️ שומש</button>`}
@@ -209,15 +261,35 @@ function render(){
     </div>`).join('')+(L.length>page*PAGE?`<button class="more" onclick="page++;render()">הצג עוד (${L.length-page*PAGE})</button>`:'');
 }
 
-$('tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;filter=b.dataset.f;page=1;[...$('tabs').children].forEach(x=>x.classList.toggle('on',x===b));render()};
+function setTab(f){filter=f;page=1;[...$('tabs').children].forEach(x=>x.classList.toggle('on',x.dataset.f===f));render()}
+$('tabs').onclick=e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.f)};
+
+/* רשימת תורמים: סכום כולל וכמה עוד זמין לכל שם. לחיצה מציגה את התרומות שלו */
+function renderDonors(q,fm){
+  if(!showNames){$('list').innerHTML='<div class="empty">רשימת התורמים מוסתרת.<br><br><button class="btn pr sm" onclick="needNames(()=>{})">👁️ הקלד קוד להצגה</button></div>';return}
+  const M=new Map();
+  D.filter(d=>!fm||(fm==='-'?!d.method:d.method===fm)).forEach(d=>{
+    const k=(d.name||'').trim()||'ללא שם';
+    const g=M.get(k)||{name:k,n:0,tot:0,open:0};g.n++;g.tot+=d.amount;if(!d.used)g.open+=d.amount;M.set(k,g);
+  });
+  let L=[...M.values()].filter(g=>!q||g.name.includes(q)).sort((a,b)=>(a.name==='ללא שם')-(b.name==='ללא שם')||b.tot-a.tot);
+  const box=$('list');
+  if(!L.length){box.innerHTML='<div class="empty">לא נמצאו תורמים</div>';return}
+  box.innerHTML=`<div class="dhead"><span>${L.length} תורמים</span><span>סה"כ נתן</span></div>`+L.map((g,i)=>`
+    <div class="donor" data-n="${esc(g.name)}"><span class="rk">${i+1}</span>
+      <div class="dn"><b>${esc(g.name)}</b><small>${g.n===1?'תרומה אחת':g.n+' תרומות'}</small></div>
+      <div class="dt">${ils(g.tot)}${g.open?`<small>זמין ${ils(g.open)}</small>`:''}</div></div>`).join('');
+  box.querySelectorAll('.donor').forEach(el=>el.onclick=()=>{const n=el.dataset.n;$('q').value=n==='ללא שם'?'':n;setTab('all');scrollTo({top:$('q').getBoundingClientRect().top+scrollY-10,behavior:'smooth'})});
+}
 $('fMethod').onclick=e=>{const b=e.target.closest('button');if(!b)return;setMethod(method===b.dataset.m?'':b.dataset.m)};
 function setMethod(m){method=m;[...$('fMethod').children].forEach(x=>x.classList.toggle('on',x.dataset.m===m))}
 
 function fillLists(){
   const opt=a=>[...new Set(a.filter(Boolean))].sort().map(x=>`<option value="${esc(x)}">`).join('');
-  $('names').innerHTML=opt(D.map(d=>d.name));$('purposes').innerHTML=opt(D.flatMap(d=>[d.purpose,d.usedFor]));
+  $('names').innerHTML=showNames?opt(D.map(d=>d.name)):'';$('purposes').innerHTML=opt(D.flatMap(d=>[d.purpose,d.usedFor]));
 }
 function openAdd(id){
+  if(id!=null&&!showNames){needNames(()=>openAdd(id));return}
   editId=id??null;const d=D.find(x=>x.id===id);fillLists();
   $('addT').textContent=d?'✏️ עריכת תרומה':'➕ תרומה חדשה';
   $('fName').value=d?.name||'';$('fAmt').value=d?.amount??'';$('fDate').value=d?d.date:today();
@@ -234,14 +306,14 @@ function saveDonation(){
 }
 function del(id){
   const d=D.find(x=>x.id===id);
-  if(!confirm(`למחוק את התרומה של ${d.name||'ללא שם'} (${ils(d.amount)})?`))return;
+  if(!confirm(showNames?`למחוק את התרומה של ${d.name||'ללא שם'} (${ils(d.amount)})?`:`למחוק את התרומה בסך ${ils(d.amount)}?`))return;
   D=D.filter(x=>x.id!==id);save();render();
 }
 
 /* בחירת כמה תרומות וסימון שכולן שומשו לאותה מטרה */
 function startSelect(){
   useIds=[];document.body.classList.add('selecting');$('selbar').classList.add('on');
-  filter='open';[...$('tabs').children].forEach(x=>x.classList.toggle('on',x.dataset.f==='open'));page=1;render();selInfo();
+  setTab('open');selInfo();
   $('selbar').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function stopSelect(){useIds=[];document.body.classList.remove('selecting');$('selbar').classList.remove('on');render()}
@@ -287,7 +359,60 @@ function exportExcel(){
   XLSX.writeFile(wb,`תרומות_בית_כנסת_${today()}.xlsx`);
 }
 
-render();
+/* ---------- גיבוי לענן (Google Apps Script, ראה tromot-script.gs) ----------
+   הכתובת והסיסמה נשמרות רק במכשיר. כל שינוי נשלח לענן אחרי שנייה וחצי.
+   בפתיחה: אם בענן יש גרסה חדשה יותר ממה שבמכשיר, לוקחים אותה. */
+let cloud=null,pushT=0,pushing=false,again=false;
+try{cloud=JSON.parse(localStorage.getItem('tromot_cloud'))}catch(e){}
+const lget=k=>{try{return +localStorage.getItem(k)||0}catch(e){return 0}};
+const lset=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+function cst(t){$('cst').textContent=t}
+function cloudPost(o,c){c=c||cloud;return fetch(c.url,{method:'POST',body:JSON.stringify({...o,password:c.pw})}).then(r=>r.json())}
+const hm=t=>new Date(t).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+function schedulePush(){if(!cloud)return;cst('☁️ שומר בענן…');clearTimeout(pushT);pushT=setTimeout(push,1500)}
+async function push(){
+  if(!cloud)return;if(pushing){again=true;return}
+  pushing=true;
+  try{
+    const r=await cloudPost({action:'save',donations:D});
+    if(r.ok){lset('tromot_cloudAt',r.savedAt);lset('tromot_changed',r.savedAt);cst('☁️ מגובה בענן ✓ '+hm(r.savedAt))}
+    else cst(r.error==='password'?'⚠️ סיסמת הסקריפט שגויה':'⚠️ הגיבוי לענן נכשל');
+  }catch(e){cst('⚠️ אין חיבור לענן. נשמר במכשיר, יגובה בפעם הבאה')}
+  pushing=false;if(again){again=false;push()}
+}
+async function cloudSync(){
+  if(!cloud){cst(D.length?'💾 נשמר במכשיר בלבד. כדאי לחבר גיבוי לענן':'');return}
+  cst('☁️ בודק בענן…');
+  try{
+    const r=await cloudPost({action:'load'});
+    if(!r.ok){cst(r.error==='password'?'⚠️ סיסמת הסקריפט שגויה':'⚠️ שגיאה בענן');return}
+    const local=lget('tromot_changed'),synced=lget('tromot_cloudAt');
+    if(r.savedAt>synced&&r.savedAt>=local){D=r.donations||[];try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}lset('tromot_cloudAt',r.savedAt);lset('tromot_changed',r.savedAt);render();cst('☁️ עודכן מהענן ✓ '+hm(r.savedAt))}
+    else if(local>synced)push();
+    else cst('☁️ מגובה בענן ✓ '+hm(r.savedAt));
+  }catch(e){cst('⚠️ אין חיבור לענן. מוצג מה שנשמר במכשיר')}
+}
+function openCloud(){$('cUrl').value=cloud?.url||'';$('cPw').value=cloud?.pw||'';$('cMsg').textContent=cloud?'מחובר ✓':'';$('cOff').style.display=cloud?'':'none';$('dCloud').showModal()}
+async function connect(){
+  const c={url:$('cUrl').value.trim(),pw:$('cPw').value.trim()},m=$('cMsg');
+  if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(c.url)){m.textContent='⚠️ הכתובת צריכה להתחיל ב-https://script.google.com';return}
+  m.textContent='מתחבר…';
+  let r;
+  try{r=await cloudPost({action:'load'},c)}catch(e){m.textContent='⚠️ אין חיבור לסקריפט. בדוק את הכתובת ושהפריסה היא "כל אחד"';return}
+  if(!r.ok){m.textContent=r.error==='password'?'⚠️ סיסמה שגויה':'⚠️ שגיאה: '+r.error;return}
+  const inCloud=(r.donations||[]).length;
+  if(inCloud&&D.length&&!confirm(`בענן כבר יש ${inCloud} תרומות ובמכשיר יש ${D.length}.\n\nאישור = להשתמש במה שבענן (מה שבמכשיר יוחלף)\nביטול = להעלות לענן את מה שבמכשיר`)){
+    cloud=c;lset('tromot_cloud',JSON.stringify(c));await push();
+  }else{
+    cloud=c;lset('tromot_cloud',JSON.stringify(c));
+    if(inCloud){D=r.donations;try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}lset('tromot_cloudAt',r.savedAt);lset('tromot_changed',r.savedAt);render();cst('☁️ עודכן מהענן ✓')}
+    else await push();
+  }
+  $('dCloud').close();toast('הגיבוי לענן מחובר ✓');
+}
+function disconnect(){if(!confirm('לנתק את הגיבוי לענן במכשיר הזה? הנתונים נשארים גם במכשיר וגם בענן.'))return;cloud=null;try{localStorage.removeItem('tromot_cloud')}catch(e){}$('dCloud').close();cloudSync()}
+
+nmBtn();render();cloudSync();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
