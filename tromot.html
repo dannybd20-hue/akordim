@@ -362,6 +362,7 @@ function exportExcel(){
 /* ---------- גיבוי לענן (Google Apps Script, ראה tromot-script.gs) ----------
    הכתובת והסיסמה נשמרות רק במכשיר. כל שינוי נשלח לענן אחרי שנייה וחצי.
    בפתיחה: אם בענן יש גרסה חדשה יותר ממה שבמכשיר, לוקחים אותה. */
+const DEFAULT_CLOUD='https://script.google.com/macros/s/AKfycbxAljbfqSrQrVU1EmGvu21eQsFllWXJH86Kg-TrvX3lJbQ1f8IbZxG_atR_yGa_Vp7SXQ/exec';
 let cloud=null,pushT=0,pushing=false,again=false;
 try{cloud=JSON.parse(localStorage.getItem('tromot_cloud'))}catch(e){}
 const lget=k=>{try{return +localStorage.getItem(k)||0}catch(e){return 0}};
@@ -381,7 +382,7 @@ async function push(){
   pushing=false;if(again){again=false;push()}
 }
 async function cloudSync(){
-  if(!cloud){cst(D.length?'💾 נשמר במכשיר בלבד. כדאי לחבר גיבוי לענן':'');return}
+  if(!cloud){cst('💾 נשמר במכשיר בלבד. לחץ "☁️ גיבוי לענן" והקלד את הסיסמה כדי לחבר');return}
   cst('☁️ בודק בענן…');
   try{
     const r=await cloudPost({action:'load'});
@@ -392,7 +393,7 @@ async function cloudSync(){
     else cst('☁️ מגובה בענן ✓ '+hm(r.savedAt));
   }catch(e){cst('⚠️ אין חיבור לענן. מוצג מה שנשמר במכשיר')}
 }
-function openCloud(){$('cUrl').value=cloud?.url||'';$('cPw').value=cloud?.pw||'';$('cMsg').textContent=cloud?'מחובר ✓':'';$('cOff').style.display=cloud?'':'none';$('dCloud').showModal()}
+function openCloud(){$('cUrl').value=cloud?.url||DEFAULT_CLOUD;$('cPw').value=cloud?.pw||'';$('cMsg').textContent=cloud?'מחובר ✓':'';$('cOff').style.display=cloud?'':'none';$('dCloud').showModal()}
 async function connect(){
   const c={url:$('cUrl').value.trim(),pw:$('cPw').value.trim()},m=$('cMsg');
   if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(c.url)){m.textContent='⚠️ הכתובת צריכה להתחיל ב-https://script.google.com';return}
