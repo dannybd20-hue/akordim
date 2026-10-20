@@ -96,6 +96,8 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
 const CLOUD='https://script.google.com/macros/s/AKfycbw7yTUBMzmoOx1D2ZQI8lvjMeYauUqxHhdgOtkcEMb61mwqUBkcxynOOgMfgbtkBz1u/exec';
 const PAGES={chords:'chords.html',maaser:'maaser.html',tromot:'tromot.html'};
 /* סיסמת התרומות קבועה (1234); נשמר כאן רק הגיבוב שלה */
+/* קוד ראשי: פותח את האקורדים, המעשר והתרומות בלי קשר לסיסמאות שלהן; נשמר כאן רק הגיבוב */
+const MASTER_HASH='d8acc45287fb852ef048950cf2edfc575614ffa5437f90d6780ae251058d723a';
 const TROMOT_HASH='f88d20e9aaa147427706f242d11b143befcf2038efdd026d1e890fea9ce1535c';
 const $=id=>document.getElementById(id),dlg=$('dlg');
 let app='',mode='';
@@ -150,6 +152,7 @@ async function submit(){
   if(!v){err('נא להקליד סיסמה');return}
   $('ok').disabled=true;
   try{
+    if(PAGES[app]&&mode!=='reset'&&await hash(v)===MASTER_HASH){enter(app);return}
     if(mode==='chords'){
       let ok=false;
       try{ok=await cloudCheck(v,'enter');if(ok)put('gate_entry_hash',await hash(v))}
