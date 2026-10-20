@@ -5,31 +5,48 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>דני בן דוד</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0284c7">
+<meta name="theme-color" content="#312e81">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="דני בן דוד">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=Rubik:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f0f6fa;--card:#fff;--tx:#1e293b;--mut:#64748b;--bd:#e2e8f0;--pr:#0284c7;--in:#f8fafc;--ib:#cbd5e1;--err:#e11d48}
+:root{--bg:#f4f5fb;--card:#fff;--tx:#1e293b;--mut:#64748b;--bd:#e2e8f0;--pr:#0284c7;--in:#f8fafc;--ib:#cbd5e1;--err:#e11d48}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#020617;--card:#0f172a;--tx:#f8fafc;--mut:#94a3b8;--bd:#1e293b;--in:#1e293b;--ib:#334155}}
 :root[data-theme=dark]{--bg:#020617;--card:#0f172a;--tx:#f8fafc;--mut:#94a3b8;--bd:#1e293b;--in:#1e293b;--ib:#334155}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font-family:Heebo,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:48px 16px}
-h1{margin:0 0 6px;font:900 28px Rubik,Heebo,sans-serif;text-align:center}
-.sub{margin:0 0 32px;color:var(--mut);font-size:14px;text-align:center}
-.apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;width:100%;max-width:760px}
-.app{background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:28px 20px;text-align:center;cursor:pointer;font:inherit;color:inherit;box-shadow:0 4px 20px #0000000d;transition:.2s}
-.app:hover{transform:translateY(-2px);border-color:var(--pr)}
-.ic{width:64px;height:64px;margin:0 auto 14px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:30px;color:#fff}
-.ic.ch{background:linear-gradient(to top right,#0284c7,#0ea5e9,#22d3ee)}
-.ic.tr{background:linear-gradient(135deg,#a1887f,#795548)}
-.ic.sp{background:linear-gradient(135deg,#f472b6,#db2777)}
-.ic.ms{background:linear-gradient(135deg,#1b5e20,#2e7d32)}
-.app b{display:block;font:800 19px Rubik,Heebo,sans-serif;margin-bottom:4px}
-.app span{font-size:13px;color:var(--mut)}
-.lock{font-size:12px;margin-top:10px;color:var(--mut)}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:Heebo,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 16px 32px;position:relative;overflow-x:hidden}
+body::before,body::after{content:"";position:fixed;z-index:-1;border-radius:50%;filter:blur(70px);opacity:.55;pointer-events:none}
+body::before{width:420px;height:420px;top:-160px;right:-120px;background:radial-gradient(circle,#818cf8,transparent 70%)}
+body::after{width:380px;height:380px;bottom:-160px;left:-120px;background:radial-gradient(circle,#38bdf8,transparent 70%)}
+.top{width:100%;max-width:880px;display:flex;flex-direction:column;align-items:center;text-align:center;padding:44px 0 30px}
+.logo{width:76px;height:76px;border-radius:22px;box-shadow:0 14px 34px #312e8155;margin-bottom:18px}
+.hello{margin:0;font:900 32px/1.15 Rubik,Heebo,sans-serif;letter-spacing:-.5px}
+.hello span{background:linear-gradient(90deg,#4f46e5,#0ea5e9);-webkit-background-clip:text;background-clip:text;color:transparent}
+.date{margin:10px 0 0;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;font-size:13px;font-weight:600;color:var(--mut)}
+.date b{background:var(--card);border:1px solid var(--bd);border-radius:99px;padding:4px 12px;font-weight:600}
+.sec{width:100%;max-width:880px;margin:0 0 12px;font:800 14px Rubik,Heebo,sans-serif;color:var(--mut);letter-spacing:.3px}
+.apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;width:100%;max-width:880px}
+.app{--c:#0ea5e9;position:relative;overflow:hidden;background:var(--card);border:1px solid var(--bd);border-radius:22px;padding:22px 18px 18px;text-align:start;cursor:pointer;font:inherit;color:inherit;box-shadow:0 6px 24px #0f172a0d;transition:transform .2s,box-shadow .2s,border-color .2s;display:flex;flex-direction:column;align-items:flex-start;min-height:178px}
+.app::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--c);opacity:.85}
+.app::after{content:"";position:absolute;width:160px;height:160px;top:-70px;left:-60px;border-radius:50%;background:var(--c);opacity:.08;transition:.3s}
+.app:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--c) 45%,transparent);box-shadow:0 14px 34px color-mix(in srgb,var(--c) 22%,transparent)}
+.app:hover::after{opacity:.16;transform:scale(1.15)}
+.app:active{transform:scale(.98)}
+.app:has(.ch){--c:#0ea5e9}.app:has(.ms){--c:#16a34a}.app:has(.tr){--c:#8d6e63}.app:has(.sp){--c:#db2777}
+.ic{width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;margin-bottom:14px;box-shadow:0 8px 18px color-mix(in srgb,var(--c) 35%,transparent)}
+.ic.ch{background:linear-gradient(135deg,#38bdf8,#0284c7)}
+.ic.tr{background:linear-gradient(135deg,#bc9a85,#795548)}
+.ic.sp{background:linear-gradient(135deg,#f472b6,#be185d)}
+.ic.ms{background:linear-gradient(135deg,#4ade80,#15803d)}
+.app b{display:block;font:800 18px Rubik,Heebo,sans-serif;margin-bottom:4px}
+.app span{font-size:13px;color:var(--mut);line-height:1.4}
+.lock{margin-top:auto;padding-top:12px;font-size:11.5px;font-weight:700;color:var(--mut)}
+.app .go{position:absolute;top:22px;left:18px;width:32px;height:32px;border-radius:99px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--c) 12%,transparent);color:var(--c);font-size:17px;font-style:normal;font-weight:900;transition:.2s}
+.app:hover .go{transform:translateX(-3px)}
+footer{margin-top:34px;font-size:12px;color:var(--mut);text-align:center}
+@media (max-width:440px){.apps{grid-template-columns:1fr 1fr;gap:10px}.app{padding:18px 14px 14px;min-height:168px;border-radius:20px}.app b{font-size:16px}.app span{font-size:12px}.ic{width:48px;height:48px;font-size:23px}.hello{font-size:27px}.app .go{display:none}}
 dialog{border:0;border-radius:18px;padding:22px;width:min(340px,calc(100% - 32px));background:var(--card);color:var(--tx);box-shadow:0 20px 40px #0004}
 dialog::backdrop{background:#0f172a99;backdrop-filter:blur(3px)}
 dialog h2{margin:0 0 6px;font:800 19px Rubik,Heebo,sans-serif}
@@ -48,14 +65,19 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
 </style>
 </head>
 <body>
-<h1>דני בן דוד</h1>
-<p class="sub">בחר אפליקציה</p>
+<header class="top">
+  <img class="logo" src="icons/icon-192.png" alt="">
+  <h1 class="hello"><span id="greet">שלום</span>, דני</h1>
+  <p class="date" id="date"></p>
+</header>
+<p class="sec">האפליקציות שלי</p>
 <div class="apps">
-  <button class="app" onclick="ask('chords')"><div class="ic ch">♬</div><b>ספריית אקורדים</b><span>שירים, טרנספוזיציה וקאפו</span><div class="lock">🔒 נדרשת סיסמה</div></button>
-  <button class="app" onclick="ask('maaser')"><div class="ic ms">₪</div><b>מעשר כספי</b><span>חישוב ומעקב מעשרות</span><div class="lock">🔒 נדרשת סיסמה</div></button>
-  <button class="app" onclick="ask('tromot')"><div class="ic tr">🕍</div><b>תרומות בית כנסת</b><span>מי תרם, על מה, ומה שומש</span><div class="lock">🔒 נדרשת סיסמה</div></button>
-  <button class="app" onclick="location.href='shopping.html'"><div class="ic sp">🛒</div><b>קניות לבית</b><span>רשימה משותפת לכל המשפחה</span><div class="lock">👪 סיסמה משפחתית</div></button>
+  <button class="app" onclick="ask('chords')"><i class="go" aria-hidden="true">←</i><div class="ic ch">♬</div><b>ספריית אקורדים</b><span>שירים, טרנספוזיציה וקאפו</span><div class="lock">🔒 נדרשת סיסמה</div></button>
+  <button class="app" onclick="ask('maaser')"><i class="go" aria-hidden="true">←</i><div class="ic ms">₪</div><b>מעשר כספי</b><span>חישוב ומעקב מעשרות</span><div class="lock">🔒 נדרשת סיסמה</div></button>
+  <button class="app" onclick="ask('tromot')"><i class="go" aria-hidden="true">←</i><div class="ic tr">🕍</div><b>תרומות בית כנסת</b><span>מי תרם, על מה, ומה שומש</span><div class="lock">🔒 נדרשת סיסמה</div></button>
+  <button class="app" onclick="location.href='shopping.html'"><i class="go" aria-hidden="true">←</i><div class="ic sp">🛒</div><b>קניות לבית</b><span>רשימה משותפת לכל המשפחה</span><div class="lock">👪 סיסמה משפחתית</div></button>
 </div>
+<footer>© דני בן דוד</footer>
 
 <dialog id="dlg">
   <h2 id="dt"></h2>
@@ -93,6 +115,12 @@ async function cloudCheck(p,action){
 function enter(a){
   try{sessionStorage.setItem('gate_'+a,'1')}catch(e){}
   location.href=PAGES[a];
+}
+/* מספר לאותיות עבריות: 9 → ט׳, 787 → תשפ״ז */
+function gem(n){
+  const L=[[400,'ת'],[300,'ש'],[200,'ר'],[100,'ק'],[90,'צ'],[80,'פ'],[70,'ע'],[60,'ס'],[50,'נ'],[40,'מ'],[30,'ל'],[20,'כ'],[10,'י'],[9,'ט'],[8,'ח'],[7,'ז'],[6,'ו'],[5,'ה'],[4,'ד'],[3,'ג'],[2,'ב'],[1,'א']];
+  let r='';for(const[v,c]of L)while(n>=v){if(n===15||n===16){r+=n===15?'טו':'טז';n=0;break}r+=c;n-=v}
+  return r.length>1?r.slice(0,-1)+'״'+r.slice(-1):r+'׳';
 }
 function err(t){const e=$('er');e.textContent=t;e.style.display=t?'block':'none'}
 function setMode(m){
@@ -154,6 +182,15 @@ $('p2').addEventListener('keyup',e=>{if(e.key==='Enter')submit()});
 
 (function(){
   const t=get('akordim_theme');if(t)document.documentElement.dataset.theme=t;
+  /* ברכה לפי שעה, ותאריך לועזי ועברי */
+  const now=new Date(),h=now.getHours();
+  $('greet').textContent=h<5?'לילה טוב':h<12?'בוקר טוב':h<17?'צהריים טובים':h<21?'ערב טוב':'לילה טוב';
+  const dd=[now.toLocaleDateString('he-IL',{weekday:'long'}),now.toLocaleDateString('he-IL',{day:'numeric',month:'long',year:'numeric'})];
+  try{
+    const P=new Intl.DateTimeFormat('he-IL-u-ca-hebrew',{day:'numeric',month:'long',year:'numeric'}).formatToParts(now),v=t=>(P.find(p=>p.type===t)||{}).value;
+    dd.push(gem(+v('day'))+' ב'+v('month').replace(/^ב/,'')+' '+gem(+v('year')%1000));
+  }catch(e){}
+  $('date').innerHTML=dd.map(x=>'<b>'+x+'</b>').join('');
   const a=new URLSearchParams(location.search).get('open');
   if(PAGES[a])ask(a);
 })();
