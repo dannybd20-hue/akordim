@@ -28,7 +28,7 @@ body::after{width:380px;height:380px;bottom:-160px;left:-120px;background:radial
 .date b{background:var(--card);border:1px solid var(--bd);border-radius:99px;padding:4px 12px;font-weight:600}
 .sec{width:100%;max-width:880px;margin:0 0 12px;font:800 14px Rubik,Heebo,sans-serif;color:var(--mut);letter-spacing:.3px}
 .apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;width:100%;max-width:880px}
-.app{--c:#0ea5e9;position:relative;overflow:hidden;background:var(--card);border:1px solid var(--bd);border-radius:22px;padding:22px 18px 18px;text-align:start;cursor:pointer;font:inherit;color:inherit;box-shadow:0 6px 24px #0f172a0d;transition:transform .2s,box-shadow .2s,border-color .2s;display:flex;flex-direction:column;align-items:flex-start;min-height:178px}
+.app{--c:#0ea5e9;position:relative;overflow:hidden;background:var(--card);border:1px solid var(--bd);border-radius:22px;padding:22px 18px 18px;text-align:start;cursor:pointer;font:inherit;color:inherit;box-shadow:0 6px 24px #0f172a0d;transition:transform .2s,box-shadow .2s,border-color .2s;display:flex;flex-direction:column;align-items:flex-start;min-height:150px}
 .app::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--c);opacity:.85}
 .app::after{content:"";position:absolute;width:160px;height:160px;top:-70px;left:-60px;border-radius:50%;background:var(--c);opacity:.08;transition:.3s}
 .app:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--c) 45%,transparent);box-shadow:0 14px 34px color-mix(in srgb,var(--c) 22%,transparent)}
@@ -45,6 +45,12 @@ body::after{width:380px;height:380px;bottom:-160px;left:-120px;background:radial
 .lock{margin-top:auto;padding-top:12px;font-size:11.5px;font-weight:700;color:var(--mut)}
 .app .go{position:absolute;top:22px;left:18px;width:32px;height:32px;border-radius:99px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--c) 12%,transparent);color:var(--c);font-size:17px;font-style:normal;font-weight:900;transition:.2s}
 .app:hover .go{transform:translateX(-3px)}
+.gate{width:100%;max-width:360px;background:var(--card);border:1px solid var(--bd);border-radius:22px;padding:24px 20px;box-shadow:0 10px 30px #312e811a;text-align:center}
+.gt{margin:0 0 14px;font:800 17px Rubik,Heebo,sans-serif}
+.gate .pw{margin-bottom:6px}
+button.b.big{width:100%;padding:12px;font-size:16px;border-radius:14px;margin-top:6px;background:linear-gradient(90deg,#4f46e5,#0ea5e9);border:0;color:#fff}
+button.out{display:block;margin:22px auto 0}
+.app[hidden],section[hidden]{display:none!important}
 footer{margin-top:34px;font-size:12px;color:var(--mut);text-align:center}
 @media (max-width:440px){.apps{grid-template-columns:1fr 1fr;gap:10px}.app{padding:18px 14px 14px;min-height:168px;border-radius:20px}.app b{font-size:16px}.app span{font-size:12px}.ic{width:48px;height:48px;font-size:23px}.hello{font-size:27px}.app .go{display:none}}
 dialog{border:0;border-radius:18px;padding:22px;width:min(340px,calc(100% - 32px));background:var(--card);color:var(--tx);box-shadow:0 20px 40px #0004}
@@ -70,53 +76,48 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
   <h1 class="hello"><span id="greet">שלום</span></h1>
   <p class="date" id="date"></p>
 </header>
+<section class="gate" id="lockv">
+  <p class="gt">🔒 הזן סיסמה כדי להיכנס</p>
+  <div class="pw"><input id="p1" type="password" autocomplete="current-password" placeholder="סיסמה"><button type="button" class="eye" onclick="eye(this)" title="הצג סיסמה">👁️</button></div>
+  <p class="err" id="er"></p>
+  <button class="b pr big" id="ok" onclick="submit()">כניסה</button>
+</section>
+
+<section id="appsv" hidden>
 <p class="sec">האפליקציות שלי</p>
 <div class="apps">
-  <button class="app" onclick="ask('chords')"><i class="go" aria-hidden="true">←</i><div class="ic ch">♬</div><b>ספריית אקורדים</b><span>שירים, טרנספוזיציה וקאפו</span><div class="lock">🔒 נדרשת סיסמה</div></button>
-  <button class="app" onclick="ask('maaser')"><i class="go" aria-hidden="true">←</i><div class="ic ms">₪</div><b>מעשר כספי</b><span>חישוב ומעקב מעשרות</span><div class="lock">🔒 נדרשת סיסמה</div></button>
-  <button class="app" onclick="ask('tromot')"><i class="go" aria-hidden="true">←</i><div class="ic tr">🕍</div><b>תרומות בית כנסת</b><span>מי תרם, על מה, ומה שומש</span><div class="lock">🔒 נדרשת סיסמה</div></button>
-  <button class="app" onclick="location.href='shopping.html'"><i class="go" aria-hidden="true">←</i><div class="ic sp">🛒</div><b>קניות לבית</b><span>רשימה משותפת לכל המשפחה</span><div class="lock">👪 סיסמה משפחתית</div></button>
+  <button class="app" data-app="chords" onclick="enter('chords')"><i class="go" aria-hidden="true">←</i><div class="ic ch">♬</div><b>ספריית אקורדים</b><span>שירים, טרנספוזיציה וקאפו</span></button>
+  <button class="app" data-app="maaser" onclick="enter('maaser')"><i class="go" aria-hidden="true">←</i><div class="ic ms">₪</div><b>מעשר כספי</b><span>חישוב ומעקב מעשרות</span></button>
+  <button class="app" data-app="tromot" onclick="enter('tromot')"><i class="go" aria-hidden="true">←</i><div class="ic tr">🕍</div><b>תרומות בית כנסת</b><span>מי תרם, על מה, ומה שומש</span></button>
+  <button class="app" data-app="shopping" onclick="enter('shopping')"><i class="go" aria-hidden="true">←</i><div class="ic sp">🛒</div><b>קניות לבית</b><span>רשימה משותפת לכל המשפחה</span></button>
 </div>
+<button class="b out" onclick="logout()">🔒 יציאה</button>
+</section>
 <footer>© דני בן דוד</footer>
 
-<dialog id="dlg">
-  <h2 id="dt"></h2>
-  <p class="hint" id="dh"></p>
-  <div class="pw"><input id="p1" type="password" autocomplete="current-password"><button type="button" class="eye" onclick="eye(this)" title="הצג סיסמה">👁️</button></div>
-  <div class="pw" id="p2w" style="display:none"><input id="p2" type="password" autocomplete="new-password" placeholder="הקלד שוב את הסיסמה"><button type="button" class="eye" onclick="eye(this)" title="הצג סיסמה">👁️</button></div>
-  <p class="err" id="er"></p>
-  <div class="row"><button class="b" onclick="dlg.close()">ביטול</button><button class="b pr" id="ok" onclick="submit()">כניסה</button></div>
-</dialog>
-
 <script>
-/* סיסמת הכניסה לאקורדים נבדקת בענן (ENTRY_PASSWORD בסקריפט), והיא שונה מסיסמת מצב העריכה.
-   הסיסמה של המעשר נקבעת בכניסה הראשונה ונשמרת במכשיר כגיבוב בלבד, כמו נתוני המעשר עצמם.
-   אחרי כניסה מוצלחת נשמר סימון ל-sessionStorage, והאפליקציה עצמה בודקת אותו. */
-const CLOUD='https://script.google.com/macros/s/AKfycbw7yTUBMzmoOx1D2ZQI8lvjMeYauUqxHhdgOtkcEMb61mwqUBkcxynOOgMfgbtkBz1u/exec';
-const PAGES={chords:'chords.html',maaser:'maaser.html',tromot:'tromot.html'};
-/* סיסמת התרומות קבועה (1234); נשמר כאן רק הגיבוב שלה */
-/* קוד ראשי: פותח את האקורדים, המעשר והתרומות בלי קשר לסיסמאות שלהן; נשמר כאן רק הגיבוב */
-const MASTER_HASH='d8acc45287fb852ef048950cf2edfc575614ffa5437f90d6780ae251058d723a';
-const TROMOT_HASH='f88d20e9aaa147427706f242d11b143befcf2038efdd026d1e890fea9ce1535c';
-const $=id=>document.getElementById(id),dlg=$('dlg');
-let app='',mode='';
+/* כניסה אחת לאתר: הסיסמה שמוקלדת קובעת לאילו אפליקציות יש גישה. נשמרים כאן רק הגיבובים.
+   הגישה נשמרת ב-sessionStorage עד סגירת הדפדפן, וכל אפליקציה בודקת את הסימון gate_<שם> שלה. */
+const PAGES={chords:'chords.html',maaser:'maaser.html',tromot:'tromot.html',shopping:'shopping.html'};
+const ACCESS={
+  'f88d20e9aaa147427706f242d11b143befcf2038efdd026d1e890fea9ce1535c':['tromot'],   // 1234
+  '4dae21a70492747b3bb2d310f2ae89ed81c9eff99e61d6e3e53d4e19abd24f9c':['chords'],                              // 114477
+  '1e2a0c4093555199db513fd138cc9268faaf441ccaa9090fe3a485f042891700':['shopping'],                            // 0504277237
+  'd8acc45287fb852ef048950cf2edfc575614ffa5437f90d6780ae251058d723a':Object.keys(PAGES) // הסיסמה הראשית
+};
+const $=id=>document.getElementById(id);
 
 /* כפתור העין: מציג או מסתיר את הסיסמה שמקלידים */
 function eye(b,show){const i=b.previousElementSibling;show=show===undefined?i.type==='password':show;i.type=show?'text':'password';b.textContent=show?'🙈':'👁️';b.title=show?'הסתר סיסמה':'הצג סיסמה'}
 function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
-function put(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function sget(k){try{return sessionStorage.getItem(k)}catch(e){return null}}
+function sput(k,v){try{v==null?sessionStorage.removeItem(k):sessionStorage.setItem(k,v)}catch(e){}}
 async function hash(s){
   const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('dbd-gate:'+s));
   return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
-async function cloudCheck(p,action){
-  const r=await fetch(CLOUD,{method:'POST',body:JSON.stringify({action:action||'check',password:p})}).then(r=>r.json());
-  return !!r.ok;
-}
-function enter(a){
-  try{sessionStorage.setItem('gate_'+a,'1')}catch(e){}
-  location.href=PAGES[a];
-}
+function access(){try{return JSON.parse(sget('hub_access'))||[]}catch(e){return[]}}
+function enter(a){if(access().includes(a))location.href=PAGES[a]}
 /* מספר לאותיות עבריות: 9 → ט׳, 787 → תשפ״ז */
 function gem(n){
   const L=[[400,'ת'],[300,'ש'],[200,'ר'],[100,'ק'],[90,'צ'],[80,'פ'],[70,'ע'],[60,'ס'],[50,'נ'],[40,'מ'],[30,'ל'],[20,'כ'],[10,'י'],[9,'ט'],[8,'ח'],[7,'ז'],[6,'ו'],[5,'ה'],[4,'ד'],[3,'ג'],[2,'ב'],[1,'א']];
@@ -124,61 +125,29 @@ function gem(n){
   return r.length>1?r.slice(0,-1)+'״'+r.slice(-1):r+'׳';
 }
 function err(t){const e=$('er');e.textContent=t;e.style.display=t?'block':'none'}
-function setMode(m){
-  mode=m;err('');$('p1').value='';$('p2').value='';
-  const setNew=m==='new';
-  $('p2w').style.display=setNew?'':'none';
-  document.querySelectorAll('.eye').forEach(b=>eye(b,false));
-  $('ok').textContent=setNew?'שמור סיסמה':(m==='reset'?'אישור':'כניסה');
-  $('p1').placeholder=setNew?'סיסמה חדשה':'סיסמה';
-  if(m==='chords'){$('dt').textContent='♬ ספריית אקורדים';$('dh').textContent='הזן את הסיסמה כדי להיכנס:'}
-  if(m==='tromot'){$('dt').textContent='🕍 תרומות בית כנסת';$('dh').textContent='הזן את הסיסמה כדי להיכנס:'}
-  if(m==='maaser'){$('dt').textContent='₪ מעשר כספי';$('dh').textContent='הזן את סיסמת המעשר:'}
-  if(m==='new'){$('dt').textContent='₪ מעשר כספי';$('dh').textContent='בחר סיסמה לאפליקציית המעשר במכשיר הזה:'}
-  if(m==='reset'){$('dt').textContent='איפוס סיסמת המעשר';$('dh').textContent='הזן את סיסמת האקורדים (מצב עריכה) כדי לקבוע סיסמת מעשר חדשה. הנתונים לא יימחקו.'}
-  setTimeout(()=>$('p1').focus(),50);
+function show(){
+  const A=access();
+  $('lockv').hidden=A.length>0;$('appsv').hidden=!A.length;
+  document.querySelectorAll('.app').forEach(b=>b.hidden=!A.includes(b.dataset.app));
+  if(!A.length)setTimeout(()=>$('p1').focus(),50);
 }
-function ask(a){
-  app=a;
-  setMode(a==='maaser'&&!get('gate_maaser_hash')?'new':a);
-  if(!dlg.open)dlg.showModal();
-}
-
 async function submit(){
   const v=$('p1').value.trim();err('');
   if(!v){err('נא להקליד סיסמה');return}
-  $('ok').disabled=true;
-  try{
-    if(PAGES[app]&&mode!=='reset'&&await hash(v)===MASTER_HASH){enter(app);return}
-    if(mode==='chords'){
-      let ok=false;
-      try{ok=await cloudCheck(v,'enter');if(ok)put('gate_entry_hash',await hash(v))}
-      catch(x){
-        /* אין אינטרנט: בודקים מול הסיסמה האחרונה שאושרה בענן במכשיר הזה */
-        const h=get('gate_entry_hash');
-        if(!h){err('אין חיבור לאינטרנט, נסה שוב');return}
-        ok=h===await hash(v);
-      }
-      if(ok)enter('chords');else err('סיסמה שגויה');
-    }else if(mode==='tromot'){
-      if(await hash(v)===TROMOT_HASH)enter('tromot');else err('סיסמה שגויה');
-    }else if(mode==='maaser'){
-      if(get('gate_maaser_hash')===await hash(v))enter('maaser');else err('סיסמה שגויה');
-    }else if(mode==='new'){
-      if(v.length<4){err('לפחות 4 תווים');return}
-      if(v!==$('p2').value){err('הסיסמאות לא זהות');return}
-      put('gate_maaser_hash',await hash(v));
-      if(get('gate_maaser_hash')!==await hash(v)){err('הדפדפן חוסם שמירה במכשיר');return}
-      enter('maaser');
-    }else if(mode==='reset'){
-      let ok=false;
-      try{ok=await cloudCheck(v)}catch(x){err('צריך חיבור לאינטרנט לאיפוס');return}
-      if(ok)setMode('new');else err('סיסמה שגויה');
-    }
-  }finally{$('ok').disabled=false}
+  const A=ACCESS[await hash(v)];
+  if(!A){err('סיסמה שגויה');$('p1').select();return}
+  sput('hub_access',JSON.stringify(A));
+  A.forEach(a=>sput('gate_'+a,'1'));
+  /* אפליקציית הקניות מתחברת לענן עם הסיסמה המשפחתית; מנסים קודם את מה שהוקלד כאן */
+  if(A.includes('shopping'))sput('hub_pw',v);
+  $('p1').value='';
+  if(A.length===1){location.href=PAGES[A[0]];return}
+  show();
 }
-$('p1').addEventListener('keyup',e=>{if(e.key==='Enter'){if(mode==='new'&&!$('p2').value)$('p2').focus();else submit()}});
-$('p2').addEventListener('keyup',e=>{if(e.key==='Enter')submit()});
+function logout(){
+  sput('hub_access',null);sput('hub_pw',null);Object.keys(PAGES).forEach(a=>sput('gate_'+a,null));show();
+}
+$('p1').addEventListener('keyup',e=>{if(e.key==='Enter')submit()});
 
 (function(){
   const t=get('akordim_theme');if(t)document.documentElement.dataset.theme=t;
@@ -191,8 +160,7 @@ $('p2').addEventListener('keyup',e=>{if(e.key==='Enter')submit()});
     dd.push(gem(+v('day'))+' ב'+v('month').replace(/^ב/,'')+' '+gem(+v('year')%1000));
   }catch(e){}
   $('date').innerHTML=dd.map(x=>'<b>'+x+'</b>').join('');
-  const a=new URLSearchParams(location.search).get('open');
-  if(PAGES[a])ask(a);
+  show();
 })();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
