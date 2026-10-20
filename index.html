@@ -54,6 +54,12 @@ body::after{width:380px;height:380px;bottom:-160px;left:-120px;background:radial
 @keyframes pulse{70%{box-shadow:0 0 0 8px #22c55e00}100%{box-shadow:0 0 0 0 #22c55e00}}
 .live span{display:none;width:100%;font-size:12px;font-weight:600;color:var(--mut);line-height:1.6}
 .live.open span{display:block}
+.nm{display:flex;align-items:center;justify-content:center;gap:8px;margin:20px auto 0;font-size:13px;font-weight:700;color:var(--mut);flex-wrap:wrap}
+.nm input{width:190px;margin:0;padding:7px 10px;font-size:14px}
+.live .who{display:block;padding:6px 0;border-top:1px dashed var(--bd);color:var(--tx)}
+.live .who:first-child{border-top:0}
+.live .who small{display:block;color:var(--mut);font-weight:500}
+.live.admin{max-width:290px}
 .gt{margin:0 0 14px;font:800 17px Rubik,Heebo,sans-serif}
 .gate .pw{margin-bottom:6px}
 button.b.big{width:100%;padding:12px;font-size:16px;border-radius:14px;margin-top:6px;background:linear-gradient(90deg,#4f46e5,#0ea5e9);border:0;color:#fff}
@@ -93,6 +99,14 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
   <button class="b pr big" id="ok" onclick="submit()">כניסה</button>
 </section>
 
+<section class="gate" id="namev" hidden>
+  <p class="gt">👋 מה השם שלך?</p>
+  <p class="hint">השם נשמר במכשיר הזה, ולא נבקש אותו שוב.</p>
+  <input id="nmIn" maxlength="30" placeholder="השם שלך" autocomplete="name">
+  <p class="err" id="nmErr">נא לכתוב שם</p>
+  <button class="b pr big" onclick="saveName()">המשך</button>
+</section>
+
 <section id="appsv" hidden>
 <p class="sec">האפליקציות שלי</p>
 <div class="apps">
@@ -101,6 +115,7 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
   <button class="app" data-app="tromot" onclick="enter('tromot')"><i class="go" aria-hidden="true">←</i><div class="ic tr">🕍</div><b>תרומות בית כנסת</b><span>מי תרם, על מה, ומה שומש</span></button>
   <button class="app" data-app="shopping" onclick="enter('shopping')"><i class="go" aria-hidden="true">←</i><div class="ic sp">🛒</div><b>קניות לבית</b><span>רשימה משותפת לכל המשפחה</span></button>
 </div>
+<label class="nm">📛 השם שלך: <input id="devName" maxlength="30" placeholder="לדוגמה: הטלפון של דני" onchange="setDevName(this.value)"></label>
 <button class="b out" onclick="logout()">🔒 יציאה</button>
 </section>
 <footer>© דני בן דוד</footer>
@@ -151,18 +166,33 @@ async function submit(){
   if(!A){err('סיסמה שגויה');$('p1').select();return}
   /* אפליקציית הקניות מתחברת לענן עם הסיסמה המשפחתית; מנסים קודם את מה שהוקלד כאן */
   grant(A,v);
+  /* הסיסמה הראשית משמשת גם לבקש מהסקריפט את רשימת המחוברים המפורטת */
+  if(A.length>=4){sput('hub_admin',v);if($('rem').checked)lput('hub_admin',v)}
   /* "לזכור במכשיר": הגישה נשמרת גם אחרי סגירת הדפדפן, עד שלוחצים יציאה */
   if($('rem').checked){lput('hub_access',JSON.stringify(A));lput('hub_pw',A.includes('shopping')?v:null)}
   sput('hub_seen','1');
   $('p1').value='';
+  if(!myName()){$('lockv').hidden=true;$('namev').hidden=false;setTimeout(()=>$('nmIn').focus(),50);return}
+  afterLogin();
+}
+/* שם המשתמש במכשיר: נבחר פעם אחת אחרי הסיסמה, ונשלח עם "מי מחובר" כדי שהמנהל יידע מי נכנס */
+function myName(){try{return localStorage.getItem('dbd_name')||localStorage.getItem('shop_me')||''}catch(e){return''}}
+function saveName(){
+  const v=$('nmIn').value.trim();$('nmErr').style.display=v?'none':'block';if(!v)return;
+  try{localStorage.setItem('dbd_name',v)}catch(e){}
+  $('namev').hidden=true;$('devName').value=v;if(window.dbdPing)dbdPing();afterLogin();
+}
+function afterLogin(){
+  const A=access();
   if(A.length===1){location.href=PAGES[A[0]];return}
   show();
 }
 function logout(){
-  lput('hub_access',null);lput('hub_pw',null);lput('tromot_names',null);
+  lput('hub_access',null);lput('hub_pw',null);lput('hub_admin',null);sput('hub_admin',null);lput('tromot_names',null);
   sput('hub_access',null);sput('hub_pw',null);Object.keys(PAGES).forEach(a=>sput('gate_'+a,null));show();
 }
 $('p1').addEventListener('keyup',e=>{if(e.key==='Enter')submit()});
+$('nmIn').addEventListener('keyup',e=>{if(e.key==='Enter')saveName()});
 
 (function(){
   const t=get('akordim_theme');if(t)document.documentElement.dataset.theme=t;
@@ -176,8 +206,10 @@ $('p1').addEventListener('keyup',e=>{if(e.key==='Enter')submit()});
   }catch(e){}
   $('date').innerHTML=dd.map(x=>'<b>'+x+'</b>').join('');
   /* גישה שנשמרה במכשיר: משחזרים אותה, ונכנסים ישר לאפליקציה שביקשו או לאפליקציה היחידה (פעם אחת בכל פתיחה) */
-  if(!access().length){let A=[];try{A=JSON.parse(get('hub_access'))||[]}catch(e){}if(A.length)grant(A,get('hub_pw'))}
+  if(!access().length){let A=[];try{A=JSON.parse(get('hub_access'))||[]}catch(e){}if(A.length){grant(A,get('hub_pw'));if(get('hub_admin'))sput('hub_admin',get('hub_admin'))}}
   const A=access(),want=new URLSearchParams(location.search).get('open');
+  /* מכשיר שכבר נכנס אבל עוד לא נתן שם: מבקשים את השם פעם אחת */
+  if(A.length&&!myName()){$('lockv').hidden=true;$('namev').hidden=false;setTimeout(()=>$('nmIn').focus(),50);return}
   if(A.includes(want)){location.replace(PAGES[want]);return}
   if(A.length===1&&!sget('hub_seen')){sput('hub_seen','1');location.replace(PAGES[A[0]]);return}
   sput('hub_seen','1');
@@ -189,11 +221,23 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(
 <script>
 /* כמה מכשירים מחוברים עכשיו, ובאיזו אפליקציה (לחיצה על התווית מציגה פירוט) */
 const LIVE_NAMES={home:'בדף הבית',chords:'באקורדים',maaser:'במעשר',tromot:'בתרומות',shopping:'בקניות'};
-dbdPresence('home',r=>{
+const escH=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function ago(t){const m=Math.max(0,Math.round((Date.now()-t)/60000));return m<1?'עכשיו':m<60?'לפני '+m+' דק׳':'לפני '+Math.floor(m/60)+' שע׳ ו-'+(m%60)+' דק׳'}
+dbdPresence('home',(r,me)=>{
   const n=r.total||0;if(!n)return;
   $('live').hidden=false;$('liveN').textContent=n===1?'מחובר אחד עכשיו':n+' מחוברים עכשיו';
-  $('liveD').innerHTML=Object.keys(LIVE_NAMES).filter(k=>r.counts[k]).map(k=>LIVE_NAMES[k]+': '+r.counts[k]).join('<br>');
+  /* מנהל (סיסמה ראשית): רשימה מלאה. כל השאר: רק כמה בכל אפליקציה */
+  if(r.list){
+    $('live').classList.add('admin');
+    $('liveD').innerHTML=r.list.sort((a,b)=>a.s-b.s).map(x=>`<span class="who">👤 ${escH(x.n||'ללא שם')}${x.id===me?' (המכשיר הזה)':''}
+      <small>📱 ${escH(x.d||'')} · ${LIVE_NAMES[x.a]||''}${x.r?' · סיסמה: '+escH(x.r):' · עוד לא נכנס'}<br>⏱️ מחובר ${ago(x.s)}</small></span>`).join('');
+  }else{
+    $('liveD').innerHTML=Object.keys(LIVE_NAMES).filter(k=>r.counts[k]).map(k=>LIVE_NAMES[k]+': '+r.counts[k]).join('<br>');
+    if(r.admin==='password'||r.admin==='locked')$('liveD').innerHTML+='<br><small>⚠️ סיסמת המנהל בסקריפט שונה</small>';
+  }
 });
+try{$('devName').value=localStorage.getItem('dbd_name')||localStorage.getItem('shop_me')||''}catch(e){}
+function setDevName(v){try{localStorage.setItem('dbd_name',v.trim())}catch(e){}if(window.dbdPing)dbdPing()}
 </script>
 </body>
 </html>
