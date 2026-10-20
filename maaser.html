@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <script>try{if(sessionStorage.getItem('gate_maaser')!=='1'){document.documentElement.style.display='none';location.replace('./?open=maaser')}}catch(e){location.replace('./')}
+function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}location.href='./'}</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מעשר כספי</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1b5e20">
+    <link rel="icon" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="דני בן דוד">
+    <!-- Google Fonts & Font Awesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #1e7e48;
+            --primary-light: #e8f5e9;
+            --primary-gradient: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+            --blue: #1976d2;
+            --blue-light: #e3f2fd;
+            --blue-gradient: linear-gradient(135deg, #1565c0 0%, #1e88e5 100%);
+            --orange: #e65100;
+            --orange-light: #fff3e0;
+            --red: #d32f2f;
+            --bg-body: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-main: #263238;
+            --text-muted: #607d8b;
+            --border-color: #e0e0e0;
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.09);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Assistant', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding-bottom: 50px;
+        }
+
+        /* Header */
+        header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 56px 20px 48px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(27, 94, 32, 0.25);
+        }
+
+        .home-btn {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            background: rgba(255,255,255,0.18);
+            border: 1px solid rgba(255,255,255,0.35);
+            color: white;
+            border-radius: 10px;
+            padding: 7px 12px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .home-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        header p {
+            font-size: 15px;
+            opacity: 0.9;
+            margin-top: 6px;
+            font-weight: 300;
+        }
+
+        .container {
+            max-width: 820px;
+            margin: -25px auto 0;
+            padding: 0 20px;
+        }
+
+        /* Balance Card */
+        .balance-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            padding: 28px 24px;
+            text-align: center;
+            box-shadow: var(--shadow-subtle);
+            margin-bottom: 24px;
+            border: 1px solid rgba(0,0,0,0.04);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .balance-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-gradient);
+        }
+
+        .balance-title {
+            color: var(--text-muted);
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .balance-amount {
+            font-size: 46px;
+            font-weight: 800;
+            color: var(--orange);
+            letter-spacing: -1px;
+            margin-bottom: 20px;
+            transition: color 0.3s ease;
+        }
+
+        .balance-amount.zero {
+            color: var(--primary);
+        }
+
+        .balance-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            border-top: 1px dashed var(--border-color);
+            padding-top: 20px;
+        }
+
+        .balance-detail {
+            text-align: center;
+        }
+
+        .balance-detail .label {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .balance-detail .value {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .value.owed { color: var(--red); }
+        .value.paid { color: var(--primary); }
+
+        /* Actions Bar */
+        .main-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+
+        .btn {
+            padding: 15px 20px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.165, 0.84, 0.44, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-green {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .btn-blue {
+            background: var(--blue-gradient);
+            color: white;
+        }
+
+        .btn-excel {
+            background: white;
+            color: var(--primary);
+            border: 1.5px solid var(--primary);
+            width: 100%;
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+
+        .btn-excel:hover {
+            background: var(--primary-light);
+        }
+
+        /* Section Titles */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .section-title {
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .count-badge {
+            font-size: 13px;
+            background: #e0e0e0;
+            color: #555;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        /* History Cards */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            padding: 18px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-subtle);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border: 1px solid rgba(0,0,0,0.03);
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-1px);
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+
+        .icon-green {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .icon-blue {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+        .card-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .card-title {
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 4px;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-subtitle {
+            color: var(--text-muted);
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .card-meta {
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .maaser-badge {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .paid-badge {
+            background: var(--blue-light);
+            color: var(--blue);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .card-date {
+            color: #9e9e9e;
+            font-size: 12px;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #bbb;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+
+        .delete-btn:hover {
+            color: var(--red);
+        }
+
+        /* Recipient Highlight Pill */
+        .recipient-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #fff8e1;
+            color: #b78103;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        /* Modal Base */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            width: 100%;
+            max-width: 460px;
+            max-height: 90vh;
+            overflow-y: auto;
+            direction: rtl;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            animation: slideUp 0.25s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal h2 {
+            margin-bottom: 22px;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            color: #455a64;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 13px 16px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 15px;
+            text-align: right;
+            transition: all 0.2s;
+            background: #fafafa;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15);
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        /* Percent Selector */
+        .percent-selector {
+            display: flex;
+            gap: 12px;
+        }
+
+        .percent-option {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 17px;
+            font-weight: 800;
+            transition: all 0.2s;
+            color: #666;
+        }
+
+        .percent-option.selected {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        /* Result Box */
+        .result-box {
+            background: var(--primary-light);
+            border: 1.5px solid #c8e6c9;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .result-row:last-child {
+            margin-bottom: 0;
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--primary);
+            border-top: 1px dashed #a5d6a7;
+            padding-top: 10px;
+            margin-top: 6px;
+        }
+
+        /* Modal Actions */
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn-cancel {
+            flex: 1;
+            padding: 13px;
+            border: 1.5px solid var(--border-color);
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .btn-cancel:hover {
+            background: #f5f5f5;
+        }
+
+        .btn-save {
+            flex: 2;
+            padding: 13px;
+            border: none;
+            background: var(--primary-gradient);
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .btn-save-blue {
+            background: var(--blue-gradient);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 35px 20px;
+            background: white;
+            border-radius: var(--radius-md);
+            color: #9e9e9e;
+            font-size: 15px;
+            border: 1px dashed var(--border-color);
+        }
+
+        .empty-state i {
+            font-size: 32px;
+            margin-bottom: 10px;
+            opacity: 0.5;
+            display: block;
+        }
+
+        @media (max-width: 500px) {
+            .balance-amount { font-size: 38px; }
+            .main-buttons { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <button class="home-btn" onclick="goHome()" title="נעילה וחזרה לדף הבית"><i class="fa-solid fa-lock"></i> נעילה</button>
+    <h1><i class="fa-solid fa-coins"></i> מעשר כספי</h1>
+    <p>מערכת חכמה ומקצועית לניהול, חישוב ומעקב מעשרות כספים</p>
+</header>
+
+<div class="container">
+
+    <!-- כרטיס יתרה -->
+    <div class="balance-card">
+        <div class="balance-title">יתרת מעשר נוכחית לתשלום</div>
+        <div class="balance-amount" id="balanceDisplay">₪0.00</div>
+        <div class="balance-details">
+            <div class="balance-detail">
+                <div class="label"><i class="fa-solid fa-scale-unbalanced text-danger"></i> סה"כ חייב</div>
+                <div class="value owed" id="totalOwed">₪0.00</div>
+            </div>
+            <div class="balance-detail">
+                <div class="label"><i class="fa-solid fa-hand-holding-heart text-success"></i> סה"כ שולם</div>
+                <div class="value paid" id="totalPaid">₪0.00</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- כפתורים ראשיים -->
+    <div class="main-buttons">
+        <button class="btn btn-green" onclick="openTransactionModal()">
+            <i class="fa-solid fa-plus-circle"></i> עסקה חדשה
+        </button>
+        <button class="btn btn-blue" onclick="openPaymentModal()">
+            <i class="fa-solid fa-hand-holding-dollar"></i> שילמתי מעשר
+        </button>
+    </div>
+
+    <button class="btn btn-excel" onclick="exportToExcel()">
+        <i class="fa-solid fa-file-excel"></i> ייצוא דוח מלא לאקסל
+    </button>
+
+    <!-- היסטוריית עסקאות -->
+    <div class="section-header">
+        <div class="section-title">
+            <i class="fa-solid fa-receipt text-muted"></i> היסטוריית עסקאות
+        </div>
+        <span class="count-badge" id="transactionsCount">0</span>
+    </div>
+    <div id="transactionsList">
+        <div class="empty-state">
+            <i class="fa-solid fa-folder-open"></i>
+            אין עסקאות שמורות עדיין
+        </div>
+    </div>
+
+    <br>
+
+    <!-- היסטוריית תשלומים -->
+    <div class="section-header">
+        <div class="section-title">
+            <i class="fa-solid fa-clock-rotate-left text-muted"></i> יומן תשלומי מעשר
+        </div>
+        <span class="count-badge" id="paymentsCount">0</span>
+    </div>
+    <div id="paymentsList">
+        <div class="empty-state">
+            <i class="fa-solid fa-folder-open"></i>
+            אין תשלומים רשומים עדיין
+        </div>
+    </div>
+
+</div>
+
+<!-- מודל עסקה חדשה -->
+<div class="modal-overlay" id="transactionModal">
+    <div class="modal">
+        <h2><i class="fa-solid fa-cart-plus" style="color:var(--primary)"></i> הוספת עסקה</h2>
+
+        <div class="form-group">
+            <label>שם המוצר / תיאור הפרויקט</label>
+            <input type="text" id="productName" placeholder="לדוגמה: מצלמות אבטחה, מוצרי חשמל">
+        </div>
+
+        <div class="form-group">
+            <label>מחיר קנייה כולל מע"מ (₪)</label>
+            <input type="number" step="any" id="buyPrice" placeholder="0.00" oninput="calculate()">
+            <div class="hint">* מע"מ (18%) מנוכה אוטומטית לצורך חישוב הרווח</div>
+        </div>
+
+        <div class="form-group">
+            <label>מחיר מכירה סופי (₪)</label>
+            <input type="number" step="any" id="sellPrice" placeholder="0.00" oninput="calculate()">
+        </div>
+
+        <div class="form-group">
+            <label>שיעור מעשר</label>
+            <div class="percent-selector">
+                <div class="percent-option selected" id="opt10" onclick="selectPercent(10)">10% (מעשר)</div>
+                <div class="percent-option" id="opt20" onclick="selectPercent(20)">20% (חומש)</div>
+            </div>
+        </div>
+
+        <!-- תוצאה בזמן אמת -->
+        <div class="result-box" id="resultBox" style="display:none">
+            <div class="result-row">
+                <span>קנייה נטו (ללא מע"מ):</span>
+                <span id="resNoVat">₪0.00</span>
+            </div>
+            <div class="result-row">
+                <span>רווח נקי:</span>
+                <span id="resProfit">₪0.00</span>
+            </div>
+            <div class="result-row">
+                <span>סכום המעשר לחיוב:</span>
+                <span id="resMaaser">₪0.00</span>
+            </div>
+        </div>
+
+        <div class="modal-buttons">
+            <button class="btn-cancel" onclick="closeModals()">ביטול</button>
+            <button class="btn-save" onclick="saveTransaction()">שמור עסקה</button>
+        </div>
+    </div>
+</div>
+
+<!-- מודל תשלום מעשר -->
+<div class="modal-overlay" id="paymentModal">
+    <div class="modal">
+        <h2><i class="fa-solid fa-hand-holding-dollar" style="color:var(--blue)"></i> רישום תשלום מעשר</h2>
+
+        <div style="background:var(--orange-light); border: 1px solid #ffe0b2; border-radius:12px; padding:14px; margin-bottom:18px; text-align:center;">
+            <div style="color:var(--text-muted); font-size:13px; font-weight:600;">יתרת חוב מעשר נכון לעכשיו</div>
+            <div style="color:var(--orange); font-size:30px; font-weight:800;" id="modalBalance">₪0.00</div>
+        </div>
+
+        <div class="form-group">
+            <label>למי שולם המעשר? (ישיבה / משפחה / עמותה) *</label>
+            <input type="text" id="paymentRecipient" placeholder="לדוגמה: ישיבת מיר, משפחת כהן (נזקקים), קופת העיר">
+        </div>
+
+        <div class="form-group">
+            <label>סכום ששולם בפועל (₪) *</label>
+            <input type="number" step="any" id="paymentAmount" placeholder="0.00">
+        </div>
+
+        <div class="form-group">
+            <label>הערות נוספות (אופציונלי)</label>
+            <input type="text" id="paymentNote" placeholder="לדוגמה: צ'ק מס' 102, העברה בביט, מזומן">
+        </div>
+
+        <div class="modal-buttons">
+            <button class="btn-cancel" onclick="closeModals()">ביטול</button>
+            <button class="btn-save btn-save-blue" onclick="savePayment()">אשר תשלום</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+    // ============================
+    // נתונים
+    // ============================
+    let transactions = JSON.parse(localStorage.getItem('maaser_transactions') || '[]');
+    let payments = JSON.parse(localStorage.getItem('maaser_payments') || '[]');
+    let selectedPercent = 10;
+    const VAT_RATE = 1.18; // מע"מ 18%
+
+    // ============================
+    // חישובים וסיכומים
+    // ============================
+    function getTotals() {
+        const totalOwed = transactions.reduce((sum, t) => sum + (t.maaserAmount || 0), 0);
+        const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const balance = totalOwed - totalPaid;
+        return { totalOwed, totalPaid, balance };
+    }
+
+    // ============================
+    // עדכון תצוגה
+    // ============================
+    function updateDisplay() {
+        const { totalOwed, totalPaid, balance } = getTotals();
+
+        document.getElementById('balanceDisplay').textContent = '₪' + balance.toLocaleString('he-IL', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('totalOwed').textContent = '₪' + totalOwed.toLocaleString('he-IL', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('totalPaid').textContent = '₪' + totalPaid.toLocaleString('he-IL', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+        const balanceEl = document.getElementById('balanceDisplay');
+        if (balance <= 0) {
+            balanceEl.classList.add('zero');
+        } else {
+            balanceEl.classList.remove('zero');
+        }
+
+        document.getElementById('transactionsCount').textContent = transactions.length;
+        document.getElementById('paymentsCount').textContent = payments.length;
+
+        renderTransactions();
+        renderPayments();
+    }
+
+    // ============================
+    // רינדור עסקאות
+    // ============================
+    function renderTransactions() {
+        const container = document.getElementById('transactionsList');
+        if (transactions.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-folder-open"></i>
+                    אין עסקאות שמורות עדיין
+                </div>`;
+            return;
+        }
+
+        const reversed = [...transactions].reverse();
+        container.innerHTML = reversed.map(t => `
+            <div class="card">
+                <div class="card-icon icon-green">${t.maaserPercent}%</div>
+                <div class="card-content">
+                    <div class="card-title">${t.productName}</div>
+                    <div class="card-subtitle">
+                        קנייה: ₪${t.buyPrice.toFixed(2)} | מכירה: ₪${t.sellPrice.toFixed(2)} | רווח נקי: ₪${t.profit.toFixed(2)}
+                    </div>
+                </div>
+                <div class="card-meta">
+                    <div class="maaser-badge">₪${t.maaserAmount.toFixed(2)}</div>
+                    <div class="card-date">${t.date}</div>
+                    <button class="delete-btn" title="מחק עסקה" onclick="deleteTransaction(${t.id})">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // ============================
+    // רינדור תשלומים (עם הצגת המקבל)
+    // ============================
+    function renderPayments() {
+        const container = document.getElementById('paymentsList');
+        if (payments.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-folder-open"></i>
+                    אין תשלומים רשומים עדיין
+                </div>`;
+            return;
+        }
+
+        const reversed = [...payments].reverse();
+        container.innerHTML = reversed.map(p => `
+            <div class="card">
+                <div class="card-icon icon-blue"><i class="fa-solid fa-check"></i></div>
+                <div class="card-content">
+                    <div class="card-title">
+                        ${p.recipient ? p.recipient : 'תשלום מעשר'}
+                    </div>
+                    <div class="card-subtitle">
+                        ${p.note ? p.note : 'ללא הערות נוספות'}
+                    </div>
+                    ${p.recipient ? `<div class="recipient-tag"><i class="fa-solid fa-hand-holding-heart"></i> שולם ל: ${p.recipient}</div>` : ''}
+                </div>
+                <div class="card-meta">
+                    <div class="paid-badge">₪${p.amount.toFixed(2)}</div>
+                    <div class="card-date">${p.date}</div>
+                    <button class="delete-btn" title="מחק תשלום" onclick="deletePayment(${p.id})">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // ============================
+    // חישוב בזמן אמת
+    // ============================
+    function calculate() {
+        const buy = parseFloat(document.getElementById('buyPrice').value) || 0;
+        const sell = parseFloat(document.getElementById('sellPrice').value) || 0;
+
+        if (buy === 0 && sell === 0) {
+            document.getElementById('resultBox').style.display = 'none';
+            return;
+        }
+
+        const buyNoVat = buy / VAT_RATE;
+        const profit = sell - buyNoVat;
+        const maaser = profit > 0 ? profit * (selectedPercent / 100) : 0;
+
+        document.getElementById('resultBox').style.display = 'block';
+        document.getElementById('resNoVat').textContent = '₪' + buyNoVat.toFixed(2);
+        document.getElementById('resProfit').textContent = '₪' + profit.toFixed(2);
+        document.getElementById('resMaaser').textContent = '₪' + maaser.toFixed(2);
+    }
+
+    // ============================
+    // בחירת שיעור מעשר
+    // ============================
+    function selectPercent(percent) {
+        selectedPercent = percent;
+        document.getElementById('opt10').classList.toggle('selected', percent === 10);
+        document.getElementById('opt20').classList.toggle('selected', percent === 20);
+        calculate();
+    }
+
+    // ============================
+    // שמירת עסקה
+    // ============================
+    function saveTransaction() {
+        const productName = document.getElementById('productName').value.trim();
+        const buy = parseFloat(document.getElementById('buyPrice').value);
+        const sell = parseFloat(document.getElementById('sellPrice').value);
+
+        if (!productName || isNaN(buy) || isNaN(sell)) {
+            alert('נא למלא את כל השדות בצורה תקינה!');
+            return;
+        }
+
+        const buyNoVat = buy / VAT_RATE;
+        const profit = sell - buyNoVat;
+        const maaser = profit > 0 ? profit * (selectedPercent / 100) : 0;
+
+        const now = new Date();
+        const date = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+
+        transactions.push({
+            id: Date.now(),
+            productName,
+            buyPrice: buy,
+            buyPriceNoVat: buyNoVat,
+            sellPrice: sell,
+            profit,
+            maaserPercent: selectedPercent,
+            maaserAmount: maaser,
+            date
+        });
+
+        localStorage.setItem('maaser_transactions', JSON.stringify(transactions));
+        closeModals();
+        updateDisplay();
+        clearTransactionForm();
+    }
+
+    // ============================
+    // שמירת תשלום (כולל למי שולם)
+    // ============================
+    function savePayment() {
+        const recipient = document.getElementById('paymentRecipient').value.trim();
+        const amount = parseFloat(document.getElementById('paymentAmount').value);
+        const note = document.getElementById('paymentNote').value.trim();
+
+        if (!recipient) {
+            alert('אנא ציין למי שולם המעשר (מוסד, עמותה או אדם פרטי)!');
+            return;
+        }
+
+        if (isNaN(amount) || amount <= 0) {
+            alert('אנא הזן סכום תשלום תקין!');
+            return;
+        }
+
+        const now = new Date();
+        const date = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+
+        payments.push({
+            id: Date.now(),
+            recipient,
+            amount,
+            note,
+            date
+        });
+
+        localStorage.setItem('maaser_payments', JSON.stringify(payments));
+        closeModals();
+        updateDisplay();
+        document.getElementById('paymentRecipient').value = '';
+        document.getElementById('paymentAmount').value = '';
+        document.getElementById('paymentNote').value = '';
+    }
+
+    // ============================
+    // מחיקות
+    // ============================
+    function deleteTransaction(id) {
+        if (confirm('האם אתה בטוח שברצונך למחוק עסקה זו?')) {
+            transactions = transactions.filter(t => t.id !== id);
+            localStorage.setItem('maaser_transactions', JSON.stringify(transactions));
+            updateDisplay();
+        }
+    }
+
+    function deletePayment(id) {
+        if (confirm('האם אתה בטוח שברצונך למחוק תשלום זה?')) {
+            payments = payments.filter(p => p.id !== id);
+            localStorage.setItem('maaser_payments', JSON.stringify(payments));
+            updateDisplay();
+        }
+    }
+
+    // ============================
+    // ייצוא לאקסל
+    // ============================
+    function exportToExcel() {
+        const { totalOwed, totalPaid, balance } = getTotals();
+        const wb = XLSX.utils.book_new();
+
+        // גיליון עסקאות
+        const transData = [
+            ['תאריך', 'שם מוצר / פרויקט', 'מחיר קנייה כולל מע"מ', 'מחיר קנייה ללא מע"מ', 'מחיר מכירה', 'רווח נקי', 'אחוז מעשר', 'סכום מעשר']
+        ];
+        transactions.forEach(t => {
+            transData.push([
+                t.date,
+                t.productName,
+                t.buyPrice,
+                Number(t.buyPriceNoVat.toFixed(2)),
+                t.sellPrice,
+                Number(t.profit.toFixed(2)),
+                t.maaserPercent + '%',
+                Number(t.maaserAmount.toFixed(2))
+            ]);
+        });
+        const ws1 = XLSX.utils.aoa_to_sheet(transData);
+        XLSX.utils.book_append_sheet(wb, ws1, 'עסקאות');
+
+        // גיליון תשלומים - כולל עמודת "למי שולם"
+        const payData = [['תאריך', 'למי שולם (מקבל)', 'סכום ששולם', 'הערות']];
+        payments.forEach(p => {
+            payData.push([p.date, p.recipient || '-', p.amount, p.note || '']);
+        });
+        const ws2 = XLSX.utils.aoa_to_sheet(payData);
+        XLSX.utils.book_append_sheet(wb, ws2, 'תשלומי מעשר');
+
+        // גיליון סיכום
+        const sumData = [
+            ['דוח סיכום מעשר כספי', ''],
+            ['', ''],
+            ['סה"כ חוב מעשר מצטבר:', Number(totalOwed.toFixed(2))],
+            ['סה"כ שולם בפועל:', Number(totalPaid.toFixed(2))],
+            ['יתרה נוכחית לתשלום:', Number(balance.toFixed(2))]
+        ];
+        const ws3 = XLSX.utils.aoa_to_sheet(sumData);
+        XLSX.utils.book_append_sheet(wb, ws3, 'סיכום כללי');
+
+        XLSX.writeFile(wb, 'דוח_מעשר_כספי.xlsx');
+    }
+
+    // ============================
+    // מודלים וטפסים
+    // ============================
+    function openTransactionModal() {
+        document.getElementById('transactionModal').classList.add('active');
+    }
+
+    function openPaymentModal() {
+        const { balance } = getTotals();
+        document.getElementById('modalBalance').textContent = '₪' + balance.toLocaleString('he-IL', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('paymentModal').classList.add('active');
+    }
+
+    function closeModals() {
+        document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+    }
+
+    function clearTransactionForm() {
+        document.getElementById('productName').value = '';
+        document.getElementById('buyPrice').value = '';
+        document.getElementById('sellPrice').value = '';
+        document.getElementById('resultBox').style.display = 'none';
+        selectedPercent = 10;
+        selectPercent(10);
+    }
+
+    // סגירה בלחיצה על הרקע
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', function(e) {
+            if (e.target === this) closeModals();
+        });
+    });
+
+    // טעינה ראשונית
+    updateDisplay();
+    if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+
+</body>
+</html>
