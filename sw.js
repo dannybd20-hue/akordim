@@ -1,7 +1,7 @@
 // שומר את האתר במכשיר כדי שייפתח גם בלי אינטרנט.
 // תמיד מנסה קודם את הגרסה העדכנית מהרשת; העותק השמור משמש רק כשאין חיבור.
 // בקשות לענן (Google Apps Script) לא עוברות כאן בכלל.
-const CACHE = 'akordim-v1';
+const CACHE = 'akordim-v2';
 const FILES = ['./', 'index.html', 'manifest.json', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
