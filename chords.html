@@ -255,7 +255,7 @@ async function push(p0){
   try{
     const r=await post({password:p,songs,seen});
     if(r.ok){if(v===ver){dirty=false;setSt('מסונכרן ✓')}else{tmr=setTimeout(()=>push(p),300)}}
-    else setSt(r.error==='password'?'⚠️ הסיסמה בענן שונה':'⚠️ השמירה לענן נכשלה');
+    else setSt(r.error==='password'?'⚠️ הסיסמה בענן שונה':r.error==='locked'?'🔒 יותר מדי ניסיונות שגויים. נסה שוב בעוד רבע שעה':'⚠️ השמירה לענן נכשלה');
   }catch(e){setSt('⚠️ אין חיבור. נשמר במכשיר')}
   pushing=false;
 }
@@ -433,7 +433,7 @@ async function submitPw(){
   try{
     const r=await post({action:'check',password:v});
     if(r.ok){pw=v;authed=true;$('pw').close();setEdit(true);(async()=>{if(dirty&&synced)await push();backupSheet('daily')})();return}
-    e.textContent='סיסמה שגויה';
+    e.textContent=r.error==='locked'?'🔒 יותר מדי ניסיונות שגויים. נסה שוב בעוד רבע שעה':'סיסמה שגויה';
   }catch(x){e.textContent='אין חיבור לענן, נסה שוב'}
   e.style.display='block';
 }
