@@ -11,6 +11,8 @@ const DATA_FILE = 'shopping_data.json';
 // MAASER_PASSWORD: סיסמה נפרדת לאפליקציית המעשר (הנתונים נשמרים בקובץ נפרד, maaser_data.json)
 const MAASER_PASSWORD = 'כתוב-כאן-סיסמת-מעשר';
 const MAASER_FILE = 'maaser_data.json';
+// ADMIN_PASSWORD: הסיסמה הראשית של דף הבית. מי שנכנס איתה רואה בדף הבית מי מחובר עכשיו.
+const ADMIN_PASSWORD = 'כתוב-כאן-את-הסיסמה-הראשית';
 
 function out_(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
@@ -94,8 +96,8 @@ function failed_(scope) {
 }
 function passed_(scope) { CacheService.getScriptCache().remove('fails_' + scope); }
 
-/* "מי מחובר עכשיו" בדף הבית: כל דף פתוח באתר שולח מזהה מכשיר אקראי ושם האפליקציה.
-   לא צריך סיסמה, ומוחזר רק מספר המכשירים בכל אפליקציה. */
+/* "מי מחובר עכשיו" בדף הבית: כל דף פתוח באתר שולח מזהה מכשיר אקראי, שם האפליקציה ופרטי מכשיר.
+   לכולם מוחזר רק מספר המכשירים בכל אפליקציה. רשימה מפורטת מוחזרת רק עם ADMIN_PASSWORD. */
 const PRESENCE_PAGES = ['home', 'chords', 'maaser', 'tromot', 'shopping'];
 function presence_(d) {
   const lock = LockService.getScriptLock();
@@ -106,11 +108,21 @@ function presence_(d) {
     try { m = JSON.parse(c.get('presence') || '{}'); } catch (x) {}
     Object.keys(m).forEach(k => { if (now - m[k].t > 100000) delete m[k]; });
     const id = String(d.id || '').slice(0, 40);
-    if (id && PRESENCE_PAGES.indexOf(d.page) >= 0) { if (d.leave) delete m[id]; else m[id] = { a: d.page, t: now }; }
+    const cut = (v, n) => String(v || '').slice(0, n);
+    if (id && PRESENCE_PAGES.indexOf(d.page) >= 0) {
+      if (d.leave) delete m[id];
+      else m[id] = { a: d.page, t: now, n: cut(d.n, 30), r: cut(d.r, 40), d: cut(d.d, 20), s: Number(d.s) || now };
+    }
     c.put('presence', JSON.stringify(m), 600);
     const counts = {};
     Object.keys(m).forEach(k => { counts[m[k].a] = (counts[m[k].a] || 0) + 1; });
-    return out_({ ok: true, total: Object.keys(m).length, counts: counts });
+    const res = { ok: true, total: Object.keys(m).length, counts: counts };
+    if (d.admin) {
+      if (locked_('admin')) res.admin = 'locked';
+      else if (d.admin !== ADMIN_PASSWORD) { failed_('admin'); res.admin = 'password'; }
+      else res.list = Object.keys(m).map(k => ({ id: k, a: m[k].a, n: m[k].n, r: m[k].r, d: m[k].d, s: m[k].s }));
+    }
+    return out_(res);
   } finally { lock.releaseLock(); }
 }
 
