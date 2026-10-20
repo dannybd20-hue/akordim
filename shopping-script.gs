@@ -4,6 +4,8 @@
 // NTFY_TOPIC: שם ערוץ ההתראות באפליקציית ntfy. בוחרים שם ארוך שקשה לנחש. ריק = בלי התראות.
 const SHOP_PASSWORD = 'כתוב-כאן-סיסמה';
 const NTFY_TOPIC = '';
+// NTFY_TOKEN: מפתח גישה מחשבון חינמי ב-ntfy.sh. בלעדיו גוגל מגיע מהר למכסה היומית של ntfy.
+const NTFY_TOKEN = '';
 const DATA_FILE = 'shopping_data.json';
 
 function out_(o) {
@@ -27,6 +29,7 @@ function notify_(lines) {
   try {
     const r = UrlFetchApp.fetch('https://ntfy.sh/', {
       method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      headers: NTFY_TOKEN ? { Authorization: 'Bearer ' + NTFY_TOKEN } : {},
       payload: JSON.stringify({ topic: NTFY_TOPIC, title: '🛒 קניות לבית', message: lines.join('\n'), tags: ['shopping_cart'] })
     });
     if (r.getResponseCode() !== 200) console.warn('ntfy ' + r.getResponseCode() + ': ' + r.getContentText());
