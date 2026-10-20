@@ -145,7 +145,7 @@ dialog h2{font-size:20px;font-weight:800;margin-bottom:14px}
     <input id="q" type="search" placeholder="🔎 חיפוש לפי שם, מטרה או שימוש" oninput="page=1;render()">
     <select id="fm" onchange="page=1;render()"><option value="">כל אמצעי התשלום</option><option>העברה</option><option>מזומן</option><option>ביט</option><option value="-">לא צוין</option></select>
     <div class="tabs" id="tabs">
-      <button data-f="all" class="on">הכול</button><button data-f="open">זמין</button><button data-f="used">שומש</button><button data-f="donors">👥 תורמים</button>
+      <button data-f="open" class="on">💰 זמין <span id="cOpen"></span></button><button data-f="used">📁 שומש <span id="cUsed"></span></button><button data-f="donors">👥 תורמים</button><button data-f="all">הכול</button>
     </div>
   </div>
   <div id="list"></div>
@@ -197,7 +197,7 @@ dialog h2{font-size:20px;font-weight:800;margin-bottom:14px}
 /* תרומה: {id, name, amount, method, date, purpose, note, used, usedFor, usedDate}
    הכול נשמר במכשיר (localStorage). גיבוי JSON מאפשר להעביר בין מכשירים. */
 const KEY='tromot_data',$=id=>document.getElementById(id);
-let D=[],filter='all',page=1,editId=null,method='',useIds=[];
+let D=[],filter='open',page=1,editId=null,method='',useIds=[];
 const PAGE=60;
 
 /* שמות התורמים וכל פעולה שמשנה נתונים חסומים עד שמקלידים את הקוד (2014; נשמר כאן רק הגיבוב שלו).
@@ -236,14 +236,16 @@ function sorted(){return [...D].sort((a,b)=>(b.date||'').localeCompare(a.date||'
 
 function render(){
   const tot=D.reduce((s,d)=>s+d.amount,0),used=D.filter(d=>d.used).reduce((s,d)=>s+d.amount,0);
+  $('cOpen').textContent='('+D.filter(d=>!d.used).length+')';$('cUsed').textContent='('+D.filter(d=>d.used).length+')';
   $('sTotal').textContent=ils(tot);$('sUsed').textContent=ils(used);$('sAvail').textContent=ils(tot-used);
   const q=$('q').value.trim(),fm=$('fm').value;
   if(filter==='donors'){renderDonors(q,fm);return}
   let L=sorted().filter(d=>filter==='all'||(filter==='used')===!!d.used);
+  if(filter==='used')L.sort((a,b)=>(b.usedDate||'').localeCompare(a.usedDate||''));
   if(fm)L=L.filter(d=>fm==='-'?!d.method:d.method===fm);
   if(q)L=L.filter(d=>(showNames?[d.name,d.purpose,d.note,d.usedFor,String(d.amount)]:[d.purpose,d.usedFor,String(d.amount)]).join(' ').includes(q));
   const box=$('list');
-  if(!L.length){box.innerHTML=`<div class="empty">${D.length?'לא נמצאו תרומות':'אין תרומות עדיין.<br>לחץ "תרומה חדשה", או ייבא קובץ גיבוי.'}</div>`;return}
+  if(!L.length){box.innerHTML=`<div class="empty">${D.length?(filter==='open'&&!$('q').value.trim()?'אין כרגע כסף זמין. כל התרומות שומשו ✓':filter==='used'&&!$('q').value.trim()?'עוד לא שומש כלום':'לא נמצאו תרומות'):'אין תרומות עדיין.<br>לחץ "תרומה חדשה", או ייבא קובץ גיבוי.'}</div>`;return}
   box.innerHTML=L.slice(0,page*PAGE).map(d=>`
     <div class="card${d.used?' used':''}" data-id="${d.id}">
       <input type="checkbox" class="chk" ${useIds.includes(d.id)?'checked':''} onchange="toggleSel(${d.id},this.checked)">
