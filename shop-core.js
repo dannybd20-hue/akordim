@@ -1,8 +1,9 @@
 /* ליבת אפליקציית הקניות. אותו קוד רץ גם בדף (shopping.html) וגם בסקריפט של גוגל,
    כך שכל שינוי מחושב בדיוק באותה צורה בטלפון ובענן.
    מבנה הנתונים:
-     items    - רשימת הקניות: {id, name, qty, by, at, auto?, src?}
-     products - מוצרים שיש בבית: {id, name, emoji, img}
+     items    - רשימת הקניות: {id, name, qty, by, at, auto?, src?, ntf?}
+                ntf === false: עוד לא נשלחה הודעה על הפריט (מחכה לכפתור "שלח הודעה")
+     products - מוצרים שיש בבית: {id, name, emoji, img, stock}
      hist     - מתי כל פריט נקנה: {key: {n: שם, t: [זמנים]}}
      skip     - פריט קבוע שנמחק מהרשימה בלי שנקנה: לא להוסיף אותו שוב עד הזמן הזה */
 var SHOP_DAY = 864e5;
@@ -12,6 +13,12 @@ function shopKey(n) {
 }
 function shopNew() { return { items: [], products: [], hist: {}, skip: {}, rev: 0 }; }
 function shopFind(arr, id) { for (var i = 0; i < arr.length; i++) if (arr[i].id === id) return i; return -1; }
+function shopProd(st, name) {
+  var k = shopKey(name);
+  for (var i = 0; i < st.products.length; i++) if (shopKey(st.products[i].name) === k) return st.products[i];
+  return null;
+}
+function shopPending(st) { return st.items.filter(function (x) { return x.ntf === false; }); }
 function shopHasKey(st, key) { return st.items.some(function (x) { return shopKey(x.name) === key; }); }
 function shopMedian(a) {
   a = a.slice().sort(function (x, y) { return x - y; });
@@ -56,7 +63,11 @@ function shopApply(st, o, now) {
       for (i = 0; i < st.items.length; i++) {
         if (shopKey(st.items[i].name) === k) { if (o.qty) st.items[i].qty = o.qty; return !!o.qty; }
       }
-      st.items.push({ id: o.iid, name: String(o.name).trim(), qty: o.qty || '', by: o.by || '', at: now, src: o.src || '' });
+      st.items.push({ id: o.iid, name: String(o.name).trim(), qty: o.qty || '', by: o.by || '', at: now, src: o.src || '', ntf: !!o.notify });
+      return true;
+    case 'notify': // נשלחה הודעה על כל הפריטים שחיכו
+      if (!shopPending(st).length) return false;
+      st.items.forEach(function (x) { if (x.ntf === false) x.ntf = true; });
       return true;
     case 'edit':
       i = shopFind(st.items, o.iid);
@@ -74,6 +85,8 @@ function shopApply(st, o, now) {
       h.t.push(now);
       if (h.t.length > 12) h.t.shift();
       delete st.skip[k];
+      var p = shopProd(st, it.name); // מה שנקנה נכנס למלאי בבית
+      if (p) p.stock = (p.stock || 0) + (parseInt(it.qty, 10) || 1);
       return true;
     case 'del':
       i = shopFind(st.items, o.iid);
@@ -99,12 +112,17 @@ function shopApply(st, o, now) {
     case 'padd':
       if (!shopKey(o.name) || shopFind(st.products, o.pid) >= 0) return false;
       if (st.products.some(function (p) { return shopKey(p.name) === shopKey(o.name); })) return false;
-      st.products.push({ id: o.pid, name: String(o.name).trim(), emoji: o.emoji || '', img: o.img || '' });
+      st.products.push({ id: o.pid, name: String(o.name).trim(), emoji: o.emoji || '', img: o.img || '', stock: o.stock || 0 });
       return true;
     case 'pedit':
       i = shopFind(st.products, o.pid);
       if (i < 0) return false;
-      ['name', 'emoji', 'img'].forEach(function (f) { if (o[f] !== undefined) st.products[i][f] = o[f]; });
+      ['name', 'emoji', 'img', 'stock'].forEach(function (f) { if (o[f] !== undefined) st.products[i][f] = o[f]; });
+      return true;
+    case 'pstock': // שינוי הכמות שיש בבית
+      i = shopFind(st.products, o.pid);
+      if (i < 0) return false;
+      st.products[i].stock = Math.max(0, (st.products[i].stock || 0) + o.delta);
       return true;
     case 'pdel':
       i = shopFind(st.products, o.pid);

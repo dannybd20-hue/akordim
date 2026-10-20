@@ -1,9 +1,10 @@
 // Apps Script לאפליקציית הקניות לבית.
 // מתקינים בפרויקט Apps Script חדש ונפרד (לא בסקריפט של האקורדים). ההוראות המלאות בצ'אט.
 // SHOP_PASSWORD: הסיסמה המשפחתית לאפליקציה.
-// NOTIFY_EMAILS: לאן לשלוח מייל כשמשהו נוסף לרשימה. רשימה ריקה = בלי התראות.
+// FAMILY: שם במשפחה -> מייל. ההודעה נשלחת לכל מי שברשימה חוץ ממי שהוסיף את הפריט.
+//         השמות צריכים להיות כמו בכפתורי "מי אני" באפליקציה. ריק = בלי התראות.
 const SHOP_PASSWORD = 'כתוב-כאן-סיסמה';
-const NOTIFY_EMAILS = [];
+const FAMILY = {};
 const APP_URL = 'https://dannybd20-hue.github.io/akordim/shopping.html';
 const DATA_FILE = 'shopping_data.json';
 
@@ -22,24 +23,26 @@ function save_(f, st) {
   if (f) f.setContent(body); else DriveApp.createFile(DATA_FILE, body, MimeType.PLAIN_TEXT);
 }
 
-// שולח מייל לבני המשפחה. אפליקציית Gmail בטלפון מקפיצה עליו התראה
-function notify_(lines) {
-  if (!NOTIFY_EMAILS.length || !lines.length) return;
+// שולח מייל לבני המשפחה (חוץ מהשולח). אפליקציית Gmail בטלפון מקפיצה עליו התראה
+function notify_(lines, from) {
+  const to = Object.keys(FAMILY).filter(function (n) { return n !== from; }).map(function (n) { return FAMILY[n]; });
+  if (!to.length || !lines.length) return;
   try {
     MailApp.sendEmail({
-      to: NOTIFY_EMAILS.join(','),
-      subject: '🛒 ' + lines[0] + (lines.length > 1 ? ' (+' + (lines.length - 1) + ')' : ''),
+      to: to.join(','),
+      subject: '🛒 ' + (from ? from + ': ' : '') + lines[0] + (lines.length > 1 ? ' (+' + (lines.length - 1) + ')' : ''),
       body: lines.join('\n') + '\n\nלרשימת הקניות: ' + APP_URL,
       name: 'קניות לבית'
     });
-    return true;
+    return to;
   } catch (x) { console.warn('mail: ' + x); }
 }
 
-// בדיקה: מריצים מהעורך, ואמור להגיע מייל לכל הכתובות
+// בדיקה: מריצים מהעורך, ואמור להגיע מייל לכל בני המשפחה
 function testMail() {
-  Logger.log(notify_(['🔔 בדיקה מהסקריפט']) ? 'נשלח ל: ' + NOTIFY_EMAILS.join(', ') + ' (נשארו היום: ' + MailApp.getRemainingDailyQuota() + ')'
-                                           : 'לא נשלח: NOTIFY_EMAILS ריק או שגיאה (ראו אזהרה למעלה)');
+  const to = notify_(['🔔 בדיקה מהסקריפט']);
+  Logger.log(to ? 'נשלח ל: ' + to.join(', ') + ' (נשארו היום: ' + MailApp.getRemainingDailyQuota() + ')'
+                : 'לא נשלח: FAMILY ריק או שגיאה (ראו אזהרה למעלה)');
 }
 
 function doGet() { return out_({ ok: true, app: 'shopping' }); }
@@ -57,20 +60,21 @@ function doPost(e) {
     st = l.st;
     let changed = false;
     (d.ops || []).forEach(function (o) {
+      const pending = o.type === 'notify' ? shopPending(st).map(function (x) { return x.name + (x.qty ? ' (' + x.qty + ')' : ''); }) : [];
       const before = st.items.length;
       if (!shopApply(st, o, now)) return;
       changed = true;
-      if (o.type === 'add' && st.items.length > before) {
-        lines.push(o.src === 'pantry' ? '🏠 נגמר בבית: ' + o.name + (o.by ? ' (' + o.by + ')' : '')
-                                      : '➕ ' + (o.by || 'מישהו') + ' הוסיף/ה: ' + o.name);
+      if (o.type === 'add' && o.notify && st.items.length > before) {
+        lines.push((o.src === 'pantry' ? '🏠 נגמר בבית: ' : '➕ ') + o.name + (o.qty ? ' (' + o.qty + ')' : ''));
       }
+      pending.forEach(function (n) { lines.push('➕ ' + n); });
     });
     shopAuto(st, now).forEach(function (n) { lines.push('🔁 נוסף אוטומטית: ' + n); changed = true; });
     if (changed) save_(l.f, st);
   } finally {
     lock.releaseLock();
   }
-  notify_(lines);
+  notify_(lines, d.by);
   return out_(d.rev === st.rev ? { ok: true, rev: st.rev } : { ok: true, rev: st.rev, state: st });
 }
 
@@ -98,15 +102,16 @@ function setup() {
   const l = load_();
   if (!l.f) save_(null, l.st);
   notify_(['✅ ההתראות של קניות לבית עובדות']);
-  Logger.log('מוכן. ' + (NOTIFY_EMAILS.length ? 'נשלח מייל ניסיון ל: ' + NOTIFY_EMAILS.join(', ') : 'התראות כבויות (NOTIFY_EMAILS ריק)'));
+  Logger.log('מוכן. ' + (Object.keys(FAMILY).length ? 'נשלח מייל ניסיון ל: ' + Object.keys(FAMILY).join(', ') : 'התראות כבויות (FAMILY ריק)'));
 }
 
 /* ---------------- ליבה משותפת (זהה ל-shop-core.js באתר) ---------------- */
 /* ליבת אפליקציית הקניות. אותו קוד רץ גם בדף (shopping.html) וגם בסקריפט של גוגל,
    כך שכל שינוי מחושב בדיוק באותה צורה בטלפון ובענן.
    מבנה הנתונים:
-     items    - רשימת הקניות: {id, name, qty, by, at, auto?, src?}
-     products - מוצרים שיש בבית: {id, name, emoji, img}
+     items    - רשימת הקניות: {id, name, qty, by, at, auto?, src?, ntf?}
+                ntf === false: עוד לא נשלחה הודעה על הפריט (מחכה לכפתור "שלח הודעה")
+     products - מוצרים שיש בבית: {id, name, emoji, img, stock}
      hist     - מתי כל פריט נקנה: {key: {n: שם, t: [זמנים]}}
      skip     - פריט קבוע שנמחק מהרשימה בלי שנקנה: לא להוסיף אותו שוב עד הזמן הזה */
 var SHOP_DAY = 864e5;
@@ -116,6 +121,12 @@ function shopKey(n) {
 }
 function shopNew() { return { items: [], products: [], hist: {}, skip: {}, rev: 0 }; }
 function shopFind(arr, id) { for (var i = 0; i < arr.length; i++) if (arr[i].id === id) return i; return -1; }
+function shopProd(st, name) {
+  var k = shopKey(name);
+  for (var i = 0; i < st.products.length; i++) if (shopKey(st.products[i].name) === k) return st.products[i];
+  return null;
+}
+function shopPending(st) { return st.items.filter(function (x) { return x.ntf === false; }); }
 function shopHasKey(st, key) { return st.items.some(function (x) { return shopKey(x.name) === key; }); }
 function shopMedian(a) {
   a = a.slice().sort(function (x, y) { return x - y; });
@@ -160,7 +171,11 @@ function shopApply(st, o, now) {
       for (i = 0; i < st.items.length; i++) {
         if (shopKey(st.items[i].name) === k) { if (o.qty) st.items[i].qty = o.qty; return !!o.qty; }
       }
-      st.items.push({ id: o.iid, name: String(o.name).trim(), qty: o.qty || '', by: o.by || '', at: now, src: o.src || '' });
+      st.items.push({ id: o.iid, name: String(o.name).trim(), qty: o.qty || '', by: o.by || '', at: now, src: o.src || '', ntf: !!o.notify });
+      return true;
+    case 'notify': // נשלחה הודעה על כל הפריטים שחיכו
+      if (!shopPending(st).length) return false;
+      st.items.forEach(function (x) { if (x.ntf === false) x.ntf = true; });
       return true;
     case 'edit':
       i = shopFind(st.items, o.iid);
@@ -178,6 +193,8 @@ function shopApply(st, o, now) {
       h.t.push(now);
       if (h.t.length > 12) h.t.shift();
       delete st.skip[k];
+      var p = shopProd(st, it.name); // מה שנקנה נכנס למלאי בבית
+      if (p) p.stock = (p.stock || 0) + (parseInt(it.qty, 10) || 1);
       return true;
     case 'del':
       i = shopFind(st.items, o.iid);
@@ -203,12 +220,17 @@ function shopApply(st, o, now) {
     case 'padd':
       if (!shopKey(o.name) || shopFind(st.products, o.pid) >= 0) return false;
       if (st.products.some(function (p) { return shopKey(p.name) === shopKey(o.name); })) return false;
-      st.products.push({ id: o.pid, name: String(o.name).trim(), emoji: o.emoji || '', img: o.img || '' });
+      st.products.push({ id: o.pid, name: String(o.name).trim(), emoji: o.emoji || '', img: o.img || '', stock: o.stock || 0 });
       return true;
     case 'pedit':
       i = shopFind(st.products, o.pid);
       if (i < 0) return false;
-      ['name', 'emoji', 'img'].forEach(function (f) { if (o[f] !== undefined) st.products[i][f] = o[f]; });
+      ['name', 'emoji', 'img', 'stock'].forEach(function (f) { if (o[f] !== undefined) st.products[i][f] = o[f]; });
+      return true;
+    case 'pstock': // שינוי הכמות שיש בבית
+      i = shopFind(st.products, o.pid);
+      if (i < 0) return false;
+      st.products[i].stock = Math.max(0, (st.products[i].stock || 0) + o.delta);
       return true;
     case 'pdel':
       i = shopFind(st.products, o.pid);

@@ -56,7 +56,6 @@ h3{font:800 14px Heebo,sans-serif;color:var(--mut);margin:22px 4px 8px}
 .rec span{flex:1}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;margin-top:14px}
 .pc{position:relative;background:var(--pk);border:1px solid var(--pkb);border-radius:18px;padding:10px 6px 8px;text-align:center;transition:.15s}
-.pc:active{transform:scale(.96)}
 .pc .ph{width:64px;height:64px;margin:0 auto 6px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:40px;overflow:hidden;background:#ffffff8c}
 :root[data-theme=dark] .pc .ph{background:#ffffff14}
 .pc .ph img{width:100%;height:100%;object-fit:cover}
@@ -86,6 +85,26 @@ dialog h2{margin:0 0 10px;font:800 19px Rubik,Heebo,sans-serif}
 #toast{position:fixed;bottom:18px;left:50%;transform:translate(-50%,120px);background:#1e293b;color:#fff;border-radius:14px;padding:10px 14px;display:flex;gap:14px;align-items:center;font-size:14px;transition:.25s;z-index:50;max-width:calc(100% - 32px)}
 #toast.on{transform:translate(-50%,0)}
 #toast button{background:none;border:0;color:#f9a8d4;font-weight:800}
+/* שורת ההוספה: תמונה, שם, כמות */
+.cam{width:42px;height:42px;border-radius:12px;background:var(--pk);border:1px dashed var(--pkb);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;flex:none;overflow:hidden;align-self:center;margin-inline-start:2px}
+.cam img{width:100%;height:100%;object-fit:cover}
+.add .nq{flex:0 0 70px;width:70px;border-inline-start:1px solid var(--bd);border-radius:0;font-size:15px;text-align:center;padding:10px 4px}
+.ntfrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 4px 0}
+.ntf{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:700;cursor:pointer;user-select:none}
+.ntf input{width:20px;height:20px;accent-color:var(--pr);margin:0}
+.sendall{margin-inline-start:auto;border-radius:12px;background:var(--pr);color:#fff;border:0;font-weight:800;padding:9px 14px;font-size:13px;box-shadow:0 4px 12px #db277733}
+.pend{color:var(--pr);font-weight:700}
+.pic{cursor:pointer;position:relative}
+/* כמות במלאי על כרטיס המוצר */
+.stk{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px}
+.stk button{width:30px;height:30px;border-radius:50%;border:1px solid var(--pkb);background:var(--card);font-weight:900;font-size:17px;padding:0;line-height:1;color:var(--pr)}
+.stk span{min-width:24px;font-weight:900;font-size:16px}
+.addb{width:100%;margin-top:8px;border:0;border-radius:12px;background:var(--pr);color:#fff;font-weight:800;font-size:13px;padding:8px 4px}
+.addb:disabled{background:var(--card);color:var(--pr);border:1px solid var(--pkb);cursor:default}
+.pc small{display:block;color:var(--mut);font-size:11px;margin-top:2px}
+.pc.out .stk span{color:#e11d48}
+#newItem::-webkit-calendar-picker-indicator{display:none!important}
+.pc .tg.out{background:#94a3b8}
 #login{display:none;max-width:360px;margin:60px auto;text-align:center}
 body.locked #login{display:block}body.locked main,body.locked .tabs{display:none}
 </style>
@@ -116,14 +135,23 @@ body.locked #login{display:block}body.locked main,body.locked .tabs{display:none
 <main>
   <section id="v_list">
     <div class="banner" id="demo" style="display:none">מצב הדגמה: עדיין לא מחובר לענן, ולכן הרשימה נשמרת רק במכשיר הזה.</div>
-    <div class="add"><input id="newItem" list="names" placeholder="מה צריך לקנות?" autocomplete="off" onkeyup="if(event.key==='Enter')addTyped()"><button onclick="addTyped()">הוסף</button></div>
+    <div class="add">
+      <label class="cam" id="newCam" title="צלמו או בחרו תמונה של המוצר">📷<input type="file" accept="image/*" hidden onchange="pickNewImg(event)"></label>
+      <input id="newItem" list="names" placeholder="מה צריך לקנות?" autocomplete="off" onkeyup="if(event.key==='Enter')addTyped()">
+      <input id="newQty" class="nq" placeholder="כמות" autocomplete="off" onkeyup="if(event.key==='Enter')addTyped()">
+      <button onclick="addTyped()">הוסף</button>
+    </div>
+    <div class="ntfrow">
+      <label class="ntf"><input type="checkbox" id="ntfChk" onchange="put('shop_ntf',this.checked?'1':'0')"><span id="ntfLbl">✉️ שלח הודעה</span></label>
+      <button class="sendall" id="sendAll" onclick="sendNotify()" style="display:none"></button>
+    </div>
     <datalist id="names"></datalist>
     <div class="items" id="items"></div>
     <div id="recBox"></div>
   </section>
   <section id="v_home" style="display:none">
     <input class="psearch" id="psearch" type="search" placeholder="🔎 חיפוש מוצר" oninput="renderHome()">
-    <p class="note">נגמר משהו? לוחצים על המוצר והוא נכנס לרשימת הקניות. ✏️ לעריכה ולהוספת תמונה.</p>
+    <p class="note">＋ ו-− משנים כמה יש בבית. כשמגיעים ל-0 המוצר נכנס לרשימת הקניות. "🛒 לרשימה" מכניס את המוצר לרשימה מיד. ✏️ לעריכה ולצילום.</p>
     <div class="grid" id="grid"></div>
   </section>
 </main>
@@ -143,15 +171,18 @@ body.locked #login{display:block}body.locked main,body.locked .tabs{display:none
     <div style="flex:1">
       <input class="fld" id="pName" placeholder="שם המוצר (למשל: חלב)" oninput="prevUpd()">
       <div class="row">
-        <label class="b" style="cursor:pointer">📷 תמונה<input type="file" accept="image/*" hidden onchange="pickImg(event)"></label>
+        <label class="b" style="cursor:pointer">📷 צלם<input type="file" accept="image/*" capture="environment" hidden onchange="pickImg(event)"></label>
+        <label class="b" style="cursor:pointer">🖼️ גלריה<input type="file" accept="image/*" hidden onchange="pickImg(event)"></label>
         <button class="b" id="pNoImg" onclick="pImg='';prevUpd()">הסר תמונה</button>
       </div>
     </div>
   </div>
+  <label class="row" style="margin-bottom:10px;font-weight:700;font-size:14px">כמה יש בבית: <input class="fld" id="pStock" type="number" min="0" inputmode="numeric" style="width:90px;margin:0;text-align:center"></label>
   <input class="fld" id="pEmoji" placeholder="אימוג'י במקום תמונה (לא חובה)" oninput="prevUpd()" style="font-size:14px">
   <div class="row end"><button class="b dn" id="pDel" onclick="delProd()">מחק מוצר</button><span style="flex:1"></span><button class="b" onclick="dProd.close()">ביטול</button><button class="b pr" onclick="saveProd()">שמור</button></div>
 </dialog>
 
+<input type="file" id="rowCam" accept="image/*" capture="environment" hidden onchange="pickRowImg(event)">
 <div id="toast"><span id="tmsg"></span><button id="tbtn"></button></div>
 
 <script src="shop-core.js"></script>
@@ -193,12 +224,39 @@ function act(o){
   if(SHOP_CLOUD)queue.push(o);else shopAuto(st,now);
   persist();render();sync();
 }
-function addName(name,src){
+/* למי תגיע ההודעה: לבן המשפחה השני */
+const other=()=>me==='דני'?'ציפי':me==='ציפי'?'דני':'המשפחה';
+function addName(name,src,qty){
   name=String(name||'').trim();if(!name)return false;
   if(st.items.some(x=>shopKey(x.name)===shopKey(name))){toast('„'+name+'” כבר ברשימה');return false}
-  act({type:'add',iid:uid(),name,by:me,src:src||''});return true;
+  act({type:'add',iid:uid(),name,qty:qty||'',by:me,src:src||'',notify:$('ntfChk').checked});return true;
 }
-function addTyped(){const i=$('newItem');if(addName(i.value)){i.value='';toast('נוסף לרשימה ✓')}i.focus()}
+let newImg='';
+function addTyped(){
+  const i=$('newItem'),q=$('newQty'),name=i.value.trim();
+  if(!name){i.focus();return}
+  if(newImg){const p=prodFor(name);if(p)act({type:'pedit',pid:p.id,img:newImg});else act({type:'padd',pid:uid(),name,img:newImg})}
+  if(addName(name,'',q.value.trim())){i.value='';q.value='';newImg='';camUpd();toast($('ntfChk').checked?'נוסף ונשלחה הודעה ל'+other()+' ✓':'נוסף לרשימה ✓')}
+  i.focus();
+}
+function sendNotify(){const n=shopPending(st).length;if(!n)return;act({type:'notify'});toast('✉️ נשלחה הודעה ל'+other()+' על '+n+' פריטים')}
+/* תמונות: מקטינים ל-200 פיקסלים כדי שהרשימה תישאר קלה ומהירה */
+function shrink(file,cb){
+  const img=new Image();img.onload=()=>{
+    const s=200,c=document.createElement('canvas');c.width=c.height=s;
+    const m=Math.min(img.width,img.height);c.getContext('2d').drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,s,s);
+    URL.revokeObjectURL(img.src);cb(c.toDataURL('image/jpeg',.72));
+  };img.src=URL.createObjectURL(file);
+}
+function camUpd(){const c=$('newCam'),f=c.querySelector('input');c.textContent='';if(newImg){const i=new Image();i.src=newImg;c.append(i)}else c.append('📷');c.append(f)}
+function pickNewImg(e){const f=e.target.files[0];e.target.value='';if(f)shrink(f,d=>{newImg=d;camUpd();$('newItem').focus()})}
+/* לחיצה על התמונה של פריט ברשימה: מצלמים אותו והתמונה נשמרת במוצר */
+let rowName='';
+function photoFor(name){rowName=name;$('rowCam').click()}
+function pickRowImg(e){
+  const f=e.target.files[0];e.target.value='';if(!f||!rowName)return;
+  shrink(f,d=>{const p=prodFor(rowName);if(p)act({type:'pedit',pid:p.id,img:d});else act({type:'padd',pid:uid(),name:rowName,img:d});toast('📷 התמונה נשמרה')});
+}
 function bought(it,row){
   row.classList.add('gone');
   setTimeout(()=>{act({type:'bought',iid:it.id});toast('„'+it.name+'” נקנה ✓','ביטול',()=>act({type:'restore',item:it}))},220);
@@ -210,7 +268,7 @@ async function sync(){
   if(!SHOP_CLOUD||!pw||busy)return;
   busy=true;const sent=queue.slice();
   try{
-    const r=await fetch(SHOP_CLOUD,{method:'POST',body:JSON.stringify({password:pw,ops:sent,rev:sent.length?-1:st.rev})}).then(r=>r.json());
+    const r=await fetch(SHOP_CLOUD,{method:'POST',body:JSON.stringify({password:pw,by:me,ops:sent,rev:sent.length?-1:st.rev})}).then(r=>r.json());
     if(!r.ok){if(r.error==='password')logout('הסיסמה השתנתה, נא להיכנס שוב');else dot('err');return}
     queue=queue.slice(sent.length);
     if(r.state){st=r.state;const now=Date.now();queue.forEach(o=>shopApply(st,o,now))}
@@ -239,6 +297,8 @@ function days(ms){const d=Math.round(ms/864e5);return d<=1?'יום':d===2?'יו�
 function render(){
   $('cnt').textContent=st.items.length;$('cnt').style.display=st.items.length?'':'none';
   $('meb').textContent='👤 '+(me||'מי אני?');
+  $('ntfLbl').textContent='✉️ שלח הודעה ל'+other();
+  const pend=shopPending(st).length,sa=$('sendAll');sa.style.display=pend?'':'none';sa.textContent='✉️ שלח הודעה על '+pend+(pend===1?' פריט':' פריטים');
   $('t_list').className=tab==='list'?'on':'';$('t_home').className=tab==='home'?'on':'';
   $('v_list').style.display=tab==='list'?'':'none';$('v_home').style.display=tab==='home'?'':'none';
   const dl=$('names');dl.innerHTML='';
@@ -251,9 +311,11 @@ function renderList(){
   [...st.items].sort((a,b)=>b.at-a.at).forEach(it=>{
     const row=el('div','it'),c=el('button','chk','✓');c.title='נקנה';c.onclick=()=>bought(it,row);
     const nm=el('div','nm');nm.append(el('b',null,it.name),el('small',null,it.auto?'🔁 נוסף אוטומטית · '+ago(it.at):(it.src==='pantry'?'🏠 נגמר בבית · ':'')+(it.by?(it.by==='אשתי'?'ציפי':it.by)+' · ':'')+ago(it.at)));
+    if(it.ntf===false)nm.append(el('small','pend',' · ✉️ לא נשלח'));
     const q=el('input','qty');q.placeholder='כמות';q.value=it.qty||'';q.onchange=()=>act({type:'edit',iid:it.id,qty:q.value.trim()});
-    const x=el('button','x','✕');x.title='מחק בלי לסמן כנקנה';x.onclick=()=>{act({type:'del',iid:it.id});toast('„'+it.name+'” נמחק','ביטול',()=>act({type:'add',iid:it.id,name:it.name,qty:it.qty,by:it.by}))};
-    row.append(c,picEl('pic',it.name),nm,q,x);box.append(row);
+    const x=el('button','x','✕');x.title='מחק בלי לסמן כנקנה';x.onclick=()=>{act({type:'del',iid:it.id});toast('„'+it.name+'” נמחק','ביטול',()=>act({type:'add',iid:it.id,name:it.name,qty:it.qty,by:it.by,notify:it.ntf!==false}))};
+    const pc=picEl('pic',it.name);pc.title='צלמו את המוצר';pc.onclick=()=>photoFor(it.name);
+    row.append(c,pc,nm,q,x);box.append(row);
   });
   const rb=$('recBox');rb.innerHTML='';const rec=shopAllRecurring(st);
   if(rec.length){
@@ -270,11 +332,16 @@ function renderHome(){
   const g=$('grid'),k=shopKey($('psearch').value);g.innerHTML='';
   [...st.products].sort((a,b)=>a.name.localeCompare(b.name,'he')).filter(p=>!k||shopKey(p.name).includes(k)).forEach(p=>{
     const inList=st.items.some(x=>shopKey(x.name)===shopKey(p.name));
-    const c=el('div','pc'+(inList?' in':''));
-    c.append(picEl('ph',p.name,p),el('b',null,p.name));
-    if(inList)c.append(el('span','tg','ברשימה'));
+    const n=p.stock||0,c=el('div','pc'+(inList?' in':'')+(n?'':' out'));
+    c.append(picEl('ph',p.name,p),el('b',null,p.name),el('small',null,'כמה יש בבית'));
+    const k=el('div','stk'),minus=el('button',null,'−'),num=el('span',null,n),plus=el('button',null,'+');
+    plus.onclick=e=>{e.stopPropagation();act({type:'pstock',pid:p.id,delta:1})};
+    minus.onclick=e=>{e.stopPropagation();if(!n)return;act({type:'pstock',pid:p.id,delta:-1});
+      if(n===1&&addName(p.name,'pantry'))toast('🛒 „'+p.name+'” נגמר ונכנס לרשימת הקניות')};
+    k.append(plus,num,minus);c.append(k);
     const ed=el('button','ed','✏️');ed.onclick=e=>{e.stopPropagation();openProd(p)};c.append(ed);
-    c.onclick=()=>{if(addName(p.name,'pantry'))toast('🛒 „'+p.name+'” נוסף לרשימת הקניות')};
+    const ab=el('button','addb',inList?'✓ ברשימה':'🛒 לרשימה');ab.disabled=inList;
+    ab.onclick=()=>{if(addName(p.name,'pantry'))toast('🛒 „'+p.name+'” נוסף לרשימת הקניות')};c.append(ab);
     g.append(c);
   });
   const n=el('div','pc new');n.append(el('div',null,'＋'),el('span',null,'מוצר חדש'));n.onclick=()=>openProd(null);g.append(n);
@@ -285,26 +352,18 @@ function setTab(t){tab=t;put('shop_tab',t);render();window.scrollTo({top:0})}
 let editP=null,pImg='';
 function openProd(p){
   editP=p;pImg=p?p.img||'':'';
-  $('pTitle').textContent=p?'עריכת מוצר':'מוצר חדש';$('pName').value=p?p.name:'';$('pEmoji').value=p?p.emoji||'':'';
+  $('pTitle').textContent=p?'עריכת מוצר':'מוצר חדש';$('pStock').value=p?p.stock||0:'';$('pName').value=p?p.name:'';$('pEmoji').value=p?p.emoji||'':'';
   $('pDel').style.display=p?'':'none';prevUpd();dProd.showModal();if(!p)$('pName').focus();
 }
 function prevUpd(){
   const v=$('pPrev');v.innerHTML='';$('pNoImg').style.display=pImg?'':'none';
   if(pImg){const i=new Image();i.src=pImg;v.append(i)}else v.textContent=$('pEmoji').value.trim()||emojiFor($('pName').value);
 }
-/* מקטין את התמונה ל-200 פיקסלים כדי שהרשימה תישאר קלה ומהירה */
-function pickImg(e){
-  const f=e.target.files[0];e.target.value='';if(!f)return;
-  const img=new Image();img.onload=()=>{
-    const s=200,c=document.createElement('canvas');c.width=c.height=s;
-    const m=Math.min(img.width,img.height);c.getContext('2d').drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,s,s);
-    pImg=c.toDataURL('image/jpeg',.72);URL.revokeObjectURL(img.src);prevUpd();
-  };img.src=URL.createObjectURL(f);
-}
+function pickImg(e){const f=e.target.files[0];e.target.value='';if(f)shrink(f,d=>{pImg=d;prevUpd()})}
 function saveProd(){
-  const name=$('pName').value.trim(),emoji=$('pEmoji').value.trim();if(!name){$('pName').focus();return}
-  if(editP)act({type:'pedit',pid:editP.id,name,emoji,img:pImg});
-  else{if(prodFor(name)){toast('המוצר כבר קיים');return}act({type:'padd',pid:uid(),name,emoji,img:pImg})}
+  const name=$('pName').value.trim(),emoji=$('pEmoji').value.trim(),stock=Math.max(0,parseInt($('pStock').value,10)||0);if(!name){$('pName').focus();return}
+  if(editP)act({type:'pedit',pid:editP.id,name,emoji,img:pImg,stock});
+  else{if(prodFor(name)){toast('המוצר כבר קיים');return}act({type:'padd',pid:uid(),name,emoji,img:pImg,stock})}
   dProd.close();
 }
 function delProd(){if(editP&&confirm('למחוק את „'+editP.name+'” מהמוצרים בבית?')){act({type:'pdel',pid:editP.id});dProd.close()}}
@@ -323,6 +382,7 @@ function toast(msg,btn,fn){
   const t=get('akordim_theme');if(t)document.documentElement.dataset.theme=t;
   if(!SHOP_CLOUD){$('demo').style.display='';shopAuto(st,Date.now());seed();persist()}
   else if(!pw)document.body.classList.add('locked');
+  $('ntfChk').checked=get('shop_ntf')!=='0';
   render();
   if(!me&&(!SHOP_CLOUD||pw))askMe();
   sync();
