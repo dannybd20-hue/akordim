@@ -1,8 +1,8 @@
 // שומר את האתר במכשיר כדי שייפתח גם בלי אינטרנט.
 // תמיד מנסה קודם את הגרסה העדכנית מהרשת; העותק השמור משמש רק כשאין חיבור.
 // בקשות לענן (Google Apps Script) לא עוברות כאן בכלל.
-const CACHE = 'akordim-v9';
-const FILES = ['./', 'index.html', 'chords.html', 'maaser.html', 'tromot.html', 'shopping.html', 'shop-core.js', 'maaser-core.js', 'manifest.json', 'icons/icon-192.png', 'icons/icon-512.png'];
+const CACHE = 'akordim-v10';
+const FILES = ['./', 'index.html', 'chords.html', 'maaser.html', 'tromot.html', 'shopping.html', 'shop-core.js', 'maaser-core.js', 'manifest.json', 'icons/apps-192.png', 'icons/apps-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
