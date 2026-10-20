@@ -229,7 +229,8 @@ function logout(msg){pw='';put('shop_pw',null);dMe.close();document.body.classLi
 
 /* בפעם הראשונה ממלאים את "מוצרים בבית" במוצרים נפוצים. אפשר לערוך ולמחוק אותם */
 const STARTER=['חלב','לחם','ביצים','גבינה צהובה','קוטג׳','יוגורט','חמאה','עגבניות','מלפפונים','בננות','תפוחים','בצל','תפוחי אדמה','אורז','פסטה','שמן','קפה','סוכר','במבה','מים','נייר טואלט','סבון כלים','אבקת כביסה','שקיות אשפה'];
-function seed(){if(st.products.length||get('shop_seeded'))return;put('shop_seeded','1');STARTER.forEach(n=>act({type:'padd',pid:uid(),name:n}))}
+/* הסימון נפרד למצב הדגמה ולענן, כדי שמכשיר שניסה את ההדגמה עדיין ימלא את הרשימה בענן */
+function seed(){const f='shop_seeded'+(SHOP_CLOUD?'_cloud':'');if(st.products.length||get(f))return;put(f,'1');STARTER.forEach(n=>act({type:'padd',pid:uid(),name:n}))}
 
 /* ---------- תצוגה ---------- */
 function ago(t){const m=Math.round((Date.now()-t)/60e3);if(m<1)return'עכשיו';if(m<60)return'לפני '+m+' דק׳';const h=Math.round(m/60);if(h<24)return'לפני '+h+' שע׳';const d=Math.round(h/24);return d===1?'אתמול':'לפני '+d+' ימים'}
