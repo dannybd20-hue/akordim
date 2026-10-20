@@ -185,6 +185,10 @@ body.locked #login{display:block}body.locked main,body.locked .tabs{display:none
 <input type="file" id="rowCam" accept="image/*" capture="environment" hidden onchange="pickRowImg(event)">
 <div id="toast"><span id="tmsg"></span><button id="tbtn"></button></div>
 
+<div id="errbox" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99;background:#7f1d1d;color:#fff;font:13px/1.5 monospace;padding:10px 14px;direction:ltr;white-space:pre-wrap;max-height:40vh;overflow:auto"></div>
+<script>/* מציג על המסך כל שגיאה, כדי שאפשר יהיה לצלם ולשלוח */
+window.addEventListener('error',e=>{const b=document.getElementById('errbox');b.style.display='block';b.textContent+='⚠️ '+e.message+'  @'+String(e.filename).split('/').pop()+':'+e.lineno+'\n'});
+window.addEventListener('unhandledrejection',e=>{const b=document.getElementById('errbox');b.style.display='block';b.textContent+='⚠️ '+(e.reason&&e.reason.stack||e.reason)+'\n'});</script>
 <script src="shop-core.js?v=4"></script><!-- להעלות את המספר בכל שינוי ב-shop-core.js, כדי שהדפדפן לא ישתמש בגרסה ישנה -->
 <script>
 /* אם הדפדפן טען גרסה ישנה של shop-core.js, טוענים מחדש פעם אחת בלי זיכרון */
