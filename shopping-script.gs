@@ -25,11 +25,19 @@ function save_(f, st) {
 function notify_(lines) {
   if (!NTFY_TOPIC || !lines.length) return;
   try {
-    UrlFetchApp.fetch('https://ntfy.sh/', {
+    const r = UrlFetchApp.fetch('https://ntfy.sh/', {
       method: 'post', contentType: 'application/json', muteHttpExceptions: true,
       payload: JSON.stringify({ topic: NTFY_TOPIC, title: '🛒 קניות לבית', message: lines.join('\n'), tags: ['shopping_cart'] })
     });
-  } catch (x) {}
+    if (r.getResponseCode() !== 200) console.warn('ntfy ' + r.getResponseCode() + ': ' + r.getContentText());
+    return r;
+  } catch (x) { console.warn('ntfy: ' + x); }
+}
+
+// בדיקה: מריצים מהעורך ורואים ביומן מה שרת ההתראות ענה (200 = נשלח)
+function testNtfy() {
+  const r = notify_(['🔔 בדיקה מהסקריפט']);
+  Logger.log(r ? r.getResponseCode() + ' ' + r.getContentText() : 'לא נשלח: NTFY_TOPIC ריק או שגיאת רשת (ראו אזהרה למעלה)');
 }
 
 function doGet() { return out_({ ok: true, app: 'shopping' }); }
