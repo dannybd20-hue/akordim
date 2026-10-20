@@ -698,11 +698,22 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
     <div class="modal">
         <h2><i class="fa-solid fa-cart-plus" style="color:var(--primary)"></i> הוספת עסקה</h2>
 
+        <div class="percent-selector" style="margin-bottom:16px">
+            <div class="percent-option selected" id="modeCalc" onclick="setTxMode('calc')">חישוב לפי קנייה ומכירה</div>
+            <div class="percent-option" id="modeDirect" onclick="setTxMode('direct')">סכום ישיר</div>
+        </div>
+
         <div class="form-group">
             <label>שם המוצר / תיאור הפרויקט</label>
             <input type="text" id="productName" placeholder="לדוגמה: מצלמות אבטחה, מוצרי חשמל">
         </div>
 
+        <div class="form-group" id="directBox" style="display:none">
+            <label>סכום המעשר לחיוב (₪)</label>
+            <input type="number" step="any" id="directAmount" placeholder="0.00">
+        </div>
+
+        <div id="calcBox">
         <div class="form-group">
             <label>מחיר קנייה כולל מע"מ (₪)</label>
             <input type="number" step="any" id="buyPrice" placeholder="0.00" oninput="calculate()">
@@ -736,6 +747,7 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
                 <span>סכום המעשר לחיוב:</span>
                 <span id="resMaaser">₪0.00</span>
             </div>
+        </div>
         </div>
 
         <div class="modal-buttons">
@@ -840,11 +852,11 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
         const reversed = [...transactions].reverse();
         container.innerHTML = reversed.map(t => `
             <div class="card">
-                <div class="card-icon icon-green">${t.maaserPercent}%</div>
+                <div class="card-icon icon-green">${t.direct ? '₪' : t.maaserPercent + '%'}</div>
                 <div class="card-content">
                     <div class="card-title">${t.productName}</div>
                     <div class="card-subtitle">
-                        קנייה: ₪${t.buyPrice.toFixed(2)} | מכירה: ₪${t.sellPrice.toFixed(2)} | רווח נקי: ₪${t.profit.toFixed(2)}
+                        ${t.direct ? 'סכום ישיר' : `קנייה: ₪${t.buyPrice.toFixed(2)} | מכירה: ₪${t.sellPrice.toFixed(2)} | רווח נקי: ₪${t.profit.toFixed(2)}`}
                     </div>
                 </div>
                 <div class="card-meta">
@@ -931,8 +943,31 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
     // ============================
     // שמירת עסקה
     // ============================
+    let txMode = 'calc';
+    function setTxMode(m) {
+        txMode = m;
+        document.getElementById('modeCalc').classList.toggle('selected', m === 'calc');
+        document.getElementById('modeDirect').classList.toggle('selected', m === 'direct');
+        document.getElementById('calcBox').style.display = m === 'calc' ? '' : 'none';
+        document.getElementById('directBox').style.display = m === 'direct' ? '' : 'none';
+    }
+    const today = () => { const n = new Date(); return `${String(n.getDate()).padStart(2, '0')}/${String(n.getMonth() + 1).padStart(2, '0')}/${n.getFullYear()}`; };
+    // חיוב מעשר בסכום ידוע, בלי חישוב קנייה ומכירה
+    function directTx(productName, amount) {
+        return { id: Date.now() + Math.random(), productName, buyPrice: 0, buyPriceNoVat: 0, sellPrice: 0, profit: 0,
+                 maaserPercent: 0, maaserAmount: amount, date: today(), direct: true };
+    }
+
     function saveTransaction() {
         const productName = document.getElementById('productName').value.trim();
+        if (txMode === 'direct') {
+            const amount = parseFloat(document.getElementById('directAmount').value);
+            if (!productName || !(amount > 0)) { alert('נא למלא תיאור וסכום'); return; }
+            transactions.push(directTx(productName, amount));
+            localStorage.setItem('maaser_transactions', JSON.stringify(transactions));
+            closeModals(); updateDisplay(); clearTransactionForm();
+            return;
+        }
         const buy = parseFloat(document.getElementById('buyPrice').value);
         const sell = parseFloat(document.getElementById('sellPrice').value);
 
@@ -1041,7 +1076,7 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
                 Number(t.buyPriceNoVat.toFixed(2)),
                 t.sellPrice,
                 Number(t.profit.toFixed(2)),
-                t.maaserPercent + '%',
+                t.direct ? 'סכום ישיר' : t.maaserPercent + '%',
                 Number(t.maaserAmount.toFixed(2))
             ]);
         });
@@ -1092,6 +1127,8 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
         document.getElementById('buyPrice').value = '';
         document.getElementById('sellPrice').value = '';
         document.getElementById('resultBox').style.display = 'none';
+        document.getElementById('directAmount').value = '';
+        setTxMode('calc');
         selectedPercent = 10;
         selectPercent(10);
     }
@@ -1166,6 +1203,10 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
         if (field === 'active') r.active = value;
         saveRecurring(); updateDisplay();
     }
+    function renameRecurring(id) {
+        const r = recurring.find(x => x.id === id), n = r && prompt('שם התרומה:', r.name);
+        if (n && n.trim()) { r.name = n.trim(); saveRecurring(); updateDisplay(); }
+    }
     function deleteRecurring(id) {
         const r = recurring.find(x => x.id === id);
         if (r && confirm('להפסיק את התרומה הקבועה ל"' + r.name + '"? תשלומים שכבר נרשמו יישארו.')) {
@@ -1185,11 +1226,24 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
         btn.textContent = '➕ לרשום עכשיו את התרומות של החודש הזה (' + pend + ')';
         document.getElementById('recList').innerHTML = recurring.length ? recurring.map(r => `
             <div class="rec-row${r.active ? '' : ' off'}">
-                <div class="rec-name">${esc(r.name)}<small>${r.active ? 'הבא: ' + nextDate(r) : 'מושהה'}</small></div>
+                <div class="rec-name" title="לחץ לשינוי השם" style="cursor:pointer" onclick="renameRecurring(${r.id})">${esc(r.name)} ✏️<small>${r.active ? 'הבא: ' + nextDate(r) : 'מושהה'}</small></div>
                 <input class="rec-amt" type="number" step="any" value="${r.amount}" title="סכום חודשי" onchange="editRecurring(${r.id},'amount',this.value)">
                 <button title="${r.active ? 'השהה' : 'הפעל'}" onclick="editRecurring(${r.id},'active',${!r.active})">${r.active ? '⏸️' : '▶️'}</button>
                 <button title="מחק" onclick="deleteRecurring(${r.id})"><i class="fa-regular fa-trash-can"></i></button>
             </div>`).join('') : '<div class="empty-state" style="border:0">אין תרומות קבועות</div>';
+    }
+
+    // עדכון חד-פעמי (אוקטובר 2026): יתרת פתיחה, עסקת המצלמות ותרומת 770 החודשית
+    if (!localStorage.getItem('maaser_update_2026_10')) {
+        transactions.push(directTx('יתרת מעשר (פתיחה)', 7065), directTx('התקנת מצלמות', 160));
+        localStorage.setItem('maaser_transactions', JSON.stringify(transactions));
+        if (!recurring.some(r => r.amount === 770)) {
+            const now = new Date();
+            recurring.splice(4, 0, { id: Date.now() + 99, name: 'בית חב"ד (770)', amount: 770, day: 10, active: true,
+                last: now.getDate() >= 10 ? monthKey(now) : monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1)) });
+            saveRecurring();
+        }
+        localStorage.setItem('maaser_update_2026_10', '1');
     }
 
     // טעינה ראשונית
