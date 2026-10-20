@@ -85,13 +85,31 @@ body:not(.editing) .adm{display:none!important}
 #etext{width:100%;min-height:260px;border:1px solid #475569;border-radius:12px;padding:10px;font-family:'Space Mono',monospace;font-size:14px;line-height:1.7;direction:rtl}
 .hint{font-size:12px;color:var(--mut);margin:4px 0}
 .srch{position:relative}
-#sug{display:none;position:absolute;top:calc(100% + 6px);inset-inline-start:0;width:260px;max-height:340px;overflow:auto;background:var(--card);border:1px solid var(--bd);border-radius:14px;box-shadow:0 10px 25px #0003;padding:6px;z-index:40}
-#sug.on{display:block}
-#sug div{padding:8px 10px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700}
-#sug div small{display:block;font-size:11px;color:var(--mut);font-weight:500}
-#sug div.act,#sug div:hover{background:var(--pl)}
-#sug mark{background:none;color:var(--pr)}
-#sug p{margin:6px 10px;font-size:12px;color:var(--mut)}
+.sug{display:none;position:absolute;top:calc(100% + 6px);inset-inline-start:0;width:260px;max-height:340px;overflow:auto;background:var(--card);border:1px solid var(--bd);border-radius:14px;box-shadow:0 10px 25px #0003;padding:6px;z-index:40;text-align:start}
+.sug.on{display:block}
+.sug div{padding:8px 10px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700}
+.sug div small{display:block;font-size:11px;color:var(--mut);font-weight:500}
+.sug div.act,.sug div:hover{background:var(--pl)}
+.sug p{margin:6px 10px;font-size:12px;color:var(--mut)}
+#home{display:none;text-align:center;padding:28px 0 8px}
+body.home #home{display:block}
+body.home #songCard,body.home #edit,body.home #bar{display:none!important}
+.hero{margin:0;font:900 clamp(34px,7vw,64px)/1.1 Rubik,Heebo,sans-serif;letter-spacing:-.5px}
+.hero span{display:block;background:linear-gradient(to left,#0284c7,#0ea5e9,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:6px}
+.lead{color:var(--mut);font-size:17px;margin:14px 0 26px}
+.big{position:relative;max-width:600px;margin:0 auto;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--bd);border-radius:999px;padding:7px;box-shadow:0 12px 30px #0284c71f}
+.big input{flex:1;min-width:0;border:0;background:none;font-size:17px;font-weight:500;padding:10px 14px;box-shadow:none!important}
+.big button{border-radius:999px;padding:12px 26px;font-size:15px}
+.big .sug{width:100%;top:calc(100% + 8px);font-size:15px}
+.fchips{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:30px auto 0;max-width:820px}
+.fchips button{border-radius:999px;padding:9px 18px;font-size:14px;background:var(--card);border:1px solid var(--ib)}
+.fchips button b{color:var(--mut);font-weight:500;margin-inline-start:6px}
+.fchips button.on{background:var(--pr);border-color:var(--pr);color:#fff}
+.fchips button.on b{color:#e0f2fe}
+.slist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;max-width:1000px;margin:22px auto 0;text-align:start}
+.slist button{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:12px 14px;font-size:15px;text-align:start;box-shadow:0 1px 2px #0000000d}
+.slist button small{display:block;color:var(--mut);font-size:12px;font-weight:500;margin-top:2px}
+.slist button:hover{border-color:var(--pr);transform:translateY(-1px)}
 dialog{border:1px solid var(--bd);border-radius:24px;background:var(--card);color:var(--tx);max-width:460px;width:92%;padding:24px}
 dialog::backdrop{background:#0f172ab3;backdrop-filter:blur(4px)}
 #pills{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
@@ -107,11 +125,12 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
   <div class="logo"><div class="lg" onclick="goHome()" title="נעילה וחזרה לדף הבית" style="cursor:pointer">♬</div><div><h1>ספריית אקורדים <span class="pro">Pro</span></h1><p class="sub">עריכה חיה, טרנספוזיציה ותצוגת אורגן וגיטרה</p></div></div>
   <div class="sels"><select id="fold" onchange="fold=this.value;fill()"></select><select id="sel" onchange="pick(this.value)"></select></div>
   <div class="hin2">
-    <div class="srch"><input id="q" type="search" placeholder="🔎 חיפוש שיר" autocomplete="off" oninput="q=this.value;fill();sug()" onfocus="sug()" onblur="setTimeout(hideSug,150)" onkeydown="sugKey(event)" style="width:140px"><div id="sug"></div></div>
+    <div class="srch"><input id="q" type="search" placeholder="🔎 חיפוש שיר" autocomplete="off" oninput="q=this.value;fill();sug('q')" onfocus="sug('q')" onblur="setTimeout(()=>hideSug('q'),150)" onkeydown="sugKey(event,'q')" style="width:140px"><div class="sug" id="q_s"></div></div>
     <div class="grp"><button onclick="setTone(-1)" title="חצי טון למטה">−</button><div class="lab"><small>טון</small><b id="tb">0</b></div><button onclick="setTone(1)" title="חצי טון למעלה">+</button></div>
     <div class="grp"><button onclick="setCapo(-1)">−</button><div class="lab"><small>קאפו</small><b id="cb">0</b></div><button onclick="setCapo(1)">+</button></div>
     <button class="stg" onclick="stage()">▶️ מצב נגינה</button>
     <button id="eb" class="ed" onclick="toggleEdit()">🔒 מצב עריכה</button>
+    <button class="ic" onclick="songsHome()" title="כל השירים">🏠</button>
     <button class="ic" onclick="theme()" title="יום/לילה">🌙</button>
     <details><summary>⚙️</summary><div>
     <button onclick="openChords()">🎹 דיאגרמת אורגן / גיטרה</button>
@@ -131,7 +150,14 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
   <button onclick="stage()">חזרה</button>
 </div>
 <main>
-  <div class="card">
+  <section id="home">
+    <h2 class="hero">אחים יקרים שלי,<span>רק תבחרו שיר.</span></h2>
+    <p class="lead">חפשו לפי שם השיר או לפי מילה מתוך השיר</p>
+    <div class="big"><input id="hq" type="search" placeholder="🔎 חפשו שיר…" autocomplete="off" oninput="sug('hq')" onfocus="sug('hq')" onblur="setTimeout(()=>hideSug('hq'),150)" onkeydown="sugKey(event,'hq')"><button class="pr" onclick="sugPick(0,'hq')">חיפוש</button><div class="sug" id="hq_s"></div></div>
+    <div class="fchips" id="fchips"></div>
+    <div class="slist" id="slist"></div>
+  </section>
+  <div class="card" id="songCard">
     <div class="head">
       <div><div class="trow"><h2 id="title"></h2><span class="tag" id="keyTag"></span><span class="tag g" id="folderBadge"></span></div><p class="badge" id="badge"></p></div>
       <div class="hr no-print"><div class="grp"><span class="mut">גודל טקסט:</span><button onclick="zoom(-2)">A-</button><button onclick="zoom(2)">A+</button></div><button class="dgb" onclick="openChords()">🎹 דיאגרמת אורגן / גיטרה</button><span class="hint" id="st"></span></div>
@@ -249,48 +275,67 @@ function tr(ch,n,flat){
 }
 
 /* ---------- רינדור ---------- */
-/* ---------- חיפוש עם הצעות ---------- */
-const norm=t=>String(t||'').replace(/[\u0591-\u05C7]/g,'').replace(/["'״׳\-]/g,'').toLowerCase().trim();
-let sugAt=0,sugRes=[];
-function sugMatches(){
-  const k=norm(q);if(!k)return[];
+/* ---------- חיפוש עם הצעות (בכותרת: q, בדף הבית: hq) ---------- */
+const norm=t=>String(t||'').replace(/[֑-ׇ]/g,'').replace(/["'״׳\-]/g,'').toLowerCase().trim();
+const SG={q:{at:0,res:[]},hq:{at:0,res:[]}};
+function sugMatches(text,useFold){
+  const k=norm(text);if(!k)return[];
   const rank=s=>{const t=norm(s.title);
     if(t.startsWith(k))return 0;
     if(t.split(/\s+/).some(w=>w.startsWith(k)))return 1;
     if(t.includes(k))return 2;
     if(norm(s.text.replace(/\[[^\]]*\]/g,'')).includes(k))return 3;
     return -1};
-  return songs.map(s=>[rank(s),s]).filter(x=>x[0]>=0&&(!fold||x[1].folder===fold))
+  return songs.map(s=>[rank(s),s]).filter(x=>x[0]>=0&&(!useFold||!fold||x[1].folder===fold))
     .sort((a,b)=>a[0]-b[0]||a[1].title.localeCompare(b[1].title,'he')).slice(0,12);
 }
-function sug(){
-  const box=$('sug');sugRes=sugMatches();sugAt=0;box.innerHTML='';
-  if(!norm(q)){box.classList.remove('on');return}
-  if(!sugRes.length){box.append(el('p',null,'לא נמצאו שירים'))}
-  sugRes.forEach(([r,s],i)=>{
+function sug(w){
+  const box=$(w+'_s'),g=SG[w],v=$(w).value;g.res=sugMatches(v,w==='q');g.at=0;box.innerHTML='';
+  if(!norm(v)){box.classList.remove('on');return}
+  if(!g.res.length)box.append(el('p',null,'לא נמצאו שירים'));
+  g.res.forEach(([r,s],i)=>{
     const d=el('div');d.textContent=s.title;
     d.append(el('small',null,'📁 '+(s.folder||'')+(r===3?' · נמצא במילים':'')));
     if(i===0)d.className='act';
-    d.onmousedown=e=>{e.preventDefault();sugPick(i)};
+    d.onmousedown=e=>{e.preventDefault();sugPick(i,w)};
     box.append(d);
   });
   box.classList.add('on');
 }
-function hideSug(){$('sug').classList.remove('on')}
-function sugPick(i){
-  const r=sugRes[i];if(!r)return;
-  q='';$('q').value='';hideSug();$('q').blur();
+function hideSug(w){$(w+'_s').classList.remove('on')}
+function sugPick(i,w){
+  const g=SG[w];if(w==='hq'&&!g.res.length)g.res=sugMatches($(w).value);
+  const r=g.res[i];if(!r)return;
+  if(w==='q')q='';$(w).value='';hideSug(w);$(w).blur();
   pick(r[1].id);fill();window.scrollTo({top:0});
 }
-function sugKey(e){
-  const items=[...$('sug').querySelectorAll('div')];
-  if(e.key==='Escape'){hideSug();return}
-  if(e.key==='Enter'){e.preventDefault();sugPick(sugAt);return}
+function sugKey(e,w){
+  const items=[...$(w+'_s').querySelectorAll('div')],g=SG[w];
+  if(e.key==='Escape'){hideSug(w);return}
+  if(e.key==='Enter'){e.preventDefault();sugPick(g.at,w);return}
   if(!items.length||!/Arrow(Down|Up)/.test(e.key))return;
   e.preventDefault();
-  sugAt=(sugAt+(e.key==='ArrowDown'?1:-1)+items.length)%items.length;
-  items.forEach((d,i)=>d.classList.toggle('act',i===sugAt));items[sugAt].scrollIntoView({block:'nearest'});
+  g.at=(g.at+(e.key==='ArrowDown'?1:-1)+items.length)%items.length;
+  items.forEach((d,i)=>d.classList.toggle('act',i===g.at));items[g.at].scrollIntoView({block:'nearest'});
 }
+
+/* ---------- דף הבית ---------- */
+let homeFold=null;
+function renderHome(){
+  const c=$('fchips'),l=$('slist');c.innerHTML='';l.innerHTML='';
+  const cnt={};songs.forEach(s=>{const f=s.folder||'ללא תיקייה';cnt[f]=(cnt[f]||0)+1});
+  const chip=(name,val,n)=>{const b=el('button',homeFold===val?'on':null,name);b.append(el('b',null,n));b.onclick=()=>{homeFold=homeFold===val?null:val;renderHome()};c.append(b)};
+  Object.keys(cnt).forEach(f=>chip('📁 '+f,f,cnt[f]));
+  chip('🎵 כל השירים','*',songs.length);
+  if(homeFold===null)return;
+  songs.filter(s=>homeFold==='*'||(s.folder||'ללא תיקייה')===homeFold)
+    .sort((a,b)=>a.title.trim().localeCompare(b.title.trim(),'he'))
+    .forEach(s=>{const[t,...a]=s.title.split(' - ');const b=el('button',null,t);if(a.length)b.append(el('small',null,a.join(' - ')));b.onclick=()=>{pick(s.id);fill();window.scrollTo({top:0})};l.append(b)});
+}
+function setHome(on){if(on&&document.body.classList.contains('stage'))stage();document.body.classList.toggle('home',on);if(on){renderHome();window.scrollTo({top:0})}}
+/* חזרה לדף השירים; בטלפון גם כפתור "אחורה" מחזיר לכאן במקום לצאת מהאתר */
+function songsHome(){if(history.state&&history.state.song){history.back();return}setHome(true)}
+window.addEventListener('popstate',()=>setHome(true));
 function list(){
   const k=q.trim().toLowerCase();
   return [...songs].sort((x,y)=>x.title.trim().localeCompare(y.title.trim(),'he')).filter(s=>(!fold||s.folder===fold)&&(!k||(s.title+' '+s.text.replace(/\[[^\]]*\]/g,'')).toLowerCase().includes(k)));
@@ -300,6 +345,7 @@ function fill(){
   const fs=[...new Set(songs.map(s=>s.folder).filter(Boolean))];
   fs.forEach(x=>f.append(new Option('📁 '+x,x)));f.value=fold;
   const s=$('sel');s.innerHTML='';list().forEach(x=>s.append(new Option(x.title,x.id)));s.value=cur;
+  renderHome();
   const e=$('efolder');e.innerHTML='';fs.forEach(x=>e.append(new Option('📁 '+x,x)));e.append(new Option('➕ תיקייה חדשה…','__new'));e.value=song().folder||'';
 }
 function render(){
@@ -328,7 +374,7 @@ function render(){
     box.append(row);
   });
 }
-function pick(id){cur=id;tone=0;capo=0;armed=false;$('del').textContent='🗑️ מחק שיר';render();syncEdit()}
+function pick(id){if(document.body.classList.contains('home')){setHome(false);history.pushState({song:1},'')}cur=id;tone=0;capo=0;armed=false;$('del').textContent='🗑️ מחק שיר';render();syncEdit()}
 function setTone(n){tone=Math.max(-11,Math.min(11,tone+n));render()}
 function setCapo(n){capo=Math.max(0,Math.min(11,capo+n));render()}
 function zoom(n){fz=Math.max(14,Math.min(40,fz+n));render()}
@@ -340,7 +386,7 @@ function syncEdit(){
 let authed=false;
 function setEdit(on){
   editing=on;document.body.classList.toggle('editing',on);$('eb').textContent=on?'🔓 סיום עריכה':'🔒 מצב עריכה';
-  if(on){syncEdit();return}
+  if(on){if(document.body.classList.contains('home'))pick(cur);syncEdit();return}
   authed=false;clearTimeout(tmr);const p=pw;pw='';
   if(dirty&&synced&&p)push(p);
 }
@@ -506,6 +552,7 @@ function toggleScroll(){
   if(sc){last=performance.now();acc=0;raf=requestAnimationFrame(tick)}
 }
 function stage(){
+  if(document.body.classList.contains('home'))pick(cur);
   const on=!document.body.classList.contains('stage');
   document.body.classList.toggle('stage',on);
   fz=Math.max(14,Math.min(40,fz+(on?6:-6)));
@@ -569,6 +616,7 @@ async function resetAll(){
   let t='';try{t=localStorage.getItem('akordim_theme')||''}catch(e){}
   if(!t&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)t='dark';
   document.documentElement.dataset.theme=t||'light';
+  document.body.classList.add('home');
   fill();render();cloudLoad();
 })();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
