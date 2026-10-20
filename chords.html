@@ -32,8 +32,10 @@ button,select,input{background:var(--in);border:1px solid var(--ib);border-radiu
 select:focus,input:focus,textarea:focus{box-shadow:0 0 0 2px #0ea5e9}
 button{cursor:pointer;transition:.15s}button:hover{border-color:var(--pr)}
 button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
-.sels{display:flex;gap:8px;flex:1;max-width:460px;min-width:220px}
-#fold{width:34%;color:#0369a1}#sel{width:66%;font-size:14px}
+.sels{display:flex;gap:8px;flex:1;max-width:440px;min-width:260px}
+.sels select{font-size:14px;padding:9px 12px}
+#fold{width:42%;color:#0369a1}#sel{width:58%}
+.back{display:flex;align-items:center;gap:4px;padding:8px 12px;border-radius:12px;background:var(--pl);color:#0369a1;border:1px solid #bae6fd;font-size:13px;white-space:nowrap}
 .grp{display:flex;align-items:center;gap:4px;background:#f1f5f9;border:1px solid var(--bd);border-radius:12px;padding:4px;box-shadow:inset 0 1px 2px #0000000f;font-size:12px}
 :root[data-theme=dark] .grp{background:#1e293b}
 .grp button{padding:0;min-width:28px;height:28px;border-radius:8px;background:#fff;border:0;box-shadow:0 1px 2px #0000001a;font-size:14px}
@@ -122,7 +124,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
 </head>
 <body>
 <header class="no-print"><div class="hin">
-  <div class="logo"><div class="lg" onclick="goHome()" title="נעילה וחזרה לדף הבית" style="cursor:pointer">♬</div><div><h1>ספריית אקורדים <span class="pro">Pro</span></h1><p class="sub">עריכה חיה, טרנספוזיציה ותצוגת אורגן וגיטרה</p></div></div>
+  <div class="logo"><button class="back" onclick="goHome()" title="נעילה וחזרה לעמוד האפליקציות">→ אפליקציות</button><div class="lg" onclick="goHome()" title="נעילה וחזרה לדף הבית" style="cursor:pointer">♬</div><div><h1>ספריית אקורדים <span class="pro">Pro</span></h1><p class="sub">עריכה חיה, טרנספוזיציה ותצוגת אורגן וגיטרה</p></div></div>
   <div class="sels"><select id="fold" onchange="fold=this.value;fill()"></select><select id="sel" onchange="pick(this.value)"></select></div>
   <div class="hin2">
     <div class="srch"><input id="q" type="search" placeholder="🔎 חיפוש שיר" autocomplete="off" oninput="q=this.value;fill();sug('q')" onfocus="sug('q')" onblur="setTimeout(()=>hideSug('q'),150)" onkeydown="sugKey(event,'q')" style="width:140px"><div class="sug" id="q_s"></div></div>
