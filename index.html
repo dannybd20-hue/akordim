@@ -38,6 +38,10 @@ input:focus{box-shadow:0 0 0 2px #0ea5e9}
 .row{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
 button.b{font:inherit;font-weight:700;font-size:14px;padding:9px 16px;border-radius:12px;border:1px solid var(--ib);background:var(--in);color:var(--tx);cursor:pointer}
 button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
+.pw{position:relative;margin-bottom:8px}
+.pw input{margin:0;padding-inline:44px}
+.eye{position:absolute;inset-inline-end:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;padding:0;border:0;border-radius:10px;background:none;font-size:18px;line-height:1;cursor:pointer;opacity:.75}
+.eye:hover{opacity:1;background:#0284c71a}
 .link{background:none;border:0;color:var(--pr);font:inherit;font-size:12px;cursor:pointer;padding:0;margin-top:10px;text-decoration:underline}
 </style>
 </head>
@@ -52,8 +56,8 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
 <dialog id="dlg">
   <h2 id="dt"></h2>
   <p class="hint" id="dh"></p>
-  <input id="p1" type="password" autocomplete="current-password">
-  <input id="p2" type="password" autocomplete="new-password" placeholder="הקלד שוב את הסיסמה" style="display:none">
+  <div class="pw"><input id="p1" type="password" autocomplete="current-password"><button type="button" class="eye" onclick="eye(this)" title="הצג סיסמה">👁️</button></div>
+  <div class="pw" id="p2w" style="display:none"><input id="p2" type="password" autocomplete="new-password" placeholder="הקלד שוב את הסיסמה"><button type="button" class="eye" onclick="eye(this)" title="הצג סיסמה">👁️</button></div>
   <p class="err" id="er"></p>
   <div class="row"><button class="b" onclick="dlg.close()">ביטול</button><button class="b pr" id="ok" onclick="submit()">כניסה</button></div>
   <button class="link" id="forgot" onclick="forgot()" style="display:none">שכחתי את הסיסמה</button>
@@ -68,6 +72,8 @@ const PAGES={chords:'chords.html',maaser:'maaser.html'};
 const $=id=>document.getElementById(id),dlg=$('dlg');
 let app='',mode='';
 
+/* כפתור העין: מציג או מסתיר את הסיסמה שמקלידים */
+function eye(b,show){const i=b.previousElementSibling;show=show===undefined?i.type==='password':show;i.type=show?'text':'password';b.textContent=show?'🙈':'👁️';b.title=show?'הסתר סיסמה':'הצג סיסמה'}
 function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function put(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 async function hash(s){
@@ -86,7 +92,8 @@ function err(t){const e=$('er');e.textContent=t;e.style.display=t?'block':'none'
 function setMode(m){
   mode=m;err('');$('p1').value='';$('p2').value='';
   const setNew=m==='new';
-  $('p2').style.display=setNew?'':'none';
+  $('p2w').style.display=setNew?'':'none';
+  document.querySelectorAll('.eye').forEach(b=>eye(b,false));
   $('forgot').style.display=m==='maaser'?'':'none';
   $('ok').textContent=setNew?'שמור סיסמה':(m==='reset'?'אישור':'כניסה');
   $('p1').placeholder=setNew?'סיסמה חדשה':'סיסמה';
