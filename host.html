@@ -88,7 +88,7 @@ body.hot::after{opacity:1;animation:hotf 1s infinite}
 .ph{display:block;font-size:12px;font-weight:600;color:var(--mut);direction:ltr}
 .shq{max-width:520px;width:100%}
 .shq a{color:var(--pr);font-weight:900}
-.pp{position:fixed;z-index:5;pointer-events:none;background:var(--grad);color:#fff;font-weight:900;border-radius:99px;padding:6px 18px;font-size:clamp(16px,2.2vw,26px);box-shadow:0 8px 22px rgba(30,27,75,.25);animation:ppop 2s ease-out forwards;white-space:nowrap}
+.pp{position:fixed;z-index:5;pointer-events:none;background:var(--bgc,var(--grad));color:#fff;font-weight:900;border-radius:99px;padding:.25em .7em;box-shadow:0 8px 22px rgba(30,27,75,.25);animation:ppop 2s ease-out forwards;white-space:nowrap}
 @keyframes ppop{0%{transform:scale(.2) rotate(-6deg);opacity:0}12%{transform:scale(1.15) rotate(2deg);opacity:1}25%{transform:scale(1)}80%{opacity:1}100%{transform:translateY(-28px) scale(.9);opacity:0}}
 .more{font-weight:800;color:var(--mut)}
 .board.all{max-height:38vh;overflow:auto;padding:4px}
@@ -216,11 +216,15 @@ function render(){
 /* "ממתינים ל…": מי עוד לא שלח תשובה (כשנשארו מעטים, מציגים את השמות) */
 /* כל מי שעונה "קופץ" לרגע על המסך עם השם שלו (בצדדים ובאמצע) ונעלם אחרי שנייה-שתיים */
 let seen=new Set();
+const PPC=[['#ef4444','#f97316'],['#f59e0b','#eab308'],['#22c55e','#10b981'],['#06b6d4','#3b82f6'],['#6366f1','#8b5cf6'],['#ec4899','#f43f5e'],['#14b8a6','#22c55e'],['#a855f7','#ec4899'],['#0ea5e9','#6366f1'],['#84cc16','#16a34a']];
 function popNames(){
   if(REM||G.phase!=='question')return;
   const fresh=done.filter(id=>!seen.has(id));fresh.forEach(id=>seen.add(id));
   fresh.forEach((id,i)=>{const p=players.find(x=>x.pid===id);if(!p)return;
     setTimeout(()=>{if(G.phase!=='question')return;const e=document.createElement('div');e.className='pp';e.textContent=p.name;
+      /* צבע וגודל אחרים בכל פעם */
+      const k=PPC[Math.floor(Math.random()*PPC.length)];e.style.setProperty('--bgc','linear-gradient(135deg,'+k[0]+','+k[1]+')');
+      e.style.fontSize=Math.round(Math.max(16,innerWidth*(.016+Math.random()*.028)))+'px';
       const z=Math.random(),w=innerWidth,h=innerHeight;
       /* שליש מהשמות בצד ימין, שליש בשמאל, שליש באמצע – בלי להסתיר את הכותרת */
       const x=z<.33?w*(.02+Math.random()*.12):z<.66?w*(.78+Math.random()*.12):w*(.38+Math.random()*.2);
