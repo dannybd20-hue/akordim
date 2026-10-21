@@ -134,7 +134,12 @@ async function pick(){
   if(!pw||!CLOUD){setup();return}
   M.innerHTML='<div class="spin"></div>';
   try{const [r,ac]=await Promise.all([api({action:'g_list'}),api({action:'g_active'}).catch(()=>null)]);if(!r.ok){setup(r.error==='password'?'הסיסמה הראשית לא אושרה בסקריפט':r.error);return}
-    if(ac&&ac.ok&&ac.games.length){activeList(ac.games,r.games);return}
+    /* גם משחק שנפתח לפני העדכון: מזהים אותו לפי הקוד האחרון ששמור במכשיר הזה */
+    const act=ac&&ac.ok?ac.games.slice():[];
+    let last='';try{last=localStorage.getItem('game_host_last')||''}catch(e){}
+    if(last&&!act.some(x=>x.pin===last)){try{const h=await api({action:'g_host',pin:last});
+      if(h.ok&&h.game.phase!=='end')act.unshift({pin:last,key:h.game.key,title:h.game.title,phase:h.game.phase,q:h.game.q,n:h.game.n,players:h.players.length})}catch(e){}}
+    if(act.length){activeList(act,r.games);return}
     if(r.games.length===1){KEY=r.games[0].key;setup();return}
     M.innerHTML=`<h2 class="title">🎮 בחר משחק</h2><div class="board">`+r.games.map((g,i)=>`<button class="r" style="border:0;font:inherit;cursor:pointer" onclick="KEY='${g.key}';setup()"><i>${i+1}</i><span>${esc(g.title)}</span>${g.n} שאלות ◀</button>`).join('')+`</div>`;
   }catch(e){setup('אין חיבור לאינטרנט')}
@@ -144,9 +149,11 @@ const PH={lobby:'בלובי',question:'בשאלה',reveal:'בתשובה',leader:
 function activeList(act,games){
   M.innerHTML=`<h2 class="title">◀ משחקים פעילים</h2><div class="board">`+act.map(g=>`<div class="r" style="flex-wrap:wrap"><span>${esc(g.title)} · קוד ${g.pin}<br><small style="color:var(--mut)">${PH[g.phase]||''}${g.q>=0?' · שאלה '+(g.q+1)+'/'+g.n:''} · ${g.players} שחקנים</small></span>
     <button class="hb pr" onclick="resume('${g.pin}',0)">🖥 מסך</button><button class="hb" onclick="resume('${g.pin}',1)">📱 שלט</button></div>`).join('')+`</div>
-    <button class="hb" onclick="${games.length===1?`KEY='${games[0].key}';setup()`:'pickNew()'}">＋ משחק חדש</button>`;
+    ${BOX}<button class="hb" onclick="${games.length===1?`KEY='${games[0].key}';setup()`:'pickNew()'}">＋ משחק חדש</button>`;
   window._games=games;
 }
+const BOX=`<div class="card" style="max-width:440px;width:100%"><b>יש משחק פתוח במכשיר אחר?</b><div style="display:flex;gap:8px;margin-top:8px"><input id="rp" inputmode="numeric" maxlength="6" placeholder="קוד המשחק (6 ספרות)" style="flex:1;padding:12px;border-radius:12px;border:1.5px solid var(--bd);font:inherit;font-size:18px;text-align:center"><button class="hb pr" onclick="resumePin()">המשך</button></div></div>`;
+function resumePin(){const v=($('rp').value||'').replace(/\D/g,'');if(v.length===6)resume(v,REM?1:0)}
 function pickNew(){const g=window._games;M.innerHTML=`<h2 class="title">🎮 בחר משחק</h2><div class="board">`+g.map((x,i)=>`<button class="r" style="border:0;font:inherit;cursor:pointer" onclick="KEY='${x.key}';setup()"><i>${i+1}</i><span>${esc(x.title)}</span>${x.n} שאלות ◀</button>`).join('')+`</div>`}
 function resume(pin,rem){location.href='?pin='+pin+'&remote='+rem}
 function setup(err){
@@ -156,7 +163,7 @@ function setup(err){
     <label>זמן לכל שאלה</label><select id="dur"><option value="10">10 שניות</option><option value="20" selected>20 שניות</option><option value="30">30 שניות</option><option value="45">45 שניות</option><option value="60">דקה</option></select>
     <label>טבלת מובילים</label><select id="lb"><option value="1">אחרי כל שאלה</option><option value="2">כל 2 שאלות</option><option value="3" selected>כל 3 שאלות</option><option value="5">כל 5 שאלות</option><option value="0">רק בסוף המשחק</option></select>
     <p class="err" id="er">${esc(err||'')}</p><button class="hb pr" style="width:100%;margin-top:8px" id="cb" onclick="create()">פתח משחק ←</button>
-</div>`;
+</div>${BOX}`;
 }
 async function create(){
   $('cb').disabled=true;$('cb').textContent='פותח… (כמה שניות)';
@@ -339,7 +346,7 @@ async function kick(id){
   if(r&&r.ok){players=players.filter(x=>x.pid!==id);manage();await loop()}else alert(r?r.error:'אין חיבור');
 }
 /* אם רעננו את הדף באמצע משחק, ממשיכים את אותו משחק */
-(function(){const pin=P.get('pin');if(pin&&pw){G={pin,phase:'',q:-1,n:0,dur:20};busy=false;loop().then(()=>{if(G.title){brand(G.title);$('ttl').textContent='🎮 '+G.title}started()})}else if(!KEY)pick();else setup()})();
+(function(){const pin=P.get('pin');if(pin&&pw){G={pin,phase:'',q:-1,n:0,dur:20};busy=false;loop().then(()=>{if(G.title){brand(G.title);$('ttl').textContent='🎮 '+G.title}started()})}else pick()})();
 </script>
 <script src="presence.js"></script><script>dbdPresence('game')</script>
 </body>
