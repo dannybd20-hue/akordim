@@ -46,6 +46,11 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .res.ok{background:linear-gradient(135deg,#22c55e,#15803d)}.res.no{background:linear-gradient(135deg,#fb7185,#e11d48)}
 .res .ic{font-size:60px;line-height:1}
 .pts{display:inline-block;background:rgba(255,255,255,.22);border-radius:12px;padding:6px 16px;font-size:22px;font-weight:900;margin-top:10px}
+.timer.hotn{animation:hotp 1s infinite;background:linear-gradient(135deg,#ef4444,#b91c1c)!important;color:#fff!important;border-color:#b91c1c!important}
+@keyframes hotp{0%{transform:scale(1)}50%{transform:scale(1.35)}100%{transform:scale(1)}}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(239,68,68,.45));transition:opacity .3s}
+body.hot::after{opacity:1;animation:hotf 1s infinite}
+@keyframes hotf{0%,100%{opacity:.35}50%{opacity:1}}
 .net{font-size:13px;font-weight:800;color:var(--no)}
 .sent{font-size:15px;font-weight:800;color:var(--ok)}
 .rank{font-size:58px;font-weight:900;line-height:1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -82,7 +87,7 @@ async function join(){
   try{
     const r=await api({action:'g_join',pin:p,name:n});
     if(!r.ok){$('er').textContent=r.error==='nogame'?'לא נמצא משחק עם הקוד הזה':r.error;$('jb').disabled=false;$('jb').textContent='כניסה ←';return}
-    pin=p;pid=r.pid;me=r.name;try{localStorage.setItem('game_name',n);sessionStorage.setItem('game_'+pin,JSON.stringify({pid,me}))}catch(e){}
+    pin=p;pid=r.pid;me=r.name;try{localStorage.setItem('game_name',n);sessionStorage.setItem('game_'+pin,JSON.stringify({pid,me}));localStorage.setItem('game_last',JSON.stringify({pin,pid,me,t:Date.now()}))}catch(e){}
     history.replaceState(null,'','?pin='+pin);start();
   }catch(e){$('er').textContent='אין חיבור לאינטרנט';$('jb').disabled=false;$('jb').textContent='כניסה ←'}
 }
@@ -93,11 +98,11 @@ async function poll(){
   if(busy)return;busy=true;
   try{const r=await api({action:'g_state',pin,pid});lastOk=Date.now();
     if(r.ok&&r.kicked){kicked();busy=false;return}
-    if(r.ok){off=r.now-Date.now();st=r;draw()}else if(r.error==='nogame')wait('המשחק הסתיים','אפשר לסגור את הדף')}catch(e){}
+    if(r.ok){off=r.now-Date.now();st=r;draw()}else if(r.error==='nogame'){try{localStorage.removeItem('game_last')}catch(e){}wait('המשחק הסתיים','אפשר לסגור את הדף')}}catch(e){}
   busy=false;
 }
 function kicked(){
-  clearInterval(polling);polling=0;try{sessionStorage.removeItem('game_'+pin)}catch(e){}pid='';$('tScore').hidden=true;$('tName').textContent='🎮 משחק חי';
+  clearInterval(polling);polling=0;try{sessionStorage.removeItem('game_'+pin);localStorage.removeItem('game_last')}catch(e){}pid='';$('tScore').hidden=true;$('tName').textContent='🎮 משחק חי';
   M.innerHTML=`<div class="big">יצאת מהמשחק</div><div class="mid">המארח הוציא אותך מהמשחק</div><button class="go" style="max-width:380px" onclick="joinView()">להצטרף שוב</button>`;shown='';
 }
 function wait(a,b){shown='';M.innerHTML=`<div class="big">${a}</div><div class="mid">${b}</div><div class="spin"></div>`}
@@ -115,7 +120,7 @@ function draw(){
       clearInterval(timer);timer=setInterval(tick,250);tick()}
     return;
   }
-  clearInterval(timer);
+  clearInterval(timer);document.body.classList.remove('hot');
   if(shown===key)return;shown=key;
   pend=null;const L=st.last||{none:true};
   if(st.phase==='reveal'){
@@ -126,7 +131,19 @@ function draw(){
   }else if(st.phase==='leader'){M.innerHTML=`<div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות</div><div class="mid">מחכים לשאלה הבאה…</div>`}
   else if(st.phase==='end'){if(st.rank<=3&&window.confetti)confetti({particleCount:150,spread:100,origin:{y:.4}});M.innerHTML=`<div class="big">${st.rank===1?'🏆 ניצחת!':st.rank<=3?'🥈 על הפודיום!':'סוף המשחק'}</div><div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות · מתוך ${st.players} שחקנים</div>`}
 }
-function tick(){const left=Math.max(0,Math.ceil((st.qStart+st.dur*1000-(Date.now()+off))/1000));const t=$('tm');if(t)t.textContent='⏱ '+left;if(!left)clearInterval(timer)}
+
+/* 5 השניות האחרונות: צפצוף בכל שנייה, המספר מתנפח ורקע אדום מהבהב */
+let ac=null;
+function beep(f,d){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.18,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+let lastTick=-1;
+function hot(left){
+  const t=$('tm');document.body.classList.toggle('hot',left>0&&left<=5);
+  if(t)t.classList.toggle('hotn',left>0&&left<=5);
+  if(left>0&&left<=5&&left!==lastTick){lastTick=left;beep(left===1?880:660,.18);try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}}
+  if(left===0&&lastTick!==0){lastTick=0;beep(300,.5);document.body.classList.remove('hot')}
+  if(left>5)lastTick=-1;
+}
+function tick(){const left=Math.max(0,Math.ceil((st.qStart+st.dur*1000-(Date.now()+off))/1000));const t=$('tm');if(t)t.textContent='⏱ '+left;hot(left);if(!left)clearInterval(timer)}
 function mine(){const c=pend?pend.c:(window._mc&&_mc.q===st.q?_mc.c:-1);return c>=0&&st.ch?`<div class="qt c${c}" style="border-inline-start:6px solid var(--c)">${SH[c]} · ${esc(st.ch[c])}</div>`:''}
 /* שליחת תשובה עם אישור קבלה: אם הקליטה חלשה מנסים שוב (השרת מתעלם מכפילויות).
    הזמן נמדד בטלפון מהרגע שהשאלה הופיעה, כדי שמי שהאינטרנט שלו איטי לא יפסיד נקודות */
@@ -145,9 +162,19 @@ async function answer(i){
   }
   if(pend){pend=null;shown='';draw()} // לא הצליח – מציגים שוב את התשובות כדי לנסות שוב
 }
+/* חזרה למשחק: אם האינטרנט נפל או הדף נסגר, השחקן חוזר לאותו משחק עם אותו שם והנקודות שלו (שמורים במכשיר ל-6 שעות) */
+function lastGame(){try{const l=JSON.parse(localStorage.getItem('game_last'));return l&&l.pid&&Date.now()-l.t<6*3600e3?l:null}catch(e){return null}}
+function backBtn(){
+  const l=lastGame();if(!l||(pin&&pin!==l.pin))return;
+  M.insertAdjacentHTML('afterbegin',`<div class="box"><h1 style="font-size:20px">חזרה למשחק</h1><div class="mid">${esc(l.me)} · קוד ${l.pin}</div><button class="go" style="margin-top:10px" onclick="resumeGame()">↩ חזור למשחק שלי</button></div>`);
+}
+function resumeGame(){const l=lastGame();if(!l)return;pin=l.pin;pid=l.pid;me=l.me;try{sessionStorage.setItem('game_'+pin,JSON.stringify({pid,me}))}catch(e){}history.replaceState(null,'','?pin='+pin);start()}
 (function(){
   let s=null;try{s=JSON.parse(sessionStorage.getItem('game_'+pin))}catch(e){}
-  if(pin&&s&&s.pid){pid=s.pid;me=s.me;start()}else joinView();
+  if(pin&&s&&s.pid){pid=s.pid;me=s.me;start();return}
+  const l=lastGame();
+  if(l&&(!pin||pin===l.pin)){resumeGame();return} // אותו משחק – חוזרים אוטומטית
+  joinView();backBtn();
 })();
 </script>
 </body>
