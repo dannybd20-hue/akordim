@@ -155,7 +155,7 @@ textarea.fld{min-height:110px;resize:vertical;line-height:1.5}
 
 <script>
 /* מתחבר לסקריפט forms-script.gs בגוגל. הטפסים עצמם נשארים בגוגל פורמס, והתשובות נכנסות לגיליון המקושר. */
-const FORMS_CLOUD='';
+const FORMS_CLOUD='https://script.google.com/macros/s/AKfycbyTsKgVGx8IzuMeCy2_LAZPruXPFpbPPApRP0EKfSeUOlJflz8_xtzXwiXsz2wXoiXA/exec';
 const $=id=>document.getElementById(id),M=$('main');
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const sg=k=>{try{return sessionStorage.getItem(k)||''}catch(e){return''}};
