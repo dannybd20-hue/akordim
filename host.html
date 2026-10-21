@@ -9,6 +9,7 @@
 <link rel="icon" href="icons/apps-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@500;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.3/confetti.browser.min.js"></script>
 <style>
 :root{--bg:#f4f5fb;--card:#fff;--tx:#1e1b4b;--mut:#64748b;--bd:#e5e7f0;--pr:#4f46e5;--pr2:#0ea5e9;--ok:#16a34a;--no:#e11d48;
   --grad:linear-gradient(90deg,var(--pr),var(--pr2));--a0:#6366f1;--a1:#0ea5e9;--a2:#f59e0b;--a3:#ec4899}
@@ -76,10 +77,36 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .wr span{flex:1;display:flex;align-items:center;gap:6px;font-weight:600;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .wr span i{font-style:normal;width:24px;height:24px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;flex-shrink:0;background:rgba(255,255,255,.25)}
 .wr em{font-style:normal;font-weight:900}
+.btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.waitl{font-weight:800;color:var(--mut);font-size:17px;max-width:1100px}
+.names span{cursor:pointer}
+.more{font-weight:800;color:var(--mut)}
+.board.all{max-height:38vh;overflow:auto;padding:4px}
+.board.all .r{padding:8px 16px;font-size:18px}.board.all .r i{width:34px;height:34px;font-size:15px}
+.ov{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
+.ov .card{width:100%;max-width:520px;max-height:86vh;display:flex;flex-direction:column;gap:10px}
+.pl{overflow:auto;display:flex;flex-direction:column;gap:6px}
+.pl div{display:flex;align-items:center;gap:8px;border:1px solid var(--bd);border-radius:12px;padding:8px 10px;font-weight:800;text-align:start}
+.pl div span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl button{border:1px solid var(--bd);background:var(--bg);border-radius:10px;padding:6px 10px}
+.rm{width:100%;max-width:520px;display:flex;flex-direction:column;gap:12px}
+.rm .big{font-size:22px;font-weight:900}
+.rm .huge{width:100%;font-size:26px;padding:22px;border-radius:18px}
+.rm .stat{display:flex;justify-content:space-around;font-weight:800;color:var(--mut)}.rm .stat b{display:block;font-size:34px;color:var(--tx)}
+.rm .pin{font-size:48px;font-weight:900;letter-spacing:4px;direction:ltr}
+@media (max-width:760px){
+  header{padding:10px 12px;gap:8px;flex-wrap:wrap}header img{height:32px}.hb{padding:8px 12px;font-size:14px}
+  main{padding:12px;justify-content:flex-start}
+  .tiles{grid-template-columns:1fr}.tile{min-height:52px;font-size:17px;padding:10px 12px}
+  .qmid{flex-direction:column;gap:12px}.qimg{max-width:92vw;max-height:26vh}
+  .side{flex-direction:row;gap:10px}
+  .lobby{gap:16px}.pod{gap:8px}.pod div{width:30vw}
+  .who{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
-<header><span id="logo"><img src="icons/apps-192.png" alt="" style="border-radius:12px"></span><h1 id="ttl">🎮 משחק חי</h1><button class="hb" id="nextB" hidden onclick="next()"></button><button class="hb" id="backB" onclick="location.href='./'">→ אפליקציות</button></header>
+<header><span id="logo"><img src="icons/apps-192.png" alt="" style="border-radius:12px"></span><h1 id="ttl">🎮 משחק חי</h1><button class="hb" id="altB" hidden></button><button class="hb" id="nextB" hidden onclick="next()"></button><button class="hb" id="plB" hidden onclick="manage()">👥</button><button class="hb" id="modeB" hidden onclick="setMode(!REM)"></button><button class="hb" id="backB" onclick="location.href='./'">→ אפליקציות</button></header>
 <main id="M"><div class="spin"></div></main>
 <script>
 /* מסך המארח (מקרן / טלוויזיה): פותח משחק מטופס בוחן, מציג ברקוד וקוד, מריץ שאלות, טיימר, חשיפה וטבלת מובילים */
@@ -90,7 +117,9 @@ const $=id=>document.getElementById(id),M=$('M');
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const SH=['א','ב','ג','ד'];
 const P=new URLSearchParams(location.search);let KEY=P.get('key');
-let pw='',G=null,players=[],answered=0,off=0,Q=null,QI=-1,tmr=0,shown='',busy=false;
+let pw='',G=null,players=[],answered=0,done=[],off=0,Q=null,QI=-1,tmr=0,shown='',busy=false,looping=0;
+/* REM = מצב שלט: מסך קטן לטלפון לניהול המשחק (גם כשהמחשב כבוי) */
+let REM=P.get('remote')==='1'||(P.get('remote')!=='0'&&matchMedia('(max-width:760px)').matches);
 try{pw=sessionStorage.getItem('hub_admin')||''}catch(e){}
 function api(o){return fetch(CLOUD,{method:'POST',body:JSON.stringify({...o,password:pw})}).then(r=>r.json())}
 function brand(t){if(/הצלה/.test(t||'')){document.body.classList.add('uh');$('logo').innerHTML='<img src="brand/uh-logo.png" alt="">'}}
@@ -99,76 +128,131 @@ function brand(t){if(/הצלה/.test(t||'')){document.body.classList.add('uh');$
 async function pick(){
   if(!pw||!CLOUD){setup();return}
   M.innerHTML='<div class="spin"></div>';
-  try{const r=await api({action:'g_list'});if(!r.ok){setup(r.error==='password'?'הסיסמה הראשית לא אושרה בסקריפט':r.error);return}
+  try{const [r,ac]=await Promise.all([api({action:'g_list'}),api({action:'g_active'}).catch(()=>null)]);if(!r.ok){setup(r.error==='password'?'הסיסמה הראשית לא אושרה בסקריפט':r.error);return}
+    if(ac&&ac.ok&&ac.games.length){activeList(ac.games,r.games);return}
     if(r.games.length===1){KEY=r.games[0].key;setup();return}
-    M.innerHTML=`<h2 class="title">🎮 בחר משחק</h2><div class="board">`+r.games.map((g,i)=>`<button class="r" style="border:0;font:inherit;cursor:pointer" onclick="KEY='${g.key}';setup()"><i>${i+1}</i><span>${esc(g.title)}</span>${g.n} שאלות ▶</button>`).join('')+`</div>`;
+    M.innerHTML=`<h2 class="title">🎮 בחר משחק</h2><div class="board">`+r.games.map((g,i)=>`<button class="r" style="border:0;font:inherit;cursor:pointer" onclick="KEY='${g.key}';setup()"><i>${i+1}</i><span>${esc(g.title)}</span>${g.n} שאלות ◀</button>`).join('')+`</div>`;
   }catch(e){setup('אין חיבור לאינטרנט')}
 }
+/* משחקים שעדיין רצים: אפשר להמשיך לנהל אותם מכל מכשיר */
+const PH={lobby:'בלובי',question:'בשאלה',reveal:'בתשובה',leader:'בטבלת מובילים'};
+function activeList(act,games){
+  M.innerHTML=`<h2 class="title">◀ משחקים פעילים</h2><div class="board">`+act.map(g=>`<div class="r" style="flex-wrap:wrap"><span>${esc(g.title)} · קוד ${g.pin}<br><small style="color:var(--mut)">${PH[g.phase]||''}${g.q>=0?' · שאלה '+(g.q+1)+'/'+g.n:''} · ${g.players} שחקנים</small></span>
+    <button class="hb pr" onclick="resume('${g.pin}',0)">🖥 מסך</button><button class="hb" onclick="resume('${g.pin}',1)">📱 שלט</button></div>`).join('')+`</div>
+    <button class="hb" onclick="${games.length===1?`KEY='${games[0].key}';setup()`:'pickNew()'}">＋ משחק חדש</button>`;
+  window._games=games;
+}
+function pickNew(){const g=window._games;M.innerHTML=`<h2 class="title">🎮 בחר משחק</h2><div class="board">`+g.map((x,i)=>`<button class="r" style="border:0;font:inherit;cursor:pointer" onclick="KEY='${x.key}';setup()"><i>${i+1}</i><span>${esc(x.title)}</span>${x.n} שאלות ◀</button>`).join('')+`</div>`}
+function resume(pin,rem){location.href='?pin='+pin+'&remote='+rem}
 function setup(err){
   if(!CLOUD){M.innerHTML='<div class="card"><b>עוד לא חובר סקריפט המשחק.</b><p>צריך להתקין את game-script.gs בגוגל ולשלוח את הכתובת שלו.</p></div>';return}
   if(!pw){M.innerHTML='<div class="card"><b>מסך המארח פתוח רק עם הסיסמה הראשית.</b><p>היכנס לדף הבית עם הסיסמה הראשית ופתח מאפליקציית הטפסים.</p></div>';return}
   M.innerHTML=`<div class="card setup"><h2 style="margin:0 0 6px">🎮 פתיחת משחק חי</h2><p style="margin:0;color:#555">השחקנים יענו מהטלפון עם קוד משחק או ברקוד</p>
     <label>זמן לכל שאלה</label><select id="dur"><option value="10">10 שניות</option><option value="20" selected>20 שניות</option><option value="30">30 שניות</option><option value="45">45 שניות</option><option value="60">דקה</option></select>
+    <label>טבלת מובילים</label><select id="lb"><option value="1">אחרי כל שאלה</option><option value="2">כל 2 שאלות</option><option value="3" selected>כל 3 שאלות</option><option value="5">כל 5 שאלות</option><option value="0">רק בסוף המשחק</option></select>
     <p class="err" id="er">${esc(err||'')}</p><button class="hb pr" style="width:100%;margin-top:8px" id="cb" onclick="create()">פתח משחק ←</button>
 </div>`;
 }
 async function create(){
   $('cb').disabled=true;$('cb').textContent='פותח… (כמה שניות)';
-  try{const r=await api({action:'g_create',key:KEY,dur:+$('dur').value});
+  try{const r=await api({action:'g_create',key:KEY,dur:+$('dur').value,lb:+$('lb').value});
     if(!r.ok){setup(r.error==='password'?'הסיסמה הראשית לא אושרה בסקריפט':r.error);return}
     G=r.game;brand(G.title);$('ttl').textContent='🎮 '+G.title;history.replaceState(null,'','?key='+KEY+'&pin='+G.pin);
-    lobby();loop();setInterval(loop,1500);
+    started();render();
   }catch(e){setup('אין חיבור לאינטרנט')}
 }
 async function loop(){
   if(busy||!G)return;busy=true;
-  try{const r=await api({action:'g_host',pin:G.pin});if(r.ok){off=r.now-Date.now();G=r.game;players=r.players;answered=r.answered;render()}}catch(e){}
+  try{const r=await api({action:'g_host',pin:G.pin});if(r.ok){off=r.now-Date.now();G=r.game;players=r.players;answered=r.answered;done=r.done||[];render()}
+    else if(r.error==='nogame'){M.innerHTML='<div class="card"><b>המשחק הזה כבר לא קיים</b> (עברו יותר מ-6 שעות)</div>';nb('')}}catch(e){}
   busy=false;
 }
+function started(){
+  $('backB').hidden=true;$('plB').hidden=false;$('modeB').hidden=false;modeLbl();
+  if(!looping){looping=setInterval(loop,1500);loop()}
+}
+function modeLbl(){$('modeB').textContent=REM?'🖥 מסך':'📱 שלט'}
+function setMode(r){REM=r;modeLbl();shown='';const u=new URL(location.href);u.searchParams.set('remote',r?1:0);history.replaceState(null,'',u);render()}
+/* שלט מצגת: PageDown / רווח / Enter / חץ שמאלה = הבא. B = הצג או דלג על טבלת המובילים. אין "אחורה" */
+document.addEventListener('keydown',e=>{
+  if(!G||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)||$('ov'))return;
+  if(['PageDown','ArrowLeft','ArrowDown',' ','Enter'].includes(e.key)){e.preventDefault();if(!$('nextB').hidden)next()}
+  else if(e.key==='b'||e.key==='B'||e.key==='נ'){e.preventDefault();const a=$('altB');if(!a.hidden)a.click()}
+});
 function nb(t){const b=$('nextB');b.hidden=!t;b.textContent=t||''}
+function alt(t,fn){const b=$('altB');b.hidden=!t;b.textContent=t||'';b.onclick=fn||null}
+/* האם אחרי השאלה הזאת מגיעה טבלת מובילים (לפי ההגדרה בפתיחת המשחק) */
+function due(){const lb=G.lb===undefined?1:G.lb;return lb>0&&(G.q+1)%lb===0}
 function render(){
   const ph=G.phase;
+  if(ph==='question'){
+    if(REM)remote();else if(shown!=='q'+G.q)showQ();
+    else{const a=$('ansN');if(a)a.textContent=answered;waitList()}
+    if(players.length&&answered>=players.length)next();return}
+  if(REM){remote();return}
   if(ph==='lobby'){updLobby();return}
-  if(ph==='question'){if(shown!=='q'+G.q)showQ();else{const a=$('ansN');if(a)a.textContent=answered;
-    if(players.length&&answered>=players.length)next()}return}
   if(ph==='reveal'&&shown!=='r'+G.q)showReveal();
   if(ph==='leader'&&shown!=='l'+G.q)showBoard();
   if(ph==='end'&&shown!=='end')showEnd();
 }
+/* "ממתינים ל…": מי עוד לא שלח תשובה (כשנשארו מעטים, מציגים את השמות) */
+function waitList(){
+  const w=$('waitL');if(!w)return;const left=players.filter(p=>!done.includes(p.pid));
+  w.textContent=!left.length?'כולם ענו ✓':left.length<=12?'⏳ ממתינים ל: '+left.map(p=>p.name).join(', '):'⏳ ממתינים ל-'+left.length+' שחקנים';
+}
+function startTimer(){
+  clearInterval(tmr);
+  tmr=setInterval(()=>{const left=Math.max(0,Math.ceil((G.qStart+G.dur*1000-(Date.now()+off))/1000));const t=$('tm');if(t)t.textContent=left;if(!left){clearInterval(tmr);if(G.phase==='question')setTimeout(next,600)}},250);
+}
+/* כפתורי החשיפה: הכפתור הראשי לפי ההגדרה, והשני עוקף אותה (מקש B בשלט) */
+function revealBtns(){
+  if(G.q>=G.n-1){nb('🏆 לתוצאות');alt('');return}
+  if(due()){nb('🏅 טבלת מובילים ←');alt('דלג על הטבלה ←',()=>next('skip'))}
+  else{nb('שאלה הבאה ←');alt('🏅 הצג טבלה',()=>next('board'))}
+}
+function counts(){
+  const L=G.last||{};let ok=0,no=0,none=0;
+  players.forEach(p=>{const l=L[p.pid];if(!l||l.none)none++;else if(l.ok)ok++;else no++});
+  return {ok,no,none};
+}
+function countsTxt(){const c=counts();return `✓ ${c.ok} ענו נכון · ✗ ${c.no} טעו`+(c.none?` · ⏳ ${c.none} לא ענו`:'')}
 function lobby(){
   shown='lobby';$('backB').hidden=true;const url=PLAY+'?pin='+G.pin;
   M.innerHTML=`<div class="lobby"><div id="qr"></div><div class="card pinbox"><div class="l">נכנסים ל- <b>${esc(PLAY.replace('https://',''))}</b></div><div class="l" style="margin-top:6px">קוד משחק:</div><div class="pin">${G.pin}</div><div class="url">או סורקים את הברקוד 📷</div></div></div>
     <div class="cnt" id="pc">0 שחקנים</div><div class="names" id="nm"></div>`;
   try{new QRCode($('qr'),{text:url,width:300,height:300,correctLevel:QRCode.CorrectLevel.M})}catch(e){$('qr').textContent=url}
-  nb('▶ התחל משחק');
+  nb('◀ התחל משחק');alt('');
 }
 function updLobby(){
   if(shown!=='lobby')lobby();
   const nm=$('nm');if(!nm)return;const have=[...nm.children].map(x=>x.dataset.p);
-  players.forEach(p=>{if(!have.includes(p.pid)){const s=document.createElement('span');s.dataset.p=p.pid;s.textContent=p.name;nm.append(s)}});
+  [...nm.children].forEach(x=>{const p=players.find(q=>q.pid===x.dataset.p);if(!p)x.remove();else if(x.textContent!==p.name)x.textContent=p.name});
+  players.forEach(p=>{if(!have.includes(p.pid)){const s=document.createElement('span');s.dataset.p=p.pid;s.textContent=p.name;s.title='לחיצה: שינוי שם או הוצאה';s.onclick=()=>manage();nm.append(s)}});
+  nm.style.fontSize=players.length>40?'15px':'';
   $('pc').textContent=players.length+(players.length===1?' שחקן':' שחקנים');
 }
-async function next(){
-  const b=$('nextB');if(b.disabled)return;b.disabled=true;
-  try{const r=await api({action:'g_next',pin:G.pin});if(r.ok){G=r.game;off=r.now-Date.now();render()}}catch(e){}
-  b.disabled=false;
+let nexting=false;
+async function next(show){
+  if(nexting)return;nexting=true;$('nextB').disabled=$('altB').disabled=true;
+  try{const r=await api({action:'g_next',pin:G.pin,from:G.phase+':'+G.q,show:typeof show==='string'?show:undefined});if(r.ok){G=r.game;off=r.now-Date.now();render()}}catch(e){}
+  nexting=false;$('nextB').disabled=$('altB').disabled=false;
 }
 async function showQ(){
-  shown='q'+G.q;clearInterval(tmr);nb('דלג ⏭');
+  shown='q'+G.q;clearInterval(tmr);nb('דלג ←');alt('');
   M.innerHTML='<div class="spin"></div>';
   if(QI!==G.q){const r=await api({action:'g_q',pin:G.pin});if(r.ok){Q=r.q;Q.img=r.img;QI=G.q}}
   M.innerHTML=`<div class="qhead">${esc(Q.t)}</div>
     <div class="qmid"><div class="side"><div class="circle" id="tm">${G.dur}</div></div>${Q.img?`<img class="qimg" src="${Q.img}" alt="">`:''}<div class="side"><b id="ansN">${answered}</b>תשובות</div></div>
     <div class="tiles">${Q.ch.map((c,i)=>`<div class="tile c${i}"><span class="s">${SH[i]}</span>${esc(c)}</div>`).join('')}</div>
-    <div class="hint">שאלה ${G.q+1} מתוך ${G.n} · 📱 עונים מהטלפון</div>`;
-  tmr=setInterval(()=>{const left=Math.max(0,Math.ceil((G.qStart+G.dur*1000-(Date.now()+off))/1000));const t=$('tm');if(t)t.textContent=left;if(!left){clearInterval(tmr);if(G.phase==='question')setTimeout(next,600)}},250);
+    <div class="waitl" id="waitL"></div><div class="hint">שאלה ${G.q+1} מתוך ${G.n} · 📱 עונים מהטלפון</div>`;
+  waitList();startTimer();
 }
 function showReveal(){
-  shown='r'+G.q;clearInterval(tmr);nb(G.q>=G.n-1?'🏆 לתוצאות':'טבלת מובילים ←');
+  shown='r'+G.q;clearInterval(tmr);revealBtns();
   const tot=Math.max(1,G.dist.reduce((a,b)=>a+b,0));
   M.innerHTML=`<div class="qhead">${esc(Q.t)}</div>
     <div class="tiles">${Q.ch.map((c,i)=>`<div class="tile c${i} ${i===G.right?'right':'dim'}"><span class="s">${SH[i]}</span>${esc(c)}<span class="n">${G.dist[i]}</span></div>`).join('')}</div>
-    <div class="card sum"><div style="font-size:22px;font-weight:900">${G.dist[G.right]} מתוך ${players.length} ענו נכון (${Math.round(G.dist[G.right]*100/Math.max(1,players.length))}%)</div>
+    <div class="card sum"><div style="font-size:22px;font-weight:900">${countsTxt()}</div>
       <button class="hb pr who-b" onclick="whoToggle()">👥 מי ענה מה</button><div class="who" id="who" hidden></div></div>`;
   whoFill();
 }
@@ -176,24 +260,68 @@ function showReveal(){
 function whoFill(){
   const box=$('who');if(!box)return;const L=G.last||{};
   const rows=[...players].map(p=>({p,l:L[p.pid]||{none:true}})).sort((a,b)=>(b.l.ok?2:b.l.none?0:1)-(a.l.ok?2:a.l.none?0:1)||a.p.name.localeCompare(b.p.name,'he'));
-  box.innerHTML=rows.map(({p,l})=>`<div class="wr ${l.ok?'ok':l.none?'none':'no'}"><b>${esc(p.name)}</b><span>${l.none?'לא ענה':`<i class="c${l.c}">${SH[l.c]||''}</i>${esc(Q.ch[l.c]||'')}`}</span><em>${l.ok?'✓ +'+l.p:l.none?'—':'✗'}</em></div>`).join('')||'<div class="wr none">אין שחקנים</div>';
+  box.innerHTML=rows.map(({p,l})=>`<div class="wr ${l.ok?'ok':l.none?'none':'no'}"><b>${esc(p.name)}</b><span>${l.none?'לא ענה':`<i class="c${l.c}">${SH[l.c]||''}</i>${esc(Q&&QI===G.q?Q.ch[l.c]||'':'')}`}</span><em>${l.ok?'✓ +'+l.p:l.none?'—':'✗'}</em></div>`).join('')||'<div class="wr none">אין שחקנים</div>';
 }
 function whoToggle(){const w=$('who');w.hidden=!w.hidden;if(!w.hidden)whoFill()}
 function topN(n){return [...players].sort((a,b)=>b.score-a.score).slice(0,n)}
 function showBoard(){
-  shown='l'+G.q;nb('שאלה הבאה ←');
-  M.innerHTML=`<h2 class="title">🏅 טבלת מובילים</h2><div class="board">${topN(5).map((p,i)=>`<div class="r" style="animation-delay:${i*.08}s"><i>${i+1}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>`;
+  shown='l'+G.q;nb('שאלה הבאה ←');alt('');
+  M.innerHTML=`<h2 class="title">🏅 טבלת מובילים</h2><div class="board">${topN(5).map((p,i)=>`<div class="r" style="animation-delay:${i*.08}s"><i>${i+1}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>
+    ${players.length>5?`<div class="more">ועוד ${players.length-5} שחקנים · כל אחד רואה את המקום שלו בטלפון 📱</div>`:''}`;
 }
 function showEnd(){
-  shown='end';nb('');const t=topN(3);
+  shown='end';nb('');alt('');const t=topN(3);
   M.innerHTML=`<h2 class="title">🏆 הזוכים</h2><div class="pod">
     ${t[1]?`<div class="p2"><em>🥈</em>${esc(t[1].name)}<small>${t[1].score.toLocaleString('he-IL')}</small></div>`:''}
     ${t[0]?`<div class="p1"><em>🥇</em>${esc(t[0].name)}<small>${t[0].score.toLocaleString('he-IL')}</small></div>`:''}
     ${t[2]?`<div class="p3"><em>🥉</em>${esc(t[2].name)}<small>${t[2].score.toLocaleString('he-IL')}</small></div>`:''}</div>
-    <div class="board" style="max-width:600px">${[...players].sort((a,b)=>b.score-a.score).slice(3,10).map((p,i)=>`<div class="r"><i>${i+4}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>`;
+    <div class="board all" style="max-width:600px">${[...players].sort((a,b)=>b.score-a.score).slice(3).map((p,i)=>`<div class="r"><i>${i+4}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>`;
+  boom();
+}
+/* קונפטי לזוכים */
+function boom(){
+  if(!window.confetti)return;const end=Date.now()+2500;
+  (function f(){confetti({particleCount:6,angle:60,spread:60,origin:{x:0,y:.7}});confetti({particleCount:6,angle:120,spread:60,origin:{x:1,y:.7}});if(Date.now()<end)requestAnimationFrame(f)})();
+  setTimeout(()=>confetti({particleCount:160,spread:100,origin:{y:.45}}),400);
+}
+/* מצב שלט: הכול בעמוד אחד קטן – מה קורה עכשיו, כמה ענו, ממתינים ל…, וכפתור "הבא" גדול */
+function remote(){
+  const k=G.phase+':'+G.q;
+  if(shown!=='rm:'+k){shown='rm:'+k;
+    const ph=G.phase,body=
+      ph==='lobby'?`<div class="big">ממתינים לשחקנים</div><div class="mid">קוד משחק</div><div class="pin">${G.pin}</div>`:
+      ph==='question'?`<div class="big">שאלה ${G.q+1} מתוך ${G.n}</div><div id="rq">${QI===G.q?esc(Q.t):''}</div><div class="stat"><div><b id="tm">${G.dur}</b>שניות</div><div><b id="ansN">${answered}</b>ענו</div><div><b id="plN">${players.length}</b>שחקנים</div></div><div class="waitl" id="waitL"></div>`:
+      ph==='reveal'?`<div class="big">תשובה לשאלה ${G.q+1}</div><div style="font-weight:900">${countsTxt()}</div><button class="hb" onclick="whoToggle()">👥 מי ענה מה</button><div class="who" id="who" hidden></div>`:
+      ph==='leader'?`<div class="big">🏅 טבלת מובילים</div><div class="board all">${topN(players.length).map((p,i)=>`<div class="r"><i>${i+1}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>`:
+      `<div class="big">🏆 המשחק הסתיים</div><div class="board all">${topN(players.length).map((p,i)=>`<div class="r"><i>${i+1}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>`;
+    const main=ph==='lobby'?'◀ התחל משחק':ph==='question'?'סגור שאלה ←':ph==='reveal'?(G.q>=G.n-1?'🏆 לתוצאות':due()?'🏅 טבלת מובילים ←':'שאלה הבאה ←'):ph==='leader'?'שאלה הבאה ←':'';
+    const second=ph==='reveal'&&G.q<G.n-1?(due()?`<button class="hb" onclick="next('skip')">דלג על הטבלה ←</button>`:`<button class="hb" onclick="next('board')">🏅 הצג טבלה</button>`):'';
+    M.innerHTML=`<div class="card rm">${body}${main?`<button class="hb pr huge" onclick="next()">${main}</button>`:''}${second}</div>`;
+    nb('');alt('');if(ph==='question')startTimer();else clearInterval(tmr);
+    if((ph==='question'||ph==='reveal')&&QI!==G.q)api({action:'g_q',pin:G.pin}).then(r=>{if(r.ok){Q=r.q;Q.img=r.img;QI=G.q;const e=$('rq');if(e)e.textContent=Q.t}}).catch(()=>{});
+  }
+  if(G.phase==='lobby'){const c=M.querySelector('.mid');if(c)c.textContent='קוד משחק · '+players.length+(players.length===1?' שחקן':' שחקנים')}
+  if(G.phase==='question'){const a=$('ansN');if(a)a.textContent=answered;const n=$('plN');if(n)n.textContent=players.length;waitList()}
+}
+/* ניהול שחקנים: שינוי שם או הוצאה מהמשחק */
+function manage(){
+  const o=$('ov')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'ov',className:'ov'}));
+  o.onclick=e=>{if(e.target===o)o.remove()};
+  o.innerHTML=`<div class="card"><div style="display:flex;align-items:center"><b style="flex:1;font-size:20px;text-align:start">👥 שחקנים (${players.length})</b><button class="hb" onclick="$('ov').remove()">✕</button></div>
+    <div class="pl">${[...players].sort((a,b)=>a.name.localeCompare(b.name,'he')).map(p=>`<div><span>${esc(p.name)}</span><small>${p.score.toLocaleString('he-IL')}</small><button onclick="ren('${p.pid}')">✏️ שם</button><button onclick="kick('${p.pid}')">✖ הוצא</button></div>`).join('')||'אין עדיין שחקנים'}</div></div>`;
+}
+async function ren(id){
+  const p=players.find(x=>x.pid===id);if(!p)return;const n=prompt('שם חדש עבור '+p.name,p.name);if(!n||!n.trim()||n.trim()===p.name)return;
+  const r=await api({action:'g_rename',pin:G.pin,pid:id,name:n.trim()}).catch(()=>null);
+  if(r&&r.ok){p.name=n.trim().slice(0,20);shown=shown.startsWith('rm:')?'':shown;manage();await loop()}else alert(r?r.error:'אין חיבור');
+}
+async function kick(id){
+  const p=players.find(x=>x.pid===id);if(!p||!confirm('להוציא את '+p.name+' מהמשחק?'))return;
+  const r=await api({action:'g_kick',pin:G.pin,pid:id}).catch(()=>null);
+  if(r&&r.ok){players=players.filter(x=>x.pid!==id);manage();await loop()}else alert(r?r.error:'אין חיבור');
 }
 /* אם רעננו את הדף באמצע משחק, ממשיכים את אותו משחק */
-(function(){const pin=P.get('pin');if(pin&&pw){G={pin,phase:'lobby',q:-1,n:0,dur:20};loop().then(()=>{if(G.title){brand(G.title);$('ttl').textContent='🎮 '+G.title}});setInterval(loop,1500)}else if(!KEY)pick();else setup()})();
+(function(){const pin=P.get('pin');if(pin&&pw){G={pin,phase:'',q:-1,n:0,dur:20};busy=false;loop().then(()=>{if(G.title){brand(G.title);$('ttl').textContent='🎮 '+G.title}started()})}else if(!KEY)pick();else setup()})();
 </script>
 <script src="presence.js"></script><script>dbdPresence('game')</script>
 </body>
