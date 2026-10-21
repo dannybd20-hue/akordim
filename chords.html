@@ -58,8 +58,11 @@ body.stage #bar{display:flex}
 /* מצב נגינה: הכותרת מתקפלת ונשארים רק טון, קאפו וכפתור ☰ שפותח הכול */
 #stTog{display:none}
 body.stage #stTog{display:inline-flex;align-items:center;justify-content:center}
-body.stage:not(.stopen) .logo,body.stage:not(.stopen) .sels,body.stage:not(.stopen) .hin2>:not(.tc):not(#stTog),body.stage:not(.stopen) #bar,body.stage:not(.stopen) .head .hr,body.stage:not(.stopen) .head .badge{display:none!important}
+body.stage:not(.stopen) .logo,body.stage:not(.stopen) .sels,body.stage:not(.stopen) .hin2>:not(.tc):not(#stTog),body.stage:not(.stopen) .head .hr,body.stage:not(.stopen) .head .badge{display:none!important}
 body.stage:not(.stopen) .hin{padding:6px 10px;justify-content:center}
+/* שורת מצב הנגינה נשארת צמודה מתחת לכותרת גם כשגוללים */
+body.stage #bar{position:sticky;top:var(--hh,0px);z-index:19}
+body.stage:not(.stopen) #bar{padding:6px 12px;gap:10px;flex-wrap:wrap}
 body.stage:not(.stopen) .hin2{justify-content:center}
 body.stage:not(.stopen) main{padding:10px 8px;gap:12px}
 body.stage:not(.stopen) #songCard{padding:16px 14px}
@@ -600,7 +603,7 @@ function toggleScroll(){
 function stage(){
   if(document.body.classList.contains('home'))pick(cur);
   const on=!document.body.classList.contains('stage');
-  document.body.classList.toggle('stage',on);document.body.classList.remove('stopen');$('stTog').textContent='☰';
+  document.body.classList.toggle('stage',on);document.body.classList.remove('stopen');$('stTog').textContent='☰';stH();
   fz=Math.max(14,Math.min(40,fz+(on?6:-6)));
   if(!on&&sc)toggleScroll();
   if(!on){pl=[];plStop()}
@@ -665,7 +668,10 @@ function plEnd(){
   plLeft=plWait;$('plc').textContent=`הבא בעוד ${plLeft}…`;
   plT=setInterval(()=>{plLeft--;if(plLeft<=0)plGo(1);else $('plc').textContent=`הבא בעוד ${plLeft}…`},1000);
 }
-function stOpen(){const o=document.body.classList.toggle('stopen');$('stTog').textContent=o?'▲':'☰'}
+function stOpen(){const o=document.body.classList.toggle('stopen');$('stTog').textContent=o?'▲':'☰';stH()}
+/* גובה הכותרת, כדי ששורת מצב הנגינה תיצמד בדיוק מתחתיה */
+function stH(){document.documentElement.style.setProperty('--hh',document.querySelector('header').offsetHeight+'px')}
+addEventListener('resize',stH);
 function theme(){const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('akordim_theme',r.dataset.theme)}catch(e){}}
 
 /* ---------- גיבוי ---------- */
