@@ -86,7 +86,7 @@ async function join(){
   if(p.length!==6){$('er').textContent='קוד המשחק הוא 6 ספרות';return}
   if(!n){$('er').textContent='נא לכתוב שם';return}
   const ph=$('ph').value.replace(/\D/g,'');
-  if(ph.length<1||ph.length>10){$('er').textContent='נא לכתוב מס' כונן (1 עד 10 ספרות)';return}
+  if(ph.length<1||ph.length>10){$('er').textContent='נא לכתוב מס\' כונן (1 עד 10 ספרות)';return}
   $('jb').disabled=true;$('jb').textContent='נכנס…';
   try{
     const r=await api({action:'g_join',pin:p,name:n,phone:ph});
