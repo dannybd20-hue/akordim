@@ -166,7 +166,7 @@ function game_(d, admin) {
     const name = String(d.name || '').trim().slice(0, 20);
     if (!name) return { ok: false, error: 'נא לכתוב שם' };
     const phone = String(d.phone || '').replace(/\D/g, '');
-    if (!(d.pid && (gget_('gp:' + pin) || {})[d.pid]) && (phone.length < 1 || phone.length > 10)) return { ok: false, error: 'נא לכתוב מס' כונן (1 עד 10 ספרות)' };
+    if (!(d.pid && (gget_('gp:' + pin) || {})[d.pid]) && (phone.length < 1 || phone.length > 10)) return { ok: false, error: 'נא לכתוב מס\' כונן (1 עד 10 ספרות)' };
     const lock = LockService.getScriptLock(); lock.waitLock(10000);
     try {
       const pl = gget_('gp:' + pin) || {};
