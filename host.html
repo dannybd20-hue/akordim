@@ -85,7 +85,8 @@ body.hot::after{opacity:1;animation:hotf 1s infinite}
 .btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .waitl{font-weight:800;color:var(--mut);font-size:17px;max-width:1100px}
 .names span{cursor:pointer}
-.ph{display:block;font-size:12px;font-weight:600;color:var(--mut);direction:ltr}
+.ph{display:block;font-size:12px;font-weight:700;color:var(--mut)}
+.names span.nm{display:flex;flex-direction:column;align-items:center;line-height:1.15;padding:8px 18px}.names span.nm small{font-size:13px;font-weight:700;color:var(--mut);margin-top:2px}
 .shq{max-width:520px;width:100%}
 .shq a{color:var(--pr);font-weight:900}
 .pp{position:fixed;z-index:5;pointer-events:none;background:var(--bgc,var(--grad));color:#fff;font-weight:900;border-radius:99px;padding:.25em .7em;box-shadow:0 8px 22px rgba(30,27,75,.25);animation:ppop 2s ease-out forwards;white-space:nowrap}
@@ -281,8 +282,9 @@ function lobby(){
 function updLobby(){
   if(shown!=='lobby')lobby();
   const nm=$('nm');if(!nm)return;const have=[...nm.children].map(x=>x.dataset.p);
-  [...nm.children].forEach(x=>{const p=players.find(q=>q.pid===x.dataset.p);if(!p)x.remove();else if(x.textContent!==p.name)x.textContent=p.name});
-  players.forEach(p=>{if(!have.includes(p.pid)){const s=document.createElement('span');s.dataset.p=p.pid;s.textContent=p.name;s.title='לחיצה: שינוי שם או הוצאה';s.onclick=()=>manage();nm.append(s)}});
+  const chip=p=>esc(p.name)+(p.phone?`<small>כונן ${esc(p.phone)}</small>`:'');
+  [...nm.children].forEach(x=>{const p=players.find(q=>q.pid===x.dataset.p);if(!p)x.remove();else if(x.dataset.h!==chip(p)){x.dataset.h=chip(p);x.innerHTML=chip(p)}});
+  players.forEach(p=>{if(!have.includes(p.pid)){const s=document.createElement('span');s.className='nm';s.dataset.p=p.pid;s.dataset.h=chip(p);s.innerHTML=chip(p);s.title='לחיצה: שינוי שם או הוצאה';s.onclick=()=>manage();nm.append(s)}});
   nm.style.fontSize=players.length>40?'15px':'';
   $('pc').textContent=players.length+(players.length===1?' שחקן':' שחקנים');
 }
@@ -315,7 +317,7 @@ function showReveal(){
 function whoFill(){
   const box=$('who');if(!box)return;const L=G.last||{};
   const rows=[...players].map(p=>({p,l:L[p.pid]||{none:true}})).sort((a,b)=>(b.l.ok?2:b.l.none?0:1)-(a.l.ok?2:a.l.none?0:1)||a.p.name.localeCompare(b.p.name,'he'));
-  box.innerHTML=rows.map(({p,l})=>`<div class="wr ${l.ok?'ok':l.none?'none':'no'}"><b>${esc(p.name)}${p.phone?`<small class="ph" style="color:rgba(255,255,255,.8)">${esc(p.phone)}</small>`:''}</b><span>${l.none?'לא ענה':`<i class="c${l.c}">${SH[l.c]||''}</i>${esc(Q&&QI===G.q?Q.ch[l.c]||'':'')}`}</span><em>${l.ok?'✓ +'+l.p:l.none?'—':'✗'}</em></div>`).join('')||'<div class="wr none">אין שחקנים</div>';
+  box.innerHTML=rows.map(({p,l})=>`<div class="wr ${l.ok?'ok':l.none?'none':'no'}"><b>${esc(p.name)}${p.phone?`<small class="ph" style="color:rgba(255,255,255,.85)">כונן ${esc(p.phone)}</small>`:''}</b><span>${l.none?'לא ענה':`<i class="c${l.c}">${SH[l.c]||''}</i>${esc(Q&&QI===G.q?Q.ch[l.c]||'':'')}`}</span><em>${l.ok?'✓ +'+l.p:l.none?'—':'✗'}</em></div>`).join('')||'<div class="wr none">אין שחקנים</div>';
 }
 function whoToggle(){const w=$('who');w.hidden=!w.hidden;if(!w.hidden)whoFill()}
 function topN(n){return [...players].sort((a,b)=>b.score-a.score).slice(0,n)}
@@ -385,7 +387,7 @@ function manage(){
   const o=$('ov')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'ov',className:'ov'}));
   o.onclick=e=>{if(e.target===o)o.remove()};
   o.innerHTML=`<div class="card"><div style="display:flex;align-items:center"><b style="flex:1;font-size:20px;text-align:start">👥 שחקנים (${players.length})</b><button class="hb" style="color:var(--no)" onclick="closeGame('${G.pin}')">✖ סגור משחק</button><button class="hb" onclick="$('ov').remove()">✕</button></div>
-    <div class="pl">${[...players].sort((a,b)=>a.name.localeCompare(b.name,'he')).map(p=>`<div><span>${esc(p.name)}${p.phone?`<small class="ph">${esc(p.phone)}</small>`:''}</span><small>${p.score.toLocaleString('he-IL')}</small><button onclick="ren('${p.pid}')">✏️ שם</button><button onclick="kick('${p.pid}')">✖ הוצא</button></div>`).join('')||'אין עדיין שחקנים'}</div></div>`;
+    <div class="pl">${[...players].sort((a,b)=>a.name.localeCompare(b.name,'he')).map(p=>`<div><span>${esc(p.name)}${p.phone?`<small class="ph">כונן ${esc(p.phone)}</small>`:''}</span><small>${p.score.toLocaleString('he-IL')}</small><button onclick="ren('${p.pid}')">✏️ שם</button><button onclick="kick('${p.pid}')">✖ הוצא</button></div>`).join('')||'אין עדיין שחקנים'}</div></div>`;
 }
 async function ren(id){
   const p=players.find(x=>x.pid===id);if(!p)return;const n=prompt('שם חדש עבור '+p.name,p.name);if(!n||!n.trim()||n.trim()===p.name)return;
