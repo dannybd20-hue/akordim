@@ -187,7 +187,7 @@ async function loop(){
 function started(){try{localStorage.setItem('game_host_last',G.pin)}catch(e){}
  
   $('backB').hidden=true;$('plB').hidden=false;$('qrB').hidden=false;$('modeB').hidden=false;modeLbl();
-  if(!looping){looping=setInterval(loop,1500);loop()}
+  if(!looping){looping=setInterval(loop,1000);loop()}
 }
 function modeLbl(){$('modeB').textContent=REM?'🖥 מסך':'📱 שלט'}
 function setMode(r){REM=r;modeLbl();shown='';const u=new URL(location.href);u.searchParams.set('remote',r?1:0);history.replaceState(null,'',u);render()}
