@@ -85,6 +85,9 @@ body.hot::after{opacity:1;animation:hotf 1s infinite}
 .btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .waitl{font-weight:800;color:var(--mut);font-size:17px;max-width:1100px}
 .names span{cursor:pointer}
+.ph{display:block;font-size:12px;font-weight:600;color:var(--mut);direction:ltr}
+.shq{max-width:520px;width:100%}
+.shq a{color:var(--pr);font-weight:900}
 .more{font-weight:800;color:var(--mut)}
 .board.all{max-height:38vh;overflow:auto;padding:4px}
 .board.all .r{padding:8px 16px;font-size:18px}.board.all .r i{width:34px;height:34px;font-size:15px}
@@ -285,7 +288,7 @@ function showReveal(){
 function whoFill(){
   const box=$('who');if(!box)return;const L=G.last||{};
   const rows=[...players].map(p=>({p,l:L[p.pid]||{none:true}})).sort((a,b)=>(b.l.ok?2:b.l.none?0:1)-(a.l.ok?2:a.l.none?0:1)||a.p.name.localeCompare(b.p.name,'he'));
-  box.innerHTML=rows.map(({p,l})=>`<div class="wr ${l.ok?'ok':l.none?'none':'no'}"><b>${esc(p.name)}</b><span>${l.none?'לא ענה':`<i class="c${l.c}">${SH[l.c]||''}</i>${esc(Q&&QI===G.q?Q.ch[l.c]||'':'')}`}</span><em>${l.ok?'✓ +'+l.p:l.none?'—':'✗'}</em></div>`).join('')||'<div class="wr none">אין שחקנים</div>';
+  box.innerHTML=rows.map(({p,l})=>`<div class="wr ${l.ok?'ok':l.none?'none':'no'}"><b>${esc(p.name)}${p.phone?`<small class="ph" style="color:rgba(255,255,255,.8)">${esc(p.phone)}</small>`:''}</b><span>${l.none?'לא ענה':`<i class="c${l.c}">${SH[l.c]||''}</i>${esc(Q&&QI===G.q?Q.ch[l.c]||'':'')}`}</span><em>${l.ok?'✓ +'+l.p:l.none?'—':'✗'}</em></div>`).join('')||'<div class="wr none">אין שחקנים</div>';
 }
 function whoToggle(){const w=$('who');w.hidden=!w.hidden;if(!w.hidden)whoFill()}
 function topN(n){return [...players].sort((a,b)=>b.score-a.score).slice(0,n)}
@@ -300,8 +303,19 @@ function showEnd(){
     ${t[1]?`<div class="p2"><em>🥈</em>${esc(t[1].name)}<small>${t[1].score.toLocaleString('he-IL')}</small></div>`:''}
     ${t[0]?`<div class="p1"><em>🥇</em>${esc(t[0].name)}<small>${t[0].score.toLocaleString('he-IL')}</small></div>`:''}
     ${t[2]?`<div class="p3"><em>🥉</em>${esc(t[2].name)}<small>${t[2].score.toLocaleString('he-IL')}</small></div>`:''}</div>
-    <div class="board all" style="max-width:600px">${[...players].sort((a,b)=>b.score-a.score).slice(3).map((p,i)=>`<div class="r"><i>${i+4}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>`;
+    <div class="board all" style="max-width:600px">${[...players].sort((a,b)=>b.score-a.score).slice(3).map((p,i)=>`<div class="r"><i>${i+4}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>${sheetBox()}`;
   boom();
+}
+/* בסוף המשחק: לשאול אם ליצור טבלה בגוגל שיטס (שם, טלפון, ומה כל אחד ענה בכל שאלה) */
+function sheetBox(){
+  if(G.sheet)return `<div class="card shq" id="shq">📊 הטבלה מוכנה: <a href="${esc(G.sheet)}" target="_blank" rel="noopener">פתח בגוגל שיטס ◀</a></div>`;
+  return `<div class="card shq" id="shq"><b>📊 ליצור טבלה בגוגל שיטס?</b><div class="mid" style="margin:6px 0 10px;color:var(--mut);font-weight:700">שם, טלפון, ניקוד ומה כל שחקן ענה בכל שאלה</div><div class="btns"><button class="hb pr" onclick="mkSheet()">כן, צור טבלה</button><button class="hb" onclick="$('shq').remove()">לא תודה</button></div></div>`;
+}
+async function mkSheet(){
+  const b=$('shq');if(!b)return;b.innerHTML='<div class="spin" style="margin:auto"></div><div class="mid">יוצר טבלה… (כמה שניות)</div>';
+  let r=null;try{r=await api({action:'g_sheet',pin:G.pin})}catch(e){}
+  if(r&&r.ok){G.sheet=r.url;b.outerHTML=sheetBox()}
+  else b.innerHTML=`<b class="err">לא הצלחתי ליצור את הטבלה</b><div class="mid" style="color:var(--mut)">${esc(r&&r.error&&/permission|הרשאה|Authorization/i.test(r.error)?'צריך לאשר הרשאת גיליונות בסקריפט (ראה הסבר)':(r&&r.error)||'אין חיבור')}</div><button class="hb pr" onclick="mkSheet()">נסה שוב</button>`;
 }
 /* קונפטי לזוכים */
 function boom(){
@@ -318,7 +332,7 @@ function remote(){
       ph==='question'?`<div class="big">שאלה ${G.q+1} מתוך ${G.n}</div><div id="rq">${QI===G.q?esc(Q.t):''}</div><div class="stat"><div><b id="tm">${G.dur}</b>שניות</div><div><b id="ansN">${answered}</b>ענו</div><div><b id="plN">${players.length}</b>שחקנים</div></div><div class="waitl" id="waitL"></div>`:
       ph==='reveal'?`<div class="big">תשובה לשאלה ${G.q+1}</div><div style="font-weight:900">${countsTxt()}</div><button class="hb" onclick="whoToggle()">👥 מי ענה מה</button><div class="who" id="who" hidden></div>`:
       ph==='leader'?`<div class="big">🏅 טבלת מובילים</div><div class="board all">${topN(players.length).map((p,i)=>`<div class="r"><i>${i+1}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>`:
-      `<div class="big">🏆 המשחק הסתיים</div><div class="board all">${topN(players.length).map((p,i)=>`<div class="r"><i>${i+1}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>`;
+      `<div class="big">🏆 המשחק הסתיים</div><div class="board all">${topN(players.length).map((p,i)=>`<div class="r"><i>${i+1}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>${sheetBox()}`;
     const main=ph==='lobby'?'◀ התחל משחק':ph==='question'?'סגור שאלה ←':ph==='reveal'?(G.q>=G.n-1?'🏆 לתוצאות':due()?'🏅 טבלת מובילים ←':'שאלה הבאה ←'):ph==='leader'?'שאלה הבאה ←':'';
     const second=ph==='reveal'&&G.q<G.n-1?(due()?`<button class="hb" onclick="next('skip')">דלג על הטבלה ←</button>`:`<button class="hb" onclick="next('board')">🏅 הצג טבלה</button>`):'';
     M.innerHTML=`<div class="card rm">${body}${main?`<button class="hb pr huge" onclick="next()">${main}</button>`:''}${second}</div>`;
@@ -344,7 +358,7 @@ function manage(){
   const o=$('ov')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'ov',className:'ov'}));
   o.onclick=e=>{if(e.target===o)o.remove()};
   o.innerHTML=`<div class="card"><div style="display:flex;align-items:center"><b style="flex:1;font-size:20px;text-align:start">👥 שחקנים (${players.length})</b><button class="hb" onclick="$('ov').remove()">✕</button></div>
-    <div class="pl">${[...players].sort((a,b)=>a.name.localeCompare(b.name,'he')).map(p=>`<div><span>${esc(p.name)}</span><small>${p.score.toLocaleString('he-IL')}</small><button onclick="ren('${p.pid}')">✏️ שם</button><button onclick="kick('${p.pid}')">✖ הוצא</button></div>`).join('')||'אין עדיין שחקנים'}</div></div>`;
+    <div class="pl">${[...players].sort((a,b)=>a.name.localeCompare(b.name,'he')).map(p=>`<div><span>${esc(p.name)}${p.phone?`<small class="ph">${esc(p.phone)}</small>`:''}</span><small>${p.score.toLocaleString('he-IL')}</small><button onclick="ren('${p.pid}')">✏️ שם</button><button onclick="kick('${p.pid}')">✖ הוצא</button></div>`).join('')||'אין עדיין שחקנים'}</div></div>`;
 }
 async function ren(id){
   const p=players.find(x=>x.pid===id);if(!p)return;const n=prompt('שם חדש עבור '+p.name,p.name);if(!n||!n.trim()||n.trim()===p.name)return;
