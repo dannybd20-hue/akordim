@@ -98,7 +98,7 @@ function passed_(scope) { CacheService.getScriptCache().remove('fails_' + scope)
 
 /* "מי מחובר עכשיו" בדף הבית: כל דף פתוח באתר שולח מזהה מכשיר אקראי, שם האפליקציה ופרטי מכשיר.
    לכולם מוחזר רק מספר המכשירים בכל אפליקציה. רשימה מפורטת מוחזרת רק עם ADMIN_PASSWORD. */
-const PRESENCE_PAGES = ['home', 'chords', 'maaser', 'tromot', 'shopping'];
+const PRESENCE_PAGES = ['home', 'chords', 'maaser', 'tromot', 'shopping', 'forms'];
 function presence_(d) {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(5000)) return out_({ ok: false, error: 'busy' });
