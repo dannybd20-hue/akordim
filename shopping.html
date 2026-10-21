@@ -273,8 +273,8 @@ function waOpen(list){
   window.open('https://wa.me/'+(p||'')+'?text='+encodeURIComponent(t),'_blank');
 }
 function waSetup(){
-  const n=waNums(),o=other(),v=prompt('מספר הוואטסאפ של '+o+' (לדוגמה 0501234567).\nאפשר להשאיר ריק, ואז וואטסאפ יבקש לבחור איש קשר בכל פעם:',n[o]||'');
-  if(v===null)return;n[o]=v.trim();try{localStorage.setItem('shop_wa',JSON.stringify(n))}catch(e){}render();toast(v.trim()?'💬 ההודעות ייפתחו ישר ל'+o:'💬 וואטסאפ יבקש לבחור איש קשר');
+  const n=waNums(),o=other(),v=prompt('לשליחה לקבוצת הוואטסאפ: השאר ריק. וואטסאפ ייפתח, והקבוצה תופיע ראשונה ברשימה.\nלשליחה ישר ל'+o+': כתוב את המספר (לדוגמה 0501234567).',n[o]||'');
+  if(v===null)return;n[o]=v.trim();try{localStorage.setItem('shop_wa',JSON.stringify(n))}catch(e){}render();toast(v.trim()?'💬 ההודעות ייפתחו ישר ל'+o:'💬 וואטסאפ ייפתח ותבחר את הקבוצה');
 }
 let newImg='';
 function addTyped(){
@@ -342,7 +342,7 @@ function days(ms){const d=Math.round(ms/864e5);return d<=1?'יום':d===2?'יו�
 function render(){
   $('cnt').textContent=st.items.length;$('cnt').style.display=st.items.length?'':'none';
   $('meb').textContent='👤 '+(me||'מי אני?');
-  $('ntfLbl').textContent='💬 שלח בוואטסאפ ל'+other();$('waSet').textContent=waNums()[other()]?'📱 '+waNums()[other()]:'📱 הגדר מספר';
+  const wn=waNums()[other()];$('ntfLbl').textContent=wn?'💬 שלח בוואטסאפ ל'+other():'💬 שלח לקבוצה בוואטסאפ';$('waSet').textContent=wn?'📱 '+wn:'⚙️ קבוצה (או מספר)';
   const pend=shopPending(st).length,sa=$('sendAll');sa.style.display=pend?'':'none';sa.textContent='💬 שלח בוואטסאפ '+pend+(pend===1?' פריט':' פריטים');
   $('t_list').className=tab==='list'?'on':'';$('t_home').className=tab==='home'?'on':'';
   $('v_list').style.display=tab==='list'?'':'none';$('v_home').style.display=tab==='home'?'':'none';
