@@ -163,7 +163,9 @@ function sget(k){try{return sessionStorage.getItem(k)}catch(e){return null}}
 function sput(k,v){try{v==null?sessionStorage.removeItem(k):sessionStorage.setItem(k,v)}catch(e){}}
 function lput(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}
 /* פותח גישה בדפדפן הנוכחי: הסימונים שהאפליקציות בודקות */
-function grant(A,pw){sput('hub_access',JSON.stringify(A));A.forEach(a=>sput('gate_'+a,'1'));if(pw&&(A.includes('shopping')||A.includes('forms')))sput('hub_pw',pw)}
+/* גישה ראשית (4 אפליקציות ומעלה) נשמרה אולי לפני שנוספו אפליקציות חדשות: תמיד פותחים את כולן */
+function fullA(A){return A.length>=4?Object.keys(PAGES):A}
+function grant(A,pw){A=fullA(A);sput('hub_access',JSON.stringify(A));A.forEach(a=>sput('gate_'+a,'1'));if(pw&&(A.includes('shopping')||A.includes('forms')))sput('hub_pw',pw)}
 async function hash(s){
   const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('dbd-gate:'+s));
   return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
