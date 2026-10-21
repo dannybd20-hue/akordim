@@ -75,7 +75,7 @@ function joinView(msg){
   M.innerHTML=`<div class="box"><h1>🎮 הצטרפות למשחק</h1>
     <input class="fld" id="pin" inputmode="numeric" maxlength="6" placeholder="קוד משחק" value="${esc(pin)}">
     <input class="fld" id="nm" maxlength="20" placeholder="השם שלך" value="${esc(localStorage.getItem('game_name')||'')}">
-    <input class="fld" id="ph" type="tel" inputmode="numeric" maxlength="10" placeholder="מס' כונן (1 עד 10 ספרות)" value="${esc(localStorage.getItem('game_phone')||'')}" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+    <input class="fld" id="ph" type="tel" inputmode="numeric" maxlength="10" placeholder="מס' כונן" value="${esc(localStorage.getItem('game_phone')||'')}" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
     <div class="mid" style="font-size:13px;margin:-4px 0 10px">מס' הכונן מגיע רק למארח של המשחק</div>
     <button class="go" id="jb" onclick="join()">כניסה ←</button><p class="err" id="er">${esc(msg||'')}</p></div>`;
   (pin?$('nm'):$('pin')).focus();
@@ -86,7 +86,7 @@ async function join(){
   if(p.length!==6){$('er').textContent='קוד המשחק הוא 6 ספרות';return}
   if(!n){$('er').textContent='נא לכתוב שם';return}
   const ph=$('ph').value.replace(/\D/g,'');
-  if(ph.length<1||ph.length>10){$('er').textContent='נא לכתוב מס\' כונן (1 עד 10 ספרות)';return}
+  if(ph.length<1||ph.length>10){$('er').textContent='נא לכתוב מס\' כונן';return}
   $('jb').disabled=true;$('jb').textContent='נכנס…';
   try{
     const r=await api({action:'g_join',pin:p,name:n,phone:ph});
