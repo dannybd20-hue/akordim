@@ -1,0 +1,238 @@
+/**
+ * סקריפט "משחק חי" (בסגנון קהוט) לאתר – פרויקט נפרד, בלי קשר לטפסים.
+ *
+ * המארח (עם ADMIN_PASSWORD) פותח משחק ומקבל קוד בן 6 ספרות וברקוד.
+ * השחקנים נכנסים מהטלפון עם הקוד ושם בלבד, ועונים בכפתורים צבעוניים.
+ * ניקוד: תשובה נכונה = עד 1000 נקודות לפי מהירות. התשובה הנכונה לא נשלחת לשחקנים לפני החשיפה.
+ *
+ * התקנה (פעם אחת, עדיף מהמחשב):
+ *  1. https://script.google.com ← "פרויקט חדש". מחק הכול והדבק את הקוד הזה.
+ *  2. "פריסה" ← "פריסה חדשה" ← סוג: "אפליקציית אינטרנט". "הפעלה בתור": אני. "למי יש גישה": כל אחד.
+ *     "פריסה" ואישור ההרשאות.
+ *  3. שלח את כתובת האפליקציה (https://script.google.com/macros/s/.../exec) כדי לחבר אותה לאתר.
+ * עדכון קוד (למשל שאלות חדשות): "פריסה" ← "ניהול פריסות" ← ✏️ ← "גרסה חדשה" ← "פריסה".
+ */
+
+const ADMIN_PASSWORD = 'כתוב-כאן-את-הסיסמה-הראשית'; // רק עם הסיסמה הזו אפשר לפתוח ולנהל משחק
+
+/* חסימה נגד ניחוש: אחרי 5 סיסמאות מארח שגויות, נחסם ל-15 דקות */
+const MAX_FAILS = 5, LOCK_MINUTES = 15;
+function locked_() { return Number(CacheService.getScriptCache().get('fails') || 0) >= MAX_FAILS; }
+function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
+
+function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
+function doGet() { return out_({ ok: true, app: 'game' }); }
+
+function doPost(e) {
+  let d;
+  try { d = JSON.parse(e.postData.contents); } catch (x) { return out_({ ok: false, error: 'bad' }); }
+  let admin = false;
+  if (d.password) {
+    if (locked_()) return out_({ ok: false, error: 'locked' });
+    admin = d.password === ADMIN_PASSWORD;
+    if (!admin) failed_();
+  }
+  try { return out_(game_(d, admin)); }
+  catch (x) { return out_({ ok: false, error: String(x && x.message || x) }); }
+}
+
+/* ================= שאלות למשחק החי: איחוד הצלה – ריענון נהיגה ובטיחות (לפי מצגות 2025 ו-2026) =================
+   השאלות נשמרות כאן בלבד (בלי טופס בגוגל). כדי להוסיף משחק חדש: מוסיפים הגדרה כזו ומכניסים אותה ל-GAMES למטה. */
+const HATZALAH_QUIZ = {
+  title: 'איחוד הצלה – בוחן ריענון נהיגה ובטיחות',
+  description: 'בוחן לפי השתלמות הבטיחות השנתית 2026 ורענון הנהיגה המקצועי 2025 של מחלקת קציני הבטיחות. 38 שאלות, בהצלחה!',
+  img: 'https://dannybd20-hue.github.io/akordim/brand/uh/',
+  questions: [
+    { q: 'האם לפי החוק רכב ביטחון מחויב להפעיל אורות מהבהבים וסירנה בכל נסיעת חירום?', img: 'q1.jpg',
+      a: ['כן, ברור, אחרת הוא לא רכב ביטחון על פי החוק', 'כן, אבל מספיק שהוא ידליק רק רולרים, לא חייב סירנה', 'לא, מספיקים אורות מהבהבים', 'תלוי לאיזה מקרה הוא יוצא'], right: 0 },
+    { q: 'אם קיבלתי דוח בנסיעה רגילה, מה עליי לעשות?', img: 'q2.jpg',
+      a: ['לחתום על ההסבה ולשלם', 'לארגן מקרה קרוב שלא הייתי בו', 'מה אכפת לי, בעיה של הארגון', 'יש לי סבתא, נסב עליה'], right: 0 },
+    { q: 'האם מותר לרכב פרטי להיכנס לצומת באור אדום לצורך פינוי הדרך לאמבולנס?', img: 'q3.jpg',
+      a: ['כן, ברור, אחרת איך האמבולנס יעבור', 'כן, אבל חייב לעצור לפני הכניסה לצומת', 'אסור לו לעבור בכלל באור אדום', 'רק אם הוא משאית'], right: 2 },
+    { q: 'הייתי מעורב בתאונה, נגרם נזק לרכב או שהרכב נגנב. מה עליי לעשות?', img: 'q4.jpg',
+      a: ['לדווח לקצין הבטיחות בסוף החודש', 'לעדכן את המוקד 1221 באופן מיידי', 'אם אין נפגעים, לא צריך לדווח', 'לצלם ולשלוח לקבוצת הוואטסאפ של הסניף'], right: 1 },
+    { q: 'מהי חובת הנהג כאשר הוא מגיע לצומת ברמזור אדום בנסיעה דחופה?', img: 'q16.jpg',
+      a: ['לעצור עצירה מלאה בקו הצומת', 'האטה קלה בלבד, אם יש לי שדה ראייה', 'מעבר מיידי, אם הצומת נראה פנוי', 'סימון לנהגים אחרים עם אורות גבוהים'], right: 0 },
+    { q: 'כיצד יש לנהוג במעבר חציה ללא שדה ראייה בנסיעה דחופה?', img: 'q17.jpg',
+      a: ['להאט ולחצות כרגיל', 'לעצור לגמרי ולהתקדם בגלישה, במהירות של עד 5 קמ״ש', 'לעקוף את שדה הראייה מצידו השני', 'לצפור ולהמשיך באותה מהירות'], right: 1 },
+    { q: 'עמדתי ברמזור אדום, והאור התחלף לירוק. מה חובה לעשות לפני תחילת הנסיעה?', img: 'q7.jpg',
+      a: ['לצאת מיד, ירוק זה ירוק', 'להסתכל לשמאל, ישר ולימין, כדי לשלול רכב שמחליט לעבור באדום', 'להסתכל רק במראה האחורית', 'לחכות 10 שניות'], right: 1 },
+    { q: 'האם מותר לבצע עקיפת רכבת קלה בירושלים בנסיעת חירום?', img: 'q8.jpg',
+      a: ['רק באישור מוקד', 'אסור בשום אופן', 'רק רכבת שעצרה בתחנה', 'אין נוהל כזה בכלל'], right: 2 },
+    { q: 'הרכבת הקלה עצרה בתחנה ואני רוצה לעקוף אותה. מה חובה לעשות?', img: 'q9.jpg',
+      a: ['לעצור עצירה מוחלטת בקו הקרון הראשון, לוודא שאין רכב או רכבת ממול ולשמור על ערנות להולכי רגל', 'לעקוף מהר לפני שהרכבת תמשיך', 'להדליק אורות גבוהים ולעקוף', 'לעקוף רק מצד ימין'], right: 0 },
+    { q: 'באיזו דרך מותר לי לנוע לאחור על פי נהלי הארגון?', img: 'q10.jpg',
+      a: ['עד 20 קמ״ש', 'רק אם יש צורך בכך, ובזהירות המרבית עם חלון פתוח', 'חייב להוריד מכוון ולפתוח חלונות', 'רק אחרי ירידה מהכלי וביצוע סיבוב מסביב לכלי'], right: 1 },
+    { q: 'מהו "שול הדרך" לפי ההגדרה?', a: ['כל השטח שבצד הכביש, בלי הגבלה', 'השטח שאין לצדו מדרכה, הסמוך לשפת הכביש, עד רוחב של 4 מטרים', 'הנתיב הימני של הכביש', 'השטח שבין שני קווי הפרדה'], right: 1 },
+    { q: 'מהו שול הדרך? והאם מותר לנוע בו בנסיעת חירום על פי החוק?', img: 'q12.jpg',
+      a: ['השול הוא משמאל לקו הלבן, והחוק מתיר לנוע שם בזהירות', 'זה נקרא בכלל שוליים ולא שול, ולרכב ביטחון מותר לנוע איפה שהוא צריך', 'החלק הימני שמעבר לקו הצהוב בלבד, ואסור לנוע בו בנסיעת חירום על פי החוק', 'צד שמאל, איפה שהקו הלבן, וצריך לעבור שם בזהירות מרבית'], right: 2 },
+    { q: 'לפי הנוהל, אם נאלצים לרדת לשול בזמן חירום, מה המהירות המרבית?', a: ['עד 20 קמ״ש מעל מהירות התנועה הכללית, ולא יותר מ-50 קמ״ש', 'עד 90 קמ״ש', 'כמו מהירות התנועה בנתיב', 'אין הגבלה כשהסירנה פועלת'], right: 0 },
+    { q: 'מעבר החצייה ריק או שיש הולך רגל בקרבתו. באיזו מהירות מותר לעבור אותו?', a: ['עד 30 קמ״ש', 'עד 50 קמ״ש', 'עד 15 קמ״ש', 'כל מהירות, אם הסירנה פועלת'], right: 2 },
+    { q: 'רכב תאגיד ביצע עבירת תנועה. מה קורה לדוח?', a: ['הדוח מבוטל אוטומטית', 'הדוח מוכפל פי 4 מהסכום המקורי, וללא נקודות', 'הדוח זהה לדוח רגיל', 'הנהג מקבל נקודות כפולות'], right: 1 },
+    { q: 'במקרה של נתיב פנוי בצומת, מה על הנהג לעשות בנסיעה דחופה?', img: 'q22.jpg',
+      a: ['להפעיל סירנה מהירה ולנסוע', 'לעבור במהירות כדי לא לעכב', 'רק אם שדה הראייה שלו פתוח, אפשר להאט ולעבור בזהירות', 'לעצור שוב ולסרוק את הנתיב'], right: 3 },
+    { q: 'באיזה מרחק לפחות חייב רכב רגיל לנסוע אחרי רכב ביטחון?', a: ['20 מטר', '50 מטר', '100 מטר', 'אין חובה'], right: 2 },
+    { q: 'לפי תקנה 94, מתי רשאי נוהג רכב ביטחון לעבור רמזור אדום בלי לעצור?', a: ['תמיד, בשעת מילוי תפקידו', 'בשעת מילוי תפקידו, ובלבד שהאט במידה שהבטיחות מחייבת', 'רק בלילה', 'אף פעם'], right: 1 },
+    { q: 'מהו הגורם העיקרי לתאונות בארגון?', a: ['תקלות ברכב', 'עייפות, טלפון וחוסר תשומת לב', 'מזג אוויר', 'כבישים משובשים'], right: 1 },
+    { q: 'הייתי מעורב בתאונה. מה חשוב לעשות לפני שמזיזים את כלי הרכב?', a: ['לצלם גם בווידאו את זירת התאונה מכל הכיוונים', 'להזיז מיד את הרכבים לשול', 'לחכות למשטרה בלי לצלם', 'לעזוב את המקום ולדווח אחר כך'], right: 0 },
+    { q: 'מותר להעביר את צ׳יפ הנהיגה האישי שלי לנהג אחר?', a: ['כן, אם הוא מתנדב בארגון', 'כן, במשמרת לילה', 'לא. הצ׳יפ אישי, ושימוש של נהג אחר עלול לרשום על שמי דוחות', 'כן, אם קיבלתי אישור מחבר'], right: 2 },
+    { q: 'מותר להפעיל כריזה ואורות מהבהבים ולצאת לקריאה ששמעתי עליה, בלי הזנקה מהמוקד?', a: ['כן, אם זה קרוב אליי', 'כן, אם זה מקרה קשה', 'חל איסור מוחלט, רק לפי הזנקה ממוקד איחוד הצלה', 'כן, אחרי שמודיעים לחבר'], right: 2 },
+    { q: 'מותר לפנות מטופל ברכב ארגוני שאינו אמבולנס או רכב פינוי?', a: ['כן, אם המקרה דחוף', 'חל איסור על פינוי נפגעים או מטופלים ברכב כזה', 'כן, אם המטופל מסכים', 'כן, בתוך העיר בלבד'], right: 1 },
+    { q: 'איפה הג׳ק של האמבולנס נמצא?', img: 'q14.jpg',
+      a: ['מתחת לכיסא הנוסע מקדימה', 'בחלק האחורי של האמבולנס', 'אין ג׳ק באמבולנס', 'מתחת לכיסא הנהג'], right: 0 },
+    { q: 'נכון או לא נכון: הג׳ק נמצא מתחת לכיסא, בצד של הנוסע', img: 'q15.jpg',
+      a: ['נכון', 'לא נכון'], right: 0 },
+    { q: 'אני מעלה ילד בן שנתיים לאמבולנס. איך אני מושיב אותו?', img: 'q18.jpg',
+      a: ['אסור להעלות אותו בכלל', 'אני אמבולנס, לא צריך בכלל בוסטר', 'יש לי בוסטר באמבולנס', 'תלוי מה הגובה שלו'], right: 2 },
+    { q: 'נכון או לא נכון: באמבולנס נמצאת ערכת ריתום מגולגלת לתינוק', img: 'q19.jpg',
+      a: ['נכון', 'לא נכון'], right: 0 },
+    { q: 'למה נועד החלק הזה באמבולנס?', img: 'q20.jpg',
+      a: ['ליופי', 'מטען חיצוני', 'להזין חשמל 220 חיצוני לשקעים', 'מטעין את האמבולנס'], right: 2 },
+    { q: 'מה לחץ האוויר התקין בצמיגי האמבולנס?', img: 'q21.jpg',
+      a: ['58 מקדימה, 44 מאחורה', '50 בכל הצמיגים', 'על פי הוראות היצרן', '65 מאחורה, 60 מקדימה'], right: 2 },
+    { q: 'ראיתי רכב עומד בצורה מוזרה. מה אני עושה?', img: 'q23.jpg',
+      a: ['ממשיך רגיל', 'מה אכפת לי', 'נזהר ומאט', 'יורד לבדוק מה קורה שם'], right: 2 },
+    { q: 'למה נועד החלק הזה באמבולנס? (רמקול עם כפתורים בתקרת תא הנהג)', img: '',
+      a: ['לדבר עם הצוות מאחורה', 'אין מושג, סתם נמצא שם', 'זה מכוער, צריך להעיף', 'זה רדיו'], right: 0 },
+    { q: 'למה יש על האמבולנס מגן דוד אדום בצבע כחול?', img: '',
+      a: ['כי זה ארגון הצלה', 'כי חייב להכניס זכר למד״א', 'וואלה לא יודע', 'תקן של אמבולנס'], right: 3 },
+    { q: 'כמה מצברים קיימים באמבולנס?', img: '',
+      a: ['1', '2', '3', '4'], right: 1 },
+    { q: 'נכון או לא נכון: מערכת הסייפטי של איתוראן עוזרת לי לדעת איך אני נוהג', img: 'q24.jpg',
+      a: ['נכון', 'לא נכון'], right: 0 },
+    { q: 'מה הפרייבט של אלי ביר?', img: 'q13.jpg',
+      a: ['3,000', '12,000', '40,000', '16,000'], right: 3 },
+    { q: 'השלם את כלל הברזל: "אם יש ספק…"', img: 'q11.jpg',
+      a: ['…אז נוסעים מהר', '…שואלים את המוקד', '…אין ספק!', '…ממשיכים כרגיל'], right: 2 },
+    { q: 'לפי כללי הברזל, מהי המטרה הראשונה?', img: '',
+      a: ['להגיע ראשון לאירוע', 'לחזור הביתה לשלום', 'לחסוך בזמן', 'לא לקבל דוחות'], right: 1 },
+    { q: 'השלם את כלל הברזל: "תאונות לא קורות…"', img: '',
+      a: ['…הן נגרמות!', '…בלילה', '…לנהגים ותיקים', '…בנסיעת חירום'], right: 0 },
+  ]
+};
+
+/* המשחקים שמופיעים במסך המארח */
+const GAMES = { hatzalah: HATZALAH_QUIZ };
+
+/* ================= משחק חי בסגנון קהוט =================
+   המארח פותח משחק מרשימת GAMES ומקבל קוד בן 6 ספרות. השחקנים נכנסים עם הקוד ושם,
+   ורואים בטלפון כפתורים צבעוניים. ניקוד: תשובה נכונה = עד 1000 נקודות, לפי מהירות.
+   הכול נשמר בזיכרון הזמני של גוגל ל-6 שעות; השחקנים לא רואים את התשובה הנכונה לפני החשיפה. */
+const GAME_SECONDS = 6 * 3600;
+function gget_(k) { const v = CacheService.getScriptCache().get(k); return v ? JSON.parse(v) : null; }
+function gput_(k, o) { CacheService.getScriptCache().put(k, JSON.stringify(o), GAME_SECONDS); }
+
+function game_(d, admin) {
+  const a = d.action, now = Date.now(), pin = String(d.pin || '').replace(/\D/g, '');
+  if (a === 'g_list') {
+    if (!admin) return { ok: false, error: 'password' };
+    return { ok: true, games: Object.keys(GAMES).map(function (k) { return { key: k, title: GAMES[k].title, n: GAMES[k].questions.length }; }) };
+  }
+  if (a === 'g_create') {
+    if (!admin) return { ok: false, error: 'password' };
+    /* משחק מהשאלות שבסקריפט (GAMES); התמונות נטענות ישירות מהאתר */
+    const G = GAMES[d.key];
+    if (!G) return { ok: false, error: 'משחק לא קיים' };
+    const def = { title: G.title, qs: G.questions.map(function (x) { return { t: x.q, ch: x.a, right: x.right }; }),
+      imgs: G.questions.map(function (x) { return x.img ? G.img + x.img : null; }) };
+    let p;
+    do { p = String(100000 + Math.floor(Math.random() * 900000)); } while (gget_('g:' + p));
+    def.imgs.forEach(function (im, i) { if (im) { try { gput_('gi:' + p + ':' + i, im); } catch (x) {} } });
+    gput_('gd:' + p, { title: def.title, qs: def.qs });
+    gput_('gp:' + p, {});
+    const g = { pin: p, title: def.title, n: def.qs.length, q: -1, phase: 'lobby', qStart: 0, dur: Math.min(60, Math.max(5, Number(d.dur) || 20)), scores: {}, last: {} };
+    gput_('g:' + p, g);
+    return { ok: true, game: g };
+  }
+  const g = gget_('g:' + pin);
+  if (!g) return { ok: false, error: 'nogame' };
+
+  if (a === 'g_join') {
+    const name = String(d.name || '').trim().slice(0, 20);
+    if (!name) return { ok: false, error: 'נא לכתוב שם' };
+    const lock = LockService.getScriptLock(); lock.waitLock(10000);
+    try {
+      const pl = gget_('gp:' + pin) || {};
+      if (d.pid && pl[d.pid]) return { ok: true, pid: d.pid, name: pl[d.pid] };
+      const taken = Object.keys(pl).map(function (k) { return pl[k]; });
+      let nm = name, i = 2;
+      while (taken.indexOf(nm) >= 0) nm = name + ' ' + (i++);
+      const pid = Utilities.getUuid().slice(0, 8);
+      pl[pid] = nm; gput_('gp:' + pin, pl);
+      return { ok: true, pid: pid, name: nm };
+    } finally { lock.releaseLock(); }
+  }
+
+  if (a === 'g_state') { // שחקן: מצב המשחק ומה שקשור אליו
+    const def = gget_('gd:' + pin), pid = String(d.pid || '');
+    const r = { ok: true, now: now, phase: g.phase, q: g.q, n: g.n, qStart: g.qStart, dur: g.dur, title: g.title,
+      score: g.scores[pid] || 0, last: g.last[pid] || null };
+    if (g.phase === 'question' && def) {
+      const Q = def.qs[g.q]; r.text = Q.t; r.ch = Q.ch;
+      r.answered = !!CacheService.getScriptCache().get('ga:' + pin + ':' + g.q + ':' + pid);
+    }
+    if (g.phase === 'reveal' || g.phase === 'leader' || g.phase === 'end') {
+      const order = Object.keys(g.scores).sort(function (x, y) { return g.scores[y] - g.scores[x]; });
+      r.rank = order.indexOf(pid) + 1; r.players = order.length;
+    }
+    return r;
+  }
+
+  if (a === 'g_answer') {
+    const c = Number(d.c);
+    if (g.phase !== 'question') return { ok: false, error: 'late' };
+    const t = now - g.qStart;
+    if (t > g.dur * 1000 + 1500) return { ok: false, error: 'late' };
+    const k = 'ga:' + pin + ':' + g.q + ':' + String(d.pid || '');
+    if (CacheService.getScriptCache().get(k)) return { ok: true, already: true };
+    gput_(k, { c: c, t: Math.max(0, t) });
+    return { ok: true };
+  }
+
+  /* מכאן: פעולות המארח */
+  if (!admin) return { ok: false, error: 'password' };
+  const pl = gget_('gp:' + pin) || {}, pids = Object.keys(pl);
+
+  if (a === 'g_host') {
+    let answered = 0;
+    if (g.phase === 'question') {
+      const got = CacheService.getScriptCache().getAll(pids.map(function (p) { return 'ga:' + pin + ':' + g.q + ':' + p; }));
+      answered = Object.keys(got).length;
+    }
+    return { ok: true, now: now, game: g, players: pids.map(function (p) { return { pid: p, name: pl[p], score: g.scores[p] || 0 }; }), answered: answered };
+  }
+
+  if (a === 'g_next') { // לובי/טבלה ← שאלה ← חשיפה ← טבלה ← ...
+    const def = gget_('gd:' + pin);
+    if (g.phase === 'lobby' || g.phase === 'leader') {
+      g.q++;
+      if (g.q >= g.n) { g.phase = 'end'; }
+      else { g.phase = 'question'; g.qStart = now + 800; g.dist = null; g.right = null; }
+    } else if (g.phase === 'question') {
+      const Q = def.qs[g.q], dist = Q.ch.map(function () { return 0; });
+      const got = CacheService.getScriptCache().getAll(pids.map(function (p) { return 'ga:' + pin + ':' + g.q + ':' + p; }));
+      g.last = {};
+      pids.forEach(function (p) {
+        const v = got['ga:' + pin + ':' + g.q + ':' + p];
+        if (!v) { g.last[p] = { ok: false, p: 0, none: true }; if (!(p in g.scores)) g.scores[p] = 0; return; }
+        const ans = JSON.parse(v), ok = ans.c === Q.right;
+        if (dist[ans.c] !== undefined) dist[ans.c]++;
+        const pts = ok ? Math.round(1000 * (1 - Math.min(1, ans.t / (g.dur * 1000)) / 2)) : 0;
+        g.scores[p] = (g.scores[p] || 0) + pts;
+        g.last[p] = { ok: ok, p: pts };
+      });
+      g.phase = 'reveal'; g.dist = dist; g.right = Q.right;
+    } else if (g.phase === 'reveal') {
+      g.phase = g.q >= g.n - 1 ? 'end' : 'leader';
+    }
+    gput_('g:' + pin, g);
+    return { ok: true, now: now, game: g };
+  }
+
+  if (a === 'g_q') { // המארח: השאלה הנוכחית עם התמונה
+    const def = gget_('gd:' + pin), i = g.q;
+    if (!def || i < 0 || i >= g.n) return { ok: false, error: 'no question' };
+    return { ok: true, q: def.qs[i], img: gget_('gi:' + pin + ':' + i) };
+  }
+  return { ok: false, error: 'unknown action' };
+}

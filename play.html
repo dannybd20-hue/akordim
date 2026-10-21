@@ -50,7 +50,8 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 <main id="M"></main>
 <script>
 /* מסך השחקן: נכנסים עם קוד משחק ושם, ומקבלים מהסקריפט (forms-script.gs) את מצב המשחק כל שנייה וקצת */
-const CLOUD='https://script.google.com/macros/s/AKfycbyTsKgVGx8IzuMeCy2_LAZPruXPFpbPPApRP0EKfSeUOlJflz8_xtzXwiXsz2wXoiXA/exec';
+/* סקריפט המשחק (game-script.gs) – פרויקט נפרד מהטפסים */
+const CLOUD='';
 const $=id=>document.getElementById(id),M=$('M');
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const SH=['▲','◆','●','■'];
@@ -59,6 +60,7 @@ const ss=(k,v)=>{try{v===undefined?0:sessionStorage.setItem(k,v);return sessionS
 function api(o){return fetch(CLOUD,{method:'POST',body:JSON.stringify(o)}).then(r=>r.json())}
 
 function joinView(msg){
+  if(!CLOUD){M.innerHTML='<div class="box"><h1>🎮 המשחק עוד לא מוכן</h1><p>נסו שוב בקרוב</p></div>';return}
   M.innerHTML=`<div class="box"><h1>🎮 הצטרפות למשחק</h1>
     <input class="fld" id="pin" inputmode="numeric" maxlength="6" placeholder="קוד משחק" value="${esc(pin)}">
     <input class="fld" id="nm" maxlength="20" placeholder="השם שלך" value="${esc(localStorage.getItem('game_name')||'')}">
