@@ -34,6 +34,11 @@ function doGet() { return out_({ ok: true, app: 'forms' }); }
 function doPost(e) {
   let d;
   try { d = JSON.parse(e.postData.contents); } catch (x) { return out_({ ok: false, error: 'bad' }); }
+  /* משחק חי: שחקנים נכנסים עם קוד משחק בלבד; פעולות המארח דורשות ADMIN_PASSWORD */
+  if (String(d.action || '').indexOf('g_') === 0) {
+    try { return out_(game_(d, d.password === ADMIN_PASSWORD)); }
+    catch (x) { return out_({ ok: false, error: String(x && x.message || x) }); }
+  }
   if (locked_()) return out_({ ok: false, error: 'locked' });
   const admin = d.password === ADMIN_PASSWORD;
   if (!admin && d.password !== FILL_PASSWORD) { failed_(); return out_({ ok: false, error: 'password' }); }
@@ -80,7 +85,7 @@ function listForms_(admin) {
     try {
       const o = cached_('info_' + i, CACHE_SECONDS, function () {
         const f = FormApp.openByUrl(url);
-        return { id: i, title: f.getTitle(), description: f.getDescription(), open: f.isAcceptingResponses() };
+        return { id: i, title: f.getTitle(), description: f.getDescription(), open: f.isAcceptingResponses(), quiz: f.isQuiz() };
       });
       if (admin) o.count = cached_('count_' + i, COUNT_SECONDS, function () { return FormApp.openByUrl(url).getResponses().length; });
       return o;
@@ -252,4 +257,138 @@ function createQuiz_(def) {
   Logger.log('נוצר הבוחן: ' + form.getEditUrl());
   Logger.log('קישור למילוי בגוגל: ' + form.getPublishedUrl());
   Logger.log('גיליון התשובות: ' + ss.getUrl());
+}
+
+/* ================= משחק חי בסגנון קהוט =================
+   המארח פותח משחק מטופס בוחן ומקבל קוד בן 6 ספרות. השחקנים נכנסים עם הקוד ושם,
+   ורואים בטלפון כפתורים צבעוניים. ניקוד: תשובה נכונה = עד 1000 נקודות, לפי מהירות.
+   הכול נשמר בזיכרון הזמני של גוגל ל-6 שעות; השחקנים לא רואים את התשובה הנכונה לפני החשיפה. */
+const GAME_SECONDS = 6 * 3600;
+function gget_(k) { const v = CacheService.getScriptCache().get(k); return v ? JSON.parse(v) : null; }
+function gput_(k, o) { CacheService.getScriptCache().put(k, JSON.stringify(o), GAME_SECONDS); }
+
+/* שאלות המשחק מתוך הטופס: שאלות בחירה עם תשובה נכונה אחת. תמונה שלפני שאלה מוצמדת אליה */
+function gameDef_(f) {
+  const T = FormApp.ItemType, qs = [], imgs = [];
+  let img = null;
+  f.getItems().forEach(function (it) {
+    const t = it.getType();
+    if (t === T.IMAGE) { const b = it.asImageItem().getImage(); img = 'data:' + b.getContentType() + ';base64,' + Utilities.base64Encode(b.getBytes()); return; }
+    let q = null;
+    if (t === T.MULTIPLE_CHOICE) q = it.asMultipleChoiceItem(); else if (t === T.LIST) q = it.asListItem();
+    if (!q) { if (t !== T.SECTION_HEADER && t !== T.PAGE_BREAK) img = null; return; }
+    const ch = q.getChoices(), right = ch.map(function (c) { return c.isCorrectAnswer(); }).indexOf(true);
+    if (right < 0 || ch.length < 2 || ch.length > 4) { img = null; return; }
+    qs.push({ t: it.getTitle(), ch: ch.map(function (c) { return c.getValue(); }), right: right });
+    imgs.push(img); img = null;
+  });
+  return { title: f.getTitle(), qs: qs, imgs: imgs };
+}
+
+function game_(d, admin) {
+  const a = d.action, now = Date.now(), pin = String(d.pin || '').replace(/\D/g, '');
+  if (a === 'g_create') {
+    if (!admin) return { ok: false, error: 'password' };
+    const def = gameDef_(openForm_(d.id));
+    if (!def.qs.length) return { ok: false, error: 'בטופס אין שאלות בחירה עם תשובה נכונה (צריך טופס בוחן)' };
+    let p;
+    do { p = String(100000 + Math.floor(Math.random() * 900000)); } while (gget_('g:' + p));
+    def.imgs.forEach(function (im, i) { if (im) { try { gput_('gi:' + p + ':' + i, im); } catch (x) {} } });
+    gput_('gd:' + p, { title: def.title, qs: def.qs });
+    gput_('gp:' + p, {});
+    const g = { pin: p, title: def.title, n: def.qs.length, q: -1, phase: 'lobby', qStart: 0, dur: Math.min(60, Math.max(5, Number(d.dur) || 20)), scores: {}, last: {} };
+    gput_('g:' + p, g);
+    return { ok: true, game: g };
+  }
+  const g = gget_('g:' + pin);
+  if (!g) return { ok: false, error: 'nogame' };
+
+  if (a === 'g_join') {
+    const name = String(d.name || '').trim().slice(0, 20);
+    if (!name) return { ok: false, error: 'נא לכתוב שם' };
+    const lock = LockService.getScriptLock(); lock.waitLock(10000);
+    try {
+      const pl = gget_('gp:' + pin) || {};
+      if (d.pid && pl[d.pid]) return { ok: true, pid: d.pid, name: pl[d.pid] };
+      const taken = Object.keys(pl).map(function (k) { return pl[k]; });
+      let nm = name, i = 2;
+      while (taken.indexOf(nm) >= 0) nm = name + ' ' + (i++);
+      const pid = Utilities.getUuid().slice(0, 8);
+      pl[pid] = nm; gput_('gp:' + pin, pl);
+      return { ok: true, pid: pid, name: nm };
+    } finally { lock.releaseLock(); }
+  }
+
+  if (a === 'g_state') { // שחקן: מצב המשחק ומה שקשור אליו
+    const def = gget_('gd:' + pin), pid = String(d.pid || '');
+    const r = { ok: true, now: now, phase: g.phase, q: g.q, n: g.n, qStart: g.qStart, dur: g.dur, title: g.title,
+      score: g.scores[pid] || 0, last: g.last[pid] || null };
+    if (g.phase === 'question' && def) {
+      const Q = def.qs[g.q]; r.text = Q.t; r.ch = Q.ch;
+      r.answered = !!CacheService.getScriptCache().get('ga:' + pin + ':' + g.q + ':' + pid);
+    }
+    if (g.phase === 'reveal' || g.phase === 'leader' || g.phase === 'end') {
+      const order = Object.keys(g.scores).sort(function (x, y) { return g.scores[y] - g.scores[x]; });
+      r.rank = order.indexOf(pid) + 1; r.players = order.length;
+    }
+    return r;
+  }
+
+  if (a === 'g_answer') {
+    const c = Number(d.c);
+    if (g.phase !== 'question') return { ok: false, error: 'late' };
+    const t = now - g.qStart;
+    if (t > g.dur * 1000 + 1500) return { ok: false, error: 'late' };
+    const k = 'ga:' + pin + ':' + g.q + ':' + String(d.pid || '');
+    if (CacheService.getScriptCache().get(k)) return { ok: true, already: true };
+    gput_(k, { c: c, t: Math.max(0, t) });
+    return { ok: true };
+  }
+
+  /* מכאן: פעולות המארח */
+  if (!admin) return { ok: false, error: 'password' };
+  const pl = gget_('gp:' + pin) || {}, pids = Object.keys(pl);
+
+  if (a === 'g_host') {
+    let answered = 0;
+    if (g.phase === 'question') {
+      const got = CacheService.getScriptCache().getAll(pids.map(function (p) { return 'ga:' + pin + ':' + g.q + ':' + p; }));
+      answered = Object.keys(got).length;
+    }
+    return { ok: true, now: now, game: g, players: pids.map(function (p) { return { pid: p, name: pl[p], score: g.scores[p] || 0 }; }), answered: answered };
+  }
+
+  if (a === 'g_next') { // לובי/טבלה ← שאלה ← חשיפה ← טבלה ← ...
+    const def = gget_('gd:' + pin);
+    if (g.phase === 'lobby' || g.phase === 'leader') {
+      g.q++;
+      if (g.q >= g.n) { g.phase = 'end'; }
+      else { g.phase = 'question'; g.qStart = now + 800; g.dist = null; g.right = null; }
+    } else if (g.phase === 'question') {
+      const Q = def.qs[g.q], dist = Q.ch.map(function () { return 0; });
+      const got = CacheService.getScriptCache().getAll(pids.map(function (p) { return 'ga:' + pin + ':' + g.q + ':' + p; }));
+      g.last = {};
+      pids.forEach(function (p) {
+        const v = got['ga:' + pin + ':' + g.q + ':' + p];
+        if (!v) { g.last[p] = { ok: false, p: 0, none: true }; if (!(p in g.scores)) g.scores[p] = 0; return; }
+        const ans = JSON.parse(v), ok = ans.c === Q.right;
+        if (dist[ans.c] !== undefined) dist[ans.c]++;
+        const pts = ok ? Math.round(1000 * (1 - Math.min(1, ans.t / (g.dur * 1000)) / 2)) : 0;
+        g.scores[p] = (g.scores[p] || 0) + pts;
+        g.last[p] = { ok: ok, p: pts };
+      });
+      g.phase = 'reveal'; g.dist = dist; g.right = Q.right;
+    } else if (g.phase === 'reveal') {
+      g.phase = g.q >= g.n - 1 ? 'end' : 'leader';
+    }
+    gput_('g:' + pin, g);
+    return { ok: true, now: now, game: g };
+  }
+
+  if (a === 'g_q') { // המארח: השאלה הנוכחית עם התמונה
+    const def = gget_('gd:' + pin), i = g.q;
+    if (!def || i < 0 || i >= g.n) return { ok: false, error: 'no question' };
+    return { ok: true, q: def.qs[i], img: gget_('gi:' + pin + ':' + i) };
+  }
+  return { ok: false, error: 'unknown action' };
 }

@@ -34,12 +34,13 @@ body::after{width:380px;height:380px;bottom:-160px;left:-120px;background:radial
 .app:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--c) 45%,transparent);box-shadow:0 14px 34px color-mix(in srgb,var(--c) 22%,transparent)}
 .app:hover::after{opacity:.16;transform:scale(1.15)}
 .app:active{transform:scale(.98)}
-.app:has(.ch){--c:#0ea5e9}.app:has(.ms){--c:#16a34a}.app:has(.tr){--c:#8d6e63}.app:has(.sp){--c:#db2777}.app:has(.fm){--c:#7c3aed}
+.app:has(.ch){--c:#0ea5e9}.app:has(.ms){--c:#16a34a}.app:has(.tr){--c:#8d6e63}.app:has(.sp){--c:#db2777}.app:has(.fm){--c:#0891b2}.app:has(.gm){--c:#46178f}
 .ic{width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;margin-bottom:14px;box-shadow:0 8px 18px color-mix(in srgb,var(--c) 35%,transparent)}
 .ic.ch{background:linear-gradient(135deg,#38bdf8,#0284c7)}
 .ic.tr{background:linear-gradient(135deg,#bc9a85,#795548)}
 .ic.sp{background:linear-gradient(135deg,#f472b6,#be185d)}
-.ic.fm{background:linear-gradient(135deg,#a78bfa,#6d28d9)}
+.ic.gm{background:linear-gradient(135deg,#864cbf,#46178f)}
+.ic.fm{background:linear-gradient(135deg,#2dd4bf,#0891b2)}
 .ic.ms{background:linear-gradient(135deg,#4ade80,#15803d)}
 .app b{display:block;font:800 18px Rubik,Heebo,sans-serif;margin-bottom:4px}
 .app span{font-size:13px;color:var(--mut);line-height:1.4}
@@ -134,6 +135,7 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
   <button class="app" data-app="tromot" onclick="enter('tromot')"><i class="go" aria-hidden="true">←</i><div class="ic tr">🕍</div><b>תרומות בית כנסת</b><span>מי תרם, על מה, ומה שומש</span></button>
   <button class="app" data-app="shopping" onclick="enter('shopping')"><i class="go" aria-hidden="true">←</i><div class="ic sp">🛒</div><b>קניות לבית</b><span>רשימה משותפת לכל המשפחה</span></button>
   <button class="app" data-app="forms" onclick="enter('forms')"><i class="go" aria-hidden="true">←</i><div class="ic fm">📝</div><b>טפסים</b><span>מילוי שאלונים ותוצאות בזמן אמת</span></button>
+  <button class="app" data-app="game" onclick="enter('game')"><i class="go" aria-hidden="true">←</i><div class="ic gm">🎮</div><b>משחק חי</b><span>חידון בסגנון קהוט עם ברקוד וטבלת מובילים</span></button>
 </div>
 <label class="nm">📛 השם שלך: <input id="devName" maxlength="30" placeholder="לדוגמה: הטלפון של דני" onchange="setDevName(this.value)"></label>
 <button class="link bioset" id="bioSet" hidden onclick="bioToggle()"></button>
@@ -144,7 +146,7 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
 <script>
 /* כניסה אחת לאתר: הסיסמה שמוקלדת קובעת לאילו אפליקציות יש גישה. נשמרים כאן רק הגיבובים.
    הגישה נשמרת ב-sessionStorage עד סגירת הדפדפן, וכל אפליקציה בודקת את הסימון gate_<שם> שלה. */
-const PAGES={chords:'chords.html',maaser:'maaser.html',tromot:'tromot.html',shopping:'shopping.html',forms:'forms.html'};
+const PAGES={chords:'chords.html',maaser:'maaser.html',tromot:'tromot.html',shopping:'shopping.html',forms:'forms.html',game:'host.html'};
 const ACCESS={
   'dc953dd72494b2201ec33d2bf0c0078e2b4d4fc7cbd747580535dfc54234b0d7':['forms'],    // 1221
   'f88d20e9aaa147427706f242d11b143befcf2038efdd026d1e890fea9ce1535c':['tromot'],   // 1234
@@ -292,7 +294,7 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(
 <script src="presence.js"></script>
 <script>
 /* כמה מכשירים מחוברים עכשיו, ובאיזו אפליקציה (לחיצה על התווית מציגה פירוט) */
-const LIVE_NAMES={home:'בדף הבית',chords:'באקורדים',maaser:'במעשר',tromot:'בתרומות',shopping:'בקניות',forms:'בטפסים'};
+const LIVE_NAMES={home:'בדף הבית',chords:'באקורדים',maaser:'במעשר',tromot:'בתרומות',shopping:'בקניות',forms:'בטפסים',game:'במשחק חי'};
 const escH=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function ago(t){const m=Math.max(0,Math.round((Date.now()-t)/60000));return m<1?'עכשיו':m<60?'לפני '+m+' דק׳':'לפני '+Math.floor(m/60)+' שע׳ ו-'+(m%60)+' דק׳'}
 dbdPresence('home',(r,me)=>{
