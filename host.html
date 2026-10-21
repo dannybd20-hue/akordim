@@ -69,39 +69,40 @@ main{gap:14px}
 <main id="M"><div class="spin"></div></main>
 <script>
 /* מסך המארח (מקרן / טלוויזיה): פותח משחק מטופס בוחן, מציג ברקוד וקוד, מריץ שאלות, טיימר, חשיפה וטבלת מובילים */
-const CLOUD='https://script.google.com/macros/s/AKfycbyTsKgVGx8IzuMeCy2_LAZPruXPFpbPPApRP0EKfSeUOlJflz8_xtzXwiXsz2wXoiXA/exec';
+/* סקריפט המשחק (game-script.gs) – פרויקט נפרד מהטפסים */
+const CLOUD='';
 const PLAY='https://dannybd20-hue.github.io/akordim/go/game.html';
 const $=id=>document.getElementById(id),M=$('M');
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const SH=['▲','◆','●','■'];
-const P=new URLSearchParams(location.search);let FID=P.get('id')===null?null:+P.get('id');
+const P=new URLSearchParams(location.search);let KEY=P.get('key');
 let pw='',G=null,players=[],answered=0,off=0,Q=null,QI=-1,tmr=0,shown='',busy=false;
 try{pw=sessionStorage.getItem('hub_admin')||''}catch(e){}
 function api(o){return fetch(CLOUD,{method:'POST',body:JSON.stringify({...o,password:pw})}).then(r=>r.json())}
 function brand(t){if(/הצלה/.test(t||'')){document.body.classList.add('uh');$('logo').innerHTML='<img src="brand/uh-logo.png" alt="">'}}
 
-/* בחירת בוחן: כל טופס בוחן ברשימת הטפסים יכול להפוך למשחק */
+/* בחירת משחק: המשחקים מוגדרים בסקריפט (GAMES) */
 async function pick(){
-  if(!pw){setup();return}
+  if(!pw||!CLOUD){setup();return}
   M.innerHTML='<div class="spin"></div>';
-  try{const r=await api({action:'list'});if(!r.ok){setup(r.error==='password'?'הסיסמה הראשית לא אושרה בסקריפט':r.error);return}
-    const L=r.forms.filter(f=>!f.error);
-    M.innerHTML=`<h2 class="title">🎮 בחר בוחן למשחק</h2><div class="board">`+(L.length?L.map(f=>`<button class="r" style="border:0;font:inherit;cursor:pointer" onclick="FID=${f.id};setup()"><i>${f.id+1}</i><span>${esc(f.title)}</span>${f.quiz===false?'<small style="font-size:14px;color:#888">לא בוחן</small>':'▶'}</button>`).join(''):'<div class="card">אין טפסים</div>')+`</div>
-      <p style="font-weight:700;opacity:.85;max-width:600px">משחק נפתח מטופס בוחן, כלומר טופס עם תשובות נכונות בשאלות הבחירה, כמו הבוחן של איחוד הצלה</p>`;
+  try{const r=await api({action:'g_list'});if(!r.ok){setup(r.error==='password'?'הסיסמה הראשית לא אושרה בסקריפט':r.error);return}
+    if(r.games.length===1){KEY=r.games[0].key;setup();return}
+    M.innerHTML=`<h2 class="title">🎮 בחר משחק</h2><div class="board">`+r.games.map((g,i)=>`<button class="r" style="border:0;font:inherit;cursor:pointer" onclick="KEY='${g.key}';setup()"><i>${i+1}</i><span>${esc(g.title)}</span>${g.n} שאלות ▶</button>`).join('')+`</div>`;
   }catch(e){setup('אין חיבור לאינטרנט')}
 }
 function setup(err){
+  if(!CLOUD){M.innerHTML='<div class="card"><b>עוד לא חובר סקריפט המשחק.</b><p>צריך להתקין את game-script.gs בגוגל ולשלוח את הכתובת שלו.</p></div>';return}
   if(!pw){M.innerHTML='<div class="card"><b>מסך המארח פתוח רק עם הסיסמה הראשית.</b><p>היכנס לדף הבית עם הסיסמה הראשית ופתח מאפליקציית הטפסים.</p></div>';return}
   M.innerHTML=`<div class="card setup"><h2 style="margin:0 0 6px">🎮 פתיחת משחק חי</h2><p style="margin:0;color:#555">השחקנים יענו מהטלפון עם קוד משחק או ברקוד</p>
     <label>זמן לכל שאלה</label><select id="dur"><option value="10">10 שניות</option><option value="20" selected>20 שניות</option><option value="30">30 שניות</option><option value="45">45 שניות</option><option value="60">דקה</option></select>
     <p class="err" id="er">${esc(err||'')}</p><button class="hb pr" style="width:100%;margin-top:8px" id="cb" onclick="create()">פתח משחק ←</button>
-    <button class="hb" style="width:100%;margin-top:8px;border:2px solid #ddd" onclick="pick()">→ בחירת בוחן אחר</button></div>`;
+</div>`;
 }
 async function create(){
   $('cb').disabled=true;$('cb').textContent='פותח… (כמה שניות)';
-  try{const r=await api({action:'g_create',id:FID,dur:+$('dur').value});
+  try{const r=await api({action:'g_create',key:KEY,dur:+$('dur').value});
     if(!r.ok){setup(r.error==='password'?'הסיסמה הראשית לא אושרה בסקריפט':r.error);return}
-    G=r.game;brand(G.title);$('ttl').textContent='🎮 '+G.title;history.replaceState(null,'','?id='+FID+'&pin='+G.pin);
+    G=r.game;brand(G.title);$('ttl').textContent='🎮 '+G.title;history.replaceState(null,'','?key='+KEY+'&pin='+G.pin);
     lobby();loop();setInterval(loop,1500);
   }catch(e){setup('אין חיבור לאינטרנט')}
 }
@@ -169,7 +170,7 @@ function showEnd(){
     <div class="board" style="max-width:600px">${[...players].sort((a,b)=>b.score-a.score).slice(3,10).map((p,i)=>`<div class="r"><i>${i+4}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>`;
 }
 /* אם רעננו את הדף באמצע משחק, ממשיכים את אותו משחק */
-(function(){const pin=P.get('pin');if(pin&&pw){G={pin,phase:'lobby',q:-1,n:0,dur:20};loop().then(()=>{if(G.title){brand(G.title);$('ttl').textContent='🎮 '+G.title}});setInterval(loop,1500)}else if(FID===null)pick();else setup()})();
+(function(){const pin=P.get('pin');if(pin&&pw){G={pin,phase:'lobby',q:-1,n:0,dur:20};loop().then(()=>{if(G.title){brand(G.title);$('ttl').textContent='🎮 '+G.title}});setInterval(loop,1500)}else if(!KEY)pick();else setup()})();
 </script>
 <script src="presence.js"></script><script>dbdPresence('game')</script>
 </body>
