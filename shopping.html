@@ -95,6 +95,7 @@ dialog h2{margin:0 0 10px;font:800 19px Rubik,Heebo,sans-serif}
 .ntf input{width:20px;height:20px;accent-color:var(--pr);margin:0}
 .sendall{margin-inline-start:auto;border-radius:12px;background:var(--pr);color:#fff;border:0;font-weight:800;padding:9px 14px;font-size:13px;box-shadow:0 4px 12px #db277733}
 .pend{color:var(--pr);font-weight:700}
+.wa{border:1px solid var(--pkb);background:var(--card);color:var(--mut);border-radius:10px;padding:5px 9px;font-size:12px;font-weight:700;cursor:pointer}
 .pic{cursor:pointer;position:relative}
 /* כמות במלאי על כרטיס המוצר */
 .stk{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px}
@@ -167,7 +168,8 @@ body.locked #login{display:block}body.locked main,body.locked .tabs{display:none
       <button onclick="addTyped()">הוסף</button>
     </div>
     <div class="ntfrow">
-      <label class="ntf"><input type="checkbox" id="ntfChk" onchange="put('shop_ntf',this.checked?'1':'0')"><span id="ntfLbl">✉️ שלח הודעה</span></label>
+      <label class="ntf"><input type="checkbox" id="ntfChk" onchange="put('shop_ntf',this.checked?'1':'0')"><span id="ntfLbl">💬 שלח בוואטסאפ</span></label>
+      <button class="wa" id="waSet" onclick="waSetup()" title="למי לשלוח בוואטסאפ"></button>
       <button class="sendall" id="sendAll" onclick="sendNotify()" style="display:none"></button>
     </div>
     <datalist id="names"></datalist>
@@ -253,17 +255,36 @@ const other=()=>me==='דני'?'ציפי':me==='ציפי'?'דני':'המשפחה'
 function addName(name,src,qty){
   name=String(name||'').trim();if(!name)return false;
   if(st.items.some(x=>shopKey(x.name)===shopKey(name))){toast('„'+name+'” כבר ברשימה');return false}
-  act({type:'add',iid:uid(),name,qty:qty||'',by:me,src:src||'',notify:$('ntfChk').checked});return true;
+  const n=$('ntfChk').checked;
+  act({type:'add',iid:uid(),name,qty:qty||'',by:me,src:src||'',notify:n});
+  if(n)waOpen([{n:name,q:qty}]);
+  return true;
+}
+/* ---------- הודעה בוואטסאפ: נפתח וואטסאפ עם הודעה מוכנה, ונשאר רק ללחוץ "שלח" ----------
+   אם נשמר מספר של בן המשפחה, ההודעה נפתחת ישר אליו; אחרת וואטסאפ מבקש לבחור איש קשר או קבוצה. */
+const SHOP_LINK='https://dannybd20-hue.github.io/akordim/?open=shopping';
+function waNums(){try{return JSON.parse(localStorage.getItem('shop_wa'))||{}}catch(e){return{}}}
+function waPhone(){const p=String(waNums()[other()]||'').replace(/\D/g,'');return p.startsWith('0')?'972'+p.slice(1):p}
+function waOpen(list){
+  const who=me||'מישהו',verb=who==='ציפי'?'הוסיפה':'הוסיף';
+  const lines=list.map(x=>'• '+x.n+(x.q?' ('+x.q+')':''));
+  const t='🛒 *קניות לבית*\n'+who+' '+verb+' לרשימה:\n'+lines.join('\n')+'\n\nלרשימה המלאה: '+SHOP_LINK;
+  const p=waPhone();
+  window.open('https://wa.me/'+(p||'')+'?text='+encodeURIComponent(t),'_blank');
+}
+function waSetup(){
+  const n=waNums(),o=other(),v=prompt('מספר הוואטסאפ של '+o+' (לדוגמה 0501234567).\nאפשר להשאיר ריק, ואז וואטסאפ יבקש לבחור איש קשר בכל פעם:',n[o]||'');
+  if(v===null)return;n[o]=v.trim();try{localStorage.setItem('shop_wa',JSON.stringify(n))}catch(e){}render();toast(v.trim()?'💬 ההודעות ייפתחו ישר ל'+o:'💬 וואטסאפ יבקש לבחור איש קשר');
 }
 let newImg='';
 function addTyped(){
   const i=$('newItem'),q=$('newQty'),name=i.value.trim();
   if(!name){i.focus();return}
   if(newImg){const p=prodFor(name);if(p)act({type:'pedit',pid:p.id,img:newImg});else act({type:'padd',pid:uid(),name,img:newImg})}
-  if(addName(name,'',q.value.trim())){i.value='';q.value='';newImg='';camUpd();toast($('ntfChk').checked?'נוסף ונשלחה הודעה ל'+other()+' ✓':'נוסף לרשימה ✓')}
+  if(addName(name,'',q.value.trim())){i.value='';q.value='';newImg='';camUpd();toast($('ntfChk').checked?'נוסף ✓ · וואטסאפ נפתח, לחץ שם "שלח"':'נוסף לרשימה ✓')}
   i.focus();
 }
-function sendNotify(){const n=shopPending(st).length;if(!n)return;act({type:'notify'});toast('✉️ נשלחה הודעה ל'+other()+' על '+n+' פריטים')}
+function sendNotify(){const P=shopPending(st);if(!P.length)return;waOpen(P.map(x=>({n:x.name,q:x.qty})));act({type:'notify'});toast('💬 וואטסאפ נפתח עם '+P.length+' פריטים, לחץ שם "שלח"')}
 /* תמונות: מקטינים ל-200 פיקסלים כדי שהרשימה תישאר קלה ומהירה */
 function shrink(file,cb){
   const img=new Image();img.onload=()=>{
@@ -321,8 +342,8 @@ function days(ms){const d=Math.round(ms/864e5);return d<=1?'יום':d===2?'יו�
 function render(){
   $('cnt').textContent=st.items.length;$('cnt').style.display=st.items.length?'':'none';
   $('meb').textContent='👤 '+(me||'מי אני?');
-  $('ntfLbl').textContent='✉️ שלח הודעה ל'+other();
-  const pend=shopPending(st).length,sa=$('sendAll');sa.style.display=pend?'':'none';sa.textContent='✉️ שלח הודעה על '+pend+(pend===1?' פריט':' פריטים');
+  $('ntfLbl').textContent='💬 שלח בוואטסאפ ל'+other();$('waSet').textContent=waNums()[other()]?'📱 '+waNums()[other()]:'📱 הגדר מספר';
+  const pend=shopPending(st).length,sa=$('sendAll');sa.style.display=pend?'':'none';sa.textContent='💬 שלח בוואטסאפ '+pend+(pend===1?' פריט':' פריטים');
   $('t_list').className=tab==='list'?'on':'';$('t_home').className=tab==='home'?'on':'';
   $('v_list').style.display=tab==='list'?'':'none';$('v_home').style.display=tab==='home'?'':'none';
   const dl=$('names');dl.innerHTML='';
@@ -335,7 +356,7 @@ function renderList(){
   [...st.items].sort((a,b)=>b.at-a.at).forEach(it=>{
     const row=el('div','it'),c=el('button','chk','✓');c.title='נקנה';c.onclick=()=>bought(it,row);
     const nm=el('div','nm');nm.append(el('b',null,it.name),el('small',null,it.auto?'🔁 נוסף אוטומטית · '+ago(it.at):(it.src==='pantry'?'🏠 נגמר בבית · ':'')+(it.by?(it.by==='אשתי'?'ציפי':it.by)+' · ':'')+ago(it.at)));
-    if(it.ntf===false)nm.append(el('small','pend',' · ✉️ לא נשלח'));
+    if(it.ntf===false)nm.append(el('small','pend',' · 💬 לא נשלח'));
     const q=el('input','qty');q.placeholder='כמות';q.value=it.qty||'';q.onchange=()=>act({type:'edit',iid:it.id,qty:q.value.trim()});
     const x=el('button','x','✕');x.title='מחק בלי לסמן כנקנה';x.onclick=()=>{act({type:'del',iid:it.id});toast('„'+it.name+'” נמחק','ביטול',()=>act({type:'add',iid:it.id,name:it.name,qty:it.qty,by:it.by,notify:it.ntf!==false}))};
     const pc=picEl('pic',it.name);pc.title='צלמו את המוצר';pc.onclick=()=>photoFor(it.name);

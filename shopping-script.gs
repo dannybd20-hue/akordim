@@ -35,6 +35,7 @@ function save_(f, st) {
 function esc_(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
 function notify_(entries, from, title) {
+  return null; // ההודעות עברו לוואטסאפ מהאתר; מיילים לא נשלחים יותר
   const to = Object.keys(FAMILY).filter(function (n) { return n !== from; }).map(function (n) { return FAMILY[n]; });
   if (!to.length || !entries.length) return;
   try {
