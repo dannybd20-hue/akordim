@@ -184,7 +184,7 @@ function game_(d, admin) {
     const def = gget_('gd:' + pin), pid = String(d.pid || ''), pl = gget_('gp:' + pin) || {};
     if (!pl[pid]) return { ok: true, kicked: true, phase: g.phase };
     const r = { ok: true, now: now, phase: g.phase, q: g.q, n: g.n, qStart: g.qStart, dur: g.dur, title: g.title, name: pl[pid],
-      score: g.scores[pid] || 0, last: g.last[pid] || null };
+      score: g.scores[pid] || 0, last: g.last[pid] || null, closed: !!g.closed };
     if (g.phase === 'question' && def) {
       const Q = def.qs[g.q]; r.text = Q.t; r.ch = Q.ch;
       r.answered = !!CacheService.getScriptCache().get('ga:' + pin + ':' + g.q + ':' + pid);
@@ -248,6 +248,12 @@ function game_(d, admin) {
   }
 
   if (a === 'g_sheet') return gsheet_(pin, g, pl);
+
+  if (a === 'g_close') { // סגירת משחק: השחקנים רואים "המשחק הסתיים" והוא יורד מרשימת המשחקים הפעילים
+    g.phase = 'end'; g.closed = true; gput_('g:' + pin, g);
+    gput_('gact', (gget_('gact') || []).filter(function (x) { return x !== pin; }));
+    return { ok: true };
+  }
 
   if (a === 'g_q') { // המארח: השאלה הנוכחית עם התמונה
     const def = gget_('gd:' + pin), i = g.q;
