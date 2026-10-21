@@ -55,6 +55,15 @@ details button,details label{text-align:start;border:0;background:none;padding:8
 details button:hover,details label:hover{background:var(--pl)}
 #bar{display:none;background:#0c4a6e;color:#fff;padding:8px 16px;gap:14px;align-items:center;font-size:12px}
 body.stage #bar{display:flex}
+/* מצב נגינה: הכותרת מתקפלת ונשארים רק טון, קאפו וכפתור ☰ שפותח הכול */
+#stTog{display:none}
+body.stage #stTog{display:inline-flex;align-items:center;justify-content:center}
+body.stage:not(.stopen) .logo,body.stage:not(.stopen) .sels,body.stage:not(.stopen) .hin2>:not(.tc):not(#stTog),body.stage:not(.stopen) #bar,body.stage:not(.stopen) .head .hr,body.stage:not(.stopen) .head .badge{display:none!important}
+body.stage:not(.stopen) .hin{padding:6px 10px;justify-content:center}
+body.stage:not(.stopen) .hin2{justify-content:center}
+body.stage:not(.stopen) main{padding:10px 8px;gap:12px}
+body.stage:not(.stopen) #songCard{padding:16px 14px}
+body.stage:not(.stopen) .head{padding-bottom:10px;margin-bottom:12px}
 #bar button{background:#0284c7;border:0;color:#fff;border-radius:8px;padding:2px 10px}
 main{flex:1;max-width:1152px;width:100%;margin:0 auto;padding:32px 16px;display:flex;flex-direction:column;gap:24px}
 .card{background:var(--card);border:1px solid #e2e8f0cc;border-radius:24px;box-shadow:0 20px 25px -5px #0000001a,0 8px 10px -6px #0000001a;padding:32px}
@@ -141,9 +150,10 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
   <div class="logo"><button class="back" onclick="goHome()" title="נעילה וחזרה לעמוד האפליקציות">→ אפליקציות</button><div class="lg" onclick="goHome()" title="נעילה וחזרה לדף הבית" style="cursor:pointer">♬</div><div><h1>ספריית אקורדים <span class="pro">Pro</span></h1><p class="sub">עריכה חיה, טרנספוזיציה ותצוגת אורגן וגיטרה</p></div></div>
   <div class="sels"><select id="fold" onchange="fold=this.value;fill()"></select><select id="sel" onchange="pick(this.value)"></select></div>
   <div class="hin2">
+    <button id="stTog" class="ic" onclick="stOpen()" title="הצג / הסתר את כל הכפתורים">☰</button>
     <div class="srch"><input id="q" type="search" placeholder="🔎 חיפוש שיר" autocomplete="off" oninput="q=this.value;fill();sug('q')" onfocus="sug('q')" onblur="setTimeout(()=>hideSug('q'),150)" onkeydown="sugKey(event,'q')" style="width:140px"><div class="sug" id="q_s"></div></div>
-    <div class="grp"><button onclick="setTone(-1)" title="חצי טון למטה">−</button><div class="lab"><small>טון</small><b id="tb">0</b></div><button onclick="setTone(1)" title="חצי טון למעלה">+</button></div>
-    <div class="grp"><button onclick="setCapo(-1)">−</button><div class="lab"><small>קאפו</small><b id="cb">0</b></div><button onclick="setCapo(1)">+</button></div>
+    <div class="grp tc"><button onclick="setTone(-1)" title="חצי טון למטה">−</button><div class="lab"><small>טון</small><b id="tb">0</b></div><button onclick="setTone(1)" title="חצי טון למעלה">+</button></div>
+    <div class="grp tc"><button onclick="setCapo(-1)">−</button><div class="lab"><small>קאפו</small><b id="cb">0</b></div><button onclick="setCapo(1)">+</button></div>
     <button class="stg" onclick="playDlg()">▶️ מצב נגינה</button>
     <button id="eb" class="ed" onclick="toggleEdit()">🔒 מצב עריכה</button>
     <button class="ic" onclick="songsHome()" title="כל השירים">🏠</button>
@@ -590,7 +600,7 @@ function toggleScroll(){
 function stage(){
   if(document.body.classList.contains('home'))pick(cur);
   const on=!document.body.classList.contains('stage');
-  document.body.classList.toggle('stage',on);
+  document.body.classList.toggle('stage',on);document.body.classList.remove('stopen');$('stTog').textContent='☰';
   fz=Math.max(14,Math.min(40,fz+(on?6:-6)));
   if(!on&&sc)toggleScroll();
   if(!on){pl=[];plStop()}
@@ -655,6 +665,7 @@ function plEnd(){
   plLeft=plWait;$('plc').textContent=`הבא בעוד ${plLeft}…`;
   plT=setInterval(()=>{plLeft--;if(plLeft<=0)plGo(1);else $('plc').textContent=`הבא בעוד ${plLeft}…`},1000);
 }
+function stOpen(){const o=document.body.classList.toggle('stopen');$('stTog').textContent=o?'▲':'☰'}
 function theme(){const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('akordim_theme',r.dataset.theme)}catch(e){}}
 
 /* ---------- גיבוי ---------- */
