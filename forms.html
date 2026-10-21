@@ -252,6 +252,8 @@ async function doLogin(){
 
 /* עיצוב מיוחד לטופס לפי המיקום שלו ברשימה (0 = הראשון) */
 const THEMES={3:{cls:'th-yatar',logo:'brand/yatar-logo.png'}};
+/* טפסים שיש להם דף שיתוף משלו (שם ותמונה בתצוגה המקדימה של וואטסאפ) */
+const SHARE={3:'f4.html'};
 function theme(id){const t=THEMES[id];document.body.className=t?t.cls:'';$('lgx').innerHTML=t?`<img src="${t.logo}" alt="">`:'📝'}
 /* ---------- קישור ישיר לטופס: ‎forms.html?f=2‎ פותח ישר את הטופס השני ---------- */
 const SITE='https://dannybd20-hue.github.io/akordim/';
@@ -260,7 +262,7 @@ function landing(){
   if(f&&forms.some(x=>x.id===f-1&&!x.error))openForm(f-1);else showList();
 }
 function copyLink(id){
-  const u=SITE+'?open=forms&f='+(id+1);
+  const u=SHARE[id]?SITE+SHARE[id]:SITE+'?open=forms&f='+(id+1);
   (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('🔗 הקישור הועתק'),()=>prompt('העתק את הקישור:',u));
 }
 /* ---------- רשימת הטפסים ---------- */
