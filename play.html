@@ -9,6 +9,7 @@
 <meta property="og:image" content="https://dannybd20-hue.github.io/akordim/brand/og/game.png">
 <meta name="theme-color" content="#f4f5fb">
 <link rel="icon" href="icons/apps-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.3/confetti.browser.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@500;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f4f5fb;--card:#fff;--tx:#1e1b4b;--mut:#64748b;--bd:#e5e7f0;--pr:#4f46e5;--pr2:#0ea5e9;--ok:#16a34a;--no:#e11d48;
@@ -45,11 +46,13 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .res.ok{background:linear-gradient(135deg,#22c55e,#15803d)}.res.no{background:linear-gradient(135deg,#fb7185,#e11d48)}
 .res .ic{font-size:60px;line-height:1}
 .pts{display:inline-block;background:rgba(255,255,255,.22);border-radius:12px;padding:6px 16px;font-size:22px;font-weight:900;margin-top:10px}
+.net{font-size:13px;font-weight:800;color:var(--no)}
+.sent{font-size:15px;font-weight:800;color:var(--ok)}
 .rank{font-size:58px;font-weight:900;line-height:1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 </style>
 </head>
 <body>
-<div class="top"><span id="tName">🎮 משחק חי</span><span class="sc" id="tScore" hidden>0</span></div>
+<div class="top"><span id="tName">🎮 משחק חי</span><span class="net" id="net" hidden>📶 חיבור חלש…</span><span class="sc" id="tScore" hidden>0</span></div>
 <main id="M"></main>
 <script>
 /* מסך השחקן: נכנסים עם קוד משחק ושם, ומקבלים מהסקריפט (forms-script.gs) את מצב המשחק כל שנייה וקצת */
@@ -58,7 +61,7 @@ const CLOUD='https://script.google.com/macros/s/AKfycbzSg8RjF-1-jXrcUOZLUrp7Gwl-
 const $=id=>document.getElementById(id),M=$('M');
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const SH=['א','ב','ג','ד'];
-let pin=new URLSearchParams(location.search).get('pin')||'',pid='',me='',st=null,timer=0,shown='',off=0,busy=false;
+let pin=new URLSearchParams(location.search).get('pin')||'',pid='',me='',st=null,timer=0,shown='',off=0,busy=false,polling=0,lastOk=Date.now(),pend=null,qShown=0;
 const ss=(k,v)=>{try{v===undefined?0:sessionStorage.setItem(k,v);return sessionStorage.getItem(k)}catch(e){return null}};
 function api(o){return fetch(CLOUD,{method:'POST',body:JSON.stringify(o)}).then(r=>r.json())}
 
@@ -83,41 +86,64 @@ async function join(){
     history.replaceState(null,'','?pin='+pin);start();
   }catch(e){$('er').textContent='אין חיבור לאינטרנט';$('jb').disabled=false;$('jb').textContent='כניסה ←'}
 }
-function start(){$('tName').textContent='👤 '+me;$('tScore').hidden=false;wait('אתה בפנים! 🎉','מחכים שהמשחק יתחיל…');poll();setInterval(poll,1200)}
+function start(){$('tName').textContent='👤 '+me;$('tScore').hidden=false;wait('אתה בפנים! 🎉','מחכים שהמשחק יתחיל…');poll();if(!polling)polling=setInterval(poll,1200)}
+/* קליטה חלשה: אם לא הגיעה תשובה מהשרת כמה שניות, מציגים סימון למעלה */
+setInterval(()=>{$('net').hidden=!pid||Date.now()-lastOk<5000},1000);
 async function poll(){
   if(busy)return;busy=true;
-  try{const r=await api({action:'g_state',pin,pid});if(r.ok){off=r.now-Date.now();st=r;draw()}else if(r.error==='nogame')wait('המשחק הסתיים','אפשר לסגור את הדף')}catch(e){}
+  try{const r=await api({action:'g_state',pin,pid});lastOk=Date.now();
+    if(r.ok&&r.kicked){kicked();busy=false;return}
+    if(r.ok){off=r.now-Date.now();st=r;draw()}else if(r.error==='nogame')wait('המשחק הסתיים','אפשר לסגור את הדף')}catch(e){}
   busy=false;
+}
+function kicked(){
+  clearInterval(polling);polling=0;try{sessionStorage.removeItem('game_'+pin)}catch(e){}pid='';$('tScore').hidden=true;$('tName').textContent='🎮 משחק חי';
+  M.innerHTML=`<div class="big">יצאת מהמשחק</div><div class="mid">המארח הוציא אותך מהמשחק</div><button class="go" style="max-width:380px" onclick="joinView()">להצטרף שוב</button>`;shown='';
 }
 function wait(a,b){shown='';M.innerHTML=`<div class="big">${a}</div><div class="mid">${b}</div><div class="spin"></div>`}
 function draw(){
   $('tScore').textContent=st.score.toLocaleString('he-IL');
+  if(st.name&&st.name!==me){me=st.name;$('tName').textContent='👤 '+me;try{sessionStorage.setItem('game_'+pin,JSON.stringify({pid,me}))}catch(e){}}
   if(/uh|הצלה/.test(st.title||''))document.body.classList.add('uh');
   const key=st.phase+':'+st.q+':'+(st.answered?1:0);
   if(st.phase==='lobby'){if(shown!=='lobby'){shown='lobby';M.innerHTML=`<div class="big">אתה בפנים! 🎉</div><div class="mid">רואים את השם שלך על המסך?<br>מחכים שהמשחק יתחיל…</div><div class="spin"></div>`}return}
   if(st.phase==='question'){
-    if(st.answered){if(shown!==key){shown=key;M.innerHTML=`<div class="big">התשובה נשלחה ⏳</div><div class="mid">מחכים לשאר השחקנים…</div><div class="spin"></div>`}return}
-    if(shown!==key){shown=key;
+    if(st.answered){if(shown!==key){shown=key;pend=null;M.innerHTML=`<div class="big">✓ התשובה התקבלה</div>${mine()}<div class="mid">מחכים לשאר השחקנים…</div><div class="spin"></div>`}return}
+    if(pend&&pend.q===st.q)return; // התשובה עדיין בדרך לשרת
+    if(shown!==key){shown=key;qShown=Date.now();
       M.innerHTML=`<span class="timer" id="tm"></span><div class="qt">${esc(st.text)}</div><div class="ans">${st.ch.map((c,i)=>`<button class="c${i}" onclick="answer(${i})"><span class="s">${SH[i]}</span>${esc(c)}</button>`).join('')}</div>`;
       clearInterval(timer);timer=setInterval(tick,250);tick()}
     return;
   }
   clearInterval(timer);
   if(shown===key)return;shown=key;
-  const L=st.last||{none:true};
+  pend=null;const L=st.last||{none:true};
   if(st.phase==='reveal'){
     M.innerHTML=L.none?`<div class="res no"><div class="ic">⌛</div><div class="big">לא ענית בזמן</div></div>`:
       `<div class="res ${L.ok?'ok':'no'}"><div class="ic">${L.ok?'✓':'✗'}</div><div class="big">${L.ok?'נכון!':'לא נכון'}</div><div class="pts">+${L.p}</div></div>`;
     M.innerHTML+=`<div class="mid">אתה במקום <b>${st.rank}</b> מתוך ${st.players}</div>`;
+    if(L.ok&&window.confetti)confetti({particleCount:90,spread:75,origin:{y:.35}});
   }else if(st.phase==='leader'){M.innerHTML=`<div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות</div><div class="mid">מחכים לשאלה הבאה…</div>`}
-  else if(st.phase==='end'){M.innerHTML=`<div class="big">${st.rank===1?'🏆 ניצחת!':st.rank<=3?'🥈 על הפודיום!':'סוף המשחק'}</div><div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות · מתוך ${st.players} שחקנים</div>`}
+  else if(st.phase==='end'){if(st.rank<=3&&window.confetti)confetti({particleCount:150,spread:100,origin:{y:.4}});M.innerHTML=`<div class="big">${st.rank===1?'🏆 ניצחת!':st.rank<=3?'🥈 על הפודיום!':'סוף המשחק'}</div><div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות · מתוך ${st.players} שחקנים</div>`}
 }
 function tick(){const left=Math.max(0,Math.ceil((st.qStart+st.dur*1000-(Date.now()+off))/1000));const t=$('tm');if(t)t.textContent='⏱ '+left;if(!left)clearInterval(timer)}
+function mine(){const c=pend?pend.c:(window._mc&&_mc.q===st.q?_mc.c:-1);return c>=0&&st.ch?`<div class="qt c${c}" style="border-inline-start:6px solid var(--c)">${SH[c]} · ${esc(st.ch[c])}</div>`:''}
+/* שליחת תשובה עם אישור קבלה: אם הקליטה חלשה מנסים שוב (השרת מתעלם מכפילויות).
+   הזמן נמדד בטלפון מהרגע שהשאלה הופיעה, כדי שמי שהאינטרנט שלו איטי לא יפסיד נקודות */
 async function answer(i){
-  M.querySelectorAll('.ans button').forEach((b,j)=>{b.disabled=true;if(j!==i)b.style.opacity=.35});
-  try{const r=await api({action:'g_answer',pin,pid,c:i});st.answered=true;shown='';
-    if(!r.ok&&r.error==='late'){M.innerHTML=`<div class="big">הזמן נגמר ⌛</div><div class="spin"></div>`;shown=st.phase+':'+st.q+':1'}else draw()}
-  catch(e){M.querySelectorAll('.ans button').forEach(b=>{b.disabled=false;b.style.opacity=1})}
+  if(pend)return;
+  const el=Date.now()-Math.max(qShown,st.qStart-off);
+  pend={q:st.q,c:i,el};window._mc={q:st.q,c:i};
+  M.innerHTML=`<div class="big">שולח את התשובה…</div>${mine()}<div class="mid" id="snd"></div><div class="spin"></div>`;
+  for(let k=0;k<8&&pend&&pend.q===st.q&&st.phase==='question';k++){
+    if(k){const s=$('snd');if(s)s.textContent='📶 הקליטה חלשה, מנסה שוב ('+k+')…';await new Promise(r=>setTimeout(r,Math.min(4000,700*k)))}
+    try{const r=await api({action:'g_answer',pin,pid,c:i,el});lastOk=Date.now();
+      if(!pend)return;
+      if(!r.ok&&r.error==='late'){pend=null;shown=st.phase+':'+st.q+':1';M.innerHTML=`<div class="big">הזמן נגמר ⌛</div><div class="spin"></div>`;return}
+      if(r.ok){st.answered=true;shown='';pend=null;draw();return}
+    }catch(e){}
+  }
+  if(pend){pend=null;shown='';draw()} // לא הצליח – מציגים שוב את התשובות כדי לנסות שוב
 }
 (function(){
   let s=null;try{s=JSON.parse(sessionStorage.getItem('game_'+pin))}catch(e){}

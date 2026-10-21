@@ -140,9 +140,23 @@ function game_(d, admin) {
     def.imgs.forEach(function (im, i) { if (im) { try { gput_('gi:' + p + ':' + i, im); } catch (x) {} } });
     gput_('gd:' + p, { title: def.title, qs: def.qs });
     gput_('gp:' + p, {});
-    const g = { pin: p, title: def.title, n: def.qs.length, q: -1, phase: 'lobby', qStart: 0, dur: Math.min(60, Math.max(5, Number(d.dur) || 20)), scores: {}, last: {} };
+    const g = { pin: p, key: d.key, title: def.title, n: def.qs.length, q: -1, phase: 'lobby', qStart: 0,
+      dur: Math.min(60, Math.max(5, Number(d.dur) || 20)),
+      lb: Math.max(0, Math.min(20, Number(d.lb) || 0)), // טבלת מובילים כל lb שאלות; 0 = רק בסוף
+      scores: {}, last: {}, created: now };
     gput_('g:' + p, g);
+    const act = (gget_('gact') || []).filter(function (x) { return gget_('g:' + x); });
+    act.unshift(p); gput_('gact', act.slice(0, 10));
     return { ok: true, game: g };
+  }
+  if (a === 'g_active') { // משחקים פעילים, כדי להמשיך ממכשיר אחר
+    if (!admin) return { ok: false, error: 'password' };
+    const list = [];
+    (gget_('gact') || []).forEach(function (x) {
+      const gg = gget_('g:' + x);
+      if (gg && gg.phase !== 'end') list.push({ pin: x, key: gg.key, title: gg.title, phase: gg.phase, q: gg.q, n: gg.n, players: Object.keys(gget_('gp:' + x) || {}).length, created: gg.created });
+    });
+    return { ok: true, games: list };
   }
   const g = gget_('g:' + pin);
   if (!g) return { ok: false, error: 'nogame' };
@@ -164,8 +178,9 @@ function game_(d, admin) {
   }
 
   if (a === 'g_state') { // שחקן: מצב המשחק ומה שקשור אליו
-    const def = gget_('gd:' + pin), pid = String(d.pid || '');
-    const r = { ok: true, now: now, phase: g.phase, q: g.q, n: g.n, qStart: g.qStart, dur: g.dur, title: g.title,
+    const def = gget_('gd:' + pin), pid = String(d.pid || ''), pl = gget_('gp:' + pin) || {};
+    if (!pl[pid]) return { ok: true, kicked: true, phase: g.phase };
+    const r = { ok: true, now: now, phase: g.phase, q: g.q, n: g.n, qStart: g.qStart, dur: g.dur, title: g.title, name: pl[pid],
       score: g.scores[pid] || 0, last: g.last[pid] || null };
     if (g.phase === 'question' && def) {
       const Q = def.qs[g.q]; r.text = Q.t; r.ch = Q.ch;
@@ -181,8 +196,11 @@ function game_(d, admin) {
   if (a === 'g_answer') {
     const c = Number(d.c);
     if (g.phase !== 'question') return { ok: false, error: 'late' };
-    const t = now - g.qStart;
-    if (t > g.dur * 1000 + 1500) return { ok: false, error: 'late' };
+    const st = now - g.qStart;
+    if (st > g.dur * 1000 + 4000) return { ok: false, error: 'late' };
+    /* זמן הוגן: הטלפון מודד מהרגע שהשאלה הופיעה אצלו; מקבלים אותו רק עד 3 שניות פחות ממה שהשרת מדד (השהיית רשת) */
+    const el = Number(d.el);
+    const t = isFinite(el) && el >= 0 ? Math.max(st - 3000, Math.min(st, el)) : st;
     const k = 'ga:' + pin + ':' + g.q + ':' + String(d.pid || '');
     if (CacheService.getScriptCache().get(k)) return { ok: true, already: true };
     gput_(k, { c: c, t: Math.max(0, t) });
@@ -194,39 +212,35 @@ function game_(d, admin) {
   const pl = gget_('gp:' + pin) || {}, pids = Object.keys(pl);
 
   if (a === 'g_host') {
-    let answered = 0;
+    let answered = 0, done = [];
     if (g.phase === 'question') {
       const got = CacheService.getScriptCache().getAll(pids.map(function (p) { return 'ga:' + pin + ':' + g.q + ':' + p; }));
-      answered = Object.keys(got).length;
+      done = pids.filter(function (p) { return got['ga:' + pin + ':' + g.q + ':' + p]; });
+      answered = done.length;
     }
-    return { ok: true, now: now, game: g, players: pids.map(function (p) { return { pid: p, name: pl[p], score: g.scores[p] || 0 }; }), answered: answered };
+    return { ok: true, now: now, game: g, players: pids.map(function (p) { return { pid: p, name: pl[p], score: g.scores[p] || 0 }; }), answered: answered, done: done };
   }
 
-  if (a === 'g_next') { // לובי/טבלה ← שאלה ← חשיפה ← טבלה ← ...
-    const def = gget_('gd:' + pin);
-    if (g.phase === 'lobby' || g.phase === 'leader') {
-      g.q++;
-      if (g.q >= g.n) { g.phase = 'end'; }
-      else { g.phase = 'question'; g.qStart = now + 800; g.dist = null; g.right = null; }
-    } else if (g.phase === 'question') {
-      const Q = def.qs[g.q], dist = Q.ch.map(function () { return 0; });
-      const got = CacheService.getScriptCache().getAll(pids.map(function (p) { return 'ga:' + pin + ':' + g.q + ':' + p; }));
-      g.last = {};
-      pids.forEach(function (p) {
-        const v = got['ga:' + pin + ':' + g.q + ':' + p];
-        if (!v) { g.last[p] = { ok: false, p: 0, none: true }; if (!(p in g.scores)) g.scores[p] = 0; return; }
-        const ans = JSON.parse(v), ok = ans.c === Q.right;
-        if (dist[ans.c] !== undefined) dist[ans.c]++;
-        const pts = ok ? Math.round(1000 * (1 - Math.min(1, ans.t / (g.dur * 1000)) / 2)) : 0;
-        g.scores[p] = (g.scores[p] || 0) + pts;
-        g.last[p] = { ok: ok, p: pts, c: ans.c }; // c: איזו תשובה בחר (בשביל "מי ענה מה" אצל המארח)
-      });
-      g.phase = 'reveal'; g.dist = dist; g.right = Q.right;
-    } else if (g.phase === 'reveal') {
-      g.phase = g.q >= g.n - 1 ? 'end' : 'leader';
-    }
-    gput_('g:' + pin, g);
-    return { ok: true, now: now, game: g };
+  if (a === 'g_rename' || a === 'g_kick') { // ניהול שחקנים: שינוי שם או הוצאה מהמשחק
+    const lock = LockService.getScriptLock(); lock.waitLock(10000);
+    try {
+      const pl2 = gget_('gp:' + pin) || {}, id = String(d.pid || '');
+      if (!pl2[id]) return { ok: false, error: 'אין שחקן כזה' };
+      if (a === 'g_rename') {
+        const nm = String(d.name || '').trim().slice(0, 20);
+        if (!nm) return { ok: false, error: 'נא לכתוב שם' };
+        pl2[id] = nm;
+      } else {
+        const g2 = gget_('g:' + pin); delete g2.scores[id]; if (g2.last) delete g2.last[id]; gput_('g:' + pin, g2); delete pl2[id];
+      }
+      gput_('gp:' + pin, pl2);
+      return { ok: true };
+    } finally { lock.releaseLock(); }
+  }
+
+  if (a === 'g_next') { // לובי ← שאלה ← חשיפה ← (טבלת מובילים לפי ההגדרה) ← שאלה ← ... ← סיום
+    const lock = LockService.getScriptLock(); lock.waitLock(10000);
+    try { return gnext_(pin, d, now, pids); } finally { lock.releaseLock(); }
   }
 
   if (a === 'g_q') { // המארח: השאלה הנוכחית עם התמונה
@@ -235,4 +249,41 @@ function game_(d, admin) {
     return { ok: true, q: def.qs[i], img: gget_('gi:' + pin + ':' + i) };
   }
   return { ok: false, error: 'unknown action' };
+}
+
+function gnext_(pin, d, now, pids) {
+  const g = gget_('g:' + pin), def = gget_('gd:' + pin);
+  /* אם המחשב והטלפון לחצו "הבא" ביחד – רק הלחיצה הראשונה נחשבת */
+  if (d.from && d.from !== g.phase + ':' + g.q) return { ok: true, now: now, game: g, stale: true };
+  const nextQ = function () {
+    g.q++;
+    if (g.q >= g.n) { g.phase = 'end'; }
+    else { g.phase = 'question'; g.qStart = now + 800; g.dist = null; g.right = null; }
+  };
+  if (g.phase === 'lobby' || g.phase === 'leader') {
+    nextQ();
+  } else if (g.phase === 'question') {
+    const Q = def.qs[g.q], dist = Q.ch.map(function () { return 0; });
+    const got = CacheService.getScriptCache().getAll(pids.map(function (p) { return 'ga:' + pin + ':' + g.q + ':' + p; }));
+    g.last = {};
+    pids.forEach(function (p) {
+      const v = got['ga:' + pin + ':' + g.q + ':' + p];
+      if (!v) { g.last[p] = { ok: false, p: 0, none: true }; if (!(p in g.scores)) g.scores[p] = 0; return; }
+      const ans = JSON.parse(v), ok = ans.c === Q.right;
+      if (dist[ans.c] !== undefined) dist[ans.c]++;
+      const pts = ok ? Math.round(1000 * (1 - Math.min(1, ans.t / (g.dur * 1000)) / 2)) : 0;
+      g.scores[p] = (g.scores[p] || 0) + pts;
+      g.last[p] = { ok: ok, p: pts, c: ans.c }; // c: איזו תשובה בחר (בשביל "מי ענה מה" אצל המארח)
+    });
+    g.phase = 'reveal'; g.dist = dist; g.right = Q.right;
+  } else if (g.phase === 'reveal') {
+    /* d.show: 'board' = להציג טבלה עכשיו, 'skip' = לדלג עליה; בלי = לפי ההגדרה (כל lb שאלות) */
+    const due = g.lb > 0 && (g.q + 1) % g.lb === 0;
+    const show = d.show === 'board' ? true : d.show === 'skip' ? false : due;
+    if (g.q >= g.n - 1) g.phase = 'end';
+    else if (show) g.phase = 'leader';
+    else nextQ();
+  }
+  gput_('g:' + pin, g);
+  return { ok: true, now: now, game: g };
 }
