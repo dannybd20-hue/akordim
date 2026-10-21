@@ -219,7 +219,7 @@ function game_(d, admin) {
         if (dist[ans.c] !== undefined) dist[ans.c]++;
         const pts = ok ? Math.round(1000 * (1 - Math.min(1, ans.t / (g.dur * 1000)) / 2)) : 0;
         g.scores[p] = (g.scores[p] || 0) + pts;
-        g.last[p] = { ok: ok, p: pts };
+        g.last[p] = { ok: ok, p: pts, c: ans.c }; // c: איזו תשובה בחר (בשביל "מי ענה מה" אצל המארח)
       });
       g.phase = 'reveal'; g.dist = dist; g.right = Q.right;
     } else if (g.phase === 'reveal') {
