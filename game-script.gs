@@ -21,7 +21,7 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 7; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 8; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
 function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
 
 function doPost(e) {
@@ -166,7 +166,7 @@ function game_(d, admin) {
     const name = String(d.name || '').trim().slice(0, 20);
     if (!name) return { ok: false, error: 'נא לכתוב שם' };
     const phone = String(d.phone || '').replace(/\D/g, '');
-    if (!(d.pid && (gget_('gp:' + pin) || {})[d.pid]) && (phone.length < 7 || phone.length > 15)) return { ok: false, error: 'נא לכתוב מספר טלפון (ספרות בלבד)' };
+    if (!(d.pid && (gget_('gp:' + pin) || {})[d.pid]) && (phone.length < 1 || phone.length > 10)) return { ok: false, error: 'נא לכתוב פרייבט (1 עד 10 ספרות)' };
     const lock = LockService.getScriptLock(); lock.waitLock(10000);
     try {
       const pl = gget_('gp:' + pin) || {};
@@ -317,7 +317,7 @@ function gsheet_(pin, g, pl) {
   const recs = [];
   for (let i = 0; i < done; i++) recs.push(gget_('gr:' + pin + ':' + i) || {});
   const L = ['א', 'ב', 'ג', 'ד'];
-  const head = ['מקום', 'שם', 'טלפון', 'ניקוד', 'ענו נכון'];
+  const head = ['מקום', 'שם', 'פרייבט', 'ניקוד', 'ענו נכון'];
   for (let i = 0; i < done; i++) head.push('שאלה ' + (i + 1));
   const rows = [], colors = [];
   pids.forEach(function (p, r) {
