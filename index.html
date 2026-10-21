@@ -61,6 +61,9 @@ body::after{width:380px;height:380px;bottom:-160px;left:-120px;background:radial
 .live .who:first-child{border-top:0}
 .live .who small{display:block;color:var(--mut);font-weight:500}
 .live.admin{max-width:290px}
+.link{background:none;border:0;color:var(--mut);font:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-top:12px;text-decoration:underline}
+.bioset{display:block;margin:14px auto 0}
+.bioset[hidden]{display:none}
 .gt{margin:0 0 14px;font:800 17px Rubik,Heebo,sans-serif}
 .gate .pw{margin-bottom:6px}
 button.b.big{width:100%;padding:12px;font-size:16px;border-radius:14px;margin-top:6px;background:linear-gradient(90deg,#4f46e5,#0ea5e9);border:0;color:#fff}
@@ -108,6 +111,21 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
   <button class="b pr big" onclick="saveName()">המשך</button>
 </section>
 
+<section class="gate" id="biov" hidden>
+  <p class="gt">🔐 כניסה מהירה</p>
+  <p class="hint">להיכנס מעכשיו במכשיר הזה עם טביעת אצבע / Face ID, במקום להקליד סיסמה?</p>
+  <p class="err" id="bioErr"></p>
+  <button class="b pr big" onclick="bioEnroll()">כן, להפעיל</button>
+  <button class="link" onclick="bioSkip()">לא עכשיו</button>
+</section>
+
+<section class="gate" id="biolock" hidden>
+  <p class="gt">🔐 כניסה עם טביעת אצבע / Face ID</p>
+  <p class="err" id="bioLErr"></p>
+  <button class="b pr big" onclick="bioLogin()">👆 כניסה</button>
+  <button class="link" onclick="bioToPw()">הקלדת סיסמה במקום</button>
+</section>
+
 <section id="appsv" hidden>
 <p class="sec">האפליקציות שלי</p>
 <div class="apps">
@@ -118,6 +136,7 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
   <button class="app" data-app="forms" onclick="enter('forms')"><i class="go" aria-hidden="true">←</i><div class="ic fm">📝</div><b>טפסים</b><span>מילוי שאלונים ותוצאות בזמן אמת</span></button>
 </div>
 <label class="nm">📛 השם שלך: <input id="devName" maxlength="30" placeholder="לדוגמה: הטלפון של דני" onchange="setDevName(this.value)"></label>
+<button class="link bioset" id="bioSet" hidden onclick="bioToggle()"></button>
 <button class="b out" onclick="logout()">🔒 יציאה</button>
 </section>
 <footer>© דני בן דוד</footer>
@@ -161,7 +180,8 @@ function gem(n){
 function err(t){const e=$('er');e.textContent=t;e.style.display=t?'block':'none'}
 function show(){
   const A=access();
-  $('lockv').hidden=A.length>0;$('appsv').hidden=!A.length;
+  $('lockv').hidden=A.length>0;$('appsv').hidden=!A.length;$('biov').hidden=true;$('biolock').hidden=true;$('namev').hidden=true;
+  if(A.length)bioUi();else if(bioData()){only('biolock')}
   document.querySelectorAll('.app').forEach(b=>b.hidden=!A.includes(b.dataset.app));
   if(!A.length)setTimeout(()=>$('p1').focus(),50);
 }
@@ -179,20 +199,62 @@ async function submit(){
   sput('hub_seen','1');
   $('p1').value='';
   if(!myName()){$('lockv').hidden=true;$('namev').hidden=false;setTimeout(()=>$('nmIn').focus(),50);return}
-  afterLogin();
+  bioOffer();
 }
 /* שם המשתמש במכשיר: נבחר פעם אחת אחרי הסיסמה, ונשלח עם "מי מחובר" כדי שהמנהל יידע מי נכנס */
 function myName(){try{return localStorage.getItem('dbd_name')||localStorage.getItem('shop_me')||''}catch(e){return''}}
 function saveName(){
   const v=$('nmIn').value.trim();$('nmErr').style.display=v?'none':'block';if(!v)return;
   try{localStorage.setItem('dbd_name',v)}catch(e){}
-  $('namev').hidden=true;$('devName').value=v;if(window.dbdPing)dbdPing();afterLogin();
+  $('namev').hidden=true;$('devName').value=v;if(window.dbdPing)dbdPing();bioOffer();
 }
 function afterLogin(){
   const A=access();
   if(WANT&&A.includes(WANT)){location.href=dest(WANT);return}
   if(A.length===1){location.href=dest(A[0]);return}
   show();
+}
+/* ---------- טביעת אצבע / Face ID (WebAuthn) ----------
+   אחרי כניסה עם סיסמה אפשר לרשום את חיישן הטלפון. הטלפון בודק את האצבע בעצמו ומחזיר רק "עבר";
+   האתר שומר במכשיר את מזהה הרישום ואת הגישה שהסיסמה נתנה, ופותח אותה רק אחרי אימות מוצלח. */
+const b64=buf=>btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const rnd=n=>crypto.getRandomValues(new Uint8Array(n));
+function bioData(){try{return JSON.parse(get('dbd_bio'))}catch(e){return null}}
+async function bioAvail(){try{return !!(window.PublicKeyCredential&&await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())}catch(e){return false}}
+function only(id){['lockv','namev','biov','biolock'].forEach(x=>$(x).hidden=x!==id);$('appsv').hidden=true}
+async function bioOffer(){
+  if(bioData()||get('bio_skip')||!await bioAvail()){afterLogin();return}
+  $('bioErr').textContent='';only('biov');
+}
+function bioSkip(){lput('bio_skip','1');afterLogin()}
+async function bioEnroll(){
+  $('bioErr').textContent='';
+  try{
+    const c=await navigator.credentials.create({publicKey:{challenge:rnd(32),rp:{name:'דני בן דוד'},
+      user:{id:rnd(16),name:myName()||'משתמש',displayName:myName()||'משתמש'},
+      pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
+      authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required',residentKey:'preferred'},timeout:60000}});
+    lput('dbd_bio',JSON.stringify({id:b64(c.rawId),A:access(),pw:sget('hub_pw'),admin:sget('hub_admin')}));
+    /* מעכשיו פתיחה מחדש דורשת אצבע: לא שומרים יותר את הגישה עצמה כ"זכור במכשיר" */
+    lput('hub_access',null);lput('hub_pw',null);lput('hub_admin',null);lput('bio_skip',null);
+    afterLogin();
+  }catch(e){$('bioErr').textContent='לא הצלחנו להפעיל. אפשר לנסות שוב או ללחוץ "לא עכשיו".'}
+}
+async function bioLogin(){
+  const d=bioData();if(!d)return bioToPw();$('bioLErr').textContent='';
+  try{
+    await navigator.credentials.get({publicKey:{challenge:rnd(32),allowCredentials:[{type:'public-key',id:unb64(d.id)}],userVerification:'required',timeout:60000}});
+    grant(d.A,d.pw);if(d.admin)sput('hub_admin',d.admin);sput('hub_seen','1');
+    if(!myName()){only('namev');setTimeout(()=>$('nmIn').focus(),50);return}
+    afterLogin();
+  }catch(e){$('bioLErr').textContent='האימות לא הצליח. נסה שוב, או הקלד סיסמה.'}
+}
+function bioToPw(){only('lockv');setTimeout(()=>$('p1').focus(),50)}
+async function bioUi(){const d=bioData(),ok=await bioAvail();const b=$('bioSet');b.hidden=!d&&!ok;b.textContent=d?'🔐 טביעת אצבע פעילה במכשיר הזה · ביטול':'🔐 להפעיל כניסה עם טביעת אצבע / Face ID'}
+async function bioToggle(){
+  if(bioData()){if(confirm('לבטל את הכניסה עם טביעת אצבע במכשיר הזה? בפעם הבאה תתבקש סיסמה.')){lput('dbd_bio',null);lput('bio_skip','1');bioUi()}return}
+  lput('bio_skip',null);only('biov');
 }
 function logout(){
   lput('hub_access',null);lput('hub_pw',null);lput('hub_admin',null);sput('hub_admin',null);lput('tromot_names',null);
@@ -214,6 +276,8 @@ $('nmIn').addEventListener('keyup',e=>{if(e.key==='Enter')saveName()});
   $('date').innerHTML=dd.map(x=>'<b>'+x+'</b>').join('');
   /* גישה שנשמרה במכשיר: משחזרים אותה, ונכנסים ישר לאפליקציה שביקשו או לאפליקציה היחידה (פעם אחת בכל פתיחה) */
   if(!access().length){let A=[];try{A=JSON.parse(get('hub_access'))||[]}catch(e){}if(A.length){grant(A,get('hub_pw'));if(get('hub_admin'))sput('hub_admin',get('hub_admin'))}}
+  /* טביעת אצבע רשומה ואין עדיין גישה בדפדפן הזה: מבקשים אצבע (מנסים מיד; אם הדפדפן דורש לחיצה, יש כפתור) */
+  if(!access().length&&bioData()){only('biolock');bioLogin();return}
   const A=access(),want=new URLSearchParams(location.search).get('open');
   /* מכשיר שכבר נכנס אבל עוד לא נתן שם: מבקשים את השם פעם אחת */
   if(A.length&&!myName()){$('lockv').hidden=true;$('namev').hidden=false;setTimeout(()=>$('nmIn').focus(),50);return}
