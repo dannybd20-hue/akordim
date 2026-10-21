@@ -75,19 +75,23 @@ function joinView(msg){
   M.innerHTML=`<div class="box"><h1>🎮 הצטרפות למשחק</h1>
     <input class="fld" id="pin" inputmode="numeric" maxlength="6" placeholder="קוד משחק" value="${esc(pin)}">
     <input class="fld" id="nm" maxlength="20" placeholder="השם שלך" value="${esc(localStorage.getItem('game_name')||'')}">
+    <input class="fld" id="ph" type="tel" inputmode="numeric" maxlength="15" placeholder="מס' פרטי (טלפון, ספרות בלבד)" value="${esc(localStorage.getItem('game_phone')||'')}" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+    <div class="mid" style="font-size:13px;margin:-4px 0 10px">המספר מגיע רק למארח של המשחק</div>
     <button class="go" id="jb" onclick="join()">כניסה ←</button><p class="err" id="er">${esc(msg||'')}</p></div>`;
   (pin?$('nm'):$('pin')).focus();
-  $('nm').onkeyup=e=>{if(e.key==='Enter')join()};
+  $('ph').onkeyup=e=>{if(e.key==='Enter')join()};
 }
 async function join(){
   const p=$('pin').value.replace(/\D/g,''),n=$('nm').value.trim();
   if(p.length!==6){$('er').textContent='קוד המשחק הוא 6 ספרות';return}
   if(!n){$('er').textContent='נא לכתוב שם';return}
+  const ph=$('ph').value.replace(/\D/g,'');
+  if(ph.length<7){$('er').textContent='נא לכתוב מספר פרטי (ספרות בלבד)';return}
   $('jb').disabled=true;$('jb').textContent='נכנס…';
   try{
-    const r=await api({action:'g_join',pin:p,name:n});
+    const r=await api({action:'g_join',pin:p,name:n,phone:ph});
     if(!r.ok){$('er').textContent=r.error==='nogame'?'לא נמצא משחק עם הקוד הזה':r.error;$('jb').disabled=false;$('jb').textContent='כניסה ←';return}
-    pin=p;pid=r.pid;me=r.name;try{localStorage.setItem('game_name',n);sessionStorage.setItem('game_'+pin,JSON.stringify({pid,me}));localStorage.setItem('game_last',JSON.stringify({pin,pid,me,t:Date.now()}))}catch(e){}
+    pin=p;pid=r.pid;me=r.name;try{localStorage.setItem('game_name',n);localStorage.setItem('game_phone',ph);sessionStorage.setItem('game_'+pin,JSON.stringify({pid,me}));localStorage.setItem('game_last',JSON.stringify({pin,pid,me,t:Date.now()}))}catch(e){}
     history.replaceState(null,'','?pin='+pin);start();
   }catch(e){$('er').textContent='אין חיבור לאינטרנט';$('jb').disabled=false;$('jb').textContent='כניסה ←'}
 }

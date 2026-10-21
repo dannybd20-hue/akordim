@@ -164,6 +164,8 @@ function game_(d, admin) {
   if (a === 'g_join') {
     const name = String(d.name || '').trim().slice(0, 20);
     if (!name) return { ok: false, error: 'נא לכתוב שם' };
+    const phone = String(d.phone || '').replace(/\D/g, '');
+    if (!(d.pid && (gget_('gp:' + pin) || {})[d.pid]) && (phone.length < 7 || phone.length > 15)) return { ok: false, error: 'נא לכתוב מספר טלפון (ספרות בלבד)' };
     const lock = LockService.getScriptLock(); lock.waitLock(10000);
     try {
       const pl = gget_('gp:' + pin) || {};
@@ -173,6 +175,7 @@ function game_(d, admin) {
       while (taken.indexOf(nm) >= 0) nm = name + ' ' + (i++);
       const pid = Utilities.getUuid().slice(0, 8);
       pl[pid] = nm; gput_('gp:' + pin, pl);
+      const ph = gget_('gph:' + pin) || {}; ph[pid] = phone; gput_('gph:' + pin, ph);
       return { ok: true, pid: pid, name: nm };
     } finally { lock.releaseLock(); }
   }
@@ -218,7 +221,8 @@ function game_(d, admin) {
       done = pids.filter(function (p) { return got['ga:' + pin + ':' + g.q + ':' + p]; });
       answered = done.length;
     }
-    return { ok: true, now: now, game: g, players: pids.map(function (p) { return { pid: p, name: pl[p], score: g.scores[p] || 0 }; }), answered: answered, done: done };
+    const phs = gget_('gph:' + pin) || {};
+    return { ok: true, now: now, game: g, players: pids.map(function (p) { return { pid: p, name: pl[p], phone: phs[p] || '', score: g.scores[p] || 0 }; }), answered: answered, done: done };
   }
 
   if (a === 'g_rename' || a === 'g_kick') { // ניהול שחקנים: שינוי שם או הוצאה מהמשחק
@@ -243,6 +247,8 @@ function game_(d, admin) {
     try { return gnext_(pin, d, now, pids); } finally { lock.releaseLock(); }
   }
 
+  if (a === 'g_sheet') return gsheet_(pin, g, pl);
+
   if (a === 'g_q') { // המארח: השאלה הנוכחית עם התמונה
     const def = gget_('gd:' + pin), i = g.q;
     if (!def || i < 0 || i >= g.n) return { ok: false, error: 'no question' };
@@ -266,6 +272,7 @@ function gnext_(pin, d, now, pids) {
     const Q = def.qs[g.q], dist = Q.ch.map(function () { return 0; });
     const got = CacheService.getScriptCache().getAll(pids.map(function (p) { return 'ga:' + pin + ':' + g.q + ':' + p; }));
     g.last = {};
+    const rec = {};
     pids.forEach(function (p) {
       const v = got['ga:' + pin + ':' + g.q + ':' + p];
       if (!v) { g.last[p] = { ok: false, p: 0, none: true }; if (!(p in g.scores)) g.scores[p] = 0; return; }
@@ -273,8 +280,10 @@ function gnext_(pin, d, now, pids) {
       if (dist[ans.c] !== undefined) dist[ans.c]++;
       const pts = ok ? Math.round(1000 * (1 - Math.min(1, ans.t / (g.dur * 1000)) / 2)) : 0;
       g.scores[p] = (g.scores[p] || 0) + pts;
+      rec[p] = [ans.c, pts, Math.round(ans.t)];
       g.last[p] = { ok: ok, p: pts, c: ans.c }; // c: איזו תשובה בחר (בשביל "מי ענה מה" אצל המארח)
     });
+    gput_('gr:' + pin + ':' + g.q, rec); // התשובות של כולם לשאלה הזאת, בשביל הטבלה בגוגל שיטס
     g.phase = 'reveal'; g.dist = dist; g.right = Q.right;
   } else if (g.phase === 'reveal') {
     /* d.show: 'board' = להציג טבלה עכשיו, 'skip' = לדלג עליה; בלי = לפי ההגדרה (כל lb שאלות) */
@@ -286,4 +295,52 @@ function gnext_(pin, d, now, pids) {
   }
   gput_('g:' + pin, g);
   return { ok: true, now: now, game: g };
+}
+
+
+/* ===== טבלה בגוגל שיטס: כל שחקן, הטלפון שלו, הניקוד, ומה ענה בכל שאלה ===== */
+function authorizeSheets() { // להריץ פעם אחת מהעורך כדי לאשר הרשאה ליצירת גיליונות
+  SpreadsheetApp.create('בדיקת הרשאה – אפשר למחוק').getId();
+}
+function gsheet_(pin, g, pl) {
+  if (g.sheet) return { ok: true, url: g.sheet, already: true };
+  const def = gget_('gd:' + pin), phs = gget_('gph:' + pin) || {};
+  const pids = Object.keys(pl).sort(function (x, y) { return (g.scores[y] || 0) - (g.scores[x] || 0); });
+  const done = g.phase === 'end' ? g.n : g.q + 1; // כמה שאלות כבר נענו
+  const recs = [];
+  for (let i = 0; i < done; i++) recs.push(gget_('gr:' + pin + ':' + i) || {});
+  const L = ['א', 'ב', 'ג', 'ד'];
+  const head = ['מקום', 'שם', 'טלפון', 'ניקוד', 'ענו נכון'];
+  for (let i = 0; i < done; i++) head.push('שאלה ' + (i + 1));
+  const rows = [], colors = [];
+  pids.forEach(function (p, r) {
+    let okN = 0; const row = [r + 1, pl[p], phs[p] || '', g.scores[p] || 0, 0], col = ['', '', '', '', ''];
+    for (let i = 0; i < done; i++) {
+      const v = recs[i][p], Q = def.qs[i];
+      if (!v) { row.push('— לא ענה'); col.push('#e5e7eb'); }
+      else if (v[0] === Q.right) { okN++; row.push('✓ ' + L[v[0]] + ' · ' + Q.ch[v[0]] + ' (+' + v[1] + ')'); col.push('#bbf7d0'); }
+      else { row.push('✗ ' + L[v[0]] + ' · ' + (Q.ch[v[0]] || '')); col.push('#fecdd3'); }
+    }
+    row[4] = okN + ' מתוך ' + done; rows.push(row); colors.push(col);
+  });
+  const ss = SpreadsheetApp.create('משחק חי – ' + g.title + ' – ' + Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd.MM.yyyy HH:mm'));
+  const sh = ss.getSheets()[0]; sh.setName('תוצאות'); sh.setRightToLeft(true);
+  sh.getRange(1, 3, rows.length + 1, 1).setNumberFormat('@');
+  sh.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold').setBackground('#4f46e5').setFontColor('#ffffff');
+  if (rows.length) {
+    sh.getRange(2, 1, rows.length, head.length).setValues(rows).setBackgrounds(colors.map(function (c) { return c.map(function (x) { return x || '#ffffff'; }); }));
+  }
+  sh.setFrozenRows(1); sh.setFrozenColumns(2);
+  sh.autoResizeColumns(1, Math.min(head.length, 5));
+  const qs = ss.insertSheet('שאלות'); qs.setRightToLeft(true);
+  const qrows = [['#', 'שאלה', 'התשובה הנכונה', 'ענו נכון', 'ענו לא נכון', 'לא ענו']];
+  for (let i = 0; i < done; i++) {
+    let ok = 0, no = 0;
+    pids.forEach(function (p) { const v = recs[i][p]; if (v) { if (v[0] === def.qs[i].right) ok++; else no++; } });
+    qrows.push([i + 1, def.qs[i].t, def.qs[i].ch[def.qs[i].right], ok, no, pids.length - ok - no]);
+  }
+  qs.getRange(1, 1, qrows.length, 6).setValues(qrows); qs.getRange(1, 1, 1, 6).setFontWeight('bold').setBackground('#4f46e5').setFontColor('#ffffff');
+  qs.setFrozenRows(1); qs.setColumnWidth(2, 420); qs.setColumnWidth(3, 260);
+  g.sheet = ss.getUrl(); gput_('g:' + pin, g);
+  return { ok: true, url: g.sheet };
 }
