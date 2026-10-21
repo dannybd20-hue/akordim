@@ -169,16 +169,34 @@ function stopPoll(){clearInterval(poll);poll=0}
 function loading(t){M.innerHTML=`<div class="card" style="text-align:center"><span class="spin"></span> ${t||'טוען…'}</div>`}
 
 /* ---------- כניסה: קודם הסיסמה הראשית/סיסמת דף הבית, אחר כך מה שנשמר במכשיר ---------- */
+/* זיכרון במכשיר: רשימת הטפסים ומבנה כל טופס מוצגים מיד מהפעם הקודמת, והעדכון מגוגל רץ ברקע */
+const getJ=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+const setJ=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let view='';
 async function start(){
+  const c=getJ('forms_cache');
+  if(FORMS_CLOUD&&c&&c.forms&&lg('forms_pw')){pw=lg('forms_pw');admin=!!c.admin;forms=c.forms;showList();refreshList();return}
   if(!FORMS_CLOUD){M.innerHTML='<div class="card"><b>עוד לא חובר סקריפט הטפסים.</b><p class="muted">צריך להתקין את forms-script.gs בגוגל ולשלוח את הכתובת שלו.</p></div>';return}
   const tries=[sg('hub_admin'),sg('hub_pw'),lg('forms_pw')].filter((v,i,a)=>v&&a.indexOf(v)===i);
   loading('מתחבר…');
   for(const t of tries){
     pw=t;
-    try{const r=await api({action:'list'});if(r.ok){lp('forms_pw',t);admin=r.admin;forms=r.forms;showList();return}if(r.error==='locked'){M.innerHTML=`<div class="card err">${errText('locked')}</div>`;return}}
+    try{const r=await api({action:'list'});if(r.ok){lp('forms_pw',t);admin=r.admin;forms=r.forms;setJ('forms_cache',{admin,forms});showList();return}if(r.error==='locked'){M.innerHTML=`<div class="card err">${errText('locked')}</div>`;return}}
     catch(e){M.innerHTML='<div class="card err">אין חיבור לאינטרנט. נסה שוב.</div>';return}
   }
   pw='';login();
+}
+/* עדכון ברקע: מנסה את הסיסמאות לפי הסדר (ראשית קודם), ומרענן את הרשימה רק אם המשתמש עדיין בה */
+async function refreshList(){
+  const tries=[sg('hub_admin'),sg('hub_pw'),lg('forms_pw')].filter((v,i,a)=>v&&a.indexOf(v)===i);
+  for(const t of tries){
+    try{
+      const r=await fetch(FORMS_CLOUD,{method:'POST',body:JSON.stringify({action:'list',password:t})}).then(r=>r.json());
+      if(r.ok){pw=t;lp('forms_pw',t);const ch=JSON.stringify(r.forms)!==JSON.stringify(forms)||r.admin!==admin;admin=r.admin;forms=r.forms;setJ('forms_cache',{admin,forms});if(ch&&view==='list')showList();return}
+      if(r.error==='locked')return;
+    }catch(e){return}
+  }
+  lp('forms_pw',null);try{localStorage.removeItem('forms_cache')}catch(e){}if(view==='list')login('הסיסמה השתנתה, נא להיכנס שוב');
 }
 function login(msg){
   stopPoll();$('htitle').textContent='טפסים';
@@ -191,13 +209,13 @@ function login(msg){
 }
 async function doLogin(){
   const v=$('lpw').value.trim();if(!v)return;pw=v;
-  try{const r=await api({action:'list'});if(!r.ok){pw='';$('lerr').textContent=errText(r.error);return}lp('forms_pw',v);admin=r.admin;forms=r.forms;showList()}
+  try{const r=await api({action:'list'});if(!r.ok){pw='';$('lerr').textContent=errText(r.error);return}lp('forms_pw',v);admin=r.admin;forms=r.forms;setJ('forms_cache',{admin,forms});showList()}
   catch(e){$('lerr').textContent='אין חיבור לאינטרנט'}
 }
 
 /* ---------- רשימת הטפסים ---------- */
 function showList(){
-  stopPoll();cur=null;$('htitle').textContent='טפסים';history.replaceState(null,'',location.pathname);
+  stopPoll();cur=null;view='list';$('htitle').textContent='טפסים';history.replaceState(null,'',location.pathname);
   if(!forms.length){M.innerHTML='<div class="card muted">אין עדיין טפסים. מוסיפים קישורים ברשימת FORMS בסקריפט.</div>';return}
   M.innerHTML=`<p class="kick">${admin?'👑 מצב מנהל':'בחר טופס'}</p><h2 class="ptitle">הטפסים <span>שלך</span></h2><div class="flist">`+forms.map((f,i)=>`
     <div class="fc" onclick="${f.error?'':`openForm(${f.id})`}">
@@ -209,12 +227,18 @@ function showList(){
 
 /* ---------- מילוי טופס ---------- */
 const defs={};
-async function getDef(id){if(defs[id])return defs[id];const r=await api({action:'form',id});if(!r.ok)throw r.error;return defs[id]=r.form}
+async function getDef(id){
+  if(defs[id])return defs[id];
+  const fetchDef=()=>api({action:'form',id}).then(r=>{if(!r.ok)throw r.error;defs[id]=r.form;setJ('forms_def_'+id,r.form);return r.form});
+  const c=getJ('forms_def_'+id);
+  if(c){defs[id]=c;fetchDef().catch(()=>{});return c} // מיד מהזיכרון; הגרסה העדכנית תשמש בפתיחה הבאה
+  return fetchDef();
+}
 let answers={};
 async function openForm(id){
   stopPoll();loading();
   let f;try{f=await getDef(id)}catch(e){M.innerHTML=`<div class="card err">${esc(errText(e))}</div>`;return}
-  cur=id;answers={};$('htitle').textContent=f.title;
+  cur=id;answers={};view='form';$('htitle').textContent=f.title;
   if(!f.open){M.innerHTML=`<div class="card"><h2 class="ftitle">${esc(f.title)}</h2><p class="err">הטופס סגור לתשובות כרגע.</p><button class="btn sec" onclick="showList()">חזרה</button></div>`;return}
   const qs=f.items.filter(q=>q.type!=='section');let n=0;
   let h=`<div class="hero"><h2 class="ftitle">${esc(f.title)}</h2>${f.description?`<p class="fdesc">${esc(f.description)}</p>`:''}
@@ -269,7 +293,7 @@ async function send(){
   try{
     const r=await api({action:'submit',id:cur,answers});
     if(!r.ok){$('ferr').textContent=errText(r.error);$('send').disabled=false;$('send').textContent='שליחה';return}
-    M.innerHTML=`<div class="card done"><div class="big">✓</div><h2 class="ftitle">תודה! התשובה נשלחה</h2><p class="muted">${esc(f.title)}</p>
+    view='done';M.innerHTML=`<div class="card done"><div class="big">✓</div><h2 class="ftitle">תודה! התשובה נשלחה</h2><p class="muted">${esc(f.title)}</p>
       <div class="actions" style="justify-content:center"><button class="btn sec" onclick="openForm(${cur})">מילוי נוסף</button><button class="btn" onclick="showList()">לכל הטפסים</button></div></div>`;
     const x=forms.find(x=>x.id===cur);if(x&&x.count!=null)x.count++;
   }catch(e){$('ferr').textContent='אין חיבור לאינטרנט. התשובה לא נשלחה, נסה שוב.';$('send').disabled=false;$('send').textContent='שליחה'}
@@ -280,7 +304,7 @@ let res=[],seenT=0,rtab='sum';
 async function openResults(id){
   stopPoll();loading('טוען תוצאות…');
   let f;try{f=await getDef(id)}catch(e){M.innerHTML=`<div class="card err">${esc(errText(e))}</div>`;return}
-  cur=id;res=[];seenT=0;$('htitle').textContent='📊 '+f.title;
+  cur=id;res=[];seenT=0;view='results';$('htitle').textContent='📊 '+f.title;
   M.innerHTML=`<div class="rhead"><button class="btn sm sec" onclick="showList()">→ חזרה</button><span class="live"><i></i> מתעדכן בזמן אמת</span>
     <div class="tabs"><button data-t="sum">סיכום</button><button data-t="list">תשובות</button></div></div><div id="rbox"></div>`;
   M.querySelector('.tabs').onclick=e=>{const b=e.target.closest('button');if(b){rtab=b.dataset.t;drawRes()}};

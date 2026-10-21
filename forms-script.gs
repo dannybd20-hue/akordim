@@ -39,8 +39,8 @@ function doPost(e) {
   if (!admin && d.password !== FILL_PASSWORD) { failed_(); return out_({ ok: false, error: 'password' }); }
   try {
     if (d.action === 'list') return out_({ ok: true, admin: admin, forms: listForms_(admin) });
-    if (d.action === 'form') return out_({ ok: true, form: formDef_(openForm_(d.id)) });
-    if (d.action === 'submit') return out_(submit_(openForm_(d.id), d.answers || {}));
+    if (d.action === 'form') return out_({ ok: true, form: cached_('def_' + Number(d.id), CACHE_SECONDS, function () { return formDef_(openForm_(d.id)); }) });
+    if (d.action === 'submit') { const r = submit_(openForm_(d.id), d.answers || {}); CacheService.getScriptCache().remove('count_' + Number(d.id)); return out_(r); }
     if (d.action === 'results') {
       if (!admin) return out_({ ok: false, error: 'password' });
       return out_({ ok: true, results: results_(openForm_(d.id)) });
@@ -58,12 +58,25 @@ function openForm_(id) {
   return FormApp.openByUrl(url);
 }
 
+/* זיכרון קצר בגוגל, כדי שלא לפתוח את הטפסים מחדש בכל בקשה (פתיחת טופס לוקחת כמה שניות).
+   שינוי בטופס עצמו יופיע באתר תוך עד 5 דקות; מספר התשובות מתעדכן כל דקה. */
+const CACHE_SECONDS = 300, COUNT_SECONDS = 60;
+function cached_(key, seconds, make) {
+  const c = CacheService.getScriptCache(), v = c.get(key);
+  if (v) return JSON.parse(v);
+  const o = make();
+  try { c.put(key, JSON.stringify(o), seconds); } catch (x) {} // ערך גדול מדי לזיכרון: פשוט לא נשמר
+  return o;
+}
+
 function listForms_(admin) {
   return FORMS.map(function (url, i) {
     try {
-      const f = FormApp.openByUrl(url);
-      const o = { id: i, title: f.getTitle(), description: f.getDescription(), open: f.isAcceptingResponses() };
-      if (admin) o.count = f.getResponses().length;
+      const o = cached_('info_' + i, CACHE_SECONDS, function () {
+        const f = FormApp.openByUrl(url);
+        return { id: i, title: f.getTitle(), description: f.getDescription(), open: f.isAcceptingResponses() };
+      });
+      if (admin) o.count = cached_('count_' + i, COUNT_SECONDS, function () { return FormApp.openByUrl(url).getResponses().length; });
       return o;
     } catch (x) { return { id: i, title: 'טופס ' + (i + 1), error: 'אין גישה לטופס' }; }
   });
