@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<script>try{if(sessionStorage.getItem('gate_forms')!=='1'){document.documentElement.style.display='none';location.replace('./?open=forms')}}catch(e){location.replace('./')}</script>
+<script>try{if(sessionStorage.getItem('gate_forms')!=='1'){document.documentElement.style.display='none';location.replace('./?open=forms'+(location.search?'&'+location.search.slice(1):''))}}catch(e){location.replace('./')}</script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>טפסים</title>
 <link rel="manifest" href="manifest.json">
@@ -175,13 +175,13 @@ const setJ=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 let view='';
 async function start(){
   const c=getJ('forms_cache');
-  if(FORMS_CLOUD&&c&&c.forms&&lg('forms_pw')){pw=lg('forms_pw');admin=!!c.admin;forms=c.forms;showList();refreshList();return}
+  if(FORMS_CLOUD&&c&&c.forms&&lg('forms_pw')){pw=lg('forms_pw');admin=!!c.admin;forms=c.forms;landing();refreshList();return}
   if(!FORMS_CLOUD){M.innerHTML='<div class="card"><b>עוד לא חובר סקריפט הטפסים.</b><p class="muted">צריך להתקין את forms-script.gs בגוגל ולשלוח את הכתובת שלו.</p></div>';return}
   const tries=[sg('hub_admin'),sg('hub_pw'),lg('forms_pw')].filter((v,i,a)=>v&&a.indexOf(v)===i);
   loading('מתחבר…');
   for(const t of tries){
     pw=t;
-    try{const r=await api({action:'list'});if(r.ok){lp('forms_pw',t);admin=r.admin;forms=r.forms;setJ('forms_cache',{admin,forms});showList();return}if(r.error==='locked'){M.innerHTML=`<div class="card err">${errText('locked')}</div>`;return}}
+    try{const r=await api({action:'list'});if(r.ok){lp('forms_pw',t);admin=r.admin;forms=r.forms;setJ('forms_cache',{admin,forms});landing();return}if(r.error==='locked'){M.innerHTML=`<div class="card err">${errText('locked')}</div>`;return}}
     catch(e){M.innerHTML='<div class="card err">אין חיבור לאינטרנט. נסה שוב.</div>';return}
   }
   pw='';login();
@@ -209,10 +209,20 @@ function login(msg){
 }
 async function doLogin(){
   const v=$('lpw').value.trim();if(!v)return;pw=v;
-  try{const r=await api({action:'list'});if(!r.ok){pw='';$('lerr').textContent=errText(r.error);return}lp('forms_pw',v);admin=r.admin;forms=r.forms;setJ('forms_cache',{admin,forms});showList()}
+  try{const r=await api({action:'list'});if(!r.ok){pw='';$('lerr').textContent=errText(r.error);return}lp('forms_pw',v);admin=r.admin;forms=r.forms;setJ('forms_cache',{admin,forms});landing()}
   catch(e){$('lerr').textContent='אין חיבור לאינטרנט'}
 }
 
+/* ---------- קישור ישיר לטופס: ‎forms.html?f=2‎ פותח ישר את הטופס השני ---------- */
+const SITE='https://dannybd20-hue.github.io/akordim/';
+function landing(){
+  const f=+new URLSearchParams(location.search).get('f');
+  if(f&&forms.some(x=>x.id===f-1&&!x.error))openForm(f-1);else showList();
+}
+function copyLink(id){
+  const u=SITE+'?open=forms&f='+(id+1);
+  (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('🔗 הקישור הועתק'),()=>prompt('העתק את הקישור:',u));
+}
 /* ---------- רשימת הטפסים ---------- */
 function showList(){
   stopPoll();cur=null;view='list';$('htitle').textContent='טפסים';history.replaceState(null,'',location.pathname);
@@ -221,7 +231,7 @@ function showList(){
     <div class="fc" onclick="${f.error?'':`openForm(${f.id})`}">
       <span class="num">${String(i+1).padStart(2,'0')}</span><b>${esc(f.title)}</b>${f.description?`<p>${esc(f.description)}</p>`:''}
       <div class="row">${f.error?`<span class="chip off">${esc(f.error)}</span>`:f.open?'<span class="chip">פתוח למילוי</span>':'<span class="chip off">סגור</span>'}
-      ${admin&&!f.error?`<span class="chip hot">📨 ${f.count} תשובות</span><button class="btn sm sec" style="margin-inline-start:auto" onclick="event.stopPropagation();openResults(${f.id})">📊 תוצאות</button>`:''}</div>
+      ${admin&&!f.error?`<span class="chip hot">📨 ${f.count} תשובות</span><button class="btn sm sec" style="margin-inline-start:auto" onclick="event.stopPropagation();copyLink(${f.id})" title="קישור ישיר לטופס הזה">🔗 קישור</button><button class="btn sm sec" onclick="event.stopPropagation();openResults(${f.id})">📊 תוצאות</button>`:''}</div>
     </div>`).join('')+'</div>';
 }
 
