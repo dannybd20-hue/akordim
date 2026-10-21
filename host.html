@@ -89,7 +89,7 @@ body.hot::after{opacity:1;animation:hotf 1s infinite}
 .board.all{max-height:38vh;overflow:auto;padding:4px}
 .board.all .r{padding:8px 16px;font-size:18px}.board.all .r i{width:34px;height:34px;font-size:15px}
 .ov{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
-.ov .card{width:100%;max-width:520px;max-height:86vh;display:flex;flex-direction:column;gap:10px}
+.ov .card{width:100%;max-width:520px;max-height:94vh;overflow:auto;display:flex;flex-direction:column;gap:10px}
 .pl{overflow:auto;display:flex;flex-direction:column;gap:6px}
 .pl div{display:flex;align-items:center;gap:8px;border:1px solid var(--bd);border-radius:12px;padding:8px 10px;font-weight:800;text-align:start}
 .pl div span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -111,7 +111,7 @@ body.hot::after{opacity:1;animation:hotf 1s infinite}
 </style>
 </head>
 <body>
-<header><span id="logo"><img src="icons/apps-192.png" alt="" style="border-radius:12px"></span><h1 id="ttl">🎮 משחק חי</h1><button class="hb" id="altB" hidden></button><button class="hb" id="nextB" hidden onclick="next()"></button><button class="hb" id="plB" hidden onclick="manage()">👥</button><button class="hb" id="modeB" hidden onclick="setMode(!REM)"></button><button class="hb" id="backB" onclick="location.href='./'">→ אפליקציות</button></header>
+<header><span id="logo"><img src="icons/apps-192.png" alt="" style="border-radius:12px"></span><h1 id="ttl">🎮 משחק חי</h1><button class="hb" id="altB" hidden></button><button class="hb" id="nextB" hidden onclick="next()"></button><button class="hb" id="qrB" hidden onclick="joinQR()">➕ 📷</button><button class="hb" id="plB" hidden onclick="manage()">👥</button><button class="hb" id="modeB" hidden onclick="setMode(!REM)"></button><button class="hb" id="backB" onclick="location.href='./'">→ אפליקציות</button></header>
 <main id="M"><div class="spin"></div></main>
 <script>
 /* מסך המארח (מקרן / טלוויזיה): פותח משחק מטופס בוחן, מציג ברקוד וקוד, מריץ שאלות, טיימר, חשיפה וטבלת מובילים */
@@ -181,7 +181,7 @@ async function loop(){
 }
 function started(){try{localStorage.setItem('game_host_last',G.pin)}catch(e){}
  
-  $('backB').hidden=true;$('plB').hidden=false;$('modeB').hidden=false;modeLbl();
+  $('backB').hidden=true;$('plB').hidden=false;$('qrB').hidden=false;$('modeB').hidden=false;modeLbl();
   if(!looping){looping=setInterval(loop,1500);loop()}
 }
 function modeLbl(){$('modeB').textContent=REM?'🖥 מסך':'📱 שלט'}
@@ -327,6 +327,17 @@ function remote(){
   }
   if(G.phase==='lobby'){const c=M.querySelector('.mid');if(c)c.textContent='קוד משחק · '+players.length+(players.length===1?' שחקן':' שחקנים')}
   if(G.phase==='question'){const a=$('ansN');if(a)a.textContent=answered;const n=$('plN');if(n)n.textContent=players.length;waitList()}
+}
+/* ברקוד גדול להוספת שחקן באמצע המשחק */
+function joinQR(){
+  const o=$('ov')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'ov',className:'ov'}));
+  o.onclick=e=>{if(e.target===o)o.remove()};
+  o.innerHTML=`<div class="card" style="align-items:center;text-align:center"><div style="display:flex;width:100%;align-items:center"><b style="flex:1;font-size:20px">➕ הוספת שחקן</b><button class="hb" onclick="$('ov').remove()">✕</button></div>
+    <div id="qr2" style="background:#fff;padding:12px;border-radius:16px;border:1px solid var(--bd)"></div>
+    <div class="mid" style="font-weight:800;color:var(--mut)">סורקים עם המצלמה, או נכנסים לכתובת:<br><span style="direction:ltr;unicode-bidi:isolate;display:inline-block">${esc(PLAY.replace('https://',''))}</span></div>
+    <div style="font-weight:800;color:var(--mut)">קוד משחק</div><div class="pin" style="font-size:44px;font-weight:900;letter-spacing:4px;direction:ltr">${G.pin}</div></div>`;
+  const w=Math.max(160,Math.min(380,innerWidth-110,innerHeight-400));
+  try{new QRCode($('qr2'),{text:PLAY+'?pin='+G.pin,width:w,height:w,correctLevel:QRCode.CorrectLevel.M})}catch(e){$('qr2').textContent=PLAY+'?pin='+G.pin}
 }
 /* ניהול שחקנים: שינוי שם או הוצאה מהמשחק */
 function manage(){
