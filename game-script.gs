@@ -21,7 +21,8 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-function doGet() { return out_({ ok: true, app: 'game' }); }
+const VERSION = 7; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
 
 function doPost(e) {
   let d;
