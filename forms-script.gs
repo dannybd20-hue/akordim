@@ -261,6 +261,27 @@ const HATZALAH_QUIZ = {
 
 function createHatzalahQuiz() { createQuiz_(HATZALAH_QUIZ); }
 
+/* החלפת הבוחן: מעבירה לאשפה בוחן קודם של איחוד הצלה שנוצר כאן (והגיליון שלו), ויוצרת את הגרסה העדכנית.
+   מריצים במקום createHatzalahQuiz כשכבר נוצר בוחן ישן. */
+function rebuildHatzalahQuiz() {
+  const props = PropertiesService.getScriptProperties();
+  let extra = [];
+  try { extra = JSON.parse(props.getProperty('EXTRA_FORMS') || '[]'); } catch (x) {}
+  const keep = [];
+  extra.forEach(function (u) {
+    try {
+      const f = FormApp.openByUrl(u);
+      if (f.getTitle().indexOf('איחוד הצלה') !== 0) { keep.push(u); return; }
+      try { DriveApp.getFileById(f.getDestinationId()).setTrashed(true); } catch (x) {}
+      DriveApp.getFileById(f.getId()).setTrashed(true);
+      Logger.log('הבוחן הישן הועבר לאשפה: ' + f.getTitle());
+    } catch (x) { Logger.log('דילוג על ' + u + ': ' + x); }
+  });
+  props.setProperty('EXTRA_FORMS', JSON.stringify(keep));
+  CacheService.getScriptCache().removeAll(['info_0','info_1','info_2','info_3','info_4','info_5','info_6','info_7','def_4','def_5','def_6','def_7']);
+  createQuiz_(HATZALAH_QUIZ);
+}
+
 
 
 function createQuiz_(def) {
