@@ -336,7 +336,7 @@ function showEnd(){
 /* בסוף המשחק: לשאול אם ליצור טבלה בגוגל שיטס (שם, טלפון, ומה כל אחד ענה בכל שאלה) */
 function sheetBox(){
   if(G.sheet)return `<div class="card shq" id="shq">📊 הטבלה מוכנה: <a href="${esc(G.sheet)}" target="_blank" rel="noopener">פתח בגוגל שיטס ◀</a></div>`;
-  return `<div class="card shq" id="shq"><b>📊 ליצור טבלה בגוגל שיטס?</b><div class="mid" style="margin:6px 0 10px;color:var(--mut);font-weight:700">שם, טלפון, ניקוד ומה כל שחקן ענה בכל שאלה</div><div class="btns"><button class="hb pr" onclick="mkSheet()">כן, צור טבלה</button><button class="hb" onclick="$('shq').remove()">לא תודה</button></div></div>`;
+  return `<div class="card shq" id="shq"><b>📊 ליצור טבלה בגוגל שיטס?</b><div class="mid" style="margin:6px 0 10px;color:var(--mut);font-weight:700">שם, פרייבט, ניקוד ומה כל שחקן ענה בכל שאלה</div><div class="btns"><button class="hb pr" onclick="mkSheet()">כן, צור טבלה</button><button class="hb" onclick="$('shq').remove()">לא תודה</button></div></div>`;
 }
 async function mkSheet(){
   const b=$('shq');if(!b)return;b.innerHTML='<div class="spin" style="margin:auto"></div><div class="mid">יוצר טבלה… (כמה שניות)</div>';
