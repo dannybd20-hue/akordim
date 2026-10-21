@@ -51,13 +51,14 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(239,68,68,.45));transition:opacity .3s}
 body.hot::after{opacity:1;animation:hotf 1s infinite}
 @keyframes hotf{0%,100%{opacity:.35}50%{opacity:1}}
+.snd{border:1.5px solid var(--bd);background:var(--bg);border-radius:99px;padding:3px 10px;font-size:16px;cursor:pointer;margin-inline-start:8px}
 .net{font-size:13px;font-weight:800;color:var(--no)}
 .sent{font-size:15px;font-weight:800;color:var(--ok)}
 .rank{font-size:58px;font-weight:900;line-height:1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 </style>
 </head>
 <body>
-<div class="top"><span id="tName">🎮 משחק חי</span><span class="net" id="net" hidden>📶 חיבור חלש…</span><span class="sc" id="tScore" hidden>0</span></div>
+<div class="top"><span id="tName">🎮 משחק חי</span><span class="net" id="net" hidden>📶 חיבור חלש…</span><button class="snd" id="sndB" onclick="toggleSnd()" title="צליל בלחיצה על תשובה"></button><span class="sc" id="tScore" hidden>0</span></div>
 <main id="M"></main>
 <script>
 /* מסך השחקן: נכנסים עם קוד משחק ושם, ומקבלים מהסקריפט (forms-script.gs) את מצב המשחק כל שנייה וקצת */
@@ -139,7 +140,12 @@ function draw(){
 
 /* 5 השניות האחרונות: צפצוף בכל שנייה, המספר מתנפח ורקע אדום מהבהב */
 let ac=null;
-function beep(f,d){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.18,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+/* צליל: אם הטלפון על שקט/רטט אפשר לכבות כאן. באייפון מתג השקט מנמיך לבד את הצליל */
+let snd=true;try{snd=localStorage.getItem('game_snd')!=='0'}catch(e){}
+function sndLbl(){const b=$('sndB');if(b)b.textContent=snd?'🔊':'🔇'}
+function toggleSnd(){snd=!snd;try{localStorage.setItem('game_snd',snd?'1':'0')}catch(e){}sndLbl();if(snd)pick2()}
+function pick2(){beep(660,.08);setTimeout(()=>beep(880,.1),90)}
+function beep(f,d){if(!snd)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.18,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.start();o.stop(ac.currentTime+d)}catch(e){}}
 let lastTick=-1;
 function hot(left){
   const t=$('tm');document.body.classList.toggle('hot',left>0&&left<=5);
@@ -154,6 +160,7 @@ function mine(){const c=pend?pend.c:(window._mc&&_mc.q===st.q?_mc.c:-1);return c
    הזמן נמדד בטלפון מהרגע שהשאלה הופיעה, כדי שמי שהאינטרנט שלו איטי לא יפסיד נקודות */
 async function answer(i){
   if(pend)return;
+  pick2();try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}
   const el=Date.now()-Math.max(qShown,st.qStart-off);
   pend={q:st.q,c:i,el};window._mc={q:st.q,c:i};
   M.innerHTML=`<div class="big">שולח את התשובה…</div>${mine()}<div class="mid" id="snd"></div><div class="spin"></div>`;
@@ -174,6 +181,7 @@ function backBtn(){
   M.insertAdjacentHTML('afterbegin',`<div class="box"><h1 style="font-size:20px">חזרה למשחק</h1><div class="mid">${esc(l.me)} · קוד ${l.pin}</div><button class="go" style="margin-top:10px" onclick="resumeGame()">↩ חזור למשחק שלי</button></div>`);
 }
 function resumeGame(){const l=lastGame();if(!l)return;pin=l.pin;pid=l.pid;me=l.me;try{sessionStorage.setItem('game_'+pin,JSON.stringify({pid,me}))}catch(e){}history.replaceState(null,'','?pin='+pin);start()}
+sndLbl();
 (function(){
   let s=null;try{s=JSON.parse(sessionStorage.getItem('game_'+pin))}catch(e){}
   if(pin&&s&&s.pid){pid=s.pid;me=s.me;start();return}

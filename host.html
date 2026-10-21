@@ -57,9 +57,13 @@ main{flex:1;display:flex;flex-direction:column;align-items:center;justify-conten
 .board .r span{flex:1;text-align:start}
 .title{font-size:clamp(30px,4vw,50px);font-weight:900;margin:0}
 .pod{display:flex;align-items:flex-end;gap:16px;justify-content:center}
-.pod div{width:clamp(110px,16vw,200px);background:var(--card);border:1px solid var(--bd);border-radius:18px 18px 0 0;display:flex;flex-direction:column;align-items:center;padding-top:14px;font-weight:900;font-size:clamp(16px,2vw,24px);animation:rise .8s;box-shadow:0 10px 30px rgba(30,27,75,.1)}
+.pod div{width:clamp(110px,16vw,200px);background:var(--card);border:1px solid var(--bd);border-radius:18px 18px 0 0;display:flex;flex-direction:column;align-items:center;padding-top:14px;font-weight:900;font-size:clamp(16px,2vw,24px);visibility:hidden;box-shadow:0 10px 30px rgba(30,27,75,.1)}
 .pod .p1{height:clamp(220px,32vh,320px);background:var(--grad);color:#fff;border:0}.pod .p2{height:clamp(170px,25vh,250px)}.pod .p3{height:clamp(130px,19vh,190px)}
+.pod div.in{visibility:visible;animation:rise .9s cubic-bezier(.2,1.3,.4,1)}
 .pod em{font-style:normal;font-size:2em}
+.p1.in{animation:rise .9s cubic-bezier(.2,1.3,.4,1),glow 1.4s .9s infinite alternate!important}
+@keyframes glow{from{box-shadow:0 10px 30px rgba(30,27,75,.1)}to{box-shadow:0 0 50px 8px rgba(255,190,40,.75)}}
+.later{opacity:0;transition:opacity .8s}.later.in{opacity:1}
 @keyframes rise{from{transform:translateY(60px);opacity:0}to{transform:none;opacity:1}}
 .setup{max-width:440px;width:100%}
 .setup label{display:block;font-weight:800;margin:10px 0 6px;text-align:start}
@@ -332,9 +336,29 @@ function showEnd(){
     ${t[1]?`<div class="p2"><em>🥈</em>${esc(t[1].name)}<small>${t[1].score.toLocaleString('he-IL')}</small></div>`:''}
     ${t[0]?`<div class="p1"><em>🥇</em>${esc(t[0].name)}<small>${t[0].score.toLocaleString('he-IL')}</small></div>`:''}
     ${t[2]?`<div class="p3"><em>🥉</em>${esc(t[2].name)}<small>${t[2].score.toLocaleString('he-IL')}</small></div>`:''}</div>
-    <div class="board all" style="max-width:600px">${[...players].sort((a,b)=>b.score-a.score).slice(3).map((p,i)=>`<div class="r"><i>${i+4}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>${sheetBox()}`;
-  boom();
+    <div class="later" id="later"><div class="board all" style="max-width:600px">${[...players].sort((a,b)=>b.score-a.score).slice(3).map((p,i)=>`<div class="r"><i>${i+4}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>${sheetBox()}</div>`;
+  /* חשיפה הדרגתית: מקום שלישי, אחר כך שני, ובסוף ראשון עם זיקוקים */
+  const order=[['.p3',t[2]],['.p2',t[1]],['.p1',t[0]]].filter(x=>x[1]);
+  order.forEach(([sel],i)=>setTimeout(()=>{
+    if(shown!=='end')return;const e=M.querySelector(sel);if(!e)return;e.classList.add('in');
+    if(sel==='.p1'){fanfare();fireworks(9000);setTimeout(()=>{const l=$('later');if(l)l.classList.add('in')},2500)}
+    else{beep(sel==='.p3'?330:440,.35);if(window.confetti)confetti({particleCount:40,spread:60,origin:{y:.7}})}
+  },1800+i*3200));
+  if(!order.length)$('later').classList.add('in');
 }
+/* זיקוקים: פיצוצים צבעוניים בנקודות אקראיות על המסך, עם בום קטן */
+function fireworks(ms){
+  const end=Date.now()+ms,cols=['#ff4d4d','#ffb020','#ffe14d','#3ddc84','#34c3ff','#8b6cff','#ff5fb3','#ffffff'];
+  (function f(){
+    if(shown!=='end'||Date.now()>end||!window.confetti)return;
+    const c=[cols[Math.floor(Math.random()*cols.length)],cols[Math.floor(Math.random()*cols.length)]];
+    confetti({particleCount:70+Math.floor(Math.random()*50),startVelocity:32+Math.random()*14,spread:360,ticks:70,gravity:.85,decay:.92,scalar:.9,colors:c,origin:{x:.1+Math.random()*.8,y:.1+Math.random()*.45}});
+    boomSnd();
+    setTimeout(f,260+Math.random()*340);
+  })();
+}
+function boomSnd(){beep(90+Math.random()*60,.25)}
+function fanfare(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.4),i*140))}
 /* בסוף המשחק: לשאול אם ליצור טבלה בגוגל שיטס (שם, טלפון, ומה כל אחד ענה בכל שאלה) */
 function sheetBox(){
   if(G.sheet)return `<div class="card shq" id="shq">📊 הטבלה מוכנה: <a href="${esc(G.sheet)}" target="_blank" rel="noopener">פתח בגוגל שיטס ◀</a></div>`;
