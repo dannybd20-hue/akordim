@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>משחק חי</title>
+<meta property="og:title" content="🎮 משחק חי – הצטרפו!">
+<meta property="og:description" content="נכנסים עם קוד המשחק ומשחקים מהטלפון">
+<meta property="og:image" content="https://dannybd20-hue.github.io/akordim/brand/og/game.png">
+<meta name="theme-color" content="#46178f">
+<link rel="icon" href="icons/apps-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@500;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#46178f;--bg2:#381272;--card:#fff;--tx:#1f1440;--acc:#ffd23f}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;background:var(--bg);background-image:radial-gradient(circle at 20% 10%,#5b25b0 0,transparent 45%),radial-gradient(circle at 90% 90%,#2c0d5e 0,transparent 50%);color:#fff;font-family:Heebo,sans-serif;display:flex;flex-direction:column;min-height:100vh}
+body.uh{--bg:#f26a21;--bg2:#d4561a;background-image:radial-gradient(circle at 20% 10%,#ff8a3d 0,transparent 45%)}
+button,input{font:inherit}
+.top{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;font-weight:800;font-size:15px;background:rgba(0,0,0,.15)}
+.top .sc{background:#fff;color:var(--tx);border-radius:99px;padding:4px 12px;font-weight:900}
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 16px;text-align:center;gap:14px}
+.box{background:var(--card);color:var(--tx);border-radius:16px;padding:22px 18px;width:100%;max-width:380px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.box h1{margin:0 0 14px;font-size:26px;font-weight:900}
+.fld{width:100%;border:2px solid #d9d4e6;border-radius:10px;padding:14px;font-size:22px;font-weight:800;text-align:center;margin-bottom:10px;outline:none}
+.fld:focus{border-color:var(--bg)}
+.go{width:100%;border:0;border-radius:10px;padding:14px;font-size:20px;font-weight:900;background:#333;color:#fff;cursor:pointer}
+.go:active{transform:scale(.98)}
+.err{color:#e21b3c;font-weight:800;min-height:22px;margin:4px 0 0}
+.big{font-size:30px;font-weight:900;line-height:1.25}
+.mid{font-size:18px;font-weight:700;opacity:.92}
+.spin{width:44px;height:44px;border:5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.qt{font-size:19px;font-weight:800;max-width:520px;line-height:1.35}
+.ans{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:560px;flex:1;max-height:520px}
+.ans button{border:0;border-radius:10px;color:#fff;font-size:16px;font-weight:800;padding:14px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;box-shadow:0 5px 0 rgba(0,0,0,.25);cursor:pointer;min-height:110px}
+.ans button:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.ans .s{font-size:38px;line-height:1}
+.c0{background:#e21b3c}.c1{background:#1368ce}.c2{background:#d89e00}.c3{background:#26890c}
+.timer{font-size:15px;font-weight:900;background:rgba(0,0,0,.25);border-radius:99px;padding:4px 14px}
+.res{width:100%;max-width:380px;border-radius:16px;padding:28px 18px}
+.res.ok{background:#26890c}.res.no{background:#e21b3c}
+.res .ic{font-size:64px;line-height:1}
+.pts{display:inline-block;background:rgba(0,0,0,.25);border-radius:10px;padding:6px 16px;font-size:22px;font-weight:900;margin-top:10px}
+.rank{font-size:56px;font-weight:900;line-height:1}
+</style>
+</head>
+<body>
+<div class="top"><span id="tName">🎮 משחק חי</span><span class="sc" id="tScore" hidden>0</span></div>
+<main id="M"></main>
+<script>
+/* מסך השחקן: נכנסים עם קוד משחק ושם, ומקבלים מהסקריפט (forms-script.gs) את מצב המשחק כל שנייה וקצת */
+const CLOUD='https://script.google.com/macros/s/AKfycbyTsKgVGx8IzuMeCy2_LAZPruXPFpbPPApRP0EKfSeUOlJflz8_xtzXwiXsz2wXoiXA/exec';
+const $=id=>document.getElementById(id),M=$('M');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const SH=['▲','◆','●','■'];
+let pin=new URLSearchParams(location.search).get('pin')||'',pid='',me='',st=null,timer=0,shown='',off=0,busy=false;
+const ss=(k,v)=>{try{v===undefined?0:sessionStorage.setItem(k,v);return sessionStorage.getItem(k)}catch(e){return null}};
+function api(o){return fetch(CLOUD,{method:'POST',body:JSON.stringify(o)}).then(r=>r.json())}
+
+function joinView(msg){
+  M.innerHTML=`<div class="box"><h1>🎮 הצטרפות למשחק</h1>
+    <input class="fld" id="pin" inputmode="numeric" maxlength="6" placeholder="קוד משחק" value="${esc(pin)}">
+    <input class="fld" id="nm" maxlength="20" placeholder="השם שלך" value="${esc(localStorage.getItem('game_name')||'')}">
+    <button class="go" id="jb" onclick="join()">כניסה ←</button><p class="err" id="er">${esc(msg||'')}</p></div>`;
+  (pin?$('nm'):$('pin')).focus();
+  $('nm').onkeyup=e=>{if(e.key==='Enter')join()};
+}
+async function join(){
+  const p=$('pin').value.replace(/\D/g,''),n=$('nm').value.trim();
+  if(p.length!==6){$('er').textContent='קוד המשחק הוא 6 ספרות';return}
+  if(!n){$('er').textContent='נא לכתוב שם';return}
+  $('jb').disabled=true;$('jb').textContent='נכנס…';
+  try{
+    const r=await api({action:'g_join',pin:p,name:n});
+    if(!r.ok){$('er').textContent=r.error==='nogame'?'לא נמצא משחק עם הקוד הזה':r.error;$('jb').disabled=false;$('jb').textContent='כניסה ←';return}
+    pin=p;pid=r.pid;me=r.name;try{localStorage.setItem('game_name',n);sessionStorage.setItem('game_'+pin,JSON.stringify({pid,me}))}catch(e){}
+    history.replaceState(null,'','?pin='+pin);start();
+  }catch(e){$('er').textContent='אין חיבור לאינטרנט';$('jb').disabled=false;$('jb').textContent='כניסה ←'}
+}
+function start(){$('tName').textContent='👤 '+me;$('tScore').hidden=false;wait('אתה בפנים! 🎉','מחכים שהמשחק יתחיל…');poll();setInterval(poll,1200)}
+async function poll(){
+  if(busy)return;busy=true;
+  try{const r=await api({action:'g_state',pin,pid});if(r.ok){off=r.now-Date.now();st=r;draw()}else if(r.error==='nogame')wait('המשחק הסתיים','אפשר לסגור את הדף')}catch(e){}
+  busy=false;
+}
+function wait(a,b){shown='';M.innerHTML=`<div class="big">${a}</div><div class="mid">${b}</div><div class="spin"></div>`}
+function draw(){
+  $('tScore').textContent=st.score.toLocaleString('he-IL');
+  if(/uh|הצלה/.test(st.title||''))document.body.classList.add('uh');
+  const key=st.phase+':'+st.q+':'+(st.answered?1:0);
+  if(st.phase==='lobby'){if(shown!=='lobby'){shown='lobby';M.innerHTML=`<div class="big">אתה בפנים! 🎉</div><div class="mid">רואים את השם שלך על המסך?<br>מחכים שהמשחק יתחיל…</div><div class="spin"></div>`}return}
+  if(st.phase==='question'){
+    if(st.answered){if(shown!==key){shown=key;M.innerHTML=`<div class="big">התשובה נשלחה ⏳</div><div class="mid">מחכים לשאר השחקנים…</div><div class="spin"></div>`}return}
+    if(shown!==key){shown=key;
+      M.innerHTML=`<span class="timer" id="tm"></span><div class="qt">${esc(st.text)}</div><div class="ans">${st.ch.map((c,i)=>`<button class="c${i}" onclick="answer(${i})"><span class="s">${SH[i]}</span>${esc(c)}</button>`).join('')}</div>`;
+      clearInterval(timer);timer=setInterval(tick,250);tick()}
+    return;
+  }
+  clearInterval(timer);
+  if(shown===key)return;shown=key;
+  const L=st.last||{none:true};
+  if(st.phase==='reveal'){
+    M.innerHTML=L.none?`<div class="res no"><div class="ic">⌛</div><div class="big">לא ענית בזמן</div></div>`:
+      `<div class="res ${L.ok?'ok':'no'}"><div class="ic">${L.ok?'✓':'✗'}</div><div class="big">${L.ok?'נכון!':'לא נכון'}</div><div class="pts">+${L.p}</div></div>`;
+    M.innerHTML+=`<div class="mid">אתה במקום <b>${st.rank}</b> מתוך ${st.players}</div>`;
+  }else if(st.phase==='leader'){M.innerHTML=`<div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות</div><div class="mid">מחכים לשאלה הבאה…</div>`}
+  else if(st.phase==='end'){M.innerHTML=`<div class="big">${st.rank===1?'🏆 ניצחת!':st.rank<=3?'🥈 על הפודיום!':'סוף המשחק'}</div><div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות · מתוך ${st.players} שחקנים</div>`}
+}
+function tick(){const left=Math.max(0,Math.ceil((st.qStart+st.dur*1000-(Date.now()+off))/1000));const t=$('tm');if(t)t.textContent='⏱ '+left;if(!left)clearInterval(timer)}
+async function answer(i){
+  M.querySelectorAll('.ans button').forEach((b,j)=>{b.disabled=true;if(j!==i)b.style.opacity=.35});
+  try{const r=await api({action:'g_answer',pin,pid,c:i});st.answered=true;shown='';
+    if(!r.ok&&r.error==='late'){M.innerHTML=`<div class="big">הזמן נגמר ⌛</div><div class="spin"></div>`;shown=st.phase+':'+st.q+':1'}else draw()}
+  catch(e){M.querySelectorAll('.ans button').forEach(b=>{b.disabled=false;b.style.opacity=1})}
+}
+(function(){
+  let s=null;try{s=JSON.parse(sessionStorage.getItem('game_'+pin))}catch(e){}
+  if(pin&&s&&s.pid){pid=s.pid;me=s.me;start()}else joinView();
+})();
+</script>
+</body>
+</html>
