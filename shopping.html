@@ -262,7 +262,7 @@ function addName(name,src,qty){
 }
 /* ---------- הודעה בוואטסאפ: נפתח וואטסאפ עם הודעה מוכנה, ונשאר רק ללחוץ "שלח" ----------
    אם נשמר מספר של בן המשפחה, ההודעה נפתחת ישר אליו; אחרת וואטסאפ מבקש לבחור איש קשר או קבוצה. */
-const SHOP_LINK='https://dannybd20-hue.github.io/akordim/?open=shopping';
+const SHOP_LINK='https://dannybd20-hue.github.io/akordim/go/shopping.html';
 function waNums(){try{return JSON.parse(localStorage.getItem('shop_wa'))||{}}catch(e){return{}}}
 function waPhone(){const p=String(waNums()[other()]||'').replace(/\D/g,'');return p.startsWith('0')?'972'+p.slice(1):p}
 function waOpen(list){

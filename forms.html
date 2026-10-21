@@ -143,6 +143,37 @@ textarea.fld{min-height:110px;resize:vertical;line-height:1.5}
 .toast.on{opacity:1}
 .spin{display:inline-block;width:18px;height:18px;border:3px solid #e2e8f0;border-top-color:var(--pr);border-radius:50%;animation:sp 1s linear infinite;vertical-align:middle}
 @keyframes sp{to{transform:rotate(360deg)}}
+/* תמונה בשאלה וסיכום בוחן */
+.qimg{display:block;width:100%;max-height:300px;object-fit:contain;border-radius:14px;margin:-4px 0 14px;background:var(--in)}
+.score{display:flex;flex-direction:column;align-items:center;gap:4px;margin:14px 0 6px}
+.score b{font:900 44px Rubik,Heebo;color:var(--pr)}.score span{font-weight:800}
+.review{text-align:start;margin-top:14px;display:grid;gap:8px}
+.rv{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--bd);border-radius:12px;padding:10px 12px}
+.rv i{font-style:normal;font-weight:900;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
+.rv.ok i{background:var(--ok)}.rv.no i{background:var(--err)}
+.rv b{display:block;font-size:14px}.rv small{display:block;color:var(--ok);font-weight:700;margin-top:3px}
+/* ---------- עיצוב איחוד הצלה: לבן, כתום וגופן שחור כבד ---------- */
+body.th-uh{--bg:#ffffff;--tx:#231f20;--mut:#6b6466;--bd:#ece7e3;--pr:#f26a21;--pr2:#ff8a3d;--hot:#f26a21;--pl:rgba(242,106,33,.09);--in:#fbf9f7;--ok:#16a34a;
+  --grad:linear-gradient(90deg,#f26a21,#ff8a3d);background-image:none}
+body.th-uh header{background:#fff;border-bottom:4px solid #f26a21}
+body.th-uh header h1{font-weight:900}
+body.th-uh .lg{background:none;box-shadow:none;width:auto}
+body.th-uh .lg img{height:34px;display:block}
+body.th-uh .hero{background:#fff;border:2px solid #f26a21;text-align:center;border-radius:16px;box-shadow:0 10px 28px rgba(242,106,33,.12)}
+body.th-uh .hero::after{display:none}
+body.th-uh .hero img{width:min(300px,80%);display:block;margin:0 auto 12px}
+body.th-uh .ftitle{font-weight:900;color:#231f20}
+body.th-uh .hero .meta{justify-content:center}
+body.th-uh .q{border-radius:14px;border-inline-start:5px solid #f26a21}
+body.th-uh .qn{background:#231f20;color:#fff;border:0;border-radius:8px}
+body.th-uh .q.okq .qn{background:#f26a21}
+body.th-uh .q h3{font-weight:900;font-size:18px}
+body.th-uh .btn{border-radius:10px;color:#fff;box-shadow:0 6px 18px rgba(242,106,33,.3)}
+body.th-uh .btn.sec{color:#231f20;border-color:#231f20;box-shadow:none}
+body.th-uh .sbar{border-top:3px solid #f26a21}
+body.th-uh .done .big{box-shadow:0 12px 34px rgba(242,106,33,.4)}
+.fc.uh{border:2px solid #f26a21}.fc.uh::before{background:#f26a21}.fc.uh::after{display:none}
+.fc.uh img{height:52px;align-self:flex-start}
 /* ---------- עיצוב יט״ר ישראל (טופס 4): כחול-נייבי, אדום, לוגו הכנפיים ---------- */
 body.th-yatar{--bg:#f3f3f7;--tx:#1b1a36;--mut:#5f5e78;--bd:#e3e2ec;--pr:#a32022;--pr2:#c42a2d;--hot:#a32022;--pl:rgba(163,32,34,.08);--in:#fafafc;
   --grad:linear-gradient(90deg,#a32022,#c42a2d);background-image:none}
@@ -251,18 +282,25 @@ async function doLogin(){
 }
 
 /* עיצוב מיוחד לטופס לפי המיקום שלו ברשימה (0 = הראשון) */
-const THEMES={3:{cls:'th-yatar',logo:'brand/yatar-logo.png'}};
+const THEMES={3:{key:'yatar',cls:'th-yatar',logo:'brand/yatar-logo.png'}};
 /* טפסים שיש להם דף שיתוף משלו (שם ותמונה בתצוגה המקדימה של וואטסאפ) */
-const SHARE={3:'f4.html'};
-function theme(id){const t=THEMES[id];document.body.className=t?t.cls:'';$('lgx').innerHTML=t?`<img src="${t.logo}" alt="">`:'📝'}
+const SHARE={};
+/* עיצוב לפי שם הטופס, כך שטופס חדש של הארגון מקבל את העיצוב בלי לדעת את המיקום שלו */
+const THEME_BY_TITLE=[{re:/איחוד הצלה|united hatzalah/i,key:'hatzalah',cls:'th-uh',card:'uh',logo:'brand/uh-logo.png'}];
+function th(id){if(THEMES[id])return THEMES[id];const f=forms.find(x=>x.id===id)||defs[id];return f?THEME_BY_TITLE.find(t=>t.re.test(f.title||''))||null:null}
+const isQ=q=>q.type!=='section'&&q.type!=='image';
+function theme(id){const t=th(id);document.body.className=t?t.cls:'';$('lgx').innerHTML=t?`<img src="${t.logo}" alt="">`:'📝'}
 /* ---------- קישור ישיר לטופס: ‎forms.html?f=2‎ פותח ישר את הטופס השני ---------- */
 const SITE='https://dannybd20-hue.github.io/akordim/';
 function landing(){
-  const f=+new URLSearchParams(location.search).get('f');
-  if(f&&forms.some(x=>x.id===f-1&&!x.error))openForm(f-1);else showList();
+  const P=new URLSearchParams(location.search),f=+P.get('f'),k=P.get('k');
+  if(f&&forms.some(x=>x.id===f-1&&!x.error))return openForm(f-1);
+  const byKey=k&&forms.find(x=>!x.error&&th(x.id)&&th(x.id).key===k);
+  if(byKey)return openForm(byKey.id);
+  showList();
 }
 function copyLink(id){
-  const u=SHARE[id]?SITE+SHARE[id]:SITE+'?open=forms&f='+(id+1);
+  const t=th(id),u=SHARE[id]?SITE+SHARE[id]:t&&t.key?SITE+'go/'+t.key+'.html':SITE+'go/forms.html?f='+(id+1);
   (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('🔗 הקישור הועתק'),()=>prompt('העתק את הקישור:',u));
 }
 /* ---------- רשימת הטפסים ---------- */
@@ -270,8 +308,8 @@ function showList(){
   stopPoll();cur=null;view='list';theme(null);$('htitle').textContent='טפסים';history.replaceState(null,'',location.pathname);
   if(!forms.length){M.innerHTML='<div class="card muted">אין עדיין טפסים. מוסיפים קישורים ברשימת FORMS בסקריפט.</div>';return}
   M.innerHTML=`<p class="kick">${admin?'👑 מצב מנהל':'בחר טופס'}</p><h2 class="ptitle">הטפסים <span>שלך</span></h2><div class="flist">`+forms.map((f,i)=>`
-    <div class="fc${THEMES[f.id]?' yatar':''}" onclick="${f.error?'':`openForm(${f.id})`}">
-      ${THEMES[f.id]?`<img src="${THEMES[f.id].logo}" alt="">`:`<span class="num">${String(i+1).padStart(2,'0')}</span>`}<b>${esc(f.title)}</b>${f.description?`<p>${esc(f.description)}</p>`:''}
+    <div class="fc${th(f.id)?' '+(th(f.id).card||'yatar'):''}" onclick="${f.error?'':`openForm(${f.id})`}">
+      ${th(f.id)?`<img src="${th(f.id).logo}" alt="">`:`<span class="num">${String(i+1).padStart(2,'0')}</span>`}<b>${esc(f.title)}</b>${f.description?`<p>${esc(f.description)}</p>`:''}
       <div class="row">${f.error?`<span class="chip off">${esc(f.error)}</span>`:f.open?'<span class="chip">פתוח למילוי</span>':'<span class="chip off">סגור</span>'}
       ${admin&&!f.error?`<span class="chip hot">📨 ${f.count} תשובות</span><span class="acts"><button class="btn sm sec" onclick="event.stopPropagation();copyLink(${f.id})" title="קישור ישיר לטופס הזה">🔗 קישור</button><button class="btn sm sec" onclick="event.stopPropagation();openResults(${f.id})">📊 תוצאות</button></span>`:''}</div>
     </div>`).join('')+'</div>';
@@ -292,12 +330,14 @@ async function openForm(id){
   let f;try{f=await getDef(id)}catch(e){M.innerHTML=`<div class="card err">${esc(errText(e))}</div>`;return}
   cur=id;answers={};view='form';theme(id);$('htitle').textContent=f.title;
   if(!f.open){M.innerHTML=`<div class="card"><h2 class="ftitle">${esc(f.title)}</h2><p class="err">הטופס סגור לתשובות כרגע.</p><button class="btn sec" onclick="showList()">חזרה</button></div>`;return}
-  const qs=f.items.filter(q=>q.type!=='section');let n=0;
-  let h=`<div class="hero">${THEMES[id]?`<img src="${THEMES[id].logo}" alt="">`:''}<h2 class="ftitle">${esc(f.title)}</h2>${f.description?`<p class="fdesc">${esc(f.description)}</p>`:''}
+  const qs=f.items.filter(isQ);let n=0,pimg='';
+  let h=`<div class="hero">${th(id)?`<img src="${th(id).logo}" alt="">`:''}<h2 class="ftitle">${esc(f.title)}</h2>${f.description?`<p class="fdesc">${esc(f.description)}</p>`:''}
     <div class="meta"><span class="chip">${qs.length} שאלות</span>${qs.some(q=>q.required)?'<span class="chip hot">* שאלת חובה</span>':''}</div></div>`;
   f.items.forEach(q=>{
     if(q.type==='section'){h+=`<div class="qsec">${esc(q.title)}</div>${q.help?`<p class="help muted">${esc(q.help)}</p>`:''}`;return}
-    h+=`<div class="q" id="q${q.id}"><div class="qh"><span class="qn">${++n}</span><div><h3>${esc(q.title)}${q.required?' <span class="req">*</span>':''}</h3>${q.help?`<p class="help">${esc(q.help)}</p>`:''}</div></div>${field(q)}</div>`;
+    /* תמונה בטופס מוצגת בתוך כרטיס השאלה שאחריה */
+    if(q.type==='image'){pimg=`<img class="qimg" src="${q.src}" alt="${esc(q.title||'')}">`;return}
+    h+=`<div class="q" id="q${q.id}">${pimg}<div class="qh"><span class="qn">${++n}</span><div><h3>${esc(q.title)}${q.required?' <span class="req">*</span>':''}</h3>${q.help?`<p class="help">${esc(q.help)}</p>`:''}</div></div>${field(q)}</div>`;pimg='';
   });
   h+=`<p class="err" id="ferr"></p><button class="btn sec sm" onclick="showList()">ביטול</button>
     <div class="sbar"><div class="in"><div class="prog"><div class="t"><span id="pt">0 מתוך ${qs.length} נענו</span><span id="pp">0%</span></div><div class="b"><i id="pb"></i></div></div><button class="btn" id="send" onclick="send()">שליחה ←</button></div></div>`;
@@ -323,7 +363,7 @@ function field(q){
 function setA(id,v){answers[id]=v;const e=$('q'+id);e.classList.remove('bad');e.classList.toggle('okq',!empty(v));prog()}
 /* פס ההתקדמות: כמה שאלות כבר נענו */
 function prog(){
-  const qs=defs[cur].items.filter(q=>q.type!=='section'),a=qs.filter(q=>!empty(answers[q.id])).length,p=qs.length?Math.round(a*100/qs.length):0;
+  const qs=defs[cur].items.filter(isQ),a=qs.filter(q=>!empty(answers[q.id])).length,p=qs.length?Math.round(a*100/qs.length):0;
   if($('pb')){$('pb').style.width=p+'%';$('pt').textContent=a+' מתוך '+qs.length+' נענו';$('pp').textContent=p+'%'}
 }
 function otherVal(id){return ($('o'+id)||{}).value||''}
@@ -337,7 +377,7 @@ function setGrid(id){
 function empty(v){return v==null||v===''||(Array.isArray(v)&&(!v.length||v.every(x=>x==null)))}
 async function send(){
   const f=defs[cur];let bad=null;
-  f.items.forEach(q=>{if(q.type==='section')return;const v=answers[q.id];
+  f.items.forEach(q=>{if(!isQ(q))return;const v=answers[q.id];
     const miss=!!q.required&&(empty(v)||((q.type==='grid'||q.type==='cgrid')&&v.some(x=>x==null)));
     $('q'+q.id).classList.toggle('bad',miss);if(miss&&!bad)bad=q});
   if(bad){$('ferr').textContent='יש למלא את כל שאלות החובה';$('q'+bad.id).scrollIntoView({behavior:'smooth',block:'center'});return}
@@ -345,7 +385,12 @@ async function send(){
   try{
     const r=await api({action:'submit',id:cur,answers});
     if(!r.ok){$('ferr').textContent=errText(r.error);$('send').disabled=false;$('send').textContent='שליחה';return}
-    view='done';M.innerHTML=`<div class="card done"><div class="big">✓</div><h2 class="ftitle">תודה! התשובה נשלחה</h2><p class="muted">${esc(f.title)}</p>
+    /* בוחן: ציון ופירוט נכון/לא נכון לכל שאלה */
+    let qz='';
+    if(r.quiz&&r.quiz.total){const z=r.quiz,pc=Math.round(z.score*100/z.total);
+      qz=`<div class="score"><b>${z.score}/${z.total}</b><span>${pc>=80?'כל הכבוד! 🏆':pc>=50?'יפה, אפשר עוד קצת 💪':'כדאי לעבור שוב על החומר 📚'}</span></div><div class="review">`+
+        z.items.map(it=>{const q=f.items.find(x=>x.id===it.id);return `<div class="rv ${it.ok?'ok':'no'}"><i>${it.ok?'✓':'✗'}</i><div><b>${esc(q?q.title:'')}</b>${it.ok?'':`<small>התשובה הנכונה: ${esc(it.right.join(', '))}</small>`}</div></div>`}).join('')+'</div>'}
+    view='done';M.innerHTML=`<div class="card done"><div class="big">✓</div><h2 class="ftitle">${qz?'הבוחן נשלח!':'תודה! התשובה נשלחה'}</h2><p class="muted">${esc(f.title)}</p>${qz}
       <div class="actions" style="justify-content:center"><button class="btn sec" onclick="openForm(${cur})">מילוי נוסף</button><button class="btn" onclick="showList()">לכל הטפסים</button></div></div>`;
     const x=forms.find(x=>x.id===cur);if(x&&x.count!=null)x.count++;
   }catch(e){$('ferr').textContent='אין חיבור לאינטרנט. התשובה לא נשלחה, נסה שוב.';$('send').disabled=false;$('send').textContent='שליחה'}
@@ -379,7 +424,7 @@ function drawRes(oldCount){
   if(rtab==='list'){
     box.innerHTML=`<p class="muted">${res.length} תשובות · החדשות למעלה</p>`+res.map((r,i)=>({r,i})).reverse().map(({r,i})=>`
       <div class="resp${i>=newFrom?' new':''}"><div class="when">🕒 ${when(r.t)}${r.email?' · '+esc(r.email):''}</div><dl>`+
-      f.items.filter(q=>q.type!=='section').map(q=>`<dt>${esc(q.title)}</dt><dd>${fmtAns(q,r.a[q.id])}</dd>`).join('')+`</dl></div>`).join('');
+      f.items.filter(isQ).map(q=>`<dt>${esc(q.title)}</dt><dd>${fmtAns(q,r.a[q.id])}</dd>`).join('')+`</dl></div>`).join('');
     return;
   }
   const day=Date.now()-864e5,today=res.filter(r=>r.t>=day).length;
@@ -387,7 +432,7 @@ function drawRes(oldCount){
     <div class="kpi"><div class="v">${today}</div><div class="l">ב-24 השעות האחרונות</div></div>
     <div class="kpi"><div class="v sm">${when(res[res.length-1].t)}</div><div class="l">התשובה האחרונה</div></div></div>`;
   f.items.forEach(q=>{
-    if(q.type==='section')return;
+    if(!isQ(q))return;
     const vals=res.map(r=>r.a[q.id]).filter(v=>v!=null&&v!==''&&!(Array.isArray(v)&&!v.length));
     h+=`<div class="card"><h3 style="margin:0 0 2px;font-size:16px">${esc(q.title)}</h3><p class="stat">${vals.length} ענו</p>`;
     if(['radio','checkbox','select','scale'].includes(q.type)){
