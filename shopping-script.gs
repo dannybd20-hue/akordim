@@ -86,6 +86,16 @@ function notify_(entries, from, title) {
   } catch (x) { console.warn('whatsapp: ' + x); }
 }
 
+/* סימנו "נקנה": הודעה אחת לקבוצה על כל מה שנקנה (גם בלי סימון "שלח בוואטסאפ") */
+function notifyBought_(items, from) {
+  if (!items || !items.length || !waOn_()) return;
+  try {
+    const verb = FEMALE.indexOf(from) >= 0 ? 'קנתה' : 'קנה';
+    const head = from ? '✅ ' + from + ' ' + verb + ':' : '✅ נקנה:';
+    waSend_('🛒 *קניות לבית*\n' + head + '\n' + items.map(function (e) { return '• ' + e.n + (e.q ? ' (' + e.q + ')' : ''); }).join('\n'));
+  } catch (x) { console.warn('whatsapp bought: ' + x); }
+}
+
 // מריצים מהעורך: מציג ביומן את כל הקבוצות של המספר המחובר, עם המזהה (id) שצריך להדביק ב-GREEN_CHAT
 function whatsappGroups() {
   const p = PropertiesService.getScriptProperties();
@@ -161,17 +171,19 @@ function doPost(e) {
   passed_('shop');
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
-  const lines = [];
+  const lines = [], bought = [];
   let st;
   try {
     const l = load_(), now = Date.now();
     st = l.st;
     let changed = false;
     (d.ops || []).forEach(function (o) {
+      const bi = o.type === 'bought' ? shopFind(st.items, o.iid) : -1, bItem = bi >= 0 ? { n: st.items[bi].name, q: st.items[bi].qty } : null;
       const pending = o.type === 'notify' ? shopPending(st).map(function (x) { return { n: x.name, q: x.qty, k: x.src === 'pantry' ? 'pantry' : 'add' }; }) : [];
       const before = st.items.length;
       if (!shopApply(st, o, now)) return;
       changed = true;
+      if (bItem) bought.push(bItem); // נקנה: נשלחת הודעה לקבוצה
       if (o.type === 'add' && o.notify && st.items.length > before) {
         lines.push({ n: o.name, q: o.qty, k: o.src === 'pantry' ? 'pantry' : 'add' });
       }
@@ -183,6 +195,7 @@ function doPost(e) {
     lock.releaseLock();
   }
   notify_(lines, d.by);
+  notifyBought_(bought, d.by);
   return out_(d.rev === st.rev ? { ok: true, rev: st.rev, wa: waOn_() } : { ok: true, rev: st.rev, state: st, wa: waOn_() });
 }
 
