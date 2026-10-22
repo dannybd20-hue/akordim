@@ -9,6 +9,7 @@
 <meta property="og:image" content="https://dannybd20-hue.github.io/akordim/brand/og/game.png">
 <meta name="theme-color" content="#f4f5fb">
 <link rel="icon" href="icons/apps-192.png">
+<script src="cert.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.3/confetti.browser.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@500;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -169,7 +170,7 @@ function zoomImg(src){const z=document.createElement('div');z.className='zoom';z
 function rtUrl(code){return new URL('retake.html?c='+code,location.href).href}
 function examBlock(){
   const e=st.exam;if(!e)return '';
-  if(e.pass)return `<div class="res ok"><div class="ic">✓</div><div class="big">עברת את המבחן!</div><div class="pts">${e.c} נכונות מתוך ${e.n}</div></div>`;
+  if(e.pass)return `<div class="res ok"><div class="ic">✓</div><div class="big">עברת את המבחן!</div><div class="pts">${e.c} נכונות מתוך ${e.n}</div></div><button class="go" style="max-width:380px;background:#fff;color:var(--pr);border:2px solid var(--pr);box-shadow:none" onclick="dbdCert({name:me,title:st.title,score:'${e.c} תשובות נכונות מתוך ${e.n}',id:pin+'-'+pid})">🎓 תעודת עובר</button>`;
   return `<div class="res no"><div class="ic">✗</div><div class="big">לא עברת הפעם</div><div class="pts">${e.c} נכונות מתוך ${e.n}</div><div style="margin-top:8px;font-weight:700">צריך לפחות ${e.need} נכונות</div></div>`+
     (e.retake?(e.code?regHtml(e.code):`<div class="box" id="rtb"><b>רוצה לנסות שוב?</b><div class="mid" style="margin:6px 0 10px">בחינה חוזרת של 10 שאלות אחרות</div><button class="go" onclick="regRetake()">📝 אני רוצה לבצע בחינה חוזרת</button><p class="err" id="rter"></p></div>`):'');
 }

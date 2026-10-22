@@ -23,7 +23,7 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 16; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 17; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
 function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
 
 function doPost(e) {
@@ -426,8 +426,87 @@ function gnext_(pin, d, now, pids) {
     try { const rr = examRecord_(g, pin, gget_('gp:' + pin) || {}); g.examDone = true; g.examPass = rr.pass; g.examFail = rr.fail; g.examUrl = rr.url; g.examErr = ''; }
     catch (x) { g.examErr = String(x && x.message || x).slice(0, 140); }
   }
+  if (g.phase === 'end' && !g.endDone) { // סוף המשחק: שאלות קשות + הודעת סיכום לקבוצת הוואטסאפ (אם חוברה)
+    g.endDone = true;
+    try {
+      const pl2 = gget_('gp:' + pin) || {}, hq = hardQs_(g, pin, pl2, def);
+      g.hard = hq.slice(0, 5).filter(function (x) { return x.wp > 0; });
+      if (g.examUrl) { try { examHardRows_(g, pin, hq); } catch (x) {} }
+      if (waOn_()) g.waSent = !!waSend_(podiumText_(g, pl2));
+    } catch (x) { g.endErr = String(x && x.message || x).slice(0, 120); }
+  }
   gput_('g:' + pin, g);
   return { ok: true, now: now, game: g };
+}
+
+/* שאלות קשות: לכל שאלה שנשאלה, כמה אחוז מהשחקנים לא ענו נכון (כולל מי שלא ענה). ממוין מהקשה לקלה */
+function hardQs_(g, pin, pl, def) {
+  const N = Object.keys(pl).length, out = [];
+  if (N < 3) return out;
+  for (let i = 0; i < g.n; i++) {
+    const rec = gget_('gr:' + pin + ':' + i);
+    if (!rec) continue;
+    let ok = 0;
+    Object.keys(pl).forEach(function (p) { if (rec[p] && rec[p][0] === def.qs[i].right) ok++; });
+    out.push({ n: i + 1, t: def.qs[i].t, N: N, ok: ok, wp: Math.round(100 * (N - ok) / N) });
+  }
+  return out.sort(function (a, b) { return b.wp - a.wp || a.n - b.n; });
+}
+/* מוסיף לטבלת המבחנים הקבועה גיליון "שאלות קשות" שמצטבר מכל המשחקים */
+function examHardRows_(g, pin, hq) {
+  if (!hq.length) return;
+  const ss = examSheet_();
+  let sh = ss.getSheetByName('שאלות קשות');
+  if (!sh) {
+    sh = ss.insertSheet('שאלות קשות'); sh.setRightToLeft(true);
+    sh.getRange(1, 1, 1, 7).setValues([['תאריך', 'משחק', 'שאלה #', 'שאלה', 'משתתפים', 'ענו נכון', '% שלא ענו נכון']]).setFontWeight('bold').setBackground('#4f46e5').setFontColor('#ffffff');
+    sh.setFrozenRows(1); sh.setColumnWidth(4, 420);
+  }
+  const date = Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd.MM.yyyy HH:mm');
+  sh.getRange(sh.getLastRow() + 1, 1, hq.length, 7).setValues(hq.map(function (x) { return [date, g.title, x.n, x.t, x.N, x.ok, x.wp]; }));
+}
+/* הודעת סיכום לקבוצה: הפודיום, כמה עברו, והשאלה הכי קשה (בלי שמות של מי שנכשל) */
+function podiumText_(g, pl) {
+  const order = Object.keys(pl).sort(function (x, y) { return (g.scores[y] || 0) - (g.scores[x] || 0); });
+  const medals = ['🥇', '🥈', '🥉'];
+  const top = order.slice(0, 3).map(function (p, i) { return medals[i] + ' ' + pl[p] + ' (' + (g.scores[p] || 0).toLocaleString() + ')'; });
+  let t = '🏆 *' + g.title + '*\nתוצאות המשחק:\n' + top.join('\n') + '\n\n👥 ' + order.length + ' משתתפים';
+  if (g.pass && g.examPass !== undefined) t += '\n✅ עברו ' + g.examPass + ' · ❌ נכשלו ' + g.examFail;
+  if (g.hard && g.hard.length) t += '\n📉 השאלה הכי קשה (' + g.hard[0].wp + '% לא ענו נכון):\n' + g.hard[0].t;
+  return t;
+}
+
+/* ---------------- הודעות וואטסאפ (Green API) ----------------
+   מאפייני סקריפט (⚙️ הגדרות הפרויקט): GREEN_URL, GREEN_ID, GREEN_TOKEN,
+   ואחד מהשניים: GREEN_GROUP = שם הקבוצה (למשל: קציני בטיחות), או GREEN_CHAT = מזהה (120363…@g.us).
+   בלי המאפיינים האלה לא נשלחת שום הודעה. בדיקה: testWhatsapp. */
+function waCfg_() {
+  const p = PropertiesService.getScriptProperties();
+  const c = { url: (p.getProperty('GREEN_URL') || '').replace(/\/+$/, ''), id: p.getProperty('GREEN_ID') || '', token: p.getProperty('GREEN_TOKEN') || '',
+    chat: p.getProperty('GREEN_CHAT') || '', group: p.getProperty('GREEN_GROUP') || '' };
+  return c.url && c.id && c.token && (c.chat || c.group) ? c : null;
+}
+function waOn_() { return !!waCfg_(); }
+function waChat_(c) {
+  if (c.chat) return c.chat;
+  const res = UrlFetchApp.fetch(c.url + '/waInstance' + c.id + '/getContacts/' + c.token, { muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) return '';
+  const want = c.group.trim().toLowerCase();
+  const g = JSON.parse(res.getContentText()).filter(function (x) { return /@g\.us$/.test(x.id) && String(x.name || '').trim().toLowerCase() === want; })[0];
+  if (!g) { console.warn('לא נמצאה קבוצה בשם ' + c.group); return ''; }
+  PropertiesService.getScriptProperties().setProperty('GREEN_CHAT', g.id);
+  return g.id;
+}
+function waSend_(text) {
+  const c = waCfg_(); if (!c) return false;
+  const chat = waChat_(c); if (!chat) return false;
+  const res = UrlFetchApp.fetch(c.url + '/waInstance' + c.id + '/sendMessage/' + c.token, {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true, payload: JSON.stringify({ chatId: chat, message: text }) });
+  if (res.getResponseCode() !== 200) { console.warn('whatsapp ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 200)); return false; }
+  return true;
+}
+function testWhatsapp() {
+  Logger.log(waOn_() ? (waSend_('🏆 הודעת ניסיון ממשחק חי ✅') ? 'נשלח ✅' : 'לא נשלח, ראה אזהרה ביומן') : 'חסר GREEN_URL / GREEN_ID / GREEN_TOKEN ואחד מ-GREEN_GROUP / GREEN_CHAT');
 }
 
 
@@ -556,6 +635,15 @@ function examRecord_(g, pin, pl) {
   if (rows.length) examWrite_(sh, sh.getLastRow() + 1, rows);
   return { pass: pass, fail: fail, url: ss.getUrl() };
 }
+/* בחינה חוזרת: סדר התשובות בכל שאלה מעורבב לכל נבחן (קבוע לפי הקוד האישי שלו, כך שפתיחה חוזרת מציגה אותו סדר) */
+function perm_(code, i, n) {
+  let h = 2166136261; const str = code + ':' + i;
+  for (let k = 0; k < str.length; k++) { h ^= str.charCodeAt(k); h = Math.imul(h, 16777619); }
+  const rnd = function () { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const a = []; for (let k = 0; k < n; k++) a.push(k);
+  for (let k = n - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)), t = a[k]; a[k] = a[j]; a[j] = t; }
+  return a;
+}
 function retake_(a, d) { // בחינה חוזרת: מקבל קוד, בוחר לשחקן שאלות אקראיות (פעם אחת), ומחשב את הציון
   const code = String(d.code || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{6}$/.test(code)) return { ok: false, error: 'הקוד לא תקין' };
@@ -574,10 +662,10 @@ function retake_(a, d) { // בחינה חוזרת: מקבל קוד, בוחר ל�
       sh.getRange(r, 21).setValue(idx.join(','));
     }
     if (a === 'rt_start') {
-      return { ok: true, name: row[2], title: G.title, qs: idx.map(function (i) { const Q = G.questions[i]; return { i: i, t: Q.q, ch: Q.a, img: Q.img ? G.img + Q.img : null }; }) };
+      return { ok: true, name: row[2], title: G.title, qs: idx.map(function (i) { const Q = G.questions[i]; const pm = perm_(code, i, Q.a.length); return { i: i, t: Q.q, ch: pm.map(function (k) { return Q.a[k]; }), img: Q.img ? G.img + Q.img : null }; }) };
     }
     const ans = d.answers || {}; let c = 0; const wr = [];
-    idx.forEach(function (i) { if (Number(ans[i]) === G.questions[i].right) c++; else wr.push(G.questions[i].q ? (i + 1) + '. ' + G.questions[i].q : String(i + 1)); });
+    idx.forEach(function (i) { const pm = perm_(code, i, G.questions[i].a.length); if (pm[Number(ans[i])] === G.questions[i].right) c++; else wr.push(G.questions[i].q ? (i + 1) + '. ' + G.questions[i].q : String(i + 1)); });
     const need = G.retakePassCorrect || Math.ceil(idx.length * 0.8), ok = c >= need;
     sh.getRange(r, 12, 1, 6).setValues([[c, idx.length, Math.round(100 * c / idx.length), ok ? 'עובר' : 'לא עובר', wr.join('\n'), Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd.MM.yyyy HH:mm')]]);
     return { ok: true, done: true, name: row[2], c: c, n: idx.length, pass: ok };

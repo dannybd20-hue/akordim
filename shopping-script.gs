@@ -96,6 +96,41 @@ function notifyBought_(items, from) {
   } catch (x) { console.warn('whatsapp bought: ' + x); }
 }
 
+/* ---------------- תזכורת שבועית וסיכום שבועי בוואטסאפ ----------------
+   תזכורת: ביום REMIND_DAY בשעה REMIND_HOUR, אם יש פריטים ברשימה. סיכום: ביום SUMMARY_DAY בשעה SUMMARY_HOUR.
+   הטריגרים נוצרים לבד (פעם ביום נבדק שהם קיימים), אין צורך להריץ כלום. ימים: 1 = ראשון … 5 = חמישי. */
+const REMIND_DAY = 5, REMIND_HOUR = 17;
+const SUMMARY_DAY = 1, SUMMARY_HOUR = 9;
+const DAYS_ = [ScriptApp.WeekDay.SUNDAY, ScriptApp.WeekDay.MONDAY, ScriptApp.WeekDay.TUESDAY, ScriptApp.WeekDay.WEDNESDAY, ScriptApp.WeekDay.THURSDAY, ScriptApp.WeekDay.FRIDAY, ScriptApp.WeekDay.SATURDAY];
+function ensureReminders_() {
+  try {
+    const have = ScriptApp.getProjectTriggers().map(function (t) { return t.getHandlerFunction(); });
+    if (have.indexOf('weeklyReminder') < 0) ScriptApp.newTrigger('weeklyReminder').timeBased().onWeekDay(DAYS_[REMIND_DAY - 1]).atHour(REMIND_HOUR).inTimezone('Asia/Jerusalem').create();
+    if (have.indexOf('weeklySummary') < 0) ScriptApp.newTrigger('weeklySummary').timeBased().onWeekDay(DAYS_[SUMMARY_DAY - 1]).atHour(SUMMARY_HOUR).inTimezone('Asia/Jerusalem').create();
+  } catch (x) { console.warn('triggers: ' + x); }
+}
+// אפשר להריץ מהעורך כדי ליצור את הטריגרים מיד (אחרת הם נוצרים לבד בלילה הקרוב)
+function setupReminders() { ensureReminders_(); Logger.log('הטריגרים מוכנים: תזכורת ביום ' + REMIND_DAY + ' בשעה ' + REMIND_HOUR + ', סיכום ביום ' + SUMMARY_DAY + ' בשעה ' + SUMMARY_HOUR); }
+function weeklyReminder() {
+  if (!waOn_()) return;
+  const items = load_().st.items;
+  if (!items.length) return;
+  const lines = items.slice(0, 12).map(function (x) { return '• ' + x.name + (x.qty ? ' (' + x.qty + ')' : ''); });
+  waSend_('🛒 *קניות לבית*\n⏰ תזכורת: ברשימה עדיין ' + items.length + (items.length === 1 ? ' פריט' : ' פריטים') + ':\n' + lines.join('\n') + (items.length > 12 ? '\nועוד ' + (items.length - 12) + '…' : '') + '\n\nלרשימה המלאה: ' + SHOP_LINK);
+}
+function weeklySummary() {
+  if (!waOn_()) return;
+  const st = load_().st, since = Date.now() - 7 * 864e5;
+  const log = (st.log || []).filter(function (e) { return e.t >= since; });
+  if (!log.length) return;
+  const by = {}, items = {};
+  log.forEach(function (e) { const w = e.by || 'לא ידוע'; by[w] = (by[w] || 0) + 1; const k = shopKey(e.n); items[k] = items[k] || { n: e.n, c: 0 }; items[k].c++; });
+  const people = Object.keys(by).sort(function (a, b) { return by[b] - by[a]; }).map(function (w) { return '• ' + w + ': ' + by[w]; });
+  const top = Object.keys(items).map(function (k) { return items[k]; }).sort(function (a, b) { return b.c - a.c; }).slice(0, 5)
+    .map(function (x) { return x.n + (x.c > 1 ? ' ×' + x.c : ''); });
+  waSend_('🛒 *קניות לבית*\n📊 סיכום השבוע: נקנו ' + log.length + (log.length === 1 ? ' פריט' : ' פריטים') + '\n' + people.join('\n') + '\n\nהכי הרבה: ' + top.join(', ') + (st.items.length ? '\nעדיין ברשימה: ' + st.items.length : '\nהרשימה ריקה 🎉'));
+}
+
 // מריצים מהעורך: מציג ביומן את כל הקבוצות של המספר המחובר, עם המזהה (id) שצריך להדביק ב-GREEN_CHAT
 function whatsappGroups() {
   const p = PropertiesService.getScriptProperties();
@@ -183,7 +218,11 @@ function doPost(e) {
       const before = st.items.length;
       if (!shopApply(st, o, now)) return;
       changed = true;
-      if (bItem) bought.push(bItem); // נקנה: נשלחת הודעה לקבוצה
+      if (bItem) { // נקנה: נשלחת הודעה לקבוצה, ונרשם מי קנה (בשביל הסיכום השבועי)
+        bought.push(bItem);
+        (st.log = st.log || []).push({ n: bItem.n, q: bItem.q, by: d.by || '', t: now });
+        if (st.log.length > 400) st.log.shift();
+      }
       if (o.type === 'add' && o.notify && st.items.length > before) {
         lines.push({ n: o.name, q: o.qty, k: o.src === 'pantry' ? 'pantry' : 'add' });
       }
@@ -213,6 +252,7 @@ function hourly() {
   }
   notify_(added.map(function (n) { return { n: n, k: 'auto' }; }));
   maaserHourly_();
+  if (new Date().getHours() === 3) ensureReminders_(); // פעם ביום: מוודא שיש טריגרים לתזכורת ולסיכום
 }
 
 /* ---------------- מעשר כספי ---------------- */
