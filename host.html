@@ -145,7 +145,7 @@ let pw='',G=null,players=[],answered=0,done=[],off=0,Q=null,QI=-1,tmr=0,shown=''
 let REM=P.get('remote')==='1'||(P.get('remote')!=='0'&&matchMedia('(max-width:760px)').matches);
 try{pw=sessionStorage.getItem('hub_admin')||''}catch(e){}
 function api(o){return fetch(CLOUD,{method:'POST',body:JSON.stringify({...o,password:pw})}).then(r=>r.json())}
-function brand(t){if(/הצלה/.test(t||'')){document.body.classList.add('uh');$('logo').innerHTML='<img src="brand/uh-logo.png" alt="">'}}
+function brand(t){if(/הצלה|אופנוע/.test(t||'')){document.body.classList.add('uh');$('logo').innerHTML='<img src="brand/uh-logo.png" alt="">'}}
 
 /* בחירת משחק: המשחקים מוגדרים בסקריפט (GAMES) */
 async function pick(){

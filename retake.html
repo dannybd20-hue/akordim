@@ -75,7 +75,7 @@ async function start(){
   history.replaceState(null,'','?c='+code);
   if(r.done){result(r);return}
   T=r;try{const s=JSON.parse(localStorage.getItem('rt_'+code));if(s)ans=s}catch(e){}
-  if(/הצלה/.test(T.title||''))document.body.classList.add('uh');
+  if(/הצלה|אופנוע/.test(T.title||''))document.body.classList.add('uh');
   render();
 }
 function render(){
