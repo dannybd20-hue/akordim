@@ -310,18 +310,20 @@ async function next(show){
 async function showQ(){
   shown=qk();seen=new Set();clearInterval(tmr);nb('דלג ←');alt('');
   M.innerHTML='<div class="spin"></div>';
-  if(QI!==G.q){const r=await api({action:'g_q',pin:G.pin});if(r.ok){Q=r.q;Q.img=r.img;QI=G.q}}
+  if(QI!==G.q){const r=await api({action:'g_q',pin:G.pin});if(r.ok){Q=r.q;Q.img=r.img;Q.rimg=r.rimg;QI=G.q}}
   M.innerHTML=`<div class="qhead">${esc(Q.t)}</div>
     <div class="qmid"><div class="side"><div class="circle" id="tm">${G.dur}</div></div>${Q.img?`<img class="qimg" src="${Q.img}" alt="">`:''}<div class="side"><b id="ansN">${answered}</b>תשובות</div></div>
     <div class="tiles">${Q.ch.map((c,i)=>`<div class="tile c${i}"><span class="s">${SH[i]}</span>${esc(c)}</div>`).join('')}</div>
     <div class="waitl" id="waitL"></div><div class="hint">שאלה ${G.q+1} מתוך ${G.n} · 📱 עונים מהטלפון</div>`;
   waitList();startTimer();
 }
-function showReveal(){
+async function showReveal(){
   shown='r'+G.q;clearInterval(tmr);revealBtns();
+  if(!Q||QI!==G.q){const r=await api({action:'g_q',pin:G.pin}).catch(()=>null);if(r&&r.ok){Q=r.q;Q.img=r.img;Q.rimg=r.rimg;QI=G.q}if(shown!=='r'+G.q||!Q)return}
   const tot=Math.max(1,G.dist.reduce((a,b)=>a+b,0));
   M.innerHTML=`<div class="qhead">${esc(Q.t)}</div>
     <div class="tiles">${Q.ch.map((c,i)=>`<div class="tile c${i} ${i===G.right?'right':'dim'}"><span class="s">${SH[i]}</span>${esc(c)}<span class="n">${G.dist[i]}</span></div>`).join('')}</div>
+    ${Q.rimg?`<img class="qimg" src="${esc(Q.rimg)}" alt="" style="max-height:30vh;animation:pop .5s">`:''}
     <div class="card sum"><div style="font-size:22px;font-weight:900">${countsTxt()}</div>
       <button class="hb pr who-b" onclick="whoToggle()">👥 מי ענה מה</button><div class="who" id="who" hidden></div></div>`;
   whoFill();
@@ -405,7 +407,7 @@ function remote(){
     const second=ph==='reveal'&&G.q<G.n-1?(due()?`<button class="hb" onclick="next('skip')">דלג על הטבלה ←</button>`:`<button class="hb" onclick="next('board')">🏅 הצג טבלה</button>`):'';
     M.innerHTML=`<div class="card rm">${body}${main?`<button class="hb pr huge" onclick="next()">${main}</button>`:''}${second}</div>`;
     nb('');alt('');if(ph==='question')startTimer();else clearInterval(tmr);
-    if((ph==='question'||ph==='reveal')&&QI!==G.q)api({action:'g_q',pin:G.pin}).then(r=>{if(r.ok){Q=r.q;Q.img=r.img;QI=G.q;const e=$('rq');if(e)e.textContent=Q.t}}).catch(()=>{});
+    if((ph==='question'||ph==='reveal')&&QI!==G.q)api({action:'g_q',pin:G.pin}).then(r=>{if(r.ok){Q=r.q;Q.img=r.img;Q.rimg=r.rimg;QI=G.q;const e=$('rq');if(e)e.textContent=Q.t}}).catch(()=>{});
   }
   if(G.phase==='lobby'){const c=M.querySelector('.mid');if(c)c.textContent='קוד משחק · '+players.length+(players.length===1?' שחקן':' שחקנים')}
   if(G.phase==='question'){const a=$('ansN');if(a)a.textContent=answered;const n=$('plN');if(n)n.textContent=players.length;waitList()}
