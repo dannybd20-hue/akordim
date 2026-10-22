@@ -114,6 +114,8 @@ function failed_(scope) {
   c.put(k, String(Number(c.get(k) || 0) + 1), LOCK_MINUTES * 60);
 }
 function passed_(scope) { CacheService.getScriptCache().remove('fails_' + scope); }
+/* סיסמת המנהל (ADMIN_PASSWORD) תמיד מתקבלת, וגם מבטלת חסימה של "יותר מדי ניסיונות שגויים" */
+function isAdmin_(p) { return typeof ADMIN_PASSWORD === 'string' && ADMIN_PASSWORD.indexOf('כתוב-כאן') !== 0 && p === ADMIN_PASSWORD; }
 
 /* "מי מחובר עכשיו" בדף הבית: כל דף פתוח באתר שולח מזהה מכשיר אקראי, שם האפליקציה ופרטי מכשיר.
    לכולם מוחזר רק מספר המכשירים בכל אפליקציה. רשימה מפורטת מוחזרת רק עם ADMIN_PASSWORD. */
@@ -137,9 +139,9 @@ function presence_(d) {
     Object.keys(m).forEach(k => { counts[m[k].a] = (counts[m[k].a] || 0) + 1; });
     const res = { ok: true, total: Object.keys(m).length, counts: counts };
     if (d.admin) {
-      if (locked_('admin')) res.admin = 'locked';
-      else if (d.admin !== ADMIN_PASSWORD) { failed_('admin'); res.admin = 'password'; }
-      else res.list = Object.keys(m).map(k => ({ id: k, a: m[k].a, n: m[k].n, r: m[k].r, d: m[k].d, s: m[k].s }));
+      if (!isAdmin_(d.admin) && locked_('admin')) res.admin = 'locked';
+      else if (!isAdmin_(d.admin)) { failed_('admin'); res.admin = 'password'; }
+      else { passed_('admin'); res.list = Object.keys(m).map(k => ({ id: k, a: m[k].a, n: m[k].n, r: m[k].r, d: m[k].d, s: m[k].s })); }
     }
     return out_(res);
   } finally { lock.releaseLock(); }
@@ -152,8 +154,10 @@ function doPost(e) {
   try { d = JSON.parse(e.postData.contents); } catch (x) { return out_({ ok: false, error: 'bad' }); }
   if (d.app === 'presence') return presence_(d);
   if (d.app === 'maaser') return maaserPost_(d);
-  if (locked_('shop')) return out_({ ok: false, error: 'locked' });
-  if (d.password !== SHOP_PASSWORD) { failed_('shop'); return out_({ ok: false, error: 'password' }); }
+  if (!isAdmin_(d.password)) {
+    if (locked_('shop')) return out_({ ok: false, error: 'locked' });
+    if (d.password !== SHOP_PASSWORD) { failed_('shop'); return out_({ ok: false, error: 'password' }); }
+  }
   passed_('shop');
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -216,8 +220,10 @@ function maaserSave_(f, st) {
   if (f) f.setContent(body); else DriveApp.createFile(MAASER_FILE, body, MimeType.PLAIN_TEXT);
 }
 function maaserPost_(d) {
-  if (locked_('maaser')) return out_({ ok: false, error: 'locked' });
-  if (!MAASER_PASSWORD || d.password !== MAASER_PASSWORD) { failed_('maaser'); return out_({ ok: false, error: 'password' }); }
+  if (!isAdmin_(d.password)) {
+    if (locked_('maaser')) return out_({ ok: false, error: 'locked' });
+    if (!MAASER_PASSWORD || d.password !== MAASER_PASSWORD) { failed_('maaser'); return out_({ ok: false, error: 'password' }); }
+  }
   passed_('maaser');
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);

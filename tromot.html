@@ -385,7 +385,7 @@ const hm=t=>new Date(t).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-dig
 /* סיסמה שגויה: מנתקים את הענן במכשיר, כדי שהמכשיר לא ינסה שוב ושוב ויגרום לחסימה */
 function cloudErr(e,other){
   if(e==='password'){cloud=null;try{localStorage.removeItem('tromot_cloud')}catch(x){}cst('⚠️ סיסמת הסקריפט השתנתה. לחץ כאן לחיבור מחדש');return}
-  cst(e==='locked'?'🔒 יותר מדי ניסיונות שגויים. נסה שוב בעוד רבע שעה':other);
+  cst(e==='locked'?'🔒 יותר מדי ניסיונות שגויים. נסה שוב בעוד רבע שעה, או עם הסיסמה הראשית':other);
 }
 function schedulePush(){if(!cloud)return;cst('☁️ שומר בענן…');clearTimeout(pushT);pushT=setTimeout(push,1500)}
 async function push(){
@@ -417,7 +417,7 @@ async function connect(){
   m.textContent='מתחבר…';
   let r;
   try{r=await cloudPost({action:'load'},c)}catch(e){m.textContent='⚠️ אין חיבור לסקריפט. בדוק את הכתובת ושהפריסה היא "כל אחד"';return}
-  if(!r.ok){m.textContent=r.error==='password'?'⚠️ סיסמה שגויה':r.error==='locked'?'🔒 יותר מדי ניסיונות שגויים. נסה שוב בעוד רבע שעה':'⚠️ שגיאה: '+r.error;return}
+  if(!r.ok){m.textContent=r.error==='password'?'⚠️ סיסמה שגויה':r.error==='locked'?'🔒 יותר מדי ניסיונות שגויים. נסה שוב בעוד רבע שעה, או עם הסיסמה הראשית':'⚠️ שגיאה: '+r.error;return}
   const inCloud=(r.donations||[]).length;
   if(inCloud&&D.length&&!confirm(`בענן כבר יש ${inCloud} תרומות ובמכשיר יש ${D.length}.\n\nאישור = להשתמש במה שבענן (מה שבמכשיר יוחלף)\nביטול = להעלות לענן את מה שבמכשיר`)){
     cloud=c;lset('tromot_cloud',JSON.stringify(c));await push();

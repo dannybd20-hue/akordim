@@ -18,6 +18,7 @@
  * עדכון קוד: אחרי הדבקת גרסה חדשה צריך "פריסה" ← "ניהול פריסות" ← ✏️ ← "גרסה חדשה" ← "פריסה".
  */
 
+const ADMIN_PASSWORD = 'כתוב-כאן-את-הסיסמה-הראשית'; // סיסמת המנהל (הסיסמה הראשית): מתקבלת תמיד ומבטלת חסימה של ניסיונות שגויים
 const PASSWORD = '1234'; // ← שנה לסיסמה משלך
 const FOLDER_NAME = 'גיבוי תרומות בית כנסת';
 const KEEP_DAYS = 60;
@@ -25,8 +26,11 @@ const KEEP_DAYS = 60;
 function doPost(e) {
   let req = {};
   try { req = JSON.parse(e.postData.contents); } catch (x) { return out({ ok: false, error: 'bad request' }); }
-  if (locked_('tromot')) return out({ ok: false, error: 'locked' });
-  if (String(req.password || '').trim() !== PASSWORD) { failed_('tromot'); return out({ ok: false, error: 'password' }); }
+  const pw = String(req.password || '').trim();
+  if (!isAdmin_(pw)) {
+    if (locked_('tromot')) return out({ ok: false, error: 'locked' });
+    if (pw !== PASSWORD) { failed_('tromot'); return out({ ok: false, error: 'password' }); }
+  }
   passed_('tromot');
 
   const lock = LockService.getScriptLock();
@@ -60,6 +64,8 @@ function failed_(scope) {
   c.put(k, String(Number(c.get(k) || 0) + 1), LOCK_MINUTES * 60);
 }
 function passed_(scope) { CacheService.getScriptCache().remove('fails_' + scope); }
+/* סיסמת המנהל (ADMIN_PASSWORD) תמיד מתקבלת, וגם מבטלת חסימה של "יותר מדי ניסיונות שגויים" */
+function isAdmin_(p) { return typeof ADMIN_PASSWORD === 'string' && ADMIN_PASSWORD.indexOf('כתוב-כאן') !== 0 && p === ADMIN_PASSWORD; }
 
 function doGet() {
   return out({ ok: true, app: 'tromot-backup' });

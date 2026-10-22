@@ -22,6 +22,8 @@ const FORMS = [
 ];
 
 const MAX_FAILS = 5, LOCK_MINUTES = 15;
+/* סיסמת המנהל (ADMIN_PASSWORD) תמיד מתקבלת, וגם מבטלת חסימה של "יותר מדי ניסיונות שגויים" */
+function isAdmin_(p) { return typeof ADMIN_PASSWORD === 'string' && ADMIN_PASSWORD.indexOf('כתוב-כאן') !== 0 && p === ADMIN_PASSWORD; }
 function locked_() { return Number(CacheService.getScriptCache().get('fails') || 0) >= MAX_FAILS; }
 function failed_() {
   const c = CacheService.getScriptCache();
@@ -34,9 +36,12 @@ function doGet() { return out_({ ok: true, app: 'forms' }); }
 function doPost(e) {
   let d;
   try { d = JSON.parse(e.postData.contents); } catch (x) { return out_({ ok: false, error: 'bad' }); }
-  if (locked_()) return out_({ ok: false, error: 'locked' });
-  const admin = d.password === ADMIN_PASSWORD;
-  if (!admin && d.password !== FILL_PASSWORD) { failed_(); return out_({ ok: false, error: 'password' }); }
+  const admin = isAdmin_(d.password);
+  if (admin) CacheService.getScriptCache().remove('fails'); // סיסמת מנהל מבטלת חסימה
+  else {
+    if (locked_()) return out_({ ok: false, error: 'locked' });
+    if (d.password !== FILL_PASSWORD) { failed_(); return out_({ ok: false, error: 'password' }); }
+  }
   try {
     if (d.action === 'list') return out_({ ok: true, admin: admin, forms: listForms_(admin) });
     if (d.action === 'form') return out_({ ok: true, form: cached_('def_' + Number(d.id), CACHE_SECONDS, function () { return formDef_(openForm_(d.id)); }) });
