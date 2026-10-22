@@ -8,6 +8,7 @@
 <meta name="robots" content="noindex">
 <link rel="icon" href="icons/apps-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@500;700;800;900&display=swap" rel="stylesheet">
+<script src="cert.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.3/confetti.browser.min.js"></script>
 <style>
 :root{--bg:#f4f5fb;--card:#fff;--tx:#1e1b4b;--mut:#64748b;--bd:#e5e7f0;--pr:#4f46e5;--pr2:#0ea5e9;--ok:#16a34a;--no:#e11d48;--grad:linear-gradient(90deg,var(--pr),var(--pr2))}
@@ -108,6 +109,7 @@ async function submit(){
 function result(r){
   $('bar').hidden=true;$('cnt').hidden=true;$('ttl').textContent='📝 '+(r.name||'בחינה חוזרת');
   M.innerHTML=`<div class="res ${r.pass?'ok':'no'}"><div class="ic">${r.pass?'✓':'✗'}</div><div class="big">${r.pass?'עברת את הבחינה החוזרת!':'לא עברת הפעם'}</div><div class="pts">${r.c} נכונות מתוך ${r.n}</div></div>
+    ${r.pass?`<button class="go" onclick="dbdCert({name:'${esc(r.name||'')}',title:'${esc(T&&T.title||'בחינה חוזרת')}',score:'${r.c} תשובות נכונות מתוך ${r.n}',id:'${code}'})">🎓 תעודת עובר</button>`:''}
     <div class="box"><div class="mid">התוצאה נשמרה אצל המארח. אפשר לסגור את הדף.</div></div>`;
   if(r.pass&&window.confetti)confetti({particleCount:140,spread:90,origin:{y:.4}});
 }

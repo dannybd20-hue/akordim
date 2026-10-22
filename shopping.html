@@ -39,6 +39,11 @@ main{max-width:760px;margin:auto;padding:16px 16px 90px}
 :root[data-theme=dark] .banner{background:#3b2f0b;color:#fcd34d}
 h3{font:800 14px Heebo,sans-serif;color:var(--mut);margin:22px 4px 8px}
 .items{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.deptrow{display:flex;justify-content:flex-end;margin-top:10px}
+.deptb{border:1.5px solid var(--bd);background:var(--card);border-radius:99px;padding:5px 14px;font:inherit;font-size:13px;font-weight:800;color:var(--mut);cursor:pointer}
+.deptb.on{border-color:var(--pr);color:var(--pr)}
+.dept{font-weight:900;font-size:14px;color:var(--mut);margin:10px 4px 0;display:flex;align-items:center;gap:6px}
+.dept:first-child{margin-top:0}.dept i{font-style:normal;font-size:18px}
 .it{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:8px 10px;transition:.25s}
 .it.gone{opacity:0;transform:translateX(-30px)}
 .chk{width:30px;height:30px;border-radius:50%;border:2px solid var(--pkb);background:none;flex:none;font-size:15px;color:#fff;padding:0}
@@ -173,6 +178,7 @@ body.locked #login{display:block}body.locked main,body.locked .tabs{display:none
       <button class="sendall" id="sendAll" onclick="sendNotify()" style="display:none"></button>
     </div>
     <datalist id="names"></datalist>
+    <div class="deptrow"><button class="deptb" id="deptB" onclick="toggleDept()"></button></div>
     <div class="items" id="items"></div>
     <div id="recBox"></div>
   </section>
@@ -353,10 +359,29 @@ function render(){
   [...new Set([...st.products.map(p=>p.name),...Object.values(st.hist).map(h=>h.n)])].forEach(n=>dl.append(new Option(n)));
   renderList();renderHome();
 }
+/* מחלקות בסופר, לפי סדר ההליכה הרגיל: כך קונים הכול בסיבוב אחד */
+const DEPTS=[['ירקות ופירות','🥬','עגבני|מלפפו|בצל|שום|גזר|פלפל|חסה|כרוב|ברוקולי|כרובית|תירס טרי|פטרי|בטטה|תפוח אדמה|תפוחי אדמה|תפו"א|לימון|אבוקדו|בננ|תפוח|תפוז|קלמנטינ|אבטיח|מלון|ענב|תות|פירות|פרי|ירקות|ירק|נענע|פטרוזילי|כוסברה|שמיר|קישוא|חציל|דלעת|סלרי|אגס|שזיף|נקטרינ|אפרסק|מנגו|רימון|קיווי|אננס|גפן|עלים'],
+['חטיפים וממתקים','🍫','שוקולד|נוטלה|עוגי|ופל|ביסקוו|במבה|בוטנ|ביסלי|חטיף|צ׳יפס|ציפס|תפוציפס|ממתק|סוכרי|מסטיק|פופקורן|גרעינ|פיצוחים'],
+['לחם ומאפים','🍞','לחם|לחמני|פיתה|חלה|באגט|בגט|טוסט|עוג|בורקס|קרואסון|לאפה|מאפה'],
+['חלב וביצים','🥛','חלב|שוקו|יוגורט|לבן|אשל|מעדן|גבינ|קוטג|שמנת|חמאה|מרגרינה|ביצ|מוצרלה|פרמזן|דנונה'],
+['בשר, עוף ודגים','🍗','עוף|שניצל|כרעיים|חזה|בשר|טחון|סטייק|אנטריקוט|דג|סלמון|נקניק|פסטרמה|המבורגר|קבב|כבד'],
+['קפואים','❄️','גלידה|קפוא|ארטיק|שלגון'],
+['משקאות','🥤','מים|קולה|סודה|ספרייט|מיץ|פטל|יין|בירה|משקה|שתיה|פנטה|מינרל|וודקה|וויסקי'],
+['יבשים ושימורים','🥫','אורז|פסטה|ספגטי|אטריות|פתיתים|קמח|סוכר|שמן|זית|מלח|תבלין|פפריקה|קפה|נס|תה|דבש|ריבה|ממרח|חומוס|טחינה|שעועית|עדשים|שימורים|טונה|תירס|קורנפלקס|דגני|שיבולת|קטשופ|מיונז|חרדל|רוטב|רסק|קטניות|שמרים|פירורי|קוסקוס|בורגול|קינואה|אגוזים|שקדים|צימוקים|אבקת'],
+['ניקיון','🧼','סבון כלים|כלים|פיירי|אקונומיקה|כביסה|ספוג|סקוטש|אשפה|נייר טואלט|טואלט|מגבות נייר|מפיות|טישו|נייר אפייה|אלומיניום|סמרטוט|מטאטא|מנקה|ניקוי|שקיות'],
+['טיפוח והיגיינה','🧴','שמפו|מרכך|קרם|דאודורנט|משחת שיניים|מברשת שיניים|סבון|חיתול|מגבונ|תחבושת|טמפון|גילוח|תרופ|אקמול|ויטמין|פלסטר'],
+['אחר','🛒','']];
+const DEPT_RE=DEPTS.map(d=>d[2]?new RegExp(d[2]):null);
+function shopDept(name){const n=shopKey(name);for(let i=0;i<DEPTS.length-1;i++)if(DEPT_RE[i].test(n))return i;return DEPTS.length-1}
+let deptOn=get('shop_dept')!=='0';
+function toggleDept(){deptOn=!deptOn;put('shop_dept',deptOn?'1':'0');renderList()}
 function renderList(){
   const box=$('items');box.innerHTML='';
+  const db=$('deptB');db.textContent=deptOn?'🧭 מסודר לפי מחלקות':'🧭 סדר לפי מחלקות';db.classList.toggle('on',deptOn);
   if(!st.items.length){const e=el('div','empty');e.append(el('div',null,'🧺'),el('p',null,'הרשימה ריקה. מה צריך לקנות?'));box.append(e)}
-  [...st.items].sort((a,b)=>b.at-a.at).forEach(it=>{
+  let lastD=-1;
+  [...st.items].map(x=>({x,d:deptOn?shopDept(x.name):0})).sort((a,b)=>a.d-b.d||b.x.at-a.x.at).forEach(({x:it,d})=>{
+    if(deptOn&&d!==lastD){lastD=d;const hd=el('div','dept');hd.append(el('i',null,DEPTS[d][1]),document.createTextNode(DEPTS[d][0]));box.append(hd)}
     const row=el('div','it'),c=el('button','chk','✓');c.title='נקנה';c.onclick=()=>bought(it,row);
     const nm=el('div','nm');nm.append(el('b',null,it.name),el('small',null,it.auto?'🔁 נוסף אוטומטית · '+ago(it.at):(it.src==='pantry'?'🏠 נגמר בבית · ':'')+(it.by?(it.by==='אשתי'?'ציפי':it.by)+' · ':'')+ago(it.at)));
     if(it.ntf===false)nm.append(el('small','pend',' · 💬 לא נשלח'));
