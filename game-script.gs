@@ -21,7 +21,7 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 10; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 11; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
 function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
 
 function doPost(e) {
@@ -40,6 +40,9 @@ function doPost(e) {
 /* ================= שאלות למשחק החי: איחוד הצלה – ריענון נהיגה ובטיחות (לפי מצגות 2025 ו-2026) =================
    השאלות נשמרות כאן בלבד (בלי טופס בגוגל). כדי להוסיף משחק חדש: מוסיפים הגדרה כזו ומכניסים אותה ל-GAMES למטה. */
 const HATZALAH_QUIZ = {
+  passCorrect: 10,       // מבחן: כמה תשובות נכונות צריך כדי לעבור (0 = בלי מבחן, משחק רגיל)
+  retakeCount: 10,       // בחינה חוזרת: כמה שאלות אקראיות מתוך כל השאלות
+  retakePassCorrect: 8,  // בחינה חוזרת: כמה נכונות צריך כדי לעבור (8 מתוך 10 = 80%)
   title: 'איחוד הצלה – בוחן ריענון נהיגה ובטיחות',
   description: 'בוחן לפי השתלמות הבטיחות השנתית 2026 ורענון הנהיגה המקצועי 2025 של מחלקת קציני הבטיחות. 38 שאלות, בהצלחה!',
   img: 'https://dannybd20-hue.github.io/akordim/brand/uh/',
@@ -125,6 +128,7 @@ function gput_(k, o) { CacheService.getScriptCache().put(k, JSON.stringify(o), G
 
 function game_(d, admin) {
   const a = d.action, now = Date.now(), pin = String(d.pin || '').replace(/\D/g, '');
+  if (a === 'rt_start' || a === 'rt_submit') return retake_(a, d); // בחינה חוזרת: לפי קוד, בלי סיסמה ובלי משחק פעיל
   if (a === 'g_list') {
     if (!admin) return { ok: false, error: 'password' };
     return { ok: true, games: Object.keys(GAMES).map(function (k) { return { key: k, title: GAMES[k].title, n: GAMES[k].questions.length }; }) };
@@ -144,6 +148,7 @@ function game_(d, admin) {
     const g = { pin: p, key: d.key, title: def.title, n: def.qs.length, q: -1, phase: 'lobby', qStart: 0,
       dur: Math.min(60, Math.max(5, Number(d.dur) || 20)),
       lb: Math.max(0, Math.min(20, Number(d.lb) || 0)), // טבלת מובילים כל lb שאלות; 0 = רק בסוף
+      pass: Number(G.passCorrect) || 0, retake: Number(G.retakeCount) || 0,
       scores: {}, last: {}, created: now };
     gput_('g:' + p, g);
     const act = (gget_('gact') || []).filter(function (x) { return gget_('g:' + x); });
@@ -190,6 +195,10 @@ function game_(d, admin) {
       const Q = def.qs[g.q]; r.text = Q.t; r.ch = Q.ch; r.img = gget_('gi:' + pin + ':' + g.q) || null; // התמונה של השאלה (כתובת באתר), כדי שהשחקן יראה אותה גם בטלפון
       r.answered = !!CacheService.getScriptCache().get('ga:' + pin + ':' + g.q + ':' + pid);
     }
+    if (g.phase === 'end' && g.pass && !g.closed) {
+      const ex = gget_('gx:' + pin) || { cor: {}, reg: {} }, c = ex.cor[pid] || 0;
+      r.exam = { c: c, n: g.n, need: g.pass, pass: c >= g.pass, retake: g.retake > 0, code: (ex.reg || {})[pid] || null };
+    }
     if (g.phase === 'reveal' || g.phase === 'leader' || g.phase === 'end') {
       const order = Object.keys(g.scores).sort(function (x, y) { return g.scores[y] - g.scores[x]; });
       r.rank = order.indexOf(pid) + 1; r.players = order.length;
@@ -209,6 +218,30 @@ function game_(d, admin) {
     if (CacheService.getScriptCache().get(k)) return { ok: true, already: true };
     gput_(k, { c: c, t: Math.max(0, t) });
     return { ok: true };
+  }
+
+  if (a === 'g_retake') { // שחקן שנכשל נרשם לבחינה חוזרת ומקבל קוד
+    const pid = String(d.pid || ''), pl0 = gget_('gp:' + pin) || {};
+    if (g.phase !== 'end' || !g.pass || !g.retake) return { ok: false, error: 'אין בחינה חוזרת למשחק הזה' };
+    if (!pl0[pid]) return { ok: false, error: 'לא נמצא שחקן' };
+    const lock = LockService.getScriptLock(); lock.waitLock(15000);
+    try {
+      const ex = gget_('gx:' + pin) || { cor: {}, wr: {} };
+      if ((ex.cor[pid] || 0) >= g.pass) return { ok: false, error: 'עברת את המבחן, אין צורך בבחינה חוזרת' };
+      ex.reg = ex.reg || {};
+      if (ex.reg[pid]) return { ok: true, code: ex.reg[pid] };
+      const sh = examSheet_().getSheets()[0];
+      let r = examFindPid_(sh, pin, pid);
+      if (!r) { // לא נרשם בסוף המשחק (למשל בגלל שגיאה) – מוסיפים עכשיו
+        const def = gget_('gd:' + pin), phs = gget_('gph:' + pin) || {};
+        r = sh.getLastRow() + 1;
+        examWrite_(sh, r, [examRow_(Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd.MM.yyyy HH:mm'), g, pin, pid, pl0[pid], phs[pid] || '', ex.cor[pid] || 0, false, ex.wr[pid] || [], def)]);
+      }
+      let code; do { code = examCode_(); } while (examFind_(sh, 11, code));
+      sh.getRange(r, 10, 1, 2).setValues([[Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd.MM.yyyy HH:mm'), code]]);
+      ex.reg[pid] = code; gput_('gx:' + pin, ex);
+      return { ok: true, code: code };
+    } finally { lock.releaseLock(); }
   }
 
   /* מכאן: פעולות המארח */
@@ -291,7 +324,10 @@ function gnext_(pin, d, now, pids) {
       g.last[p] = { ok: ok, p: pts, c: ans.c }; // c: איזו תשובה בחר (בשביל "מי ענה מה" אצל המארח)
     });
     gput_('gr:' + pin + ':' + g.q, rec); // התשובות של כולם לשאלה הזאת, בשביל הטבלה בגוגל שיטס
-    g.phase = 'reveal'; g.dist = dist; g.right = Q.right;
+    const ex = gget_('gx:' + pin) || { cor: {}, wr: {}, reg: {} }; // לכל שחקן: כמה נכונות ובאילו שאלות טעה או לא ענה (בשביל המבחן)
+  pids.forEach(function (p) { const l = g.last[p]; if (l && l.ok) ex.cor[p] = (ex.cor[p] || 0) + 1; else (ex.wr[p] = ex.wr[p] || []).push(g.q); });
+  gput_('gx:' + pin, ex);
+  g.phase = 'reveal'; g.dist = dist; g.right = Q.right;
   } else if (g.phase === 'reveal') {
     /* d.show: 'board' = להציג טבלה עכשיו, 'skip' = לדלג עליה; בלי = לפי ההגדרה (כל lb שאלות) */
     const due = g.lb > 0 && (g.q + 1) % g.lb === 0;
@@ -299,6 +335,10 @@ function gnext_(pin, d, now, pids) {
     if (g.q >= g.n - 1) g.phase = 'end';
     else if (show) g.phase = 'leader';
     else nextQ();
+  }
+  if (g.phase === 'end' && g.pass && !g.examDone) { // סוף המשחק: ציון לכל שחקן נכנס לטבלת המבחנים הקבועה
+    try { const rr = examRecord_(g, pin, gget_('gp:' + pin) || {}); g.examDone = true; g.examPass = rr.pass; g.examFail = rr.fail; g.examUrl = rr.url; g.examErr = ''; }
+    catch (x) { g.examErr = String(x && x.message || x).slice(0, 140); }
   }
   gput_('g:' + pin, g);
   return { ok: true, now: now, game: g };
@@ -350,4 +390,86 @@ function gsheet_(pin, g, pl) {
   qs.setFrozenRows(1); qs.setColumnWidth(2, 420); qs.setColumnWidth(3, 260);
   g.sheet = ss.getUrl(); gput_('g:' + pin, g);
   return { ok: true, url: g.sheet };
+}
+
+
+/* ===== מבחן: ציון עובר / לא עובר, טבלה קבועה בגוגל שיטס, ובחינה חוזרת ===== */
+const EXAM_HEAD = ['תאריך', 'משחק', 'שם', 'מס\' כונן', 'נכונות', 'מתוך', 'ציון %', 'סטטוס', 'על מה לא ענה נכון', 'נרשם לבחינה חוזרת', 'קוד בחינה חוזרת',
+  'חוזרת: נכונות', 'חוזרת: מתוך', 'חוזרת: ציון %', 'חוזרת: סטטוס', 'חוזרת: על מה לא ענה נכון', 'תאריך בחינה חוזרת', 'pin', 'pid', 'key', 'שאלות בחינה חוזרת'];
+const EXAM_TEXT_COLS = [4, 11, 18, 19, 21];
+
+function examSheet_() { // טבלה אחת קבועה לכל המשחקים; נוצרת אוטומטית בפעם הראשונה
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty('EXAM_SHEET_ID');
+  let ss = null;
+  if (id) { try { ss = SpreadsheetApp.openById(id); } catch (x) { ss = null; } }
+  if (!ss) {
+    ss = SpreadsheetApp.create('מבחנים – משחק חי');
+    props.setProperty('EXAM_SHEET_ID', ss.getId());
+    const sh = ss.getSheets()[0]; sh.setName('ציונים'); sh.setRightToLeft(true);
+    sh.getRange(1, 1, 1, EXAM_HEAD.length).setValues([EXAM_HEAD]).setFontWeight('bold').setBackground('#4f46e5').setFontColor('#ffffff');
+    sh.setFrozenRows(1); sh.setFrozenColumns(3);
+  }
+  return ss;
+}
+function examCode_() { const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let c = ''; for (let i = 0; i < 6; i++) c += A.charAt(Math.floor(Math.random() * A.length)); return c; }
+function examWrongText_(def, list) { return list.map(function (i) { return (i + 1) + '. ' + def.qs[i].t; }).join('\n'); }
+function examRow_(date, g, pin, pid, name, car, c, ok, wr, def) {
+  return [date, g.title, name, car, c, g.n, Math.round(100 * c / g.n), ok ? 'עובר' : 'לא עובר', examWrongText_(def, wr), '', '', '', '', '', '', '', '', pin, pid, g.key, ''];
+}
+function examWrite_(sh, start, rows) {
+  EXAM_TEXT_COLS.forEach(function (c) { sh.getRange(start, c, rows.length, 1).setNumberFormat('@'); });
+  sh.getRange(start, 1, rows.length, EXAM_HEAD.length).setValues(rows);
+}
+function examFind_(sh, col, val) { // מחזיר מספר שורה לפי ערך בעמודה, או 0
+  const n = sh.getLastRow(); if (n < 2) return 0;
+  const v = sh.getRange(2, col, n - 1, 1).getValues();
+  for (let i = 0; i < v.length; i++) if (String(v[i][0]) === val) return i + 2;
+  return 0;
+}
+function examFindPid_(sh, pin, pid) {
+  const n = sh.getLastRow(); if (n < 2) return 0;
+  const v = sh.getRange(2, 18, n - 1, 2).getValues();
+  for (let i = 0; i < v.length; i++) if (String(v[i][0]) === pin && String(v[i][1]) === pid) return i + 2;
+  return 0;
+}
+function examRecord_(g, pin, pl) {
+  const def = gget_('gd:' + pin), ex = gget_('gx:' + pin) || { cor: {}, wr: {} }, phs = gget_('gph:' + pin) || {};
+  const ss = examSheet_(), sh = ss.getSheets()[0];
+  const date = Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd.MM.yyyy HH:mm');
+  const pids = Object.keys(pl).sort(function (x, y) { return (g.scores[y] || 0) - (g.scores[x] || 0); });
+  let pass = 0, fail = 0; const rows = [];
+  pids.forEach(function (p) {
+    const c = ex.cor[p] || 0, ok = c >= g.pass; if (ok) pass++; else fail++;
+    rows.push(examRow_(date, g, pin, p, pl[p], phs[p] || '', c, ok, ex.wr[p] || [], def));
+  });
+  if (rows.length) examWrite_(sh, sh.getLastRow() + 1, rows);
+  return { pass: pass, fail: fail, url: ss.getUrl() };
+}
+function retake_(a, d) { // בחינה חוזרת: מקבל קוד, בוחר לשחקן שאלות אקראיות (פעם אחת), ומחשב את הציון
+  const code = String(d.code || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{6}$/.test(code)) return { ok: false, error: 'הקוד לא תקין' };
+  const lock = LockService.getScriptLock(); lock.waitLock(15000);
+  try {
+    const sh = examSheet_().getSheets()[0], r = examFind_(sh, 11, code);
+    if (!r) return { ok: false, error: 'הקוד לא נמצא' };
+    const row = sh.getRange(r, 1, 1, EXAM_HEAD.length).getValues()[0], G = GAMES[row[19]];
+    if (!G) return { ok: false, error: 'המבחן הזה כבר לא זמין' };
+    if (row[14]) return { ok: true, done: true, name: row[2], c: row[11], n: row[12], pass: row[14] === 'עובר' };
+    let idx = String(row[20] || '').split(',').filter(function (x) { return x !== ''; }).map(Number);
+    if (!idx.length) {
+      const all = G.questions.map(function (x, i) { return i; });
+      for (let i = all.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)), t = all[i]; all[i] = all[j]; all[j] = t; }
+      idx = all.slice(0, Math.min(G.retakeCount || 10, all.length));
+      sh.getRange(r, 21).setValue(idx.join(','));
+    }
+    if (a === 'rt_start') {
+      return { ok: true, name: row[2], title: G.title, qs: idx.map(function (i) { const Q = G.questions[i]; return { i: i, t: Q.q, ch: Q.a, img: Q.img ? G.img + Q.img : null }; }) };
+    }
+    const ans = d.answers || {}; let c = 0; const wr = [];
+    idx.forEach(function (i) { if (Number(ans[i]) === G.questions[i].right) c++; else wr.push(G.questions[i].q ? (i + 1) + '. ' + G.questions[i].q : String(i + 1)); });
+    const need = G.retakePassCorrect || Math.ceil(idx.length * 0.8), ok = c >= need;
+    sh.getRange(r, 12, 1, 6).setValues([[c, idx.length, Math.round(100 * c / idx.length), ok ? 'עובר' : 'לא עובר', wr.join('\n'), Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd.MM.yyyy HH:mm')]]);
+    return { ok: true, done: true, name: row[2], c: c, n: idx.length, pass: ok };
+  } finally { lock.releaseLock(); }
 }

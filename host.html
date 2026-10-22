@@ -336,7 +336,7 @@ function showEnd(){
     ${t[1]?`<div class="p2"><em>🥈</em>${esc(t[1].name)}<small>${t[1].score.toLocaleString('he-IL')}</small></div>`:''}
     ${t[0]?`<div class="p1"><em>🥇</em>${esc(t[0].name)}<small>${t[0].score.toLocaleString('he-IL')}</small></div>`:''}
     ${t[2]?`<div class="p3"><em>🥉</em>${esc(t[2].name)}<small>${t[2].score.toLocaleString('he-IL')}</small></div>`:''}</div>
-    <div class="later" id="later"><div class="board all" style="max-width:600px">${[...players].sort((a,b)=>b.score-a.score).slice(3).map((p,i)=>`<div class="r"><i>${i+4}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>${sheetBox()}</div>`;
+    <div class="later" id="later"><div class="board all" style="max-width:600px">${[...players].sort((a,b)=>b.score-a.score).slice(3).map((p,i)=>`<div class="r"><i>${i+4}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>${examBox()}${sheetBox()}</div>`;
   /* חשיפה הדרגתית: מקום שלישי, אחר כך שני, ובסוף ראשון עם זיקוקים */
   const order=[['.p3',t[2]],['.p2',t[1]],['.p1',t[0]]].filter(x=>x[1]);
   order.forEach(([sel],i)=>setTimeout(()=>{
@@ -359,6 +359,12 @@ function fireworks(ms){
 }
 function boomSnd(){beep(90+Math.random()*60,.25)}
 function fanfare(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.4),i*140))}
+/* מבחן: כמה עברו וכמה נכשלו, וקישור לטבלת המבחנים הקבועה (נשמרת אוטומטית בסוף המשחק) */
+function examBox(){
+  if(!G.pass)return '';
+  if(G.examUrl)return `<div class="card shq"><b>📋 תוצאות המבחן</b><div style="margin:8px 0;font-size:20px;font-weight:900"><span style="color:var(--ok)">✓ עברו ${G.examPass}</span> · <span style="color:var(--no)">✗ נכשלו ${G.examFail}</span></div><a href="${esc(G.examUrl)}" target="_blank" rel="noopener">פתח את טבלת המבחנים ◀</a><div class="mid" style="color:var(--mut);font-weight:700;margin-top:6px;font-size:14px">שם, מס' כונן, ציון, על מה לא ענה נכון, ותוצאות הבחינה החוזרת</div></div>`;
+  return `<div class="card shq"><b class="err">לא הצלחתי לשמור את תוצאות המבחן בטבלה</b><div class="mid" style="color:var(--mut)">${esc(/permission|הרשאה|Authorization/i.test(G.examErr||'')?'צריך לאשר הרשאת גיליונות בסקריפט (להריץ authorizeSheets)':(G.examErr||''))}</div></div>`;
+}
 /* בסוף המשחק: לשאול אם ליצור טבלה בגוגל שיטס (שם, טלפון, ומה כל אחד ענה בכל שאלה) */
 function sheetBox(){
   if(G.sheet)return `<div class="card shq" id="shq">📊 הטבלה מוכנה: <a href="${esc(G.sheet)}" target="_blank" rel="noopener">פתח בגוגל שיטס ◀</a></div>`;
@@ -385,7 +391,7 @@ function remote(){
       ph==='question'?`<div class="big">שאלה ${G.q+1} מתוך ${G.n}</div><div id="rq">${QI===G.q?esc(Q.t):''}</div><div class="stat"><div><b id="tm">${G.dur}</b>שניות</div><div><b id="ansN">${answered}</b>ענו</div><div><b id="plN">${players.length}</b>שחקנים</div></div><div class="waitl" id="waitL"></div>`:
       ph==='reveal'?`<div class="big">תשובה לשאלה ${G.q+1}</div><div style="font-weight:900">${countsTxt()}</div><button class="hb" onclick="whoToggle()">👥 מי ענה מה</button><div class="who" id="who" hidden></div>`:
       ph==='leader'?`<div class="big">🏅 טבלת מובילים</div><div class="board all">${topN(players.length).map((p,i)=>`<div class="r"><i>${i+1}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>`:
-      `<div class="big">🏆 המשחק הסתיים</div><div class="board all">${topN(players.length).map((p,i)=>`<div class="r"><i>${i+1}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>${sheetBox()}`;
+      `<div class="big">🏆 המשחק הסתיים</div><div class="board all">${topN(players.length).map((p,i)=>`<div class="r"><i>${i+1}</i><span>${esc(p.name)}</span>${p.score.toLocaleString('he-IL')}</div>`).join('')}</div>${examBox()}${sheetBox()}`;
     const main=ph==='lobby'?'◀ התחל משחק':ph==='question'?'סגור שאלה ←':ph==='reveal'?(G.q>=G.n-1?'🏆 לתוצאות':due()?'🏅 טבלת מובילים ←':'שאלה הבאה ←'):ph==='leader'?'שאלה הבאה ←':'';
     const second=ph==='reveal'&&G.q<G.n-1?(due()?`<button class="hb" onclick="next('skip')">דלג על הטבלה ←</button>`:`<button class="hb" onclick="next('board')">🏅 הצג טבלה</button>`):'';
     M.innerHTML=`<div class="card rm">${body}${main?`<button class="hb pr huge" onclick="next()">${main}</button>`:''}${second}</div>`;

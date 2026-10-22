@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>בחינה חוזרת</title>
+<meta name="theme-color" content="#f4f5fb">
+<meta name="robots" content="noindex">
+<link rel="icon" href="icons/apps-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@500;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.3/confetti.browser.min.js"></script>
+<style>
+:root{--bg:#f4f5fb;--card:#fff;--tx:#1e1b4b;--mut:#64748b;--bd:#e5e7f0;--pr:#4f46e5;--pr2:#0ea5e9;--ok:#16a34a;--no:#e11d48;--grad:linear-gradient(90deg,var(--pr),var(--pr2))}
+body{--grad:linear-gradient(90deg,var(--pr),var(--pr2))}
+body.uh{--pr:#f26a21;--pr2:#ff8a3d}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--tx);font-family:Heebo,sans-serif}
+button,input{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--bd);font-weight:900}
+.top b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cnt{background:var(--grad);color:#fff;border-radius:99px;padding:3px 14px;font-weight:900;font-size:15px}
+main{max-width:620px;margin:0 auto;padding:16px 14px 110px;display:flex;flex-direction:column;gap:14px}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:22px 18px;text-align:center;box-shadow:0 10px 30px rgba(30,27,75,.07)}
+.box h1{margin:0 0 10px;font-size:24px}
+.mid{color:var(--mut);font-weight:700}
+.fld{width:100%;border:1.5px solid var(--bd);border-radius:14px;padding:14px;font-size:22px;font-weight:900;text-align:center;letter-spacing:4px;text-transform:uppercase;outline:none;background:#fafaff;margin:10px 0}
+.fld:focus{border-color:var(--pr)}
+.go{width:100%;border:0;border-radius:14px;padding:15px;font-size:19px;font-weight:900;background:var(--grad);color:#fff;cursor:pointer;box-shadow:0 8px 20px rgba(79,70,229,.25)}
+.go:disabled{opacity:.5}
+.err{color:var(--no);font-weight:800;min-height:20px;margin:6px 0 0}
+.q{background:var(--card);border:1.5px solid var(--bd);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px;scroll-margin-top:70px}
+.q.miss{border-color:var(--no);box-shadow:0 0 0 3px rgba(225,29,72,.15)}
+.q .t{font-size:18px;font-weight:900;line-height:1.4}
+.q .t i{font-style:normal;color:var(--pr);margin-inline-end:6px}
+.q img{max-width:100%;max-height:32vh;border-radius:12px;border:1px solid var(--bd);align-self:center;background:#fff}
+.opt{display:flex;align-items:center;gap:12px;text-align:start;border:1.5px solid var(--bd);background:#fafaff;border-radius:14px;padding:13px 14px;font-weight:700;font-size:16px;cursor:pointer;width:100%}
+.opt .d{flex-shrink:0;width:24px;height:24px;border-radius:50%;border:2px solid var(--bd);background:#fff}
+.opt.on{border-color:var(--pr);background:#eef2ff}.opt.on .d{border-color:var(--pr);background:radial-gradient(circle,var(--pr) 0 45%,#fff 50%)}
+.bar{position:fixed;inset-inline:0;bottom:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 35%);z-index:6}
+.bar .go{max-width:620px;display:block;margin:0 auto}
+.res{border-radius:22px;padding:30px 18px;color:#fff;box-shadow:0 12px 30px rgba(30,27,75,.15)}
+.res.ok{background:linear-gradient(135deg,#22c55e,#15803d)}.res.no{background:linear-gradient(135deg,#fb7185,#e11d48)}
+.res .ic{font-size:64px;line-height:1}.res .big{font-size:28px;font-weight:900;margin-top:6px}
+.res .pts{display:inline-block;background:rgba(255,255,255,.22);border-radius:12px;padding:6px 16px;font-size:22px;font-weight:900;margin-top:12px}
+.spin{width:42px;height:42px;margin:20px auto;border:5px solid var(--bd);border-top-color:var(--pr);border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="top"><b id="ttl">📝 בחינה חוזרת</b><span class="cnt" id="cnt" hidden></span></div>
+<main id="M"><div class="spin"></div></main>
+<div class="bar" id="bar" hidden><button class="go" id="sub" onclick="submit()">שליחת הבחינה ←</button></div>
+<script>
+/* בחינה חוזרת: שחקן שנכשל במבחן נכנס עם הקוד האישי שלו, עונה על 10 שאלות אחרות, והציון נשמר אוטומטית בטבלת המבחנים של המארח */
+const CLOUD='https://script.google.com/macros/s/AKfycbyAdq-zplTeoIv1OPqxSOmbykpNM_7lRFtQ1fBcP0q0R0Abr4Qhk9a1G6nomO8k1EF_MA/exec';
+const $=id=>document.getElementById(id),M=$('M');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let code=(new URLSearchParams(location.search).get('c')||'').toUpperCase().replace(/[^A-Z0-9]/g,''),T=null,ans={},sending=false;
+function api(o){return fetch(CLOUD,{method:'POST',body:JSON.stringify(o)}).then(r=>r.json())}
+
+function codeView(msg){
+  $('bar').hidden=true;$('cnt').hidden=true;
+  M.innerHTML=`<div class="box"><h1>📝 בחינה חוזרת</h1><div class="mid">הקלד את הקוד האישי שקיבלת אחרי המבחן</div>
+    <input class="fld" id="cd" maxlength="6" autocapitalize="characters" placeholder="קוד" value="${esc(code)}">
+    <button class="go" onclick="start()">כניסה ←</button><p class="err" id="er">${esc(msg||'')}</p></div>`;
+  $('cd').onkeyup=e=>{if(e.key==='Enter')start()};
+}
+async function start(){
+  const c=$('cd')?$('cd').value.toUpperCase().replace(/[^A-Z0-9]/g,''):code;
+  if(c.length!==6){if($('er'))$('er').textContent='הקוד הוא 6 תווים';return}
+  code=c;M.innerHTML='<div class="spin"></div>';
+  let r=null;try{r=await api({action:'rt_start',code})}catch(e){}
+  if(!r){codeView('אין חיבור לאינטרנט, נסה שוב');return}
+  if(!r.ok){codeView(r.error||'הקוד לא נמצא');return}
+  history.replaceState(null,'','?c='+code);
+  if(r.done){result(r);return}
+  T=r;try{const s=JSON.parse(localStorage.getItem('rt_'+code));if(s)ans=s}catch(e){}
+  if(/הצלה/.test(T.title||''))document.body.classList.add('uh');
+  render();
+}
+function render(){
+  $('ttl').textContent='📝 '+T.name;$('bar').hidden=false;
+  M.innerHTML=`<div class="box"><b>בחינה חוזרת: ${T.qs.length} שאלות</b><div class="mid" style="margin-top:4px">בוחרים תשובה אחת בכל שאלה, ובסוף לוחצים "שליחה"</div></div>`+
+    T.qs.map((q,n)=>`<div class="q" id="q${q.i}"><div class="t"><i>${n+1}.</i>${esc(q.t)}</div>${q.img?`<img src="${esc(q.img)}" alt="">`:''}
+      ${q.ch.map((c,k)=>`<button class="opt${ans[q.i]===k?' on':''}" onclick="pick(${q.i},${k},this)"><span class="d"></span>${esc(c)}</button>`).join('')}</div>`).join('');
+  count();
+}
+function pick(i,k,el){
+  ans[i]=k;try{localStorage.setItem('rt_'+code,JSON.stringify(ans))}catch(e){}
+  el.parentNode.querySelectorAll('.opt').forEach(b=>b.classList.toggle('on',b===el));
+  $('q'+i).classList.remove('miss');count();
+}
+function count(){const n=T.qs.filter(q=>ans[q.i]!==undefined).length;const c=$('cnt');c.hidden=false;c.textContent=n+' / '+T.qs.length}
+async function submit(){
+  if(sending)return;
+  const miss=T.qs.filter(q=>ans[q.i]===undefined);
+  if(miss.length){miss.forEach(q=>$('q'+q.i).classList.add('miss'));$('q'+miss[0].i).scrollIntoView({behavior:'smooth',block:'center'});
+    $('sub').textContent='חסרות '+miss.length+' תשובות';setTimeout(()=>$('sub').textContent='שליחת הבחינה ←',2200);return}
+  sending=true;$('sub').disabled=true;$('sub').textContent='שולח…';
+  /* אם הקליטה חלשה מנסים שוב; השרת שומר רק את השליחה הראשונה */
+  for(let k=0;k<6;k++){
+    try{const r=await api({action:'rt_submit',code,answers:ans});if(r&&r.ok){try{localStorage.removeItem('rt_'+code)}catch(e){}result(r);sending=false;return}
+      if(r&&r.error){$('sub').textContent=r.error;break}}catch(e){}
+    $('sub').textContent='📶 הקליטה חלשה, מנסה שוב…';await new Promise(r=>setTimeout(r,Math.min(4000,800*(k+1))));
+  }
+  sending=false;$('sub').disabled=false;$('sub').textContent='לא הצליח, לחץ לנסות שוב';
+}
+function result(r){
+  $('bar').hidden=true;$('cnt').hidden=true;$('ttl').textContent='📝 '+(r.name||'בחינה חוזרת');
+  M.innerHTML=`<div class="res ${r.pass?'ok':'no'}"><div class="ic">${r.pass?'✓':'✗'}</div><div class="big">${r.pass?'עברת את הבחינה החוזרת!':'לא עברת הפעם'}</div><div class="pts">${r.c} נכונות מתוך ${r.n}</div></div>
+    <div class="box"><div class="mid">התוצאה נשמרה אצל המארח. אפשר לסגור את הדף.</div></div>`;
+  if(r.pass&&window.confetti)confetti({particleCount:140,spread:90,origin:{y:.4}});
+}
+if(code.length===6)start();else codeView();
+</script>
+</body>
+</html>
