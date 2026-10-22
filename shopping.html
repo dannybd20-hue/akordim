@@ -195,7 +195,7 @@ body.locked #login{display:block}body.locked main,body.locked .tabs{display:none
   <p class="note" style="margin:0 0 6px">השם יופיע ליד כל פריט שתוסיפו לרשימה.</p>
   <div class="who"><button onclick="setMe('דני')">דני</button><button onclick="setMe('ציפי')">ציפי</button><button onclick="setMe('הילד')">הילד</button></div>
   <input class="fld" id="meOther" placeholder="או כתבו שם אחר ולחצו Enter" onkeyup="if(event.key==='Enter'&&this.value.trim())setMe(this.value.trim())">
-  <div class="row end" id="meLogout"><button class="b dn" onclick="logout()">התנתקות מהמכשיר</button><button class="b" onclick="dMe.close()">סגור</button></div>
+  <div class="row end" id="meLogout"><button class="b dn" onclick="fullLogout()">התנתקות מהמכשיר</button><button class="b" onclick="dMe.close()">סגור</button></div>
 </dialog>
 
 <dialog id="dProd">
@@ -338,6 +338,12 @@ async function login(){
     if(!r.ok){e.textContent=r.error==='locked'?'🔒 יותר מדי ניסיונות שגויים. נסה שוב בעוד רבע שעה, או עם הסיסמה הראשית':'סיסמה שגויה';e.style.display='block';return}
     pw=v;put('shop_pw',v);st=r.state;persist();document.body.classList.remove('locked');seed();render();dot('ok');if(!me)askMe();
   }catch(x){e.textContent='אין חיבור לאינטרנט, נסו שוב';e.style.display='block'}
+}
+/* התנתקות מלאה: מוחקים את הכניסה לאתר ואת השפה, וחוזרים למסך הסיסמה בדף הבית (שם אפשר להיכנס מחדש, למשל עם הסיסמה הראשית) */
+function fullLogout(){
+  try{['hub_access','hub_pw','hub_admin','shop_lang','shop_pw','bio_skip'].forEach(k=>localStorage.removeItem(k));
+    Object.keys(sessionStorage).forEach(k=>{if(/^gate_|^hub_/.test(k))sessionStorage.removeItem(k)})}catch(e){}
+  location.href='./';
 }
 function logout(msg){pw='';put('shop_pw',null);dMe.close();document.body.classList.add('locked');if(msg){$('lerr').textContent=msg;$('lerr').style.display='block'}}
 
