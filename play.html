@@ -139,7 +139,7 @@ function draw(){
     M.innerHTML+=`<div class="mid">אתה במקום <b>${st.rank}</b> מתוך ${st.players}</div>`;
     if(L.ok&&window.confetti)confetti({particleCount:90,spread:75,origin:{y:.35}});
   }else if(st.phase==='leader'){M.innerHTML=`<div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות</div><div class="mid">מחכים לשאלה הבאה…</div>`}
-  else if(st.phase==='end'){if(st.rank<=3&&window.confetti)confetti({particleCount:150,spread:100,origin:{y:.4}});M.innerHTML=`<div class="big">${st.rank===1?'🏆 ניצחת!':st.rank<=3?'🥈 על הפודיום!':'סוף המשחק'}</div><div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות · מתוך ${st.players} שחקנים</div>`}
+  else if(st.phase==='end'){if(st.rank<=3&&window.confetti)confetti({particleCount:150,spread:100,origin:{y:.4}});M.innerHTML=examBlock()+`<div class="big">${st.rank===1?'🏆 ניצחת!':st.rank<=3?'🥈 על הפודיום!':'סוף המשחק'}</div><div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות · מתוך ${st.players} שחקנים</div>`}
 }
 
 /* 5 השניות האחרונות: צפצוף בכל שנייה, המספר מתנפח ורקע אדום מהבהב */
@@ -164,6 +164,28 @@ let showImg=true;try{showImg=localStorage.getItem('game_img')!=='0'}catch(e){}
 function toggleImg(){showImg=!showImg;try{localStorage.setItem('game_img',showImg?'1':'0')}catch(e){}
   const i=$('qimg'),b=$('imgb');if(i)i.hidden=!showImg;if(b)b.textContent=showImg?'🖼 הסתר תמונה':'🖼 הצג תמונה'}
 function zoomImg(src){const z=document.createElement('div');z.className='zoom';z.onclick=()=>z.remove();z.innerHTML='<img src="'+src+'" alt="">';document.body.append(z)}
+/* מבחן: בסוף המשחק השחקן רואה אם עבר, ומי שנכשל יכול להירשם לבחינה חוזרת (10 שאלות אחרות) */
+function rtUrl(code){return new URL('retake.html?c='+code,location.href).href}
+function examBlock(){
+  const e=st.exam;if(!e)return '';
+  if(e.pass)return `<div class="res ok"><div class="ic">✓</div><div class="big">עברת את המבחן!</div><div class="pts">${e.c} נכונות מתוך ${e.n}</div></div>`;
+  return `<div class="res no"><div class="ic">✗</div><div class="big">לא עברת הפעם</div><div class="pts">${e.c} נכונות מתוך ${e.n}</div><div style="margin-top:8px;font-weight:700">צריך לפחות ${e.need} נכונות</div></div>`+
+    (e.retake?(e.code?regHtml(e.code):`<div class="box" id="rtb"><b>רוצה לנסות שוב?</b><div class="mid" style="margin:6px 0 10px">בחינה חוזרת של 10 שאלות אחרות</div><button class="go" onclick="regRetake()">📝 אני רוצה לבצע בחינה חוזרת</button><p class="err" id="rter"></p></div>`):'');
+}
+function regHtml(code){
+  const u=rtUrl(code);
+  return `<div class="box" id="rtb"><b>נרשמת לבחינה חוזרת ✓</b><div class="mid" style="margin:6px 0 10px">10 שאלות אחרות. אפשר לעשות את זה עכשיו או אחר כך מהקישור הזה:</div>
+    <a class="go" style="display:block;text-decoration:none" href="${esc(u)}">▶ התחל בחינה עכשיו</a>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap"><button class="imgb" onclick="copyRt('${esc(u)}')" id="cpb">📋 העתק קישור</button><a class="imgb" style="text-decoration:none;color:inherit" target="_blank" href="https://wa.me/?text=${encodeURIComponent('הבחינה החוזרת שלי: '+u)}">שלח לעצמי בוואטסאפ</a></div>
+    <div class="mid" style="margin-top:10px;font-size:14px">קוד: <b style="letter-spacing:2px">${esc(code)}</b></div></div>`;
+}
+async function regRetake(){
+  const er=$('rter');if(er)er.textContent='נרשם…';
+  try{const r=await api({action:'g_retake',pin,pid});
+    if(r.ok){$('rtb').outerHTML=regHtml(r.code)}else if(er)er.textContent=r.error||'לא הצליח, נסה שוב'}
+  catch(e){if(er)er.textContent='אין חיבור, נסה שוב'}
+}
+function copyRt(u){try{navigator.clipboard.writeText(u).then(()=>{const b=$('cpb');if(b)b.textContent='✓ הועתק'})}catch(e){prompt('העתק את הקישור',u)}}
 function mine(){const c=pend?pend.c:(window._mc&&_mc.q===st.q?_mc.c:-1);return c>=0&&st.ch?`<div class="qt c${c}" style="border-inline-start:6px solid var(--c)">${SH[c]} · ${esc(st.ch[c])}</div>`:''}
 /* שליחת תשובה עם אישור קבלה: אם הקליטה חלשה מנסים שוב (השרת מתעלם מכפילויות).
    הזמן נמדד בטלפון מהרגע שהשאלה הופיעה, כדי שמי שהאינטרנט שלו איטי לא יפסיד נקודות */
