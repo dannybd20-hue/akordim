@@ -60,6 +60,9 @@ function heName_(n) {
   if (k.slice(-1) === 's' && EN2HE[k.slice(0, -1)]) return EN2HE[k.slice(0, -1)];
   return n;
 }
+/* שם של בן משפחה שהוקלד באנגלית נשמר בעברית (Tzipi ← ציפי), כדי שההודעות לקבוצה יהיו בעברית ובלשון הנכונה */
+const NAMES_HE = { 'tzipi': 'ציפי', 'tsipi': 'ציפי', 'zipi': 'ציפי', 'cipi': 'ציפי', 'danny': 'דני', 'dani': 'דני', 'danni': 'דני' };
+function heBy_(n) { const k = String(n || '').trim().toLowerCase(); return NAMES_HE[k] || n; }
 function heQty_(q) { return String(q || '').replace(/\bkg\b/gi, 'ק״ג').replace(/\bpcs?\b/gi, 'יח׳'); }
 
 function esc_(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -227,6 +230,7 @@ function doGet() { return out_({ ok: true, app: 'shopping' }); }
 function doPost(e) {
   let d;
   try { d = JSON.parse(e.postData.contents); } catch (x) { return out_({ ok: false, error: 'bad' }); }
+  if (d.by !== undefined) d.by = heBy_(d.by);
   if (d.app === 'presence') return presence_(d);
   if (d.app === 'maaser') return maaserPost_(d);
   if (!isAdmin_(d.password)) {
@@ -244,6 +248,7 @@ function doPost(e) {
     let changed = false;
     (d.ops || []).forEach(function (o) {
       if (o.name !== undefined) o.name = heName_(o.name); // שם באנגלית נשמר בעברית
+      if (o.by !== undefined) o.by = heBy_(o.by);
       if (o.qty !== undefined) o.qty = heQty_(o.qty);
       const bi = o.type === 'bought' ? shopFind(st.items, o.iid) : -1, bItem = bi >= 0 ? { n: st.items[bi].name, q: st.items[bi].qty } : null;
       const pending = o.type === 'notify' ? shopPending(st).map(function (x) { return { n: x.name, q: x.qty, k: x.src === 'pantry' ? 'pantry' : 'add' }; }) : [];
