@@ -119,7 +119,7 @@ function draw(){
   $('tScore').textContent=st.score.toLocaleString('he-IL');
   if(st.name&&st.name!==me){me=st.name;$('tName').textContent='👤 '+me;try{sessionStorage.setItem('game_'+pin,JSON.stringify({pid,me}))}catch(e){}}
   if(/uh|הצלה/.test(st.title||''))document.body.classList.add('uh');
-  const key=st.phase+':'+st.q+':'+(st.answered?1:0);
+  const key=st.phase+':'+st.q+':'+(st.answered?1:0)+(st.phase==='question'?':'+st.qStart:'');
   if(st.closed){if(shown!=='closed'){shown='closed';clearInterval(timer);document.body.classList.remove('hot');try{localStorage.removeItem('game_last')}catch(e){}M.innerHTML='<div class="big">המשחק נסגר</div><div class="mid">המארח סגר את המשחק</div>'}return}
   if(st.phase==='lobby'){if(shown!=='lobby'){shown='lobby';M.innerHTML=`<div class="big">אתה בפנים! 🎉</div><div class="mid">רואים את השם שלך על המסך?<br>מחכים שהמשחק יתחיל…</div><div class="spin"></div>`}return}
   if(st.phase==='question'){

@@ -21,7 +21,7 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 11; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 12; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
 function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
 
 function doPost(e) {
@@ -283,6 +283,25 @@ function game_(d, admin) {
 
   if (a === 'g_sheet') return gsheet_(pin, g, pl);
 
+  if (a === 'g_qs') { // רשימת כל השאלות, בשביל "קפוץ לשאלה"
+    const def = gget_('gd:' + pin); if (!def) return { ok: false, error: 'nogame' };
+    return { ok: true, qs: def.qs.map(function (x) { return x.t; }) };
+  }
+
+  if (a === 'g_goto') { // קפיצה לשאלה כלשהי (קדימה או אחורה)
+    const lock = LockService.getScriptLock(); lock.waitLock(10000);
+    try {
+      const g2 = gget_('g:' + pin), q = Number(d.q);
+      if (!(q >= 0 && q < g2.n)) return { ok: false, error: 'שאלה לא קיימת' };
+      if (g2.phase === 'end') return { ok: false, error: 'המשחק כבר הסתיים' };
+      const keys = Object.keys(gget_('gp:' + pin) || {}).map(function (p) { return 'ga:' + pin + ':' + q + ':' + p; });
+      if (keys.length) CacheService.getScriptCache().removeAll(keys); // מנקים תשובות קודמות לשאלה הזאת
+      g2.q = q; g2.phase = 'question'; g2.qStart = now + 800; g2.dist = null; g2.right = null; g2.last = {};
+      gput_('g:' + pin, g2);
+      return { ok: true, now: now, game: g2 };
+    } finally { lock.releaseLock(); }
+  }
+
   if (a === 'g_close') { // סגירת משחק: השחקנים רואים "המשחק הסתיים" והוא יורד מרשימת המשחקים הפעילים
     g.phase = 'end'; g.closed = true; gput_('g:' + pin, g);
     gput_('gact', (gget_('gact') || []).filter(function (x) { return x !== pin; }));
@@ -313,6 +332,16 @@ function gnext_(pin, d, now, pids) {
     const got = CacheService.getScriptCache().getAll(pids.map(function (p) { return 'ga:' + pin + ':' + g.q + ':' + p; }));
     g.last = {};
     const rec = {};
+    const prior0 = gget_('gr:' + pin + ':' + g.q);
+    if (prior0) {
+      const ex0 = gget_('gx:' + pin) || { cor: {}, wr: {}, reg: {} };
+      pids.forEach(function (p) {
+        const v = prior0[p];
+        if (v) { g.scores[p] = Math.max(0, (g.scores[p] || 0) - v[1]); if (v[0] === Q.right) ex0.cor[p] = Math.max(0, (ex0.cor[p] || 0) - 1); }
+        ex0.wr[p] = (ex0.wr[p] || []).filter(function (i) { return i !== g.q; });
+      });
+      gput_('gx:' + pin, ex0);
+    }
     pids.forEach(function (p) {
       const v = got['ga:' + pin + ':' + g.q + ':' + p];
       if (!v) { g.last[p] = { ok: false, p: 0, none: true }; if (!(p in g.scores)) g.scores[p] = 0; return; }
