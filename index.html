@@ -155,6 +155,8 @@ const ACCESS={
   'd8acc45287fb852ef048950cf2edfc575614ffa5437f90d6780ae251058d723a':Object.keys(PAGES) // הסיסמה הראשית
 };
 const $=id=>document.getElementById(id);
+/* קוד כניסה שפותח ישר את הקניות באנגלית (נשמר רק הגיבוב שלו) */
+const EN_HASHES=new Set([/*EN_HASH*/]);
 
 /* כפתור העין: מציג או מסתיר את הסיסמה שמקלידים */
 function eye(b,show){const i=b.previousElementSibling;show=show===undefined?i.type==='password':show;i.type=show?'text':'password';b.textContent=show?'🙈':'👁️';b.title=show?'הסתר סיסמה':'הצג סיסמה'}
@@ -193,7 +195,8 @@ function show(){
 async function submit(){
   const v=$('p1').value.trim();err('');
   if(!v){err('נא להקליד סיסמה');return}
-  const A=ACCESS[await hash(v)];
+  const h=await hash(v),isEn=EN_HASHES.has(h);
+  const A=isEn?['shopping']:ACCESS[h];
   if(!A){err('סיסמה שגויה');$('p1').select();return}
   /* אפליקציית הקניות מתחברת לענן עם הסיסמה המשפחתית; מנסים קודם את מה שהוקלד כאן */
   grant(A,v);
@@ -203,6 +206,8 @@ async function submit(){
   if($('rem').checked){lput('hub_access',JSON.stringify(A));lput('hub_pw',A.includes('shopping')||A.includes('forms')?v:null)}
   sput('hub_seen','1');
   $('p1').value='';
+  lput('shop_lang',isEn?'en':null); /* קוד באנגלית: הקניות נפתחות ישר באנגלית; כל קוד אחר מחזיר לעברית */
+  if(isEn){location.replace('shopping.html');return}
   if(!myName()){$('lockv').hidden=true;$('namev').hidden=false;setTimeout(()=>$('nmIn').focus(),50);return}
   bioOffer();
 }
@@ -285,7 +290,7 @@ $('nmIn').addEventListener('keyup',e=>{if(e.key==='Enter')saveName()});
   if(!access().length&&bioData()){only('biolock');bioLogin();return}
   const A=access(),want=new URLSearchParams(location.search).get('open');
   /* מכשיר שכבר נכנס אבל עוד לא נתן שם: מבקשים את השם פעם אחת */
-  if(A.length&&!myName()){$('lockv').hidden=true;$('namev').hidden=false;setTimeout(()=>$('nmIn').focus(),50);return}
+  if(A.length&&!myName()&&get('shop_lang')!=='en'){$('lockv').hidden=true;$('namev').hidden=false;setTimeout(()=>$('nmIn').focus(),50);return}
   if(A.includes(want)){location.replace(dest(want));return}
   if(A.length===1&&!sget('hub_seen')){sput('hub_seen','1');location.replace(dest(A[0]));return}
   sput('hub_seen','1');

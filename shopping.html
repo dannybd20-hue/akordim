@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <script>try{if(sessionStorage.getItem('gate_shopping')!=='1'){document.documentElement.style.display='none';location.replace('./?open=shopping')}}catch(e){location.replace('./')}</script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="shop-i18n.js?v=1"></script>
 <title>קניות לבית</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#db2777">
@@ -360,18 +361,18 @@ function render(){
   renderList();renderHome();
 }
 /* מחלקות בסופר, לפי סדר ההליכה הרגיל: כך קונים הכול בסיבוב אחד */
-const DEPTS=[['ירקות ופירות','🥬','עגבני|מלפפו|בצל|שום|גזר|פלפל|חסה|כרוב|ברוקולי|כרובית|תירס טרי|פטרי|בטטה|תפוח אדמה|תפוחי אדמה|תפו"א|לימון|אבוקדו|בננ|תפוח|תפוז|קלמנטינ|אבטיח|מלון|ענב|תות|פירות|פרי|ירקות|ירק|נענע|פטרוזילי|כוסברה|שמיר|קישוא|חציל|דלעת|סלרי|אגס|שזיף|נקטרינ|אפרסק|מנגו|רימון|קיווי|אננס|גפן|עלים'],
-['חטיפים וממתקים','🍫','שוקולד|נוטלה|עוגי|ופל|ביסקוו|במבה|בוטנ|ביסלי|חטיף|צ׳יפס|ציפס|תפוציפס|ממתק|סוכרי|מסטיק|פופקורן|גרעינ|פיצוחים'],
-['לחם ומאפים','🍞','לחם|לחמני|פיתה|חלה|באגט|בגט|טוסט|עוג|בורקס|קרואסון|לאפה|מאפה'],
-['חלב וביצים','🥛','חלב|שוקו|יוגורט|לבן|אשל|מעדן|גבינ|קוטג|שמנת|חמאה|מרגרינה|ביצ|מוצרלה|פרמזן|דנונה'],
-['בשר, עוף ודגים','🍗','עוף|שניצל|כרעיים|חזה|בשר|טחון|סטייק|אנטריקוט|דג|סלמון|נקניק|פסטרמה|המבורגר|קבב|כבד'],
-['קפואים','❄️','גלידה|קפוא|ארטיק|שלגון'],
-['משקאות','🥤','מים|קולה|סודה|ספרייט|מיץ|פטל|יין|בירה|משקה|שתיה|פנטה|מינרל|וודקה|וויסקי'],
-['יבשים ושימורים','🥫','אורז|פסטה|ספגטי|אטריות|פתיתים|קמח|סוכר|שמן|זית|מלח|תבלין|פפריקה|קפה|נס|תה|דבש|ריבה|ממרח|חומוס|טחינה|שעועית|עדשים|שימורים|טונה|תירס|קורנפלקס|דגני|שיבולת|קטשופ|מיונז|חרדל|רוטב|רסק|קטניות|שמרים|פירורי|קוסקוס|בורגול|קינואה|אגוזים|שקדים|צימוקים|אבקת'],
-['ניקיון','🧼','סבון כלים|כלים|פיירי|אקונומיקה|כביסה|ספוג|סקוטש|אשפה|נייר טואלט|טואלט|מגבות נייר|מפיות|טישו|נייר אפייה|אלומיניום|סמרטוט|מטאטא|מנקה|ניקוי|שקיות'],
-['טיפוח והיגיינה','🧴','שמפו|מרכך|קרם|דאודורנט|משחת שיניים|מברשת שיניים|סבון|חיתול|מגבונ|תחבושת|טמפון|גילוח|תרופ|אקמול|ויטמין|פלסטר'],
+const DEPTS=[['ירקות ופירות','🥬','עגבני|מלפפו|בצל|שום|גזר|פלפל|חסה|כרוב|ברוקולי|כרובית|תירס טרי|פטרי|בטטה|תפוח אדמה|תפוחי אדמה|תפו"א|לימון|אבוקדו|בננ|תפוח|תפוז|קלמנטינ|אבטיח|מלון|ענב|תות|פירות|פרי|ירקות|ירק|נענע|פטרוזילי|כוסברה|שמיר|קישוא|חציל|דלעת|סלרי|אגס|שזיף|נקטרינ|אפרסק|מנגו|רימון|קיווי|אננס|גפן|עלים|tomato|cucumber|onion|garlic|carrot|pepper|lettuce|cabbage|broccoli|cauliflower|potato|lemon|avocado|banana|apple|orange|watermelon|melon|grape|strawberr|fruit|vegetable|\\bmint\\b|parsley|cilantro|eggplant|zucchini|mushroom|\\bpear|plum|peach|mango|pomegranate|kiwi|pineapple'],
+['חטיפים וממתקים','🍫','שוקולד|נוטלה|עוגי|ופל|ביסקוו|במבה|בוטנ|ביסלי|חטיף|צ׳יפס|ציפס|תפוציפס|ממתק|סוכרי|מסטיק|פופקורן|גרעינ|פיצוחים|chocolate|cookie|biscuit|bamba|bisli|snack|\\bchips\\b|candy|\\bgum\\b|popcorn|sweets'],
+['לחם ומאפים','🍞','לחם|לחמני|פיתה|חלה|באגט|בגט|טוסט|עוג|בורקס|קרואסון|לאפה|מאפה|bread|\\bpita|challah|bagel|toast|\\bcake|\\brolls?\\b|pastry|\\bbun|baguette'],
+['חלב וביצים','🥛','חלב|שוקו|יוגורט|לבן|אשל|מעדן|גבינ|קוטג|שמנת|חמאה|מרגרינה|ביצ|מוצרלה|פרמזן|דנונה|\\bmilk|yogurt|yoghurt|cheese|cottage|(?<!ice )cream|butter|margarine|\\beggs?\\b'],
+['בשר, עוף ודגים','🍗','עוף|שניצל|כרעיים|חזה|בשר|טחון|סטייק|אנטריקוט|דג|סלמון|נקניק|פסטרמה|המבורגר|קבב|כבד|chicken|schnitzel|\\bmeat|beef|steak|\\bfish|salmon|sausage|salami|pastrami|burger|kebab|liver|turkey'],
+['קפואים','❄️','גלידה|קפוא|ארטיק|שלגון|ice cream|frozen|popsicle'],
+['משקאות','🥤','מים|קולה|סודה|ספרייט|מיץ|פטל|יין|בירה|משקה|שתיה|פנטה|מינרל|וודקה|וויסקי|\\bwater|\\bcola|soda|sprite|juice|\\bwine|\\bbeer|drink|fanta|vodka|whisk'],
+['יבשים ושימורים','🥫','אורז|פסטה|ספגטי|אטריות|פתיתים|קמח|סוכר|שמן|זית|מלח|תבלין|פפריקה|קפה|נס|תה|דבש|ריבה|ממרח|חומוס|טחינה|שעועית|עדשים|שימורים|טונה|תירס|קורנפלקס|דגני|שיבולת|קטשופ|מיונז|חרדל|רוטב|רסק|קטניות|שמרים|פירורי|קוסקוס|בורגול|קינואה|אגוזים|שקדים|צימוקים|אבקת|\\brice\\b|pasta|spaghetti|noodle|couscous|flour|sugar|\\boil\\b|olive|\\bsalt\\b|spice|coffee|\\btea\\b|honey|\\bjam\\b|hummus|tahini|beans|lentils|canned|\\btuna|\\bcorn\\b|cereal|oats|ketchup|mayo|mustard|sauce|\\bpaste\\b|yeast|quinoa|almond|raisin'],
+['ניקיון','🧼','סבון כלים|כלים|פיירי|אקונומיקה|כביסה|ספוג|סקוטש|אשפה|נייר טואלט|טואלט|מגבות נייר|מפיות|טישו|נייר אפייה|אלומיניום|סמרטוט|מטאטא|מנקה|ניקוי|שקיות|dish soap|detergent|bleach|laundry|sponge|trash|garbage|toilet paper|paper towel|napkin|tissue|\\bfoil|baking paper|cleaner|\\bbags?\\b'],
+['טיפוח והיגיינה','🧴','שמפו|מרכך|קרם|דאודורנט|משחת שיניים|מברשת שיניים|סבון|חיתול|מגבונ|תחבושת|טמפון|גילוח|תרופ|אקמול|ויטמין|פלסטר|shampoo|conditioner|lotion|deodorant|toothpaste|toothbrush|\\bsoap|diaper|wipes|\\bpads?\\b|razor|medicine|vitamin|bandage'],
 ['אחר','🛒','']];
-const DEPT_RE=DEPTS.map(d=>d[2]?new RegExp(d[2]):null);
+const DEPT_RE=DEPTS.map(d=>d[2]?new RegExp(d[2],'i'):null);
 function shopDept(name){const n=shopKey(name);for(let i=0;i<DEPTS.length-1;i++)if(DEPT_RE[i].test(n))return i;return DEPTS.length-1}
 let deptOn=get('shop_dept')!=='0';
 function toggleDept(){deptOn=!deptOn;put('shop_dept',deptOn?'1':'0');renderList()}
