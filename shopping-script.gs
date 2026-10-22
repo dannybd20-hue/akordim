@@ -34,6 +34,34 @@ function save_(f, st) {
 /* ---------------- התראות במייל ----------------
    entries: [{n: שם, q: כמות, k: 'add' | 'pantry' | 'auto'}]
    המייל נשלח לכל בני המשפחה חוץ מהשולח. אפליקציית Gmail בטלפון מקפיצה עליו התראה */
+/* מוצר שהוקלד באנגלית (למשל Milk) נשמר בעברית (חלב), כדי שהרשימה וההודעות לקבוצה יהיו בעברית.
+   שם שלא ברשימה נשאר כמו שהוקלד. אפשר להוסיף מוצרים: 'english name': 'עברית' */
+const EN2HE = {
+  'milk': 'חלב', 'bread': 'לחם', 'egg': 'ביצים', 'eggs': 'ביצים', 'yellow cheese': 'גבינה צהובה', 'cheese': 'גבינה', 'cottage cheese': 'קוטג׳', 'cottage': 'קוטג׳',
+  'white cheese': 'גבינה לבנה', 'yogurt': 'יוגורט', 'yoghurt': 'יוגורט', 'butter': 'חמאה', 'cream': 'שמנת', 'tomato': 'עגבניות', 'tomatoes': 'עגבניות',
+  'cucumber': 'מלפפונים', 'cucumbers': 'מלפפונים', 'banana': 'בננות', 'bananas': 'בננות', 'apple': 'תפוחים', 'apples': 'תפוחים', 'onion': 'בצל', 'onions': 'בצל',
+  'potato': 'תפוחי אדמה', 'potatoes': 'תפוחי אדמה', 'sweet potato': 'בטטה', 'rice': 'אורז', 'pasta': 'פסטה', 'oil': 'שמן', 'coffee': 'קפה', 'sugar': 'סוכר',
+  'bamba': 'במבה', 'water': 'מים', 'toilet paper': 'נייר טואלט', 'dish soap': 'סבון כלים', 'laundry powder': 'אבקת כביסה', 'laundry detergent': 'אבקת כביסה',
+  'detergent': 'אבקת כביסה', 'trash bags': 'שקיות אשפה', 'garbage bags': 'שקיות אשפה', 'carrot': 'גזר', 'carrots': 'גזר', 'pepper': 'פלפל', 'peppers': 'פלפל',
+  'lettuce': 'חסה', 'lemon': 'לימון', 'lemons': 'לימון', 'avocado': 'אבוקדו', 'orange': 'תפוזים', 'oranges': 'תפוזים', 'garlic': 'שום', 'broccoli': 'ברוקולי',
+  'mushroom': 'פטריות', 'mushrooms': 'פטריות', 'chicken': 'עוף', 'chicken breast': 'חזה עוף', 'ground meat': 'בשר טחון', 'minced meat': 'בשר טחון', 'schnitzel': 'שניצל',
+  'fish': 'דג', 'tuna': 'טונה', 'salmon': 'סלמון', 'chocolate milk': 'שוקו', 'flour': 'קמח', 'salt': 'מלח', 'couscous': 'פתיתים', 'hummus': 'חומוס', 'tahini': 'טחינה',
+  'honey': 'דבש', 'jam': 'ריבה', 'cornflakes': 'קורנפלקס', 'corn flakes': 'קורנפלקס', 'cereal': 'דגני בוקר', 'chocolate': 'שוקולד', 'cookies': 'עוגיות', 'cookie': 'עוגיות',
+  'bisli': 'ביסלי', 'cola': 'קולה', 'juice': 'מיץ', 'beer': 'בירה', 'wine': 'יין', 'tea': 'תה', 'ice cream': 'גלידה', 'pita': 'פיתה', 'challah': 'חלה', 'shampoo': 'שמפו',
+  'toothpaste': 'משחת שיניים', 'soap': 'סבון', 'paper towels': 'מגבות נייר', 'paper towel': 'מגבות נייר', 'bleach': 'אקונומיקה', 'sponges': 'ספוגים', 'sponge': 'ספוג',
+  'diapers': 'חיתולים', 'wet wipes': 'מגבונים', 'wipes': 'מגבונים', 'ketchup': 'קטשופ', 'mayonnaise': 'מיונז', 'mayo': 'מיונז', 'mustard': 'חרדל', 'beans': 'שעועית',
+  'lentils': 'עדשים', 'corn': 'תירס', 'mint': 'נענע', 'parsley': 'פטרוזיליה', 'cilantro': 'כוסברה', 'eggplant': 'חציל', 'zucchini': 'קישואים', 'watermelon': 'אבטיח',
+  'melon': 'מלון', 'grapes': 'ענבים', 'strawberries': 'תותים', 'nuts': 'אגוזים', 'almonds': 'שקדים', 'salami': 'נקניק', 'pastrami': 'פסטרמה'
+};
+function heName_(n) {
+  const k = String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  if (!/^[a-z' -]+$/.test(k)) return n;
+  if (EN2HE[k]) return EN2HE[k];
+  if (k.slice(-1) === 's' && EN2HE[k.slice(0, -1)]) return EN2HE[k.slice(0, -1)];
+  return n;
+}
+function heQty_(q) { return String(q || '').replace(/\bkg\b/gi, 'ק״ג').replace(/\bpcs?\b/gi, 'יח׳'); }
+
 function esc_(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
 /* ---------------- הודעות אוטומטיות בוואטסאפ (Green API) ----------------
@@ -215,6 +243,8 @@ function doPost(e) {
     st = l.st;
     let changed = false;
     (d.ops || []).forEach(function (o) {
+      if (o.name !== undefined) o.name = heName_(o.name); // שם באנגלית נשמר בעברית
+      if (o.qty !== undefined) o.qty = heQty_(o.qty);
       const bi = o.type === 'bought' ? shopFind(st.items, o.iid) : -1, bItem = bi >= 0 ? { n: st.items[bi].name, q: st.items[bi].qty } : null;
       const pending = o.type === 'notify' ? shopPending(st).map(function (x) { return { n: x.name, q: x.qty, k: x.src === 'pantry' ? 'pantry' : 'add' }; }) : [];
       const before = st.items.length;
