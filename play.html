@@ -137,6 +137,7 @@ function draw(){
     M.innerHTML=L.none?`<div class="res no"><div class="ic">⌛</div><div class="big">לא ענית בזמן</div></div>`:
       `<div class="res ${L.ok?'ok':'no'}"><div class="ic">${L.ok?'✓':'✗'}</div><div class="big">${L.ok?'נכון!':'לא נכון'}</div><div class="pts">+${L.p}</div></div>`;
     M.innerHTML+=`<div class="mid">אתה במקום <b>${st.rank}</b> מתוך ${st.players}</div>`;
+    if(st.rimg&&showImg)M.insertAdjacentHTML('beforeend',`<div class="pimg"><img src="${esc(st.rimg)}" alt="" onclick="zoomImg(this.src)"></div>`);
     if(L.ok&&window.confetti)confetti({particleCount:90,spread:75,origin:{y:.35}});
   }else if(st.phase==='leader'){M.innerHTML=`<div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות</div><div class="mid">מחכים לשאלה הבאה…</div>`}
   else if(st.phase==='end'){if(st.rank<=3&&window.confetti)confetti({particleCount:150,spread:100,origin:{y:.4}});M.innerHTML=examBlock()+`<div class="big">${st.rank===1?'🏆 ניצחת!':st.rank<=3?'🥈 על הפודיום!':'סוף המשחק'}</div><div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות · מתוך ${st.players} שחקנים</div>`}
