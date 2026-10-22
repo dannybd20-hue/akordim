@@ -34,56 +34,74 @@ function save_(f, st) {
    המייל נשלח לכל בני המשפחה חוץ מהשולח. אפליקציית Gmail בטלפון מקפיצה עליו התראה */
 function esc_(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
-function notify_(entries, from, title) {
-  return null; // ההודעות עברו לוואטסאפ מהאתר; מיילים לא נשלחים יותר
-  const to = Object.keys(FAMILY).filter(function (n) { return n !== from; }).map(function (n) { return FAMILY[n]; });
-  if (!to.length || !entries.length) return;
-  try {
-    let products = [];
-    try { products = load_().st.products; } catch (x) {}
-    const verb = FEMALE.indexOf(from) >= 0 ? 'הוסיפה' : 'הוסיף';
-    const names = entries.map(function (e) { return e.n; });
-    const head = title || (from ? from + ' ' + verb + ' לרשימה' : entries.every(function (e) { return e.k === 'auto'; }) ? 'נוסף אוטומטית לרשימה' : 'נוסף לרשימת הקניות');
-    const subject = '🛒 ' + head + ': ' + names.slice(0, 3).join(', ') + (names.length > 3 ? ' ועוד ' + (names.length - 3) : '');
-    const inline = {};
-    const rows = entries.map(function (e, i) {
-      const p = products.filter(function (x) { return shopKey(x.name) === shopKey(e.n); })[0];
-      let pic;
-      const m = p && p.img && /^data:(image\/\w+);base64,(.+)$/.exec(p.img);
-      if (m) {
-        inline['p' + i] = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], 'p' + i + '.jpg');
-        pic = '<img src="cid:p' + i + '" width="48" height="48" style="display:block;width:48px;height:48px;border-radius:12px;object-fit:cover" alt="">';
-      } else {
-        pic = '<div style="width:48px;height:48px;line-height:48px;border-radius:12px;background:#fde8f0;text-align:center;font-size:26px">' + ((p && p.emoji) || shopEmoji(e.n)) + '</div>';
-      }
-      const tag = e.k === 'pantry' ? '🏠 נגמר בבית' : e.k === 'auto' ? '🔁 נוסף אוטומטית' : '';
-      return '<tr><td style="padding:8px 0;width:48px">' + pic + '</td>' +
-        '<td style="padding:8px 12px;font:700 17px Arial,sans-serif;color:#1e293b">' + esc_(e.n) +
-        (tag ? '<div style="font:400 12px Arial,sans-serif;color:#be185d;margin-top:2px">' + tag + '</div>' : '') + '</td>' +
-        '<td style="padding:8px 0;text-align:left;white-space:nowrap">' + (e.q ? '<span style="display:inline-block;background:#db2777;color:#fff;border-radius:99px;padding:3px 11px;font:700 13px Arial,sans-serif">× ' + esc_(e.q) + '</span>' : '') + '</td></tr>';
-    }).join('<tr><td colspan="3" style="border-top:1px solid #f9d5e3;font-size:0;line-height:0">&nbsp;</td></tr>');
-    const html =
-      '<div dir="rtl" style="background:#fdf2f8;padding:24px 12px;font-family:Arial,sans-serif">' +
-      '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:460px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 6px 24px rgba(219,39,119,.12)">' +
-      '<tr><td style="background:linear-gradient(135deg,#f472b6,#db2777);background-color:#db2777;padding:22px 24px;color:#fff">' +
-      '<div style="font:900 22px Arial,sans-serif">🛒 קניות לבית</div>' +
-      '<div style="font:400 15px Arial,sans-serif;opacity:.92;margin-top:4px">' + esc_(head) + '</div></td></tr>' +
-      '<tr><td style="padding:10px 24px 4px"><table role="presentation" cellpadding="0" cellspacing="0" width="100%" dir="rtl">' + rows + '</table></td></tr>' +
-      '<tr><td style="padding:18px 24px 26px;text-align:center">' +
-      '<a href="' + APP_URL + '" style="display:inline-block;background:#db2777;color:#fff;text-decoration:none;font:700 16px Arial,sans-serif;padding:13px 30px;border-radius:14px">לרשימת הקניות ←</a>' +
-      '</td></tr></table>' +
-      '<div style="text-align:center;color:#a1889a;font:12px Arial,sans-serif;margin-top:14px">נשלח אוטומטית מאפליקציית הקניות של המשפחה</div></div>';
-    const text = head + '\n' + entries.map(function (e) { return '• ' + e.n + (e.q ? ' (' + e.q + ')' : ''); }).join('\n') + '\n\nלרשימת הקניות: ' + APP_URL;
-    MailApp.sendEmail({ to: to.join(','), subject: subject, body: text, htmlBody: html, inlineImages: inline, name: 'קניות לבית' });
-    return to;
-  } catch (x) { console.warn('mail: ' + x); }
+/* ---------------- הודעות אוטומטיות בוואטסאפ (Green API) ----------------
+   הפרטים נשמרים בהגדרות הסקריפט ולא בקוד: ⚙️ "הגדרות הפרויקט" ← "מאפייני סקריפט" ← להוסיף:
+     GREEN_URL    כתובת ה-apiUrl מהקונסולה, למשל https://7107.api.greenapi.com
+     GREEN_ID     idInstance
+     GREEN_TOKEN  apiTokenInstance  (סודי! לא לשלוח לאף אחד ולא לצלם עם העין פתוחה)
+     GREEN_CHAT   (לא חובה) מזהה יעד: קבוצה (120363…@g.us) או מספר אישי (972501234567@c.us).
+                  אם ריק, הסקריפט מוצא לבד את הקבוצה ששמה WA_GROUP (למטה) ושומר את המזהה שלה.
+   לבדיקה: testWhatsapp. לרשימת הקבוצות: whatsappGroups. */
+const WA_GROUP = 'SHOPPING LIST';
+const SHOP_LINK = 'https://dannybd20-hue.github.io/akordim/go/shopping.html';
+function waCfg_() {
+  const p = PropertiesService.getScriptProperties();
+  const c = { url: (p.getProperty('GREEN_URL') || '').replace(/\/+$/, ''), id: p.getProperty('GREEN_ID') || '', token: p.getProperty('GREEN_TOKEN') || '', chat: p.getProperty('GREEN_CHAT') || '' };
+  return c.url && c.id && c.token ? c : null;
+}
+/* היעד: GREEN_CHAT אם הוגדר, אחרת הקבוצה ששמה WA_GROUP (מחפשים פעם אחת בלבד ושומרים) */
+function waChat_(c) {
+  if (c.chat) return c.chat;
+  const res = UrlFetchApp.fetch(c.url + '/waInstance' + c.id + '/getContacts/' + c.token, { muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) { console.warn('getContacts ' + res.getResponseCode()); return ''; }
+  const want = WA_GROUP.trim().toLowerCase();
+  const g = JSON.parse(res.getContentText()).filter(function (x) { return /@g\.us$/.test(x.id) && String(x.name || '').trim().toLowerCase() === want; })[0];
+  if (!g) { console.warn('לא נמצאה קבוצה בשם ' + WA_GROUP + ' (המספר המחובר צריך להיות חבר בה)'); return ''; }
+  PropertiesService.getScriptProperties().setProperty('GREEN_CHAT', g.id);
+  return g.id;
+}
+function waOn_() { return !!waCfg_(); }
+function waSend_(text) {
+  const c = waCfg_(); if (!c) return false;
+  const chat = waChat_(c); if (!chat) return false;
+  const res = UrlFetchApp.fetch(c.url + '/waInstance' + c.id + '/sendMessage/' + c.token, {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    payload: JSON.stringify({ chatId: chat, message: text })
+  });
+  if (res.getResponseCode() !== 200) { console.warn('whatsapp ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 200)); return false; }
+  return true;
 }
 
-// בדיקה: מריצים מהעורך, ומגיע מייל לדוגמה לכל בני המשפחה
-function testMail() {
-  const to = notify_([{ n: 'חלב', q: '2', k: 'add' }, { n: 'במבה', k: 'pantry' }, { n: 'לחם', k: 'auto' }], '', 'מייל לדוגמה');
-  Logger.log(to ? 'נשלח ל: ' + to.join(', ') + ' (נשארו היום: ' + MailApp.getRemainingDailyQuota() + ')'
-                : 'לא נשלח: FAMILY ריק או שגיאה (ראו אזהרה למעלה)');
+/* entries: [{n: שם, q: כמות, k: 'add' | 'pantry' | 'auto'}]. נשלחת הודעה אחת לכל הקבוצה */
+function notify_(entries, from, title) {
+  if (!entries || !entries.length || !waOn_()) return null;
+  try {
+    const verb = FEMALE.indexOf(from) >= 0 ? 'הוסיפה' : 'הוסיף';
+    const head = title || (from ? from + ' ' + verb + ' לרשימה' : entries.every(function (e) { return e.k === 'auto'; }) ? 'נוסף אוטומטית לרשימה' : 'נוסף לרשימת הקניות');
+    const lines = entries.map(function (e) {
+      const tag = e.k === 'pantry' ? ' 🏠 נגמר בבית' : e.k === 'auto' ? ' 🔁' : '';
+      return '• ' + e.n + (e.q ? ' (' + e.q + ')' : '') + tag;
+    });
+    return waSend_('🛒 *קניות לבית*\n' + head + ':\n' + lines.join('\n') + '\n\nלרשימה המלאה: ' + SHOP_LINK) ? [1] : null;
+  } catch (x) { console.warn('whatsapp: ' + x); }
+}
+
+// מריצים מהעורך: מציג ביומן את כל הקבוצות של המספר המחובר, עם המזהה (id) שצריך להדביק ב-GREEN_CHAT
+function whatsappGroups() {
+  const p = PropertiesService.getScriptProperties();
+  const url = (p.getProperty('GREEN_URL') || '').replace(/\/+$/, ''), id = p.getProperty('GREEN_ID'), token = p.getProperty('GREEN_TOKEN');
+  if (!url || !id || !token) { Logger.log('חסר GREEN_URL / GREEN_ID / GREEN_TOKEN במאפייני הסקריפט'); return; }
+  const res = UrlFetchApp.fetch(url + '/waInstance' + id + '/getContacts/' + token, { muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) { Logger.log('שגיאה ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 300)); return; }
+  const groups = JSON.parse(res.getContentText()).filter(function (c) { return /@g\.us$/.test(c.id); });
+  Logger.log('קבוצות (' + groups.length + '):');
+  groups.forEach(function (g) { Logger.log(g.name + '  ←  ' + g.id); });
+  if (!groups.length) Logger.log('לא נמצאו קבוצות. שלח הודעה כלשהי בקבוצה מהטלפון ונסה שוב.');
+}
+
+// בדיקה: מריצים מהעורך, ומגיעה הודעה לדוגמה ל-GREEN_CHAT
+function testWhatsapp() {
+  Logger.log(waOn_() ? (waSend_('🛒 *קניות לבית*\nהודעת ניסיון: ההתראות האוטומטיות עובדות ✅') ? 'נשלח ✅' : 'לא נשלח, ראה אזהרה ביומן') : 'חסר אחד מהמאפיינים GREEN_URL / GREEN_ID / GREEN_TOKEN');
 }
 
 
@@ -161,7 +179,7 @@ function doPost(e) {
     lock.releaseLock();
   }
   notify_(lines, d.by);
-  return out_(d.rev === st.rev ? { ok: true, rev: st.rev } : { ok: true, rev: st.rev, state: st });
+  return out_(d.rev === st.rev ? { ok: true, rev: st.rev, wa: waOn_() } : { ok: true, rev: st.rev, state: st, wa: waOn_() });
 }
 
 // רץ כל שעה: מוסיף פריטים קבועים שהגיע זמנם גם אם אף אחד לא פתח את האפליקציה
@@ -238,8 +256,7 @@ function setup() {
   ScriptApp.newTrigger('hourly').timeBased().everyHours(1).create();
   const l = load_();
   if (!l.f) save_(null, l.st);
-  notify_([{ n: 'ההתראות של קניות לבית עובדות ✅' }], '', 'הכול מוכן');
-  Logger.log('מוכן. ' + (Object.keys(FAMILY).length ? 'נשלח מייל ניסיון ל: ' + Object.keys(FAMILY).join(', ') : 'התראות כבויות (FAMILY ריק)'));
+  Logger.log('מוכן. התראות וואטסאפ אוטומטיות: ' + (waOn_() ? 'פעילות' : 'כבויות (חסרים מאפייני GREEN_…)'));
 }
 
 /* ---------------- ליבה משותפת לקניות (זהה ל-shop-core.js באתר) ---------------- */
