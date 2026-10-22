@@ -265,7 +265,9 @@ function addName(name,src,qty){
 const SHOP_LINK='https://dannybd20-hue.github.io/akordim/go/shopping.html';
 function waNums(){try{return JSON.parse(localStorage.getItem('shop_wa'))||{}}catch(e){return{}}}
 function waPhone(){const p=String(waNums()[other()]||'').replace(/\D/g,'');return p.startsWith('0')?'972'+p.slice(1):p}
+let waAuto=get('shop_wa_auto')==='1'; // כשהסקריפט מחובר ל-Green API, ההודעה נשלחת אוטומטית מהענן ולא פותחים וואטסאפ
 function waOpen(list){
+  if(waAuto)return;
   const who=me||'מישהו',verb=who==='ציפי'?'הוסיפה':'הוסיף';
   const lines=list.map(x=>'• '+x.n+(x.q?' ('+x.q+')':''));
   const t='🛒 *קניות לבית*\n'+who+' '+verb+' לרשימה:\n'+lines.join('\n')+'\n\nלרשימה המלאה: '+SHOP_LINK;
@@ -281,10 +283,10 @@ function addTyped(){
   const i=$('newItem'),q=$('newQty'),name=i.value.trim();
   if(!name){i.focus();return}
   if(newImg){const p=prodFor(name);if(p)act({type:'pedit',pid:p.id,img:newImg});else act({type:'padd',pid:uid(),name,img:newImg})}
-  if(addName(name,'',q.value.trim())){i.value='';q.value='';newImg='';camUpd();toast($('ntfChk').checked?'נוסף ✓ · וואטסאפ נפתח, לחץ שם "שלח"':'נוסף לרשימה ✓')}
+  if(addName(name,'',q.value.trim())){i.value='';q.value='';newImg='';camUpd();toast($('ntfChk').checked?(waAuto?'נוסף ✓ · נשלח לוואטסאפ':'נוסף ✓ · וואטסאפ נפתח, לחץ שם "שלח"'):'נוסף לרשימה ✓')}
   i.focus();
 }
-function sendNotify(){const P=shopPending(st);if(!P.length)return;waOpen(P.map(x=>({n:x.name,q:x.qty})));act({type:'notify'});toast('💬 וואטסאפ נפתח עם '+P.length+' פריטים, לחץ שם "שלח"')}
+function sendNotify(){const P=shopPending(st);if(!P.length)return;waOpen(P.map(x=>({n:x.name,q:x.qty})));act({type:'notify'});toast(waAuto?'💬 נשלח לוואטסאפ: '+P.length+' פריטים':'💬 וואטסאפ נפתח עם '+P.length+' פריטים, לחץ שם "שלח"')}
 /* תמונות: מקטינים ל-200 פיקסלים כדי שהרשימה תישאר קלה ומהירה */
 function shrink(file,cb){
   const img=new Image();img.onload=()=>{
@@ -316,6 +318,7 @@ async function sync(){
     const r=await fetch(SHOP_CLOUD,{method:'POST',body:JSON.stringify({password:pw,by:me,ops:sent,rev:sent.length?-1:st.rev})}).then(r=>r.json());
     if(!r.ok){if(r.error==='password')logout('הסיסמה השתנתה, נא להיכנס שוב');else dot('err');return}
     queue=queue.slice(sent.length);
+    if(r.wa!==undefined&&r.wa!==waAuto){waAuto=!!r.wa;put('shop_wa_auto',waAuto?'1':'0')}
     if(r.state){st=r.state;const now=Date.now();queue.forEach(o=>shopApply(st,o,now))}
     persist();render();dot('ok');
   }catch(e){dot('off')}
@@ -342,7 +345,7 @@ function days(ms){const d=Math.round(ms/864e5);return d<=1?'יום':d===2?'יו�
 function render(){
   $('cnt').textContent=st.items.length;$('cnt').style.display=st.items.length?'':'none';
   $('meb').textContent='👤 '+(me||'מי אני?');
-  const wn=waNums()[other()];$('ntfLbl').textContent=wn?'💬 שלח בוואטסאפ ל'+other():'💬 שלח לקבוצה בוואטסאפ';$('waSet').textContent=wn?'📱 '+wn:'⚙️ קבוצה (או מספר)';
+  const wn=waNums()[other()];$('ntfLbl').textContent=wn?'💬 שלח בוואטסאפ ל'+other():'💬 שלח לקבוצה בוואטסאפ';$('waSet').textContent=wn?'📱 '+wn:'⚙️ קבוצה (או מספר)';$('waSet').style.display=waAuto?'none':'';if(waAuto)$('ntfLbl').textContent='💬 שלח לקבוצה בוואטסאפ (אוטומטי)';
   const pend=shopPending(st).length,sa=$('sendAll');sa.style.display=pend?'':'none';sa.textContent='💬 שלח בוואטסאפ '+pend+(pend===1?' פריט':' פריטים');
   $('t_list').className=tab==='list'?'on':'';$('t_home').className=tab==='home'?'on':'';
   $('v_list').style.display=tab==='list'?'':'none';$('v_home').style.display=tab==='home'?'':'none';
