@@ -284,6 +284,12 @@ $('nmIn').addEventListener('keyup',e=>{if(e.key==='Enter')saveName()});
     dd.push(gem(+v('day'))+' ב'+v('month').replace(/^ב/,'')+' '+gem(+v('year')%1000));
   }catch(e){}
   $('date').innerHTML=dd.map(x=>'<b>'+x+'</b>').join('');
+  /* ‎?logout=1‎: יציאה מלאה מהמכשיר (למקרה שנתקעים), ואז מסך הסיסמה */
+  if(new URLSearchParams(location.search).get('logout')==='1'){
+    ['hub_access','hub_pw','hub_admin','shop_lang','shop_pw','bio_skip','tromot_names'].forEach(k=>lput(k,null));
+    try{Object.keys(sessionStorage).forEach(k=>{if(/^gate_|^hub_/.test(k))sessionStorage.removeItem(k)})}catch(e){}
+    history.replaceState(null,'','./');
+  }
   /* גישה שנשמרה במכשיר: משחזרים אותה, ונכנסים ישר לאפליקציה שביקשו או לאפליקציה היחידה (פעם אחת בכל פתיחה) */
   if(!access().length){let A=[];try{A=JSON.parse(get('hub_access'))||[]}catch(e){}if(A.length){grant(A,get('hub_pw'));if(get('hub_admin'))sput('hub_admin',get('hub_admin'))}}
   /* טביעת אצבע רשומה ואין עדיין גישה בדפדפן הזה: מבקשים אצבע (מנסים מיד; אם הדפדפן דורש לחיצה, יש כפתור) */
