@@ -7,6 +7,8 @@ const SHOP_PASSWORD = 'כתוב-כאן-סיסמה';
 const FAMILY = {};
 const APP_URL = 'https://dannybd20-hue.github.io/akordim/shopping.html';
 const FEMALE = ['ציפי']; // לניסוח "הוסיפה" במקום "הוסיף"
+// EN_PASSWORD: קוד נוסף שפותח את אותה רשימת קניות (באפליקציה באנגלית). ריק = כבוי.
+const EN_PASSWORD = '';
 const DATA_FILE = 'shopping_data.json';
 // MAASER_PASSWORD: סיסמה נפרדת לאפליקציית המעשר (הנתונים נשמרים בקובץ נפרד, maaser_data.json)
 const MAASER_PASSWORD = 'כתוב-כאן-סיסמת-מעשר';
@@ -201,7 +203,7 @@ function doPost(e) {
   if (d.app === 'maaser') return maaserPost_(d);
   if (!isAdmin_(d.password)) {
     if (locked_('shop')) return out_({ ok: false, error: 'locked' });
-    if (d.password !== SHOP_PASSWORD) { failed_('shop'); return out_({ ok: false, error: 'password' }); }
+    if (d.password !== SHOP_PASSWORD && !(EN_PASSWORD && d.password === EN_PASSWORD)) { failed_('shop'); return out_({ ok: false, error: 'password' }); }
   }
   passed_('shop');
   const lock = LockService.getScriptLock();
