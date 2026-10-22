@@ -23,7 +23,7 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 17; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 18; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
 function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
 
 function doPost(e) {
@@ -98,7 +98,7 @@ const HATZALAH_QUIZ = {
       a: ['לדבר עם הצוות מאחורה', 'אין מושג, סתם נמצא שם', 'זה מכוער, צריך להעיף', 'זה רדיו'], right: 0 },
     { q: 'למה יש על האמבולנס מגן דוד אדום בצבע כחול?', img: 'q26.jpg',
       a: ['כי זה ארגון הצלה', 'כי חייב להכניס זכר למד״א', 'וואלה לא יודע', 'תקן של אמבולנס'], right: 3 },
-    { q: 'כמה מצברים קיימים באמבולנס?',
+    { q: 'כמה מצברים קיימים באמבולנס?', img: 'q28.jpg',
       a: ['1', '2', '3', '4'], right: 1 },
     { q: 'נכון או לא נכון: מערכת הסייפטי של איתוראן עוזרת לי לדעת איך אני נוהג', img: 'q24.jpg',
       a: ['נכון', 'לא נכון'], right: 0 },
