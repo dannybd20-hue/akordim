@@ -21,7 +21,7 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 12; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 13; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
 function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
 
 function doPost(e) {
@@ -375,8 +375,32 @@ function gnext_(pin, d, now, pids) {
 
 
 /* ===== טבלה בגוגל שיטס: כל שחקן, הטלפון שלו, הניקוד, ומה ענה בכל שאלה ===== */
-function authorizeSheets() { // להריץ פעם אחת מהעורך כדי לאשר הרשאה ליצירת גיליונות
-  SpreadsheetApp.create('בדיקת הרשאה – אפשר למחוק').getId();
+/* כל הטבלאות של המשחק (טבלת המבחנים וטבלאות הציונים) נשמרות בתיקייה אחת בדרייב */
+const FOLDER_NAME = 'משחק חי – ציונים ומבחנים';
+function gameFolder_() {
+  const props = PropertiesService.getScriptProperties(), id = props.getProperty('GAME_FOLDER_ID');
+  if (id) { try { const f = DriveApp.getFolderById(id); if (!f.isTrashed()) return f; } catch (x) {} }
+  const it = DriveApp.getFoldersByName(FOLDER_NAME);
+  const f = it.hasNext() ? it.next() : DriveApp.createFolder(FOLDER_NAME);
+  props.setProperty('GAME_FOLDER_ID', f.getId());
+  return f;
+}
+function toFolder_(ss) { // מעביר גיליון חדש לתיקייה; אם אין הרשאת דרייב, הגיליון נשאר איפה שנוצר
+  try { DriveApp.getFileById(ss.getId()).moveTo(gameFolder_()); } catch (x) {}
+  return ss;
+}
+function authorizeSheets() { // להריץ פעם אחת מהעורך: מאשר הרשאות גיליונות ודרייב, ויוצר את התיקייה
+  gameFolder_();
+  const ss = SpreadsheetApp.create('בדיקת הרשאה – אפשר למחוק'); toFolder_(ss);
+}
+/* מריצים פעם אחת מהעורך כדי לסדר טבלאות שנוצרו קודם לתיקייה: organizeExisting ← "הפעלה" */
+function organizeExisting() {
+  const folder = gameFolder_(); let n = 0;
+  ['משחק חי – ', 'מבחנים – משחק חי', 'בדיקת הרשאה – אפשר למחוק'].forEach(function (p) {
+    const it = DriveApp.searchFiles("title contains '" + p + "' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false and 'me' in owners");
+    while (it.hasNext()) { const f = it.next(); if (f.getName().indexOf(p) === 0) { f.moveTo(folder); n++; } }
+  });
+  Logger.log('הועברו לתיקייה ' + FOLDER_NAME + ': ' + n + ' קבצים');
 }
 function gsheet_(pin, g, pl) {
   if (g.sheet) return { ok: true, url: g.sheet, already: true };
@@ -399,7 +423,7 @@ function gsheet_(pin, g, pl) {
     }
     row[4] = okN + ' מתוך ' + done; rows.push(row); colors.push(col);
   });
-  const ss = SpreadsheetApp.create('משחק חי – ' + g.title + ' – ' + Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd.MM.yyyy HH:mm'));
+  const ss = toFolder_(SpreadsheetApp.create('משחק חי – ' + g.title + ' – ' + Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd.MM.yyyy HH:mm')));
   const sh = ss.getSheets()[0]; sh.setName('תוצאות'); sh.setRightToLeft(true);
   sh.getRange(1, 3, rows.length + 1, 1).setNumberFormat('@');
   sh.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold').setBackground('#4f46e5').setFontColor('#ffffff');
@@ -433,7 +457,7 @@ function examSheet_() { // טבלה אחת קבועה לכל המשחקים; נ�
   let ss = null;
   if (id) { try { ss = SpreadsheetApp.openById(id); } catch (x) { ss = null; } }
   if (!ss) {
-    ss = SpreadsheetApp.create('מבחנים – משחק חי');
+    ss = toFolder_(SpreadsheetApp.create('מבחנים – משחק חי'));
     props.setProperty('EXAM_SHEET_ID', ss.getId());
     const sh = ss.getSheets()[0]; sh.setName('ציונים'); sh.setRightToLeft(true);
     sh.getRange(1, 1, 1, EXAM_HEAD.length).setValues([EXAM_HEAD]).setFontWeight('bold').setBackground('#4f46e5').setFontColor('#ffffff');
