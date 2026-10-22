@@ -25,7 +25,7 @@ header img{height:42px}
 header h1{margin:0;font-size:clamp(16px,2.2vw,22px);font-weight:900;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hb{border:1.5px solid var(--bd);border-radius:12px;padding:10px 18px;font-weight:900;font-size:16px;background:var(--card);color:var(--tx)}
 .hb.pr,#nextB{background:var(--grad);color:#fff;border:0;box-shadow:0 8px 20px rgba(79,70,229,.25)}
-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:14px;text-align:center}
+main{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:14px;text-align:center}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:22px;padding:24px;box-shadow:0 10px 30px rgba(30,27,75,.07)}
 .lobby{display:flex;gap:32px;align-items:center;flex-wrap:wrap;justify-content:center}
 .pinbox .l{font-size:20px;font-weight:800;color:var(--mut)}
@@ -103,6 +103,8 @@ body.hot::after{opacity:1;animation:hotf 1s infinite}
 .drw .it i{font-style:normal;flex-shrink:0;min-width:2em;height:2em;border-radius:50%;background:var(--bd);color:var(--tx);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px}
 .drw .it.cur{border-color:var(--pr);background:#eef2ff}.drw .it.cur i{background:var(--grad);color:#fff}
 .drw .it.past{opacity:.6}.drw .it.past i{background:var(--ok);color:#fff}
+.lobbyart{position:fixed;inset:60px 0 0 0;z-index:-1;pointer-events:none;background:linear-gradient(rgba(244,245,251,.35),rgba(244,245,251,.55)),url(brand/uh/q1.jpg) center bottom/cover no-repeat;animation:lart 1s ease-out}
+@keyframes lart{from{opacity:0}to{opacity:1}}
 .more{font-weight:800;color:var(--mut)}
 .board.all{max-height:38vh;overflow:auto;padding:4px}
 .board.all .r{padding:8px 16px;font-size:18px}.board.all .r i{width:34px;height:34px;font-size:15px}
@@ -285,10 +287,12 @@ function counts(){
   return {ok,no,none};
 }
 function countsTxt(){const c=counts();return `✓ ${c.ok} ענו נכון · ✗ ${c.no} טעו`+(c.none?` · ⏳ ${c.none} לא ענו`:'')}
+/* מסך ההמתנה: התמונה המצוירת מהקהוט ברקע, כל עוד השחקנים נכנסים */
+const LOBBY_ART={moto:1,hatzalah:1}; // התמונה המצוירת (אמבולנס, רכב ואופנוע) ברקע של מסך ההמתנה
 function lobby(){
   shown='lobby';$('backB').hidden=true;const url=PLAY+'?pin='+G.pin;
   M.innerHTML=`<div class="lobby"><div id="qr"></div><div class="card pinbox"><div class="l">נכנסים ל- <b>${esc(PLAY.replace('https://',''))}</b></div><div class="l" style="margin-top:6px">קוד משחק:</div><div class="pin">${G.pin}</div><div class="url">או סורקים את הברקוד 📷</div></div></div>
-    <div class="cnt" id="pc">0 שחקנים</div><div class="names" id="nm"></div>`;
+    <div class="cnt" id="pc">0 שחקנים</div><div class="names" id="nm"></div>${LOBBY_ART[G.key]?'<div class="lobbyart"></div>':''}`;
   try{new QRCode($('qr'),{text:url,width:300,height:300,correctLevel:QRCode.CorrectLevel.M})}catch(e){$('qr').textContent=url}
   nb('◀ התחל משחק');alt('');
 }
