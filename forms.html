@@ -232,7 +232,7 @@ const lp=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v
 let pw='',admin=false,forms=[],cur=null,poll=0;
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),2400)}
 function api(o){return fetch(FORMS_CLOUD,{method:'POST',body:JSON.stringify({...o,password:pw})}).then(r=>r.json())}
-const errText=e=>e==='locked'?'🔒 יותר מדי ניסיונות שגויים. נסה שוב בעוד רבע שעה':e==='password'?'סיסמה שגויה':'שגיאה: '+e;
+const errText=e=>e==='locked'?'🔒 יותר מדי ניסיונות שגויים. נסה שוב בעוד רבע שעה, או עם הסיסמה הראשית':e==='password'?'סיסמה שגויה':'שגיאה: '+e;
 function stopPoll(){clearInterval(poll);poll=0}
 function loading(t){M.innerHTML=`<div class="card" style="text-align:center"><span class="spin"></span> ${t||'טוען…'}</div>`}
 

@@ -17,6 +17,8 @@ const ADMIN_PASSWORD = 'כתוב-כאן-את-הסיסמה-הראשית'; // רק
 
 /* חסימה נגד ניחוש: אחרי 5 סיסמאות מארח שגויות, נחסם ל-15 דקות */
 const MAX_FAILS = 5, LOCK_MINUTES = 15;
+/* סיסמת המנהל (ADMIN_PASSWORD) תמיד מתקבלת, וגם מבטלת חסימה של "יותר מדי ניסיונות שגויים" */
+function isAdmin_(p) { return typeof ADMIN_PASSWORD === 'string' && ADMIN_PASSWORD.indexOf('כתוב-כאן') !== 0 && p === ADMIN_PASSWORD; }
 function locked_() { return Number(CacheService.getScriptCache().get('fails') || 0) >= MAX_FAILS; }
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
@@ -29,9 +31,12 @@ function doPost(e) {
   try { d = JSON.parse(e.postData.contents); } catch (x) { return out_({ ok: false, error: 'bad' }); }
   let admin = false;
   if (d.password) {
-    if (locked_()) return out_({ ok: false, error: 'locked' });
-    admin = d.password === ADMIN_PASSWORD;
-    if (!admin) failed_();
+    admin = isAdmin_(d.password);
+    if (admin) CacheService.getScriptCache().remove('fails'); // סיסמת מנהל מבטלת חסימה
+    else {
+      if (locked_()) return out_({ ok: false, error: 'locked' });
+      failed_();
+    }
   }
   try { return out_(game_(d, admin)); }
   catch (x) { return out_({ ok: false, error: String(x && x.message || x) }); }

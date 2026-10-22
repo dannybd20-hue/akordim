@@ -843,7 +843,7 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
         e.textContent = 'מתחבר…';
         try {
             const r = await fetch(MZ_CLOUD, { method: 'POST', body: JSON.stringify({ app: 'maaser', password: v, ops: [], rev: -1 }) }).then(r => r.json());
-            if (!r.ok) { e.textContent = r.error === 'password' ? 'סיסמה שגויה (או שהסקריפט בגוגל עוד לא עודכן)' : r.error === 'locked' ? '🔒 יותר מדי ניסיונות שגויים. נסה שוב בעוד רבע שעה' : 'שגיאה: ' + r.error; return; }
+            if (!r.ok) { e.textContent = r.error === 'password' ? 'סיסמה שגויה (או שהסקריפט בגוגל עוד לא עודכן)' : r.error === 'locked' ? '🔒 יותר מדי ניסיונות שגויים. נסה שוב בעוד רבע שעה, או עם הסיסמה הראשית' : 'שגיאה: ' + r.error; return; }
             // הענן הוא המקור: מה שהיה רק במכשיר הזה מוחלף בנתונים מהענן
             mzPw = v; lsPut('maaser_cloud_pw', v); queue = []; st = r.state; persist(); bind();
             document.getElementById('cloudLogin').style.display = 'none'; updateDisplay(); cloudStatus('☁️ מסונכרן בענן', '#2e7d32');
