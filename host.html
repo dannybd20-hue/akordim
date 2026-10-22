@@ -95,6 +95,14 @@ body.hot::after{opacity:1;animation:hotf 1s infinite}
 .shq a{color:var(--pr);font-weight:900}
 .pp{position:fixed;z-index:5;pointer-events:none;background:var(--bgc,var(--grad));color:#fff;font-weight:900;border-radius:99px;padding:.25em .7em;box-shadow:0 8px 22px rgba(30,27,75,.25);animation:ppop 2s ease-out forwards;white-space:nowrap}
 @keyframes ppop{0%{transform:scale(.2) rotate(-6deg);opacity:0}12%{transform:scale(1.15) rotate(2deg);opacity:1}25%{transform:scale(1)}80%{opacity:1}100%{transform:translateY(-28px) scale(.9);opacity:0}}
+.drw{position:fixed;top:0;bottom:0;left:0;width:min(400px,92vw);background:var(--card);border-inline-end:1px solid var(--bd);box-shadow:8px 0 40px rgba(30,27,75,.25);z-index:12;display:flex;flex-direction:column;animation:drin .22s ease-out}
+@keyframes drin{from{transform:translateX(-100%)}to{transform:none}}
+.drw .hd{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--bd);font-weight:900;font-size:19px}.drw .hd span{flex:1}
+.drw .ls{overflow:auto;flex:1;padding:8px}
+.drw .it{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:start;border:1px solid var(--bd);background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:6px;font-weight:700;font-size:15px;line-height:1.35}
+.drw .it i{font-style:normal;flex-shrink:0;min-width:2em;height:2em;border-radius:50%;background:var(--bd);color:var(--tx);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px}
+.drw .it.cur{border-color:var(--pr);background:#eef2ff}.drw .it.cur i{background:var(--grad);color:#fff}
+.drw .it.past{opacity:.6}.drw .it.past i{background:var(--ok);color:#fff}
 .more{font-weight:800;color:var(--mut)}
 .board.all{max-height:38vh;overflow:auto;padding:4px}
 .board.all .r{padding:8px 16px;font-size:18px}.board.all .r i{width:34px;height:34px;font-size:15px}
@@ -121,7 +129,7 @@ body.hot::after{opacity:1;animation:hotf 1s infinite}
 </style>
 </head>
 <body>
-<header><span id="logo"><img src="icons/apps-192.png" alt="" style="border-radius:12px"></span><h1 id="ttl">🎮 משחק חי</h1><button class="hb" id="altB" hidden></button><button class="hb" id="nextB" hidden onclick="next()"></button><button class="hb" id="qrB" hidden onclick="joinQR()">➕ 📷</button><button class="hb" id="plB" hidden onclick="manage()">👥</button><button class="hb" id="modeB" hidden onclick="setMode(!REM)"></button><button class="hb" id="backB" onclick="location.href='./'">→ אפליקציות</button></header>
+<header><span id="logo"><img src="icons/apps-192.png" alt="" style="border-radius:12px"></span><h1 id="ttl">🎮 משחק חי</h1><button class="hb" id="altB" hidden></button><button class="hb" id="nextB" hidden onclick="next()"></button><button class="hb" id="gtB" hidden onclick="gotoQ()">☰ שאלות</button><button class="hb" id="qrB" hidden onclick="joinQR()">➕ 📷</button><button class="hb" id="plB" hidden onclick="manage()">👥</button><button class="hb" id="modeB" hidden onclick="setMode(!REM)"></button><button class="hb" id="backB" onclick="location.href='./'">→ אפליקציות</button></header>
 <main id="M"><div class="spin"></div></main>
 <script>
 /* מסך המארח (מקרן / טלוויזיה): פותח משחק מטופס בוחן, מציג ברקוד וקוד, מריץ שאלות, טיימר, חשיפה וטבלת מובילים */
@@ -199,7 +207,7 @@ async function loop(){
 }
 function started(){try{localStorage.setItem('game_host_last',G.pin)}catch(e){}
  
-  $('backB').hidden=true;$('plB').hidden=false;$('qrB').hidden=false;$('modeB').hidden=false;modeLbl();
+  $('backB').hidden=true;$('plB').hidden=false;$('qrB').hidden=false;$('gtB').hidden=false;$('modeB').hidden=false;modeLbl();
   if(!looping){looping=setInterval(loop,1000);loop()}
 }
 function modeLbl(){$('modeB').textContent=REM?'🖥 מסך':'📱 שלט'}
@@ -210,6 +218,7 @@ document.addEventListener('keydown',e=>{
   if(['PageDown','ArrowLeft','ArrowDown',' ','Enter'].includes(e.key)){e.preventDefault();if(!$('nextB').hidden)next()}
   else if(e.key==='b'||e.key==='B'||e.key==='נ'){e.preventDefault();const a=$('altB');if(!a.hidden)a.click()}
 });
+const qk=()=>'q'+G.q+':'+G.qStart;
 function nb(t){const b=$('nextB');b.hidden=!t;b.textContent=t||''}
 function alt(t,fn){const b=$('altB');b.hidden=!t;b.textContent=t||'';b.onclick=fn||null}
 /* האם אחרי השאלה הזאת מגיעה טבלת מובילים (לפי ההגדרה בפתיחת המשחק) */
@@ -217,7 +226,7 @@ function due(){const lb=G.lb===undefined?1:G.lb;return lb>0&&(G.q+1)%lb===0}
 function render(){
   const ph=G.phase;if(ph!=='question')document.body.classList.remove('hot');
   if(ph==='question'){
-    if(REM)remote();else if(shown!=='q'+G.q)showQ();
+    if(REM)remote();else if(shown!==qk())showQ();
     else{const a=$('ansN');if(a)a.textContent=answered;waitList()}
     if(players.length&&answered>=players.length)next();return}
   if(REM){remote();return}
@@ -299,7 +308,7 @@ async function next(show){
   nexting=false;$('nextB').disabled=$('altB').disabled=false;
 }
 async function showQ(){
-  shown='q'+G.q;seen=new Set();clearInterval(tmr);nb('דלג ←');alt('');
+  shown=qk();seen=new Set();clearInterval(tmr);nb('דלג ←');alt('');
   M.innerHTML='<div class="spin"></div>';
   if(QI!==G.q){const r=await api({action:'g_q',pin:G.pin});if(r.ok){Q=r.q;Q.img=r.img;QI=G.q}}
   M.innerHTML=`<div class="qhead">${esc(Q.t)}</div>
@@ -384,7 +393,7 @@ function boom(){
 }
 /* מצב שלט: הכול בעמוד אחד קטן – מה קורה עכשיו, כמה ענו, ממתינים ל…, וכפתור "הבא" גדול */
 function remote(){
-  const k=G.phase+':'+G.q;
+  const k=G.phase+':'+G.q+(G.phase==='question'?':'+G.qStart:'');
   if(shown!=='rm:'+k){shown='rm:'+k;
     const ph=G.phase,body=
       ph==='lobby'?`<div class="big">ממתינים לשחקנים</div><div class="mid">קוד משחק</div><div class="pin">${G.pin}</div>`:
@@ -400,6 +409,23 @@ function remote(){
   }
   if(G.phase==='lobby'){const c=M.querySelector('.mid');if(c)c.textContent='קוד משחק · '+players.length+(players.length===1?' שחקן':' שחקנים')}
   if(G.phase==='question'){const a=$('ansN');if(a)a.textContent=answered;const n=$('plN');if(n)n.textContent=players.length;waitList()}
+}
+/* קפיצה לשאלה כלשהי: חלון בצד שמאל עם כל השאלות */
+let QL=null;
+async function gotoQ(){
+  if($('drw')){$('drw').remove();return}
+  const d=document.body.appendChild(Object.assign(document.createElement('div'),{id:'drw',className:'drw'}));
+  d.innerHTML='<div class="hd"><span>☰ קפיצה לשאלה</span><button class="hb" onclick="$(\'drw\').remove()">✕</button></div><div class="ls"><div class="spin" style="margin:30px auto"></div></div>';
+  if(!QL){try{const r=await api({action:'g_qs',pin:G.pin});if(r.ok)QL=r.qs;else{d.querySelector('.ls').textContent=r.error==='unknown action'?'צריך לעדכן את סקריפט המשחק':(r.error||'שגיאה');return}}catch(e){d.querySelector('.ls').textContent='אין חיבור';return}}
+  d.querySelector('.ls').innerHTML=QL.map((t,i)=>`<button class="it ${i===G.q&&G.phase!=='lobby'?'cur':i<G.q?'past':''}" onclick="jumpQ(${i})"><i>${i+1}</i><span>${esc(t)}</span></button>`).join('');
+  const c=d.querySelector('.it.cur');if(c)c.scrollIntoView({block:'center'});
+}
+async function jumpQ(i){
+  if(G.phase==='end')return;
+  if(!confirm('לקפוץ לשאלה '+(i+1)+'?'+(G.phase==='question'||G.phase==='reveal'?'\nהשאלה הנוכחית תיפסק.':'')))return;
+  const d=$('drw');if(d)d.remove();
+  let r=null;try{r=await api({action:'g_goto',pin:G.pin,q:i})}catch(e){}
+  if(r&&r.ok){G=r.game;off=r.now-Date.now();shown='';clearInterval(tmr);render()}else alert(r&&r.error==='unknown action'?'צריך לעדכן את סקריפט המשחק':(r&&r.error)||'אין חיבור');
 }
 /* ברקוד גדול להוספת שחקן באמצע המשחק */
 function joinQR(){
