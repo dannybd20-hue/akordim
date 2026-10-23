@@ -219,7 +219,8 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
   <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">▶️ רשימת נגינה</b><button onclick="$('pl').close()">✕</button></div>
   <p class="hint">בחר שירים לפי הסדר שתנגן אותם. כשהגלילה מגיעה לסוף השיר, עוברים לבד לשיר הבא.</p>
   <div id="plsel"></div>
-  <input id="plq" type="search" placeholder="🔎 חיפוש שיר" autocomplete="off" oninput="plList()" style="width:100%;margin:6px 0">
+  <div style="display:flex;gap:6px;margin:6px 0"><input id="plq" type="search" placeholder="🔎 חיפוש שיר" autocomplete="off" oninput="plList()" style="flex:1;min-width:0"><select id="plfold" onchange="plList()" style="max-width:44%" title="תיקייה"></select></div>
+  <button class="pr" id="plsa" onclick="plAll()" style="width:100%;margin-bottom:6px"></button>
   <div id="plall" style="max-height:38vh;overflow:auto;border:1px solid var(--bd);border-radius:12px;padding:4px"></div>
   <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-top:10px">המתנה בסוף כל שיר:
     <select id="plw" onchange="plSave()"><option value="5">5 שניות</option><option value="10">10 שניות</option><option value="20">20 שניות</option><option value="30">30 שניות</option><option value="60">דקה</option></select></label>
@@ -619,7 +620,25 @@ function plSave(){plWait=+$('plw').value||10;try{localStorage.setItem('akordim_p
 function playDlg(){
   if(document.body.classList.contains('stage')){stage();return}
   plIds=plIds.filter(id=>songs.some(s=>s.id===id));
-  $('plq').value='';$('plw').value=String(plWait);plDraw();$('pl').showModal();
+  $('plq').value='';$('plw').value=String(plWait);
+  /* רשימת התיקיות לסינון; אם עומדים על תיקייה (בספרייה או בדף הבית) היא נבחרת מראש */
+  const fs=[...new Set(songs.map(s=>s.folder||'__none'))],sel=$('plfold');sel.innerHTML='';
+  sel.append(new Option('📁 כל התיקיות',''));fs.forEach(f=>sel.append(new Option('📁 '+(f==='__none'?'ללא תיקייה':f),f)));
+  const stand=fold||(homeFold&&homeFold!=='*'?(homeFold==='ללא תיקייה'?'__none':homeFold):'');
+  sel.value=fs.includes(stand)?stand:'';
+  plDraw();$('pl').showModal();
+}
+/* השירים שמוצגים עכשיו בחלון: לפי החיפוש והתיקייה שנבחרה */
+function plShown(){
+  const k=norm($('plq').value),f=$('plfold').value;
+  return songs.filter(s=>(!f||(s.folder||'__none')===f)&&(!k||norm(s.title).includes(k)));
+}
+/* בוחר את כל השירים המוצגים (לפי התיקייה והחיפוש); אם כולם כבר נבחרו, מסיר אותם */
+function plAll(){
+  const sh=plShown(),all=sh.every(s=>plIds.includes(s.id));
+  if(all)plIds=plIds.filter(id=>!sh.some(s=>s.id===id));
+  else sh.forEach(s=>{if(!plIds.includes(s.id))plIds.push(s.id)});
+  plSave();plDraw();
 }
 function plDraw(){
   const box=$('plsel');box.innerHTML='';
@@ -636,8 +655,12 @@ function plDraw(){
   plList();
 }
 function plList(){
-  const k=norm($('plq').value),box=$('plall');box.innerHTML='';
-  songs.filter(s=>!k||norm(s.title).includes(k)).forEach(s=>{
+  const box=$('plall');box.innerHTML='';
+  const sh=plShown(),f=$('plfold').value,all=sh.length>0&&sh.every(s=>plIds.includes(s.id));
+  const fn=f?(f==='__none'?'ללא תיקייה':f):'';
+  $('plsa').textContent=!sh.length?'אין שירים':all?`✕ הסר את ${sh.length} השירים המוצגים`:`✓ בחר את כל ${sh.length} השירים`+(fn?` של התיקייה „${fn}”`:'');
+  $('plsa').disabled=!sh.length;
+  sh.forEach(s=>{
     const i=plIds.indexOf(s.id),r=el('div','row');
     r.append(el('span','n'+(i<0?' off':''),i<0?'':i+1),el('span',null,s.title),el('small',null,s.folder||''));
     r.onclick=()=>{i<0?plIds.push(s.id):plIds.splice(i,1);plSave();plDraw()};
