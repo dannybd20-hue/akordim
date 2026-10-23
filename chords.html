@@ -160,6 +160,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
     <button class="stg" onclick="playDlg()">▶️ מצב נגינה</button>
     <button id="eb" class="ed" onclick="toggleEdit()">🔒 מצב עריכה</button>
     <button class="ic" onclick="songsHome()" title="כל השירים">🏠</button>
+    <button class="ic" id="awb" onclick="awakeToggle()" title="מסך תמיד דלוק בזמן שהדף פתוח"></button>
     <button class="ic" onclick="theme()" title="יום/לילה">🌙</button>
     <details><summary>⚙️</summary><div>
     <button onclick="openChords()">🎹 דיאגרמת אורגן / גיטרה</button>
@@ -610,6 +611,23 @@ function stage(){
   if(!on){pl=[];plStop()}
   plBar();render();
 }
+
+/* ---------- מסך תמיד דלוק ----------
+   כל עוד דף האקורדים פתוח וגלוי, המסך לא נכבה (Wake Lock). אם הטלפון חוזר מרקע או ננעל, מבקשים שוב.
+   הכפתור 🔆 מכבה ומדליק, וההגדרה נשמרת במכשיר. */
+let awake=true,wl=null;
+try{awake=localStorage.getItem('akordim_awake')!=='0'}catch(e){}
+async function awakeOn(){
+  if(!awake||wl||!('wakeLock' in navigator)||document.visibilityState!=='visible')return;
+  try{wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>{wl=null})}catch(e){wl=null}
+}
+function awakeOff(){try{if(wl)wl.release()}catch(e){}wl=null}
+function awakeUi(){const b=$('awb');if(!b)return;b.textContent=awake?'🔆':'🌑';b.style.opacity=awake?'1':'.55';b.title=awake?'המסך נשאר דלוק (לחיצה לכיבוי)':'המסך יכבה לבד (לחיצה להדלקה)'}
+function awakeToggle(){awake=!awake;try{localStorage.setItem('akordim_awake',awake?'1':'0')}catch(e){}awakeUi();awake?awakeOn():awakeOff()}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')awakeOn()});
+/* בלי אינטראקציה דפדפנים מסוימים דוחים את הבקשה הראשונה, אז מנסים גם אחרי המגע הראשון */
+['pointerdown','keydown'].forEach(ev=>addEventListener(ev,()=>awakeOn(),{passive:true}));
+awakeUi();awakeOn();
 
 /* ---------- רשימת נגינה ----------
    plIds: השירים שנבחרו בחלון (נשמר במכשיר), pl: הרשימה שמתנגנת עכשיו, pi: מיקום בה.
