@@ -176,7 +176,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
 <div id="bar">
   <b>● מצב נגינה</b>
   <button id="sb" onclick="toggleScroll()">הפעל גלילה</button>
-  מהירות <input type="range" min="8" max="120" value="30" oninput="spd=+this.value" style="width:100px">
+  מהירות <input type="range" min="2" max="80" value="12" oninput="spd=+this.value" style="width:100px">
   <button onclick="stage()">חזרה</button>
 </div>
 <main>
@@ -189,7 +189,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
   </section>
   <div class="card" id="songCard">
     <div class="head">
-      <div><div class="trow"><h2 id="title"></h2><span class="tag" id="keyTag"></span><span class="tag g" id="folderBadge"></span></div><p class="badge" id="badge"></p></div>
+      <div><div class="trow"><h2 id="title"></h2><span class="tag" id="keyTag"></span><span class="tag" id="rhTag" hidden></span><span class="tag g" id="folderBadge"></span></div><p class="badge" id="badge"></p></div>
       <div class="hr no-print"><div class="grp"><span class="mut">גודל טקסט:</span><button onclick="zoom(-2)">A-</button><button onclick="zoom(2)">A+</button></div><button class="dgb" onclick="openChords()">🎹 דיאגרמת אורגן / גיטרה</button><span class="hint" id="st"></span></div>
     </div>
     <div id="lines"></div>
@@ -203,6 +203,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
       <select id="efolder" onchange="setFolder(this.value)" style="flex:1"></select>
       <input id="enewfolder" placeholder="שם תיקייה חדשה ואנטר" onchange="moveTo(this.value.trim())" style="display:none;flex:1">
       <input id="ekey" placeholder="סולם (Am)" onchange="upd('key',this.value)" style="width:90px;direction:ltr">
+      <input id="erh" placeholder="קצב (למשל: 4/4, ואלס, חסידי)" onchange="upd('rhythm',this.value)" style="width:150px">
     </div>
     <textarea id="etext" oninput="upd('text',this.value,1)" spellcheck="false"></textarea>
     <p class="hint">כתיבה: אקורד בסוגריים מרובעים לפני האות שבה הוא מתחיל, גם באמצע מילה: [Am]התנ[E]ערי. שורה שמתחילה ב-# היא כותרת קטע (# פזמון). שורה ריקה היא רווח.</p>
@@ -397,7 +398,7 @@ function fill(){
 function render(){
   const s=song(),sh=tone-capo,flat=useFlat(s,sh);
   $('title').textContent=s.title;
-  $('keyTag').textContent='סולם: '+tr(s.key||'Am',tone,useFlat(s,tone));$('folderBadge').textContent='📁 '+(s.folder||'ללא תיקייה');$('badge').textContent=capo?`קאפו ${capo} · צורות האקורדים בסולם ${tr(s.key||'Am',sh,flat)}`:'אקורדים וסולמות מדויקים';
+  $('rhTag').textContent='קצב: '+(s.rhythm||'');$('rhTag').hidden=!s.rhythm;$('keyTag').textContent='סולם: '+tr(s.key||'Am',tone,useFlat(s,tone));$('folderBadge').textContent='📁 '+(s.folder||'ללא תיקייה');$('badge').textContent=capo?`קאפו ${capo} · צורות האקורדים בסולם ${tr(s.key||'Am',sh,flat)}`:'אקורדים וסולמות מדויקים';
   $('tb').textContent=tone>0?'+'+tone:tone;$('cb').textContent=capo;
   const box=$('lines');box.innerHTML='';box.style.fontSize=fz+'px';
   s.text.split('\n').forEach(raw=>{
@@ -427,7 +428,7 @@ function zoom(n){fz=Math.max(14,Math.min(40,fz+n));render()}
 
 /* ---------- עריכה ---------- */
 function syncEdit(){
-  const s=song();$('etitle').value=s.title;$('efolder').value=s.folder||'';$('ekey').value=s.key||'';$('etext').value=s.text;
+  const s=song();$('etitle').value=s.title;$('efolder').value=s.folder||'';$('ekey').value=s.key||'';$('erh').value=s.rhythm||'';$('etext').value=s.text;
 }
 /* כפתור העין: מציג או מסתיר את הסיסמה שמקלידים */
 function eye(b,show){const i=b.previousElementSibling;show=show===undefined?i.type==='password':show;i.type=show?'text':'password';b.textContent=show?'🙈':'👁️';b.title=show?'הסתר סיסמה':'הצג סיסמה'}
@@ -587,7 +588,7 @@ function openChords(){
 }
 
 /* ---------- גלילה אוטומטית ---------- */
-let sc=false,spd=30,last=0,acc=0,raf=0;
+let sc=false,spd=12,last=0,acc=0,raf=0;
 function tick(t){
   if(!sc)return;
   acc+=spd*(t-last)/1000;last=t;
