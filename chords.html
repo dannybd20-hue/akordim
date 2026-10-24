@@ -136,6 +136,7 @@ body.editing .ch{touch-action:manipulation}
 #cmv .pal button{padding:9px 10px;min-width:40px;font-family:'Space Mono',monospace;background:#e0f2fe}
 #cmv .mv{display:none;gap:4px;align-items:center;justify-content:center}
 body.cs #cmv .mv{display:flex}
+#cmq{display:none}body.cw #cmq{display:inline-block}
 #cmv .hint2{font-size:12px;text-align:center;display:flex;align-items:center;justify-content:center}#cmv .hint2 span{opacity:.9}
 body.editing .tx[data-o]{cursor:pointer}.tx.wsel{background:#fde68a;border-radius:6px;box-shadow:0 0 0 2px #f59e0b}
 #cmv{display:none;position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:27;flex-direction:column;gap:6px;align-items:center;background:#0c4a6e;color:#fff;padding:8px 9px;border-radius:18px;box-shadow:0 8px 24px rgba(0,0,0,.35);max-width:98vw}
@@ -237,7 +238,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
 
 <button class="sn snr no-print" id="snp" onclick="snGo(-1)" title="השיר הקודם" aria-label="השיר הקודם">❮</button>
 <button class="sn snl no-print" id="snn" onclick="snGo(1)" title="השיר הבא" aria-label="השיר הבא">❯</button>
-<div id="cmv" class="no-print"><div class="hint2"><span id="cmh"></span> <button onclick="chSel(null)" title="סגור" style="padding:4px 10px;min-width:0;margin-inline-start:8px">✕</button></div><div class="pal" id="cmp"></div><div class="mv"><button onclick="chMove(1,'w')" title="למילה הקודמת (ימינה)">« מילה</button><button onclick="chMove(1,'c')" title="אות אחת ימינה">▶</button><span class="nm" id="cmn"></span><button onclick="chMove(-1,'c')" title="אות אחת שמאלה">◀</button><button onclick="chMove(-1,'w')" title="למילה הבאה (שמאלה)">מילה »</button><button onclick="chAddHere()" title="הוסף אקורד נוסף באותו מקום">➕</button><button onclick="chDel()" title="מחק אקורד" style="color:#e11d48">🗑</button></div></div>
+<div id="cmv" class="no-print"><div class="hint2"><span id="cmh"></span> <button id="cmq" onclick="chQuick()" title="הוסף אקורד מעל המילה" style="padding:6px 12px;min-width:0;margin-inline-start:8px;background:#fde68a">➕ אקורד</button> <button onclick="chSel(null)" title="סגור" style="padding:4px 10px;min-width:0;margin-inline-start:8px">✕</button></div><div class="pal" id="cmp"></div><div class="mv"><button onclick="chMove(1,'w')" title="למילה הקודמת (ימינה)">« מילה</button><button onclick="chMove(1,'c')" title="אות אחת ימינה">▶</button><span class="nm" id="cmn"></span><button onclick="chMove(-1,'c')" title="אות אחת שמאלה">◀</button><button onclick="chMove(-1,'w')" title="למילה הבאה (שמאלה)">מילה »</button><button onclick="chAddHere()" title="הוסף אקורד נוסף באותו מקום">➕</button><button onclick="chDel()" title="מחק אקורד" style="color:#e11d48">🗑</button></div></div>
 <div id="plb" class="no-print"><button onclick="plGo(-1)" title="השיר הקודם">⏮</button><div><b id="pli"></b><small id="plc"></small></div><button id="plp" onclick="toggleScroll()" title="עצור / המשך גלילה">⏸</button><button onclick="plGo(1)" title="השיר הבא">⏭</button></div>
 <dialog id="pl">
   <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">▶️ רשימת נגינה</b><button onclick="$('pl').close()">✕</button></div>
@@ -738,7 +739,7 @@ function chSel(v){csel=v;wsel=null;chMark()}
 function wSel(v){wsel=v;csel=null;chMark()}
 function chMark(){
   document.querySelectorAll('.ch.sel,.tx.wsel').forEach(x=>x.classList.remove('sel','wsel'));
-  const on=editing&&(csel||wsel);document.body.classList.toggle('cm',!!on);document.body.classList.toggle('cs',!!(on&&csel));
+  const on=editing&&(csel||wsel);document.body.classList.toggle('cm',!!on);document.body.classList.toggle('cs',!!(on&&csel));document.body.classList.toggle('cw',!!(on&&wsel&&!csel));
   if(!on)return;
   const lines=song().text.split('\n');
   if(csel){
@@ -760,8 +761,10 @@ function chAddHere(){
   if(!csel)return;const {ms}=chParse(song().text.split('\n')[csel.l]);const m=ms[csel.k];if(!m)return;
   wSel({l:csel.l,o:m.pos});
 }
+let lastCh='';
+function chQuick(){if(wsel)chPut(lastCh||(song().key||'Am').replace(/^([A-G][#b]?m?).*$/,'$1'))}
 function chPut(name){
-  if(!editing)return;
+  if(!editing)return;lastCh=name;
   const lines=song().text.split('\n');
   if(csel){
     const {plain,ms}=chParse(lines[csel.l]);if(!ms[csel.k])return;
