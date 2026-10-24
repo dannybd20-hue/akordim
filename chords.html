@@ -130,6 +130,11 @@ body.home #songCard,body.home #edit,body.home #bar{display:none!important}
 .slist button small{display:block;color:var(--mut);font-size:12px;font-weight:500;margin-top:2px}
 .slist button:hover{border-color:var(--pr);transform:translateY(-1px)}
 dialog{border:1px solid var(--bd);border-radius:24px;background:var(--card);color:var(--tx);max-width:460px;width:92%;padding:24px}
+.sn{position:fixed;top:50%;transform:translateY(-50%);z-index:24;width:44px;height:84px;border:0;border-radius:14px;background:rgba(12,74,110,.55);color:#fff;font-size:26px;cursor:pointer;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.sn:active{background:rgba(12,74,110,.85)}.sn:disabled{opacity:.2}
+.snr{right:4px}.snl{left:4px}
+body:not(.home) .sn{display:flex}
+@media print{.sn{display:none!important}}
 #plb{display:none;position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:25;align-items:center;gap:8px;background:#0c4a6e;color:#fff;padding:6px 8px;border-radius:999px;box-shadow:0 8px 24px #0005;font-size:13px;white-space:nowrap}
 #plb>div{text-align:center;min-width:92px;line-height:1.2}#plb small{display:block;font-size:11px;opacity:.85}
 #plb button{width:38px;height:38px;padding:0;border-radius:99px;background:#ffffff1f;border-color:#ffffff40;color:#fff;font-size:15px}
@@ -217,6 +222,8 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
 </main>
 <footer>כל הזכויות שמורות לדני בן דוד ©</footer>
 
+<button class="sn snr no-print" id="snp" onclick="snGo(-1)" title="השיר הקודם" aria-label="השיר הקודם">❮</button>
+<button class="sn snl no-print" id="snn" onclick="snGo(1)" title="השיר הבא" aria-label="השיר הבא">❯</button>
 <div id="plb" class="no-print"><button onclick="plGo(-1)" title="השיר הקודם">⏮</button><div><b id="pli"></b><small id="plc"></small></div><button id="plp" onclick="toggleScroll()" title="עצור / המשך גלילה">⏸</button><button onclick="plGo(1)" title="השיר הבא">⏭</button></div>
 <dialog id="pl">
   <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">▶️ רשימת נגינה</b><button onclick="$('pl').close()">✕</button></div>
@@ -695,6 +702,12 @@ function plStart(){
   window.scrollTo({top:0});if(!sc)toggleScroll();
 }
 function plStop(){clearInterval(plT);plT=0;$('plc').textContent=''}
+function snGo(d){
+  if(pl.length){plGo(d);return}
+  const l=list();let i=l.findIndex(x=>x.id===cur);if(i<0)return;
+  i+=d;if(i<0||i>=l.length)return;
+  pick(l[i].id);$('sel').value=cur;window.scrollTo({top:0})
+}
 function plGo(d){
   plStop();const n=pi+d;if(n<0||n>=pl.length)return;
   pi=n;pick(pl[pi]);window.scrollTo({top:0});acc=0;last=performance.now();plBar();
