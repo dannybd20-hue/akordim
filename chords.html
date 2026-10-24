@@ -461,6 +461,11 @@ function setEdit(on){
 function toggleEdit(){
   if(editing){setEdit(false);return}
   if(authed){setEdit(true);return}
+  let ha='';try{ha=sessionStorage.getItem('hub_admin')||localStorage.getItem('hub_admin')||''}catch(e){}
+  if(ha){post({action:'check',password:ha}).then(r=>{if(r.ok){pw=ha;authed=true;setEdit(true);(async()=>{if(dirty&&synced)await push();backupSheet('daily')})()}else askPw()}).catch(askPw);return}
+  askPw();
+}
+function askPw(){
   $('pwerr').style.display='none';$('pwi').value='';eye($('pwi').nextElementSibling,false);$('pw').showModal();$('pwi').focus();
 }
 async function submitPw(){
