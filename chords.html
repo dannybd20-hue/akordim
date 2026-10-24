@@ -237,7 +237,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;font-weight:700;padding
 
 <button class="sn snr no-print" id="snp" onclick="snGo(-1)" title="השיר הקודם" aria-label="השיר הקודם">❮</button>
 <button class="sn snl no-print" id="snn" onclick="snGo(1)" title="השיר הבא" aria-label="השיר הבא">❯</button>
-<div id="cmv" class="no-print"><div class="hint2"><span id="cmh"></span> <button onclick="chSel(null)" title="סגור" style="padding:4px 10px;min-width:0;margin-inline-start:8px">✕</button></div><div class="pal" id="cmp"></div><div class="mv"><button onclick="chMove(1,'w')" title="למילה הקודמת (ימינה)">« מילה</button><button onclick="chMove(1,'c')" title="אות אחת ימינה">▶</button><span class="nm" id="cmn"></span><button onclick="chMove(-1,'c')" title="אות אחת שמאלה">◀</button><button onclick="chMove(-1,'w')" title="למילה הבאה (שמאלה)">מילה »</button><button onclick="chDel()" title="מחק אקורד" style="color:#e11d48">🗑</button></div></div>
+<div id="cmv" class="no-print"><div class="hint2"><span id="cmh"></span> <button onclick="chSel(null)" title="סגור" style="padding:4px 10px;min-width:0;margin-inline-start:8px">✕</button></div><div class="pal" id="cmp"></div><div class="mv"><button onclick="chMove(1,'w')" title="למילה הקודמת (ימינה)">« מילה</button><button onclick="chMove(1,'c')" title="אות אחת ימינה">▶</button><span class="nm" id="cmn"></span><button onclick="chMove(-1,'c')" title="אות אחת שמאלה">◀</button><button onclick="chMove(-1,'w')" title="למילה הבאה (שמאלה)">מילה »</button><button onclick="chAddHere()" title="הוסף אקורד נוסף באותו מקום">➕</button><button onclick="chDel()" title="מחק אקורד" style="color:#e11d48">🗑</button></div></div>
 <div id="plb" class="no-print"><button onclick="plGo(-1)" title="השיר הקודם">⏮</button><div><b id="pli"></b><small id="plc"></small></div><button id="plp" onclick="toggleScroll()" title="עצור / המשך גלילה">⏸</button><button onclick="plGo(1)" title="השיר הבא">⏭</button></div>
 <dialog id="pl">
   <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">▶️ רשימת נגינה</b><button onclick="$('pl').close()">✕</button></div>
@@ -436,7 +436,7 @@ function render(){
         const u=el('span','u'),cl=el('span','cl');
         if(c&&i===0){const b=el('span','ch',tr(c.trim(),sh,flat));b.dataset.l=li;b.dataset.k=mk;b.onclick=()=>{if(editing)chSel({l:li,k:mk});else diagram(b.textContent)};cl.append(b)}
         if(tx&&/\s$/.test(w))u.style.marginInlineEnd='.7em';
-        const tt=el('span','tx',tx);if(tx){tt.dataset.l=li;tt.dataset.o=wo;tt.onclick=()=>{if(editing)wSel({l:li,o:wo})}}
+        const tt=el('span','tx',tx);if(tx){tt.dataset.l=li;tt.dataset.o=wo;u.onclick=e=>{if(editing&&!e.target.closest('.ch'))wSel({l:li,o:wo})}}
         u.append(cl,tt);row.append(u);
       });
     };
@@ -745,17 +745,20 @@ function chMark(){
     const b=document.querySelector(`.ch[data-l="${csel.l}"][data-k="${csel.k}"]`);
     if(!b){csel=null;return chMark()}
     b.classList.add('sel');$('cmn').textContent=lines[csel.l].split(/\[([^\]]+)\]/)[csel.k*2+1]||'';
-    $('cmh').textContent='הזז את האקורד, או לחץ על אקורד אחר כדי להחליף אותו';
+    $('cmh').textContent='הזז או החלף את האקורד. להוספת אקורד חדש: לחץ ➕ או על מילה';
   }else{
     const w=document.querySelector(`.tx[data-l="${wsel.l}"][data-o="${wsel.o}"]`);
-    if(!w){wsel=null;return chMark()}
-    w.classList.add('wsel');$('cmh').textContent='בחר אקורד להוספה על המילה המסומנת';
+    if(w)w.classList.add('wsel');$('cmh').textContent='בחר אקורד להוספה על המילה המסומנת (או לחץ על מילה אחרת)';
   }
   const used=[...new Set((song().text.match(/\[([^\]]+)\]/g)||[]).map(x=>x.slice(1,-1)))];
   const cur=csel?lines[csel.l].split(/\[([^\]]+)\]/)[csel.k*2+1]:'';
   const pal=$('cmp');pal.innerHTML='';
   [...new Set([...used,...COMMON])].forEach(n=>{const b=document.createElement('button');b.textContent=n;if(n===cur)b.style.outline='3px solid #f59e0b';b.onclick=()=>chPut(n);pal.append(b)});
   const o=document.createElement('button');o.textContent='✏️ אחר';o.style.fontFamily='inherit';o.onclick=()=>{const n=(prompt('שם האקורד (למשל Am7)')||'').trim().replace(/[\[\]]/g,'');if(n)chPut(n)};pal.append(o);pal.scrollLeft=0;
+}
+function chAddHere(){
+  if(!csel)return;const {ms}=chParse(song().text.split('\n')[csel.l]);const m=ms[csel.k];if(!m)return;
+  wSel({l:csel.l,o:m.pos});
 }
 function chPut(name){
   if(!editing)return;
