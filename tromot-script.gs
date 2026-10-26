@@ -38,6 +38,8 @@ function doPost(e) {
   lock.waitLock(20000);
   try {
     if (req.action === 'board_list' || req.action === 'board_set') { lock.releaseLock(); return boardAdmin_(req); }
+    if (req.action === 'inv_load') return out({ ok: true, inv: invRead_() });
+    if (req.action === 'inv_save') return out({ ok: true, inv: invWrite_(req.inv || {}) });
     if (req.action === 'check') return out({ ok: true });
     if (req.action === 'load') {
       const d = readData();
@@ -161,7 +163,8 @@ function boardData_() {
   const dons = D.map(function (d) { return { d: d.date || '', a: Number(d.amount) }; })
     .sort(function (x, y) { return String(y.d).localeCompare(String(x.d)); }).slice(0, 300);
   const exl = Object.keys(ex).map(function (k) { return ex[k]; }).sort(function (x, y) { return String(y.d).localeCompare(String(x.d)); });
-  return { title: BOARD_TITLE, tot: tot, used: used, avail: tot - used, n: D.length, dons: dons, ex: exl, at: raw.savedAt || 0 };
+  const inv = invRead_();
+  return { title: BOARD_TITLE, tot: tot, used: used, avail: tot - used, n: D.length, dons: dons, ex: exl, at: raw.savedAt || 0, inv: { items: inv.items.map(function (x) { return { n: x.n, c: x.c, st: x.st }; }), wa: inv.wa } };
 }
 
 /* בקשה מהלוח הציבורי: {action:'board', dev, name} */
@@ -245,4 +248,29 @@ function boardAdmin_(req) {
 function setupBoard() {
   MailApp.sendEmail(Session.getEffectiveUser().getEmail(), 'לוח המודעות מוכן', 'מעכשיו תקבל כאן בקשות צפייה בלוח המודעות של ' + BOARD_TITLE + '.');
   Logger.log('נשלח מייל ניסיון ל-' + Session.getEffectiveUser().getEmail());
+}
+
+/* ---------------- מלאי ציוד בבית הכנסת ----------------
+   נשמר בקובץ inventory.json בתיקיית הגיבוי. מוצג גם בלוח המודעות, עם כפתור "אני רוצה לתרום" שפותח וואטסאפ למספר שהוגדר. */
+const INV_DEFAULT = [
+  ['שתייה', ['שתייה קלה']],
+  ['חד פעמי', ['מזלגות', 'כפיות', 'שקיות זבל', 'טישו', 'קערות הגשה קטנות', 'צלחות קטנות', 'צלחות גדולות', 'מפות', 'כוסות']],
+  ['קידוש', ['יין לקידוש', 'קרקרים', 'כוסות קידוש']]
+];
+function invFile_() {
+  const f = folder(), it = f.getFilesByName('inventory.json');
+  if (it.hasNext()) return it.next();
+  let n = 0; const items = [];
+  INV_DEFAULT.forEach(function (g) { g[1].forEach(function (name) { items.push({ id: 'i' + (++n), n: name, c: g[0], st: 'ok' }); }); });
+  return f.createFile('inventory.json', JSON.stringify({ items: items, wa: '', rev: 1 }), MimeType.PLAIN_TEXT);
+}
+function invRead_() { try { return JSON.parse(invFile_().getBlob().getDataAsString('UTF-8')); } catch (x) { return { items: [], wa: '', rev: 0 }; } }
+function invWrite_(inv) {
+  const clean = {
+    items: (inv.items || []).slice(0, 300).map(function (x) { return { id: String(x.id || '').slice(0, 20), n: String(x.n || '').slice(0, 60), c: String(x.c || '').slice(0, 30), st: ['ok', 'low', 'out'].indexOf(x.st) >= 0 ? x.st : 'ok' }; }).filter(function (x) { return x.id && x.n; }),
+    wa: String(inv.wa || '').replace(/[^\d]/g, '').slice(0, 15),
+    rev: (Number(invRead_().rev) || 0) + 1
+  };
+  invFile_().setContent(JSON.stringify(clean));
+  return clean;
 }
