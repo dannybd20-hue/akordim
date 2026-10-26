@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>לוח מודעות</title>
-<meta name="description" content="לוח המודעות של קופת בית הכנסת">
+<title>תרומות בית כנסת איחוד הצלה</title>
+<meta name="description" content="לוח המודעות: תרומות בית כנסת איחוד הצלה">
 <meta name="theme-color" content="#7a5536">
 <meta name="robots" content="noindex">
 <link rel="icon" href="icons/apps-192.png">
@@ -67,6 +67,7 @@ const K=(new URLSearchParams(location.search).get('k')||'').replace(/[^\w-]/g,''
 const URL_='https://script.google.com/macros/s/'+K+'/exec';
 let dev=lg('board_dev');
 if(!dev){dev=(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36)).replace(/[^\w-]/g,'');lp('board_dev',dev)}
+const TITLE='תרומות בית כנסת איחוד הצלה';
 const ils=n=>'₪'+Math.round(n).toLocaleString('he-IL');
 const MON=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 const dd=s=>s?s.split('-').reverse().slice(0,2).join('/'):'';
@@ -90,7 +91,7 @@ async function ask(name){
   if(r.status==='ok'){data=r.data;draw();pollT=setTimeout(()=>ask(),120000)}
 }
 function draw(){
-  const D=data;document.title='לוח מודעות · '+D.title;
+  const D=data;D.title=TITLE;document.title=TITLE;
   const byMonth=[];D.dons.forEach(x=>{const k=(x.d||'').slice(0,7);let g=byMonth[byMonth.length-1];if(!g||g.k!==k){g={k,t:0,L:[]};byMonth.push(g)}g.t+=x.a;g.L.push(x)});
   const mName=k=>k?MON[+k.slice(5)-1]+' '+k.slice(0,4):'ללא תאריך';
   let dons='',cnt=0;

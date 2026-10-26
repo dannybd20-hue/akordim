@@ -138,7 +138,7 @@ function dailySnapshot(list) {
    מי שנכנס בפעם הראשונה כותב שם, ונשלח אליך מייל עם כפתור "לאשר". אחרי אישור המכשיר נכנס תמיד.
    הלוח מציג רק מספרים: יתרה, סך התרומות, תרומות שנכנסו (תאריך וסכום, בלי שם) ועל מה הכסף שומש.
    אחרי ההדבקה: מריצים פעם אחת את setupBoard (לאישור הרשאת שליחת מייל), ואז "גרסה חדשה" בפריסה. */
-const BOARD_TITLE = 'קופת בית הכנסת';
+const BOARD_TITLE = 'תרומות בית כנסת איחוד הצלה';
 const BOARD_MAX_PENDING = 30;
 
 function boardGet_() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('BOARD') || '{}'); } catch (x) { return {}; } }
