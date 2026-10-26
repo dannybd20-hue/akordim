@@ -232,7 +232,7 @@ const NAMES_HASH='52357890d3a4c5b58f8f260db71bc3fbeaa6a52168e0d3bdd24023455612c5
 let showNames=false,afterCode=null;
 try{localStorage.removeItem('tromot_names');showNames=sessionStorage.getItem('tromot_names')==='1'}catch(e){}
 /* נכנסו לדף הבית עם הסיסמה הראשית: שמות ועריכה פתוחים בלי קוד נוסף */
-try{if(sessionStorage.getItem('hub_admin')||localStorage.getItem('hub_admin'))showNames=true}catch(e){}
+try{const A=JSON.parse(sessionStorage.getItem('hub_access')||localStorage.getItem('hub_access')||'[]');if(sessionStorage.getItem('hub_admin')||localStorage.getItem('hub_admin')||A.length>=4){showNames=true;sessionStorage.setItem('tromot_names','1')}}catch(e){}
 async function sha(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 function needNames(fn){if(showNames){fn();return}afterCode=fn;$('codeIn').value='';$('codeErr').style.display='none';$('dCode').showModal();$('codeIn').focus()}
 async function submitCode(){
