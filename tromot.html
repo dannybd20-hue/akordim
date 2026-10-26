@@ -461,6 +461,7 @@ function shareBoard(){location.href='https://wa.me/?text='+encodeURIComponent('�
 function disconnect(){if(!confirm('לנתק את הגיבוי לענן במכשיר הזה? הנתונים נשארים גם במכשיר וגם בענן.'))return;cloud=null;try{localStorage.removeItem('tromot_cloud')}catch(e){}$('dCloud').close();cloudSync()}
 
 nmBtn();render();cloudSync();
+if(new URLSearchParams(location.search).get('board')){history.replaceState(null,'','tromot.html');needNames(openBoard)}
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 <script src="presence.js"></script><script>dbdPresence('tromot')</script>
