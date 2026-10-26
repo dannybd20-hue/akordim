@@ -26,6 +26,7 @@ const KEEP_DAYS = 60;
 function doPost(e) {
   let req = {};
   try { req = JSON.parse(e.postData.contents); } catch (x) { return out({ ok: false, error: 'bad request' }); }
+  if (req.action === 'board') return boardPublic_(req);
   const pw = String(req.password || '').trim();
   if (!isAdmin_(pw)) {
     if (locked_('tromot')) return out({ ok: false, error: 'locked' });
@@ -36,6 +37,7 @@ function doPost(e) {
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
+    if (req.action === 'board_list' || req.action === 'board_set') { lock.releaseLock(); return boardAdmin_(req); }
     if (req.action === 'check') return out({ ok: true });
     if (req.action === 'load') {
       const d = readData();
@@ -67,7 +69,8 @@ function passed_(scope) { CacheService.getScriptCache().remove('fails_' + scope)
 /* סיסמת המנהל (ADMIN_PASSWORD) תמיד מתקבלת, וגם מבטלת חסימה של "יותר מדי ניסיונות שגויים" */
 function isAdmin_(p) { return typeof ADMIN_PASSWORD === 'string' && ADMIN_PASSWORD.indexOf('כתוב-כאן') !== 0 && p === ADMIN_PASSWORD; }
 
-function doGet() {
+function doGet(e) {
+  if (e && e.parameter && e.parameter.board) return boardLink_(e.parameter);
   return out({ ok: true, app: 'tromot-backup' });
 }
 
@@ -128,4 +131,117 @@ function dailySnapshot(list) {
     const x = all.next();
     if (/^גיבוי \d{4}-\d{2}-\d{2}\.json$/.test(x.getName()) && x.getDateCreated().getTime() < cutoff) x.setTrashed(true);
   }
+}
+
+/* ---------------- לוח מודעות (צפייה ציבורית עם אישור) ----------------
+   הקישור: https://dannybd20-hue.github.io/akordim/board.html?k=<מזהה הפריסה>. אפשר להעתיק אותו מאפליקציית התרומות.
+   מי שנכנס בפעם הראשונה כותב שם, ונשלח אליך מייל עם כפתור "לאשר". אחרי אישור המכשיר נכנס תמיד.
+   הלוח מציג רק מספרים: יתרה, סך התרומות, תרומות שנכנסו (תאריך וסכום, בלי שם) ועל מה הכסף שומש.
+   אחרי ההדבקה: מריצים פעם אחת את setupBoard (לאישור הרשאת שליחת מייל), ואז "גרסה חדשה" בפריסה. */
+const BOARD_TITLE = 'קופת בית הכנסת';
+const BOARD_MAX_PENDING = 30;
+
+function boardGet_() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('BOARD') || '{}'); } catch (x) { return {}; } }
+function boardPut_(b) { PropertiesService.getScriptProperties().setProperty('BOARD', JSON.stringify(b)); }
+
+function boardData_() {
+  const raw = readData(), D = (raw.donations || []).filter(function (d) { return Number(d.amount) > 0; });
+  let tot = 0, used = 0;
+  const ex = {};
+  D.forEach(function (d) {
+    const a = Number(d.amount); tot += a;
+    if (d.used) {
+      used += a;
+      const k = (d.usedFor || '') + '|' + (d.usedDate || '');
+      ex[k] = ex[k] || { f: String(d.usedFor || '').slice(0, 80), d: d.usedDate || '', a: 0 };
+      ex[k].a += a;
+    }
+  });
+  const dons = D.map(function (d) { return { d: d.date || '', a: Number(d.amount) }; })
+    .sort(function (x, y) { return String(y.d).localeCompare(String(x.d)); }).slice(0, 300);
+  const exl = Object.keys(ex).map(function (k) { return ex[k]; }).sort(function (x, y) { return String(y.d).localeCompare(String(x.d)); });
+  return { title: BOARD_TITLE, tot: tot, used: used, avail: tot - used, n: D.length, dons: dons, ex: exl, at: raw.savedAt || 0 };
+}
+
+/* בקשה מהלוח הציבורי: {action:'board', dev, name} */
+function boardPublic_(req) {
+  const dev = String(req.dev || '').replace(/[^\w-]/g, '').slice(0, 40);
+  if (dev.length < 10) return out({ ok: false, error: 'bad' });
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  let x, b;
+  try {
+    b = boardGet_(); b.devs = b.devs || {};
+    x = b.devs[dev];
+    if (!x) {
+      const name = String(req.name || '').trim().slice(0, 40);
+      if (!name) return out({ ok: true, status: 'name' });
+      const pend = Object.keys(b.devs).filter(function (k) { return b.devs[k].st === 'p'; }).length;
+      if (pend >= BOARD_MAX_PENDING) return out({ ok: true, status: 'busy' });
+      x = b.devs[dev] = { n: name, st: 'p', t: Date.now(), k: Utilities.getUuid().replace(/-/g, '').slice(0, 20) };
+      boardPut_(b);
+      boardMail_(dev, x);
+      return out({ ok: true, status: 'pending' });
+    }
+    if (x.st === 'a') {
+      if (!x.seen || Date.now() - x.seen > 36e5) { x.seen = Date.now(); boardPut_(b); }
+    }
+  } finally { lock.releaseLock(); }
+  if (x.st === 'a') return out({ ok: true, status: 'ok', data: boardData_() });
+  return out({ ok: true, status: x.st === 'd' ? 'denied' : 'pending' });
+}
+
+function boardMail_(dev, x) {
+  try {
+    const url = ScriptApp.getService().getUrl();
+    const a = url + '?board=a&d=' + encodeURIComponent(dev) + '&k=' + x.k, d = url + '?board=d&d=' + encodeURIComponent(dev) + '&k=' + x.k;
+    const esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    MailApp.sendEmail({
+      to: Session.getEffectiveUser().getEmail(),
+      subject: 'בקשת צפייה בלוח המודעות: ' + x.n,
+      htmlBody: '<div dir="rtl" style="font-family:Arial;font-size:16px">' +
+        '<p><b>' + esc(x.n) + '</b> מבקש לצפות בלוח המודעות של ' + esc(BOARD_TITLE) + '.</p>' +
+        '<p><a href="' + a + '" style="background:#5d7b4f;color:#fff;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:bold">✅ לאשר</a>' +
+        ' &nbsp; <a href="' + d + '" style="background:#b3261e;color:#fff;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:bold">❌ לדחות</a></p>' +
+        '<p style="color:#777;font-size:13px">אפשר לאשר, לדחות ולבטל גם מאפליקציית התרומות ← "📋 לוח מודעות".</p></div>'
+    });
+  } catch (e) { console.warn('mail: ' + e); }
+}
+
+/* לחיצה על הכפתור במייל */
+function boardLink_(p) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  let msg = 'הקישור לא תקף';
+  try {
+    const b = boardGet_(); b.devs = b.devs || {};
+    const x = b.devs[String(p.d || '')];
+    if (x && x.k === String(p.k || '')) {
+      x.st = p.board === 'a' ? 'a' : 'd'; x.at = Date.now(); boardPut_(b);
+      msg = p.board === 'a' ? '✅ אושר: ' + x.n + ' יכול לצפות בלוח' : '❌ נדחה: ' + x.n;
+    }
+  } finally { lock.releaseLock(); }
+  return HtmlService.createHtmlOutput('<meta name="viewport" content="width=device-width,initial-scale=1"><div dir="rtl" style="font-family:Arial;font-size:22px;text-align:center;padding:60px 20px">' + msg + '</div>');
+}
+
+/* ניהול מתוך האפליקציה (עם סיסמה): רשימת בקשות ושינוי מצב */
+function boardAdmin_(req) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const b = boardGet_(); b.devs = b.devs || {};
+    if (req.action === 'board_set') {
+      const id = String(req.dev || '');
+      if (b.devs[id]) { if (req.st === 'x') delete b.devs[id]; else { b.devs[id].st = req.st === 'a' ? 'a' : 'd'; b.devs[id].at = Date.now(); } boardPut_(b); }
+    }
+    const list = Object.keys(b.devs).map(function (k) { const x = b.devs[k]; return { dev: k, n: x.n, st: x.st, t: x.t, seen: x.seen || 0 }; })
+      .sort(function (x, y) { return (x.st === 'p' ? 0 : 1) - (y.st === 'p' ? 0 : 1) || y.t - x.t; });
+    return out({ ok: true, devs: list });
+  } finally { lock.releaseLock(); }
+}
+
+// מריצים פעם אחת מהעורך: מאשרים את הרשאת המייל ומקבלים מייל ניסיון
+function setupBoard() {
+  MailApp.sendEmail(Session.getEffectiveUser().getEmail(), 'לוח המודעות מוכן', 'מעכשיו תקבל כאן בקשות צפייה בלוח המודעות של ' + BOARD_TITLE + '.');
+  Logger.log('נשלח מייל ניסיון ל-' + Session.getEffectiveUser().getEmail());
 }
