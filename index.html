@@ -198,7 +198,7 @@ async function submit(){
   const v=$('p1').value.trim();err('');
   if(!v){err('נא להקליד סיסמה');return}
   const h=await hash(v),isEn=EN_HASHES.has(h);
-  const A=isEn?['shopping']:ACCESS[h];
+  const A=isEn?['shopping','meds']:ACCESS[h];
   if(!A){err('סיסמה שגויה');$('p1').select();return}
   /* אפליקציית הקניות מתחברת לענן עם הסיסמה המשפחתית; מנסים קודם את מה שהוקלד כאן */
   grant(A,v);
@@ -295,11 +295,14 @@ $('nmIn').addEventListener('keyup',e=>{if(e.key==='Enter')saveName()});
   /* גישה שנשמרה במכשיר: משחזרים אותה, ונכנסים ישר לאפליקציה שביקשו או לאפליקציה היחידה (פעם אחת בכל פתיחה) */
   if(!access().length){let A=[];try{A=JSON.parse(get('hub_access'))||[]}catch(e){}if(A.length){grant(A,get('hub_pw'));if(get('hub_admin'))sput('hub_admin',get('hub_admin'))}}
   /* טביעת אצבע רשומה ואין עדיין גישה בדפדפן הזה: מבקשים אצבע (מנסים מיד; אם הדפדפן דורש לחיצה, יש כפתור) */
+  /* קוד הקניות באנגלית: מקבל גם את אפליקציית התרופות (גם במכשיר שנכנס לפני שהיא נוספה) */
+  if(get('shop_lang')==='en'&&access().length&&!access().includes('meds')){const A2=access().concat('meds');grant(A2,sget('hub_pw')||get('hub_pw'));if(get('hub_access'))lput('hub_access',JSON.stringify(A2))}
   if(!access().length&&bioData()){only('biolock');bioLogin();return}
   const A=access(),want=new URLSearchParams(location.search).get('open');
   /* מכשיר שכבר נכנס אבל עוד לא נתן שם: מבקשים את השם פעם אחת */
   if(A.length&&!myName()&&get('shop_lang')!=='en'){$('lockv').hidden=true;$('namev').hidden=false;setTimeout(()=>$('nmIn').focus(),50);return}
   if(A.includes(want)){location.replace(dest(want));return}
+  if(get('shop_lang')==='en'&&A.includes('shopping')){location.replace('shopping.html');return}
   if(A.length===1&&!sget('hub_seen')){sput('hub_seen','1');location.replace(dest(A[0]));return}
   sput('hub_seen','1');
   show();

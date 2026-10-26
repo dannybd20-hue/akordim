@@ -593,7 +593,7 @@ function maaserApply(st, o, t) {
    זיהוי תרופה מתמונה: צריך מפתח של Claude (console.anthropic.com) בתור מאפיין סקריפט ANTHROPIC_KEY.
    התראות תוקף: כל בוקר ב-8:00 נשלחת הודעת וואטסאפ (אותה הגדרה של GREEN_… כמו בקניות) שבוע לפני פקיעת תוקף וביום הפקיעה.
    היעד: הקבוצה של הקניות, או צ'אט אחר אם מגדירים מאפיין MEDS_CHAT (למשל 972501234567@c.us). */
-const MEDS_PASSWORD = '';              // סיסמה נוספת לאפליקציה (ריק = רק הסיסמה הראשית)
+const MEDS_PASSWORD = '';              // סיסמה נוספת לאפליקציה. מתקבלות גם הסיסמה הראשית וסיסמת הקניות
 const MEDS_FILE = 'meds_data.json';
 const MEDS_MODEL = 'claude-sonnet-5-5';
 const MEDS_LINK = 'https://dannybd20-hue.github.io/akordim/meds.html';
@@ -630,7 +630,8 @@ function medsEff_(it) {
 function medsPost_(d) {
   if (!isAdmin_(d.password)) {
     if (locked_('meds')) return out_({ ok: false, error: 'locked' });
-    if (!MEDS_PASSWORD || d.password !== MEDS_PASSWORD) { failed_('meds'); return out_({ ok: false, error: 'password' }); }
+    const okPw = (MEDS_PASSWORD && d.password === MEDS_PASSWORD) || d.password === SHOP_PASSWORD || (EN_PASSWORD && d.password === EN_PASSWORD);
+    if (!okPw) { failed_('meds'); return out_({ ok: false, error: 'password' }); }
   }
   passed_('meds');
   if (d.op === 'identify') return medsIdentify_(d);
@@ -681,9 +682,11 @@ function medsIdentify_(d) {
     '"he": שם המוצר בעברית כפי שמקובל בישראל, כולל החוזק אם מופיע (למשל "אקמול 500 מ״ג"),\n' +
     '"en": שם המוצר באנגלית (למשל "Acamol 500 mg"),\n' +
     '"desc": עד שני משפטים בעברית: מהו החומר הפעיל, מה התרופה עושה ולמה משתמשים בה. מידע כללי בלבד,\n' +
+    '"desc_en": אותו הסבר באנגלית,\n' +
     '"type": "pills" לטבליות/כמוסות/כדורים, "liquid" לנוזל/סירופ/טיפות/תרסיס, "cream" למשחה/קרם/ג׳ל, או "other",\n' +
     '"qty": מספר היחידות בחבילה אם מודפס (מספר), אחרת null,\n' +
     '"unit": יחידת הכמות בעברית ("טבליות", "כמוסות", "מ״ל", "גרם"), אחרת "",\n' +
+    '"unit_en": אותה יחידה באנגלית ("tablets", "capsules", "ml", "g"), אחרת "",\n' +
     '"exp": תאריך התפוגה המודפס בפורמט YYYY-MM-DD (אם מודפס רק חודש ושנה, היום האחרון של החודש), ואם לא נראה בתמונה null,\n' +
     '"aft": אם כתוב תוקף אחרי פתיחה, אובייקט {"n": מספר, "u": "m" לחודשים או "d" לימים}, אחרת null,\n' +
     '"conf": "high" או "low" לפי הביטחון בזיהוי.\n' +

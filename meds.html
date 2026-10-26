@@ -83,10 +83,10 @@ textarea.in{min-height:70px;resize:vertical}
 </head>
 <body>
 <header>
-  <div class="hrow"><button class="hb" onclick="goHome()">→ דף הבית</button><h1>💊 תרופות בבית</h1><button class="hb" id="mm" title="מיקומים">📍</button></div>
+  <div class="hrow"><button class="hb" id="hbk" onclick="goBack()" data-en="← Shopping">→ דף הבית</button><h1 data-en="💊 Home medicines">💊 תרופות בבית</h1><button class="hb" id="mm" title="מיקומים">📍</button></div>
   <div class="sum" id="sum"></div>
 </header>
-<main id="M"><div class="empty">טוען…</div></main>
+<main id="M"><div class="empty">…</div></main>
 <button class="fab" id="fab" title="הוספת תרופה" aria-label="הוספת תרופה">＋</button>
 
 <!-- הוספה / עריכה -->
@@ -96,35 +96,35 @@ textarea.in{min-height:70px;resize:vertical}
     <div class="photo">
       <div class="pv" id="pv">💊</div>
       <div style="flex:1;display:flex;flex-direction:column;gap:8px">
-        <button class="btn" onclick="$('fcam').click()">📷 צילום האריזה</button>
-        <button class="btn s" onclick="$('fgal').click()">🖼️ מהגלריה</button>
+        <button class="btn" onclick="$('fcam').click()" data-en="📷 Photo of the box">📷 צילום האריזה</button>
+        <button class="btn s" onclick="$('fgal').click()" data-en="🖼️ From gallery">🖼️ מהגלריה</button>
       </div>
     </div>
     <input type="file" id="fcam" accept="image/*" capture="environment" hidden>
     <input type="file" id="fgal" accept="image/*" hidden>
     <div class="ai" id="aiMsg" hidden></div>
-    <label class="f">שם בעברית</label><input class="in" id="fhe" placeholder="למשל: אקמול 500 מ״ג">
-    <label class="f">שם באנגלית</label><input class="in" id="fen" dir="ltr" style="text-align:right" placeholder="e.g. Acamol 500 mg">
-    <label class="f">מה זה ולמה משתמשים</label><textarea class="in" id="fdesc" placeholder="הסבר קצר"></textarea>
-    <label class="f">איפה זה נמצא</label>
-    <div class="row"><select class="in" id="floc"></select><input class="in" id="floc2" placeholder="שם מקום חדש" hidden></div>
-    <label class="f">סוג</label>
+    <label class="f" data-en="Name in Hebrew">שם בעברית</label><input class="in" id="fhe" placeholder="למשל: אקמול 500 מ״ג">
+    <label class="f" data-en="Name in English">שם באנגלית</label><input class="in" id="fen" dir="ltr" style="text-align:right" placeholder="e.g. Acamol 500 mg">
+    <label class="f" data-en="What it is and what it's for">מה זה ולמה משתמשים</label><textarea class="in" id="fdesc" placeholder="הסבר קצר" data-enp="Short explanation"></textarea>
+    <label class="f" data-en="Where is it kept">איפה זה נמצא</label>
+    <div class="row"><select class="in" id="floc"></select><input class="in" id="floc2" placeholder="שם מקום חדש" data-enp="New place name" hidden></div>
+    <label class="f" data-en="Type">סוג</label>
     <div class="seg" id="ftype"></div>
-    <label class="f">תאריך תפוגה (כפי שמודפס על האריזה)</label><input class="in" type="date" id="fexp">
+    <label class="f" data-en="Expiry date (as printed on the box)">תאריך תפוגה (כפי שמודפס על האריזה)</label><input class="in" type="date" id="fexp">
     <div id="qtyBox">
       <label class="f" id="qtyL">כמות שנשארה</label>
-      <div class="row"><input class="in" type="number" inputmode="decimal" min="0" id="fqty" placeholder="כמות"><input class="in" id="funit" placeholder="יחידה (טבליות, מ״ל…)"></div>
-      <label class="f">להתריע כשנשאר עד (אופציונלי)</label><input class="in" type="number" inputmode="decimal" min="0" id="flow" placeholder="למשל 4">
+      <div class="row"><input class="in" type="number" inputmode="decimal" min="0" id="fqty" placeholder="כמות" data-enp="Amount"><input class="in" id="funit" placeholder="יחידה (טבליות, מ״ל…)" data-enp="Unit (tablets, ml…)"></div>
+      <label class="f" data-en="Alert when down to (optional)">להתריע כשנשאר עד (אופציונלי)</label><input class="in" type="number" inputmode="decimal" min="0" id="flow" placeholder="למשל 4" data-enp="e.g. 4">
     </div>
     <div id="openBox">
-      <label class="f">תאריך פתיחה (למוצר שנפתח)</label><input class="in" type="date" id="fopen">
-      <label class="f">תוקף אחרי פתיחה</label>
-      <div class="row"><input class="in" type="number" inputmode="decimal" min="0" id="faftN" placeholder="מספר"><select class="in" id="faftU"><option value="m">חודשים</option><option value="d">ימים</option></select></div>
-      <div class="note">התוקף שנספר הוא המוקדם מבין התוקף שעל האריזה לבין תאריך הפתיחה + התקופה הזאת.</div>
+      <label class="f" data-en="Date opened">תאריך פתיחה (למוצר שנפתח)</label><input class="in" type="date" id="fopen">
+      <label class="f" data-en="Good for after opening">תוקף אחרי פתיחה</label>
+      <div class="row"><input class="in" type="number" inputmode="decimal" min="0" id="faftN" placeholder="מספר" data-enp="Number"><select class="in" id="faftU"><option value="m" data-en="months">חודשים</option><option value="d" data-en="days">ימים</option></select></div>
+      <div class="note" data-en="The expiry used is the earlier of the printed date and the opening date plus this period.">התוקף שנספר הוא המוקדם מבין התוקף שעל האריזה לבין תאריך הפתיחה + התקופה הזאת.</div>
     </div>
-    <label class="f">הערה</label><input class="in" id="fnote" placeholder="אופציונלי">
-    <div class="acts"><button class="btn" id="fsave">שמירה</button><button class="btn d" id="fdel" hidden>מחיקה</button></div>
-    <div class="note">מידע על התרופה הוא כללי בלבד ולא תחליף לייעוץ רפואי או להוראות האריזה.</div>
+    <label class="f" data-en="Note">הערה</label><input class="in" id="fnote" placeholder="אופציונלי" data-enp="Optional">
+    <div class="acts"><button class="btn" id="fsave" data-en="Save">שמירה</button><button class="btn d" id="fdel" hidden data-en="Delete">מחיקה</button></div>
+    <div class="note" data-en="Medicine info is general only, not a substitute for medical advice or the leaflet.">מידע על התרופה הוא כללי בלבד ולא תחליף לייעוץ רפואי או להוראות האריזה.</div>
   </div>
 </dialog>
 
@@ -136,8 +136,8 @@ textarea.in{min-height:70px;resize:vertical}
 
 <!-- מיקומים -->
 <dialog id="lcd">
-  <div class="dh"><b>📍 מיקומים</b><button class="x" onclick="$('lcd').close()">✕</button></div>
-  <div class="db"><div id="lcl"></div><div class="row" style="margin-top:10px"><input class="in" id="lcn" placeholder="מקום חדש (למשל: ארון בסלון)"><button class="btn" style="flex:none" onclick="addLoc()">הוספה</button></div></div>
+  <div class="dh"><b data-en="📍 Places">📍 מיקומים</b><button class="x" onclick="$('lcd').close()">✕</button></div>
+  <div class="db"><div id="lcl"></div><div class="row" style="margin-top:10px"><input class="in" id="lcn" placeholder="מקום חדש (למשל: ארון בסלון)" data-enp="New place (e.g. living room cabinet)"><button class="btn" style="flex:none" onclick="addLoc()" data-en="Add">הוספה</button></div></div>
 </dialog>
 <div id="toast"></div>
 
@@ -149,9 +149,19 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const lg=k=>{try{return localStorage.getItem(k)||''}catch(e){return''}};
 const lp=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
 const sg=k=>{try{return sessionStorage.getItem(k)||''}catch(e){return''}};
-const TYPES={pills:['💊','כדורים / כמוסות'],liquid:['🧴','נוזל / טיפות'],cream:['🧴','משחה / קרם'],other:['📦','אחר']};
+const TYPES={pills:['💊','כדורים / כמוסות','Pills / capsules'],liquid:['🧴','נוזל / טיפות','Liquid / drops'],cream:['🧴','משחה / קרם','Ointment / cream'],other:['📦','אחר','Other']};
+const tName=t=>EN?t[2]:t[1];
 const DEF_LOCS=['מטבח','שירותי הורים','שירותי ילדים'];
-let items=[],locs=DEF_LOCS.slice(),pw='',ai=null,fLoc='',fSt='',q='',cur=null,photoNew='',thNew='',queue=[];
+/* אנגלית: מי שנכנסה עם קוד הקניות באנגלית רואה את האפליקציה באנגלית (הנתונים עצמם משותפים) */
+const EN=lg('shop_lang')==='en';
+const T=(h,e)=>EN?e:h;
+const LOC_EN={'מטבח':'Kitchen','שירותי הורים':"Parents' bathroom",'שירותי ילדים':"Kids' bathroom"};
+const locName=l=>EN&&LOC_EN[l]?LOC_EN[l]:l;
+function goBack(){if(EN)location.href='shopping.html';else goHome()}
+if(EN){document.documentElement.lang='en';document.documentElement.dir='ltr';document.title='Home medicines';
+  document.querySelectorAll('[data-en]').forEach(e=>e.textContent=e.dataset.en);
+  document.querySelectorAll('[data-enp]').forEach(e=>e.placeholder=e.dataset.enp);}
+let aiInfo=null,items=[],locs=DEF_LOCS.slice(),pw='',ai=null,fLoc='',fSt='',q='',cur=null,photoNew='',thNew='',queue=[];
 try{items=JSON.parse(lg('meds_items')||'[]');locs=JSON.parse(lg('meds_locs')||'null')||locs;queue=JSON.parse(lg('meds_queue')||'[]')}catch(e){}
 
 /* ---------- תאריכים ---------- */
@@ -165,13 +175,13 @@ function eff(it){
   return e;
 }
 function st(it){ /* סטטוס תוקף */
-  const e=eff(it);if(e==null)return{k:'ok',t:'ללא תוקף',days:null,e:null};
+  const e=eff(it);if(e==null)return{k:'ok',t:T('ללא תוקף','No expiry'),days:null,e:null};
   const days=Math.round((e-todayMs())/864e5);
-  if(days<0)return{k:'x',t:'פג לפני '+(-days===1?'יום':(-days)+' ימים'),days,e};
-  if(days===0)return{k:'x',t:'פג היום',days,e};
-  if(days<=7)return{k:'o',t:'עוד '+(days===1?'יום':days+' ימים'),days,e};
-  if(days<=30)return{k:'w',t:'עוד '+days+' ימים',days,e};
-  return{k:'ok',t:'עד '+fmt(e).slice(3),days,e};
+  if(days<0)return{k:'x',t:EN?'Expired '+(-days)+(days===-1?' day':' days')+' ago':'פג לפני '+(-days===1?'יום':(-days)+' ימים'),days,e};
+  if(days===0)return{k:'x',t:T('פג היום','Expires today'),days,e};
+  if(days<=7)return{k:'o',t:EN?days+(days===1?' day left':' days left'):'עוד '+(days===1?'יום':days+' ימים'),days,e};
+  if(days<=30)return{k:'w',t:EN?days+' days left':'עוד '+days+' ימים',days,e};
+  return{k:'ok',t:T('עד ','Until ')+fmt(e).slice(3),days,e};
 }
 
 /* ---------- ענן ---------- */
@@ -189,7 +199,7 @@ async function flush(){
   while(queue.length){
     const o=queue[0];let r;
     try{r=await api(o)}catch(e){return false}
-    if(r&&r.error==='password'){await needLogin('הסיסמה לא נכונה');return false}
+    if(r&&r.error==='password'){await needLogin(T('הסיסמה לא נכונה','Wrong password'));return false}
     if(!r||!r.ok)return false;
     queue.shift();saveLocal();
     if(o.op==='save'&&r.item){const i=items.findIndex(x=>x.id===o.item.id||x.id===r.item.id);if(i>=0)items[i]=Object.assign(items[i],{ph:r.item.ph,id:r.item.id});saveLocal()}
@@ -200,18 +210,18 @@ async function sync(){
   if(!pw)return;
   if(!(await flush()))return;
   try{const r=await api({op:'list'});
-    if(r.error==='password'){await needLogin('הסיסמה לא נכונה');return}
-    if(r.error==='locked'){toast('🔒 יותר מדי ניסיונות. נסה שוב בעוד רבע שעה');return}
+    if(r.error==='password'){await needLogin(T('הסיסמה לא נכונה','Wrong password'));return}
+    if(r.error==='locked'){toast(T('🔒 יותר מדי ניסיונות. נסה שוב בעוד רבע שעה','🔒 Too many attempts. Try again in 15 minutes'));return}
     apply(r);render()}catch(e){}
 }
-function push(o){queue.push(o);saveLocal();flush().then(ok=>{if(ok)sync();else toast('נשמר במכשיר, יסונכרן כשיהיה חיבור',3200)})}
+function push(o){queue.push(o);saveLocal();flush().then(ok=>{if(ok)sync();else toast(T('נשמר במכשיר, יסונכרן כשיהיה חיבור','Saved on this device, will sync when online'),3200)})}
 
 /* ---------- כניסה ---------- */
 function needLogin(msg){
   return new Promise(res=>{
-    $('M').innerHTML=`<div class="login"><h2>💊 תרופות בבית</h2><p class="note">הקלד את הסיסמה הראשית</p><input class="in" id="lpw" type="password" autocomplete="current-password" style="text-align:center;font-size:20px"><p style="color:var(--no);font-weight:700;min-height:22px">${esc(msg||'')}</p><button class="btn b" id="lgo">כניסה</button></div>`;
+    $('M').innerHTML=`<div class="login"><h2>${T('💊 תרופות בבית','💊 Home medicines')}</h2><p class="note">${T('הקלד את הסיסמה','Enter your password')}</p><input class="in" id="lpw" type="password" autocomplete="current-password" style="text-align:center;font-size:20px"><p style="color:var(--no);font-weight:700;min-height:22px">${esc(msg||'')}</p><button class="btn b" id="lgo">${T('כניסה','Sign in')}</button></div>`;
     $('lpw').focus();
-    const go=async()=>{const v=$('lpw').value.trim();if(!v)return;pw=v;lp('meds_pw',v);$('M').innerHTML='<div class="empty">מתחבר…</div>';await sync();render();res()};
+    const go=async()=>{const v=$('lpw').value.trim();if(!v)return;pw=v;lp('meds_pw',v);$('M').innerHTML='<div class="empty">'+T('מתחבר…','Connecting…')+'</div>';await sync();render();res()};
     $('lgo').onclick=go;$('lpw').onkeyup=e=>{if(e.key==='Enter')go()};
   });
 }
@@ -225,18 +235,18 @@ function visible(){
 }
 function render(){
   const n={x:0,s:0};items.forEach(it=>{const k=st(it).k;if(k==='x')n.x++;else if(k==='o'||k==='w')n.s++});
-  $('sum').innerHTML=`<button class="chip ${!fSt?'on':''}" data-s="">הכול ${items.length}</button><button class="chip ${fSt==='x'?'on':''}" data-s="x">❌ פג תוקף ${n.x}</button><button class="chip ${fSt==='s'?'on':''}" data-s="s">⚠️ עומד לפוג ${n.s}</button>`;
+  $('sum').innerHTML=`<button class="chip ${!fSt?'on':''}" data-s="">${T('הכול','All')} ${items.length}</button><button class="chip ${fSt==='x'?'on':''}" data-s="x">❌ ${T('פג תוקף','Expired')} ${n.x}</button><button class="chip ${fSt==='s'?'on':''}" data-s="s">⚠️ ${T('עומד לפוג','Expiring soon')} ${n.s}</button>`;
   $('sum').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{fSt=b.dataset.s;render()});
   const used=[...new Set([...locs,...items.map(i=>i.loc).filter(Boolean)])];
-  let h=`<div class="bar"><input id="sq" type="search" placeholder="🔎 חיפוש תרופה, מקום או מילה בהסבר" value="${esc(q)}"></div>`;
-  h+=`<div class="locs"><button class="lc ${!fLoc?'on':''}" data-l="">הכול</button>${used.map(l=>`<button class="lc ${fLoc===l?'on':''}" data-l="${esc(l)}">${esc(l)} ${items.filter(i=>i.loc===l).length}</button>`).join('')}</div>`;
+  let h=`<div class="bar"><input id="sq" type="search" placeholder="${T('🔎 חיפוש תרופה, מקום או מילה בהסבר','🔎 Search medicine, place or word')}" value="${esc(q)}"></div>`;
+  h+=`<div class="locs"><button class="lc ${!fLoc?'on':''}" data-l="">${T('הכול','All')}</button>${used.map(l=>`<button class="lc ${fLoc===l?'on':''}" data-l="${esc(l)}">${esc(locName(l))} ${items.filter(i=>i.loc===l).length}</button>`).join('')}</div>`;
   const v=visible();
-  if(!items.length)h+=`<div class="empty">עוד לא הוספת תרופות.<br>לחץ על ＋ וצלם את האריזה: השם, ההסבר והתוקף יתמלאו לבד.</div>`;
-  else if(!v.length)h+=`<div class="empty">לא נמצאו תרופות.</div>`;
+  if(!items.length)h+=`<div class="empty">${T('עוד לא הוספת תרופות.<br>לחץ על ＋ וצלם את האריזה: השם, ההסבר והתוקף יתמלאו לבד.','No medicines yet.<br>Tap ＋ and take a photo of the box: name, description and expiry fill in automatically.')}</div>`;
+  else if(!v.length)h+=`<div class="empty">${T('לא נמצאו תרופות.','No medicines found.')}</div>`;
   h+=v.map(it=>{const s=st(it),t=TYPES[it.type]||TYPES.other;
     return `<div class="card ${s.k==='ok'?'':s.k}" data-id="${esc(it.id)}"><div class="th" style="${it.th?`background-image:url(${it.th})`:''}">${it.th?'':t[0]}</div>
-    <div class="ci"><b>${esc(it.he||it.en||'תרופה')}</b>${it.en&&it.he?`<small>${esc(it.en)}</small>`:''}
-    <div class="meta"><span class="tag ${s.k}">${s.e!=null?'⏳ '+s.t:s.t}</span><span class="tag">📍 ${esc(it.loc||'ללא מקום')}</span>${it.qty!=null&&it.qty!==''?`<span class="tag ${it.low!=null&&it.low!==''&&+it.qty<=+it.low?'x':''}">${esc(it.qty)} ${esc(it.unit||'')}</span>`:''}${it.opened?'<span class="tag">נפתח</span>':''}</div></div></div>`}).join('');
+    <div class="ci"><b>${esc((EN?it.en||it.he:it.he||it.en)||T('תרופה','Medicine'))}</b>${it.en&&it.he?`<small>${esc(EN?it.he:it.en)}</small>`:''}
+    <div class="meta"><span class="tag ${s.k}">${s.e!=null?'⏳ '+s.t:s.t}</span><span class="tag">📍 ${esc(locName(it.loc)||T('ללא מקום','No place'))}</span>${it.qty!=null&&it.qty!==''?`<span class="tag ${it.low!=null&&it.low!==''&&+it.qty<=+it.low?'x':''}">${esc(it.qty)} ${esc(it.unit||'')}</span>`:''}${it.opened?'<span class="tag">'+T('נפתח','Opened')+'</span>':''}</div></div></div>`}).join('');
   $('M').innerHTML=h;
   $('sq').oninput=e=>{q=e.target.value;const p=e.target.selectionStart;render();const s=$('sq');s.focus();s.setSelectionRange(p,p)};
   $('M').querySelectorAll('.lc').forEach(b=>b.onclick=()=>{fLoc=b.dataset.l;render()});
@@ -247,47 +257,48 @@ function render(){
 async function openDetail(id){
   const it=items.find(x=>x.id===id);if(!it)return;cur=it;
   const s=st(it),t=TYPES[it.type]||TYPES.other;
-  $('dtt').textContent=it.he||it.en||'תרופה';
+  $('dtt').textContent=(EN?it.en||it.he:it.he||it.en)||T('תרופה','Medicine');
+  const ds=EN?(it.desc_en||it.desc):(it.desc||it.desc_en);
   const log=(it.log||[]).slice(-5).reverse().map(l=>`<div class="log">• ${esc(l.d)} — ${esc(l.t)}</div>`).join('');
   $('dtb').innerHTML=`${it.th||it.ph?`<img class="big" id="dph" src="${it.th||''}" alt="">`:''}
-    ${it.en?`<div style="direction:ltr;text-align:right;color:var(--mut);font-weight:700">${esc(it.en)}</div>`:''}
-    ${it.desc?`<div class="desc">${esc(it.desc)}</div>`:''}
-    <div class="kv"><span>מיקום</span><b>📍 ${esc(it.loc||'ללא מקום')}</b></div>
-    <div class="kv"><span>סוג</span><b>${t[1]}</b></div>
-    <div class="kv"><span>תוקף באריזה</span><b>${it.exp?fmt(dMs(it.exp)):'—'}</b></div>
-    ${it.opened?`<div class="kv"><span>נפתח</span><b>${fmt(dMs(it.opened))}</b></div>`:''}
-    ${it.aft&&it.aft.n?`<div class="kv"><span>תוקף אחרי פתיחה</span><b>${esc(it.aft.n)} ${it.aft.u==='d'?'ימים':'חודשים'}</b></div>`:''}
-    <div class="kv"><span>התוקף שנספר</span><b class="tag ${s.k}">${s.e!=null?fmt(s.e)+' · '+s.t:'—'}</b></div>
-    ${it.qty!=null&&it.qty!==''?`<div class="kv"><span>כמות שנשארה</span><b>${esc(it.qty)} ${esc(it.unit||'')}</b></div>`:''}
-    ${it.note?`<div class="kv"><span>הערה</span><b>${esc(it.note)}</b></div>`:''}
-    ${log?`<div style="margin-top:10px;font-weight:800">שימושים אחרונים</div>${log}`:''}
+    ${(EN?it.he:it.en)?`<div style="color:var(--mut);font-weight:700">${esc(EN?it.he:it.en)}</div>`:''}
+    ${ds?`<div class="desc">${esc(ds)}</div>`:''}
+    <div class="kv"><span>${T('מיקום','Place')}</span><b>📍 ${esc(locName(it.loc)||T('ללא מקום','No place'))}</b></div>
+    <div class="kv"><span>${T('סוג','Type')}</span><b>${tName(t)}</b></div>
+    <div class="kv"><span>${T('תוקף באריזה','Printed expiry')}</span><b>${it.exp?fmt(dMs(it.exp)):'—'}</b></div>
+    ${it.opened?`<div class="kv"><span>${T('נפתח','Opened')}</span><b>${fmt(dMs(it.opened))}</b></div>`:''}
+    ${it.aft&&it.aft.n?`<div class="kv"><span>${T('תוקף אחרי פתיחה','Good after opening')}</span><b>${esc(it.aft.n)} ${it.aft.u==='d'?T('ימים','days'):T('חודשים','months')}</b></div>`:''}
+    <div class="kv"><span>${T('התוקף שנספר','Effective expiry')}</span><b class="tag ${s.k}">${s.e!=null?fmt(s.e)+' · '+s.t:'—'}</b></div>
+    ${it.qty!=null&&it.qty!==''?`<div class="kv"><span>${T('כמות שנשארה','Left')}</span><b>${esc(it.qty)} ${esc(it.unit||'')}</b></div>`:''}
+    ${it.note?`<div class="kv"><span>${T('הערה','Note')}</span><b>${esc(it.note)}</b></div>`:''}
+    ${log?`<div style="margin-top:10px;font-weight:800">${T('שימושים אחרונים','Recent use')}</div>${log}`:''}
     <div class="acts">
-      <button class="btn" onclick="useIt()">${it.type==='pills'||(it.qty!=null&&it.qty!=='')?'💊 נטלתי':'✅ השתמשתי'}</button>
-      ${it.type!=='pills'?`<button class="btn s" onclick="openNow()">🧴 פתחתי היום</button>`:''}
-      <button class="btn s" onclick="editIt()">✏️ עריכה</button>
+      <button class="btn" onclick="useIt()">${it.type==='pills'||(it.qty!=null&&it.qty!=='')?T('💊 נטלתי','💊 Took a dose'):T('✅ השתמשתי','✅ Used it')}</button>
+      ${it.type!=='pills'?`<button class="btn s" onclick="openNow()">${T('🧴 פתחתי היום','🧴 Opened today')}</button>`:''}
+      <button class="btn s" onclick="editIt()">${T('✏️ עריכה','✏️ Edit')}</button>
     </div>
-    <div class="note">מידע כללי בלבד, לא תחליף לייעוץ רפואי.</div>`;
+    <div class="note">${T('מידע כללי בלבד, לא תחליף לייעוץ רפואי.','General info only, not medical advice.')}</div>`;
   $('dt').showModal();
   if(it.ph){try{const r=await api({op:'photo',ph:it.ph});if(r.ok&&cur===it&&$('dph'))$('dph').src=r.data}catch(e){}}
 }
 function logUse(it,txt){it.log=(it.log||[]).concat({d:fmt(todayMs()).slice(0,5),t:txt}).slice(-20)}
 function useIt(){
   const it=cur;if(!it)return;
-  let txt='השתמשתי';
+  let txt=T('השתמשתי','Used');
   if(it.qty!=null&&it.qty!==''){
-    const a=prompt('כמה '+(it.unit||'יחידות')+' נטלת?','1');if(a===null)return;
+    const a=prompt(EN?'How many '+(it.unit||'units')+' did you take?':'כמה '+(it.unit||'יחידות')+' נטלת?','1');if(a===null)return;
     const n=Number(String(a).replace(',','.'));if(!(n>0))return;
-    it.qty=Math.max(0,Math.round((+it.qty-n)*100)/100);txt='נטלתי '+n+' '+(it.unit||'');
-    if(it.low!=null&&it.low!==''&&it.qty<=+it.low)toast('⚠️ נשארו '+it.qty+' '+(it.unit||'')+' בלבד',3500);
+    it.qty=Math.max(0,Math.round((+it.qty-n)*100)/100);txt=T('נטלתי ','Took ')+n+' '+(it.unit||'');
+    if(it.low!=null&&it.low!==''&&it.qty<=+it.low)toast(T('⚠️ נשארו ','⚠️ Only ')+it.qty+' '+(it.unit||'')+T(' בלבד',' left'),3500);
   }
   logUse(it,txt);saveItem(it);$('dt').close();render();
 }
 function openNow(){
   const it=cur;if(!it)return;
   it.opened=ymd(new Date());
-  if(!(it.aft&&+it.aft.n>0)){const a=prompt('תוקף אחרי פתיחה (בחודשים)? אפשר להשאיר ריק','');if(a&&+a>0)it.aft={n:+a,u:'m'}}
-  logUse(it,'נפתח');saveItem(it);$('dt').close();render();
-  const s=st(it);toast('התוקף שנספר: '+(s.e!=null?fmt(s.e):'—'));
+  if(!(it.aft&&+it.aft.n>0)){const a=prompt(T('תוקף אחרי פתיחה (בחודשים)? אפשר להשאיר ריק','Good for how many months after opening? (optional)'),'');if(a&&+a>0)it.aft={n:+a,u:'m'}}
+  logUse(it,T('נפתח','Opened'));saveItem(it);$('dt').close();render();
+  const s=st(it);toast(T('התוקף שנספר: ','Effective expiry: ')+(s.e!=null?fmt(s.e):'—'));
 }
 function saveItem(it,photo){
   const copy=JSON.parse(JSON.stringify(it));delete copy.n;
@@ -298,25 +309,25 @@ function saveItem(it,photo){
 /* ---------- הוספה / עריכה ---------- */
 let ftype='pills';
 function drawTypes(){
-  $('ftype').innerHTML=Object.entries(TYPES).map(([k,v])=>`<button type="button" class="sg ${ftype===k?'on':''}" data-k="${k}">${v[0]} ${v[1]}</button>`).join('');
+  $('ftype').innerHTML=Object.entries(TYPES).map(([k,v])=>`<button type="button" class="sg ${ftype===k?'on':''}" data-k="${k}">${v[0]} ${tName(v)}</button>`).join('');
   $('ftype').querySelectorAll('.sg').forEach(b=>b.onclick=()=>{ftype=b.dataset.k;drawTypes()});
   $('openBox').hidden=ftype==='pills';
-  $('qtyL').textContent=ftype==='pills'?'כמות שנשארה':'כמות שנשארה (אופציונלי)';
+  $('qtyL').textContent=ftype==='pills'?T('כמות שנשארה','Amount left'):T('כמות שנשארה (אופציונלי)','Amount left (optional)');
   if(!$('funit').value||Object.values(UNITS).includes($('funit').value))$('funit').value=UNITS[ftype]||'';
 }
-const UNITS={pills:'כדורים',liquid:'מ״ל',cream:'גרם',other:''};
+const UNITS=EN?{pills:'pills',liquid:'ml',cream:'g',other:''}:{pills:'כדורים',liquid:'מ״ל',cream:'גרם',other:''};
 function drawLocs(sel){
   const all=[...new Set([...locs,...items.map(i=>i.loc).filter(Boolean)])];
-  $('floc').innerHTML=all.map(l=>`<option>${esc(l)}</option>`).join('')+'<option value="__new">➕ מקום חדש…</option>';
+  $('floc').innerHTML=all.map(l=>`<option value="${esc(l)}">${esc(locName(l))}</option>`).join('')+'<option value="__new">'+T('➕ מקום חדש…','➕ New place…')+'</option>';
   $('floc').value=sel&&all.includes(sel)?sel:(all[0]||'__new');
   $('floc2').hidden=$('floc').value!=='__new';
 }
 $('floc').onchange=()=>{$('floc2').hidden=$('floc').value!=='__new';if(!$('floc2').hidden)$('floc2').focus()};
 function showAi(t,err){const e=$('aiMsg');e.hidden=!t;e.innerHTML=t||'';e.style.background=err?'#fef2f2':'';e.style.color=err?'#991b1b':'';e.style.borderColor=err?'#fecaca':''}
 function openEdit(it){
-  cur=it||null;photoNew='';thNew='';showAi('');
-  $('edt').textContent=it?'עריכת תרופה':'תרופה חדשה';
-  $('fhe').value=it?.he||'';$('fen').value=it?.en||'';$('fdesc').value=it?.desc||'';
+  cur=it||null;photoNew='';thNew='';aiInfo=null;showAi('');
+  $('edt').textContent=it?T('עריכת תרופה','Edit medicine'):T('תרופה חדשה','New medicine');
+  $('fhe').value=it?.he||'';$('fen').value=it?.en||'';$('fdesc').value=(EN?it?.desc_en:it?.desc)||'';
   ftype=it?.type||'pills';$('fexp').value=it?.exp||'';$('fqty').value=it?.qty??'';$('funit').value=it?.unit||UNITS[ftype];$('flow').value=it?.low??'';
   $('fopen').value=it?.opened||'';$('faftN').value=it?.aft?.n||'';$('faftU').value=it?.aft?.u||'m';$('fnote').value=it?.note||'';
   $('fdel').hidden=!it;
@@ -339,33 +350,34 @@ async function onPhoto(e){
     const [big,mid,th]=await Promise.all([resize(f,1400,.82),resize(f,900,.7),resize(f,160,.6)]);
     photoNew=mid;thNew=th;$('pv').style.backgroundImage=`url(${th})`;$('pv').textContent='';
     identify(big);
-  }catch(x){showAi('לא הצלחתי לקרוא את התמונה',true)}
+  }catch(x){showAi(T('לא הצלחתי לקרוא את התמונה','Could not read the image'),true)}
 }
 $('fcam').onchange=onPhoto;$('fgal').onchange=onPhoto;
 async function identify(img){
-  showAi('<span class="spin" style="border-color:#0e749055;border-top-color:#0e7490"></span> מזהה את התרופה מהתמונה…');
-  let r;try{r=await api({op:'identify',image:img})}catch(e){showAi('אין חיבור לאינטרנט, אפשר למלא ידנית',true);return}
+  showAi('<span class="spin" style="border-color:#0e749055;border-top-color:#0e7490"></span> '+T('מזהה את התרופה מהתמונה…','Identifying the medicine…'));
+  let r;try{r=await api({op:'identify',image:img})}catch(e){showAi(T('אין חיבור לאינטרנט, אפשר למלא ידנית','No internet, you can fill it in manually'),true);return}
   if(!r||!r.ok){
-    showAi(r&&r.error==='nokey'?'הזיהוי האוטומטי עוד לא הופעל (חסר מפתח Claude בסקריפט). אפשר למלא ידנית.':r&&r.error==='password'?'הסיסמה לא נכונה':'הזיהוי לא הצליח ('+esc(r?.error||'')+'). אפשר למלא ידנית.',true);return}
+    showAi(r&&r.error==='nokey'?T('הזיהוי האוטומטי עוד לא הופעל (חסר מפתח Claude בסקריפט). אפשר למלא ידנית.','Automatic identification is not set up yet. Fill in manually.'):r&&r.error==='password'?T('הסיסמה לא נכונה','Wrong password'):T('הזיהוי לא הצליח (','Identification failed (')+esc(r?.error||'')+T('). אפשר למלא ידנית.','). Fill in manually.'),true);return}
   const i=r.info||{};
   if(i.he&&!$('fhe').value)$('fhe').value=i.he;
   if(i.en&&!$('fen').value)$('fen').value=i.en;
-  if(i.desc&&!$('fdesc').value)$('fdesc').value=i.desc;
+  aiInfo=i;const dd=EN?i.desc_en||i.desc:i.desc;if(dd&&!$('fdesc').value)$('fdesc').value=dd;
   if(i.type&&TYPES[i.type]){ftype=i.type;$('funit').value=UNITS[ftype]}
   if(i.qty!=null&&i.qty!==''&&!$('fqty').value)$('fqty').value=i.qty;
-  if(i.unit)$('funit').value=i.unit;
+  if(EN?i.unit_en:i.unit)$('funit').value=EN?i.unit_en:i.unit;
   if(i.exp&&dMs(i.exp)!=null&&!$('fexp').value)$('fexp').value=i.exp;
   if(i.aft&&+i.aft.n>0&&!$('faftN').value){$('faftN').value=i.aft.n;$('faftU').value=i.aft.u==='d'?'d':'m'}
   drawTypes();
-  showAi(i.conf==='low'?'⚠️ הזיהוי לא בטוח, כדאי לבדוק את השדות לפני שמירה.':'✅ הפרטים מולאו מהתמונה. כדאי לבדוק לפני שמירה'+(i.exp?'':' ולהוסיף תאריך תפוגה (לא נראה בתמונה)')+'.');
+  showAi(i.conf==='low'?T('⚠️ הזיהוי לא בטוח, כדאי לבדוק את השדות לפני שמירה.','⚠️ Not sure about this one, please check the fields before saving.'):T('✅ הפרטים מולאו מהתמונה. כדאי לבדוק לפני שמירה','✅ Filled in from the photo. Please check before saving')+(i.exp?'':T(' ולהוסיף תאריך תפוגה (לא נראה בתמונה)',' and add the expiry date (not visible in the photo)'))+'.');
 }
 $('fsave').onclick=()=>{
   const he=$('fhe').value.trim(),en=$('fen').value.trim();
-  if(!he&&!en){toast('נא להזין שם');return}
+  if(!he&&!en){toast(T('נא להזין שם','Please enter a name'));return}
   let loc=$('floc').value;if(loc==='__new')loc=$('floc2').value.trim();
   if(loc&&!locs.includes(loc)){locs.push(loc);push({op:'locs',locs})}
   const it=Object.assign({},cur||{id:'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)});
-  it.he=he;it.en=en;it.desc=$('fdesc').value.trim();it.loc=loc;it.type=ftype;it.exp=$('fexp').value;
+  it.he=he;it.en=en;if(EN)it.desc_en=$('fdesc').value.trim();else it.desc=$('fdesc').value.trim();
+  if(aiInfo&&!cur){if(!EN&&aiInfo.desc_en)it.desc_en=aiInfo.desc_en;if(EN&&aiInfo.desc)it.desc=aiInfo.desc}it.loc=loc;it.type=ftype;it.exp=$('fexp').value;
   const qv=$('fqty').value;it.qty=qv===''?null:Number(qv);it.unit=$('funit').value.trim();
   const lv=$('flow').value;it.low=lv===''?null:Number(lv);
   it.opened=ftype==='pills'?'':$('fopen').value;
@@ -373,10 +385,10 @@ $('fsave').onclick=()=>{
   it.note=$('fnote').value.trim();
   if(thNew)it.th=thNew;
   const i=items.findIndex(x=>x.id===it.id);if(i>=0)items[i]=it;else items.push(it);
-  saveItem(it,photoNew);$('ed').close();render();toast('נשמר ✅');
+  saveItem(it,photoNew);$('ed').close();render();toast(T('נשמר ✅','Saved ✅'));
 };
 $('fdel').onclick=()=>{
-  if(!cur||!confirm('למחוק את "'+(cur.he||cur.en)+'"?'))return;
+  if(!cur||!confirm(T('למחוק את "','Delete "')+(EN?cur.en||cur.he:cur.he||cur.en)+'"?'))return;
   items=items.filter(x=>x.id!==cur.id);push({op:'del',id:cur.id});$('ed').close();render();
 };
 
@@ -384,14 +396,14 @@ $('fdel').onclick=()=>{
 $('mm').onclick=()=>{drawLocList();$('lcd').showModal()};
 function drawLocList(){
   const n=l=>items.filter(i=>i.loc===l).length;
-  $('lcl').innerHTML=locs.map((l,i)=>`<div class="kv"><span>📍 ${esc(l)} <small>(${n(l)})</small></span><button class="btn d" style="padding:4px 12px" onclick="delLoc(${i})">מחיקה</button></div>`).join('')||'<div class="empty">אין מיקומים</div>';
+  $('lcl').innerHTML=locs.map((l,i)=>`<div class="kv"><span>📍 ${esc(locName(l))} <small>(${n(l)})</small></span><button class="btn d" style="padding:4px 12px" onclick="delLoc(${i})">${T('מחיקה','Delete')}</button></div>`).join('')||'<div class="empty">'+T('אין מיקומים','No places')+'</div>';
 }
 function addLoc(){const v=$('lcn').value.trim();if(!v||locs.includes(v))return;locs.push(v);$('lcn').value='';push({op:'locs',locs});drawLocList();render()}
-function delLoc(i){const l=locs[i];if(items.some(x=>x.loc===l)&&!confirm('יש תרופות במיקום הזה. המיקום יימחק מהרשימה והן יישארו עם המיקום הישן. להמשיך?'))return;locs.splice(i,1);push({op:'locs',locs});drawLocList();render()}
+function delLoc(i){const l=locs[i];if(items.some(x=>x.loc===l)&&!confirm(T('יש תרופות במיקום הזה. המיקום יימחק מהרשימה והן יישארו עם המיקום הישן. להמשיך?','Some medicines are in this place. Remove it from the list anyway? They keep their place.')))return;locs.splice(i,1);push({op:'locs',locs});drawLocList();render()}
 
 /* ---------- התחלה ---------- */
 (async()=>{
-  pw=sg('hub_admin')||lg('hub_admin')||lg('meds_pw');
+  pw=sg('hub_admin')||lg('hub_admin')||lg('meds_pw')||sg('hub_pw')||lg('hub_pw')||lg('shop_pw');
   render();
   if(!pw){await needLogin('');return}
   await sync();render();

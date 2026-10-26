@@ -147,6 +147,7 @@ body.locked #login{display:block}body.locked main,body.locked .tabs{display:none
     <button class="back" onclick="location.href='./'">→ אפליקציות</button>
     <div class="lg">🛒</div><h1>קניות לבית</h1>
     <span class="dot" id="dot" title="סנכרון"></span>
+    <button class="me" id="medsb" onclick="location.href='meds.html'" title="תרופות בבית" hidden>💊</button>
     <button class="me" id="meb" onclick="askMe()"></button>
   </div>
   <div class="tabs">
@@ -475,6 +476,7 @@ function toast(msg,btn,fn){
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
   if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
+try{if((JSON.parse(sessionStorage.getItem('hub_access'))||[]).includes('meds'))$('medsb').hidden=false}catch(e){}
 </script>
 <script src="presence.js"></script><script>dbdPresence('shopping')</script>
 </body>
