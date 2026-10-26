@@ -457,7 +457,7 @@ async function loadBoard(o){
     <button class="btn sec sm" title="מחיקה" onclick="if(confirm('למחוק את ${esc(x.n).replace(/'/g,'')} מהרשימה?'))loadBoard({action:'board_set',dev:'${x.dev}',st:'x'})">🗑</button></div>`).join(''):'עוד אף אחד לא ביקש. שלח את הקישור למי שצריך.';
 }
 function copyBoard(){const v=$('bLink').value;(navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>toast('הקישור הועתק ✓')).catch(()=>{$('bLink').select();document.execCommand('copy');toast('הקישור הועתק ✓')})}
-function shareBoard(){location.href='https://wa.me/?text='+encodeURIComponent('📋 לוח המודעות של קופת בית הכנסת:\n'+$('bLink').value)}
+function shareBoard(){location.href='https://wa.me/?text='+encodeURIComponent('📋 לוח המודעות: תרומות בית כנסת איחוד הצלה\n'+$('bLink').value)}
 function disconnect(){if(!confirm('לנתק את הגיבוי לענן במכשיר הזה? הנתונים נשארים גם במכשיר וגם בענן.'))return;cloud=null;try{localStorage.removeItem('tromot_cloud')}catch(e){}$('dCloud').close();cloudSync()}
 
 nmBtn();render();cloudSync();
