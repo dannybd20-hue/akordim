@@ -649,20 +649,20 @@ function medsPost_(d) {
     if (d.op === 'save' && d.item) {
       const it = d.item;
       it.id = String(it.id || Utilities.getUuid().slice(0, 8));
-      if (d.photo && String(d.photo).length > 200) {
-        const bytes = Utilities.base64Decode(String(d.photo).replace(/^data:image\/\w+;base64,/, ''));
-        const blob = Utilities.newBlob(bytes, 'image/jpeg', 'med_' + it.id + '.jpg');
-        const old = st.items.filter(function (x) { return x.id === it.id; })[0];
-        if (old && old.ph) { try { DriveApp.getFileById(old.ph).setTrashed(true); } catch (x) {} }
-        it.ph = DriveApp.createFile(blob).getId();
-      }
+      const old = st.items.filter(function (x) { return x.id === it.id; })[0];
+      [['photo', 'ph', ''], ['photo2', 'ph2', '_2']].forEach(function (k) {
+        if (!d[k[0]] || String(d[k[0]]).length < 200) return;
+        const bytes = Utilities.base64Decode(String(d[k[0]]).replace(/^data:image\/\w+;base64,/, ''));
+        if (old && old[k[1]]) { try { DriveApp.getFileById(old[k[1]]).setTrashed(true); } catch (x) {} }
+        it[k[1]] = DriveApp.createFile(Utilities.newBlob(bytes, 'image/jpeg', 'med_' + it.id + k[2] + '.jpg')).getId();
+      });
       const i = st.items.findIndex(function (x) { return x.id === it.id; });
-      if (i >= 0) { if (!it.ph) it.ph = st.items[i].ph; if (!it.th) it.th = st.items[i].th; it.n = (medsDate_(it.exp) === medsDate_(st.items[i].exp) && it.opened === st.items[i].opened) ? st.items[i].n : {}; st.items[i] = it; }
+      if (i >= 0) { if (!it.ph) it.ph = st.items[i].ph; if (!it.th) it.th = st.items[i].th; if (!it.ph2) it.ph2 = st.items[i].ph2; if (!it.th2) it.th2 = st.items[i].th2; it.n = (medsDate_(it.exp) === medsDate_(st.items[i].exp) && it.opened === st.items[i].opened) ? st.items[i].n : {}; st.items[i] = it; }
       else { it.at = Date.now(); it.n = {}; st.items.push(it); }
       changed = true;
     } else if (d.op === 'del') {
       const i = st.items.findIndex(function (x) { return x.id === String(d.id); });
-      if (i >= 0) { if (st.items[i].ph) { try { DriveApp.getFileById(st.items[i].ph).setTrashed(true); } catch (x) {} } st.items.splice(i, 1); changed = true; }
+      if (i >= 0) { ['ph', 'ph2'].forEach(function (k) { if (st.items[i][k]) { try { DriveApp.getFileById(st.items[i][k]).setTrashed(true); } catch (x) {} } }); st.items.splice(i, 1); changed = true; }
     } else if (d.op === 'locs' && Array.isArray(d.locs)) {
       st.locs = d.locs.map(function (s) { return String(s).slice(0, 30); }).filter(String).slice(0, 40);
       changed = true;
@@ -676,9 +676,9 @@ function medsPost_(d) {
 function medsIdentify_(d) {
   const key = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_KEY');
   if (!key) return out_({ ok: false, error: 'nokey' });
-  const img = String(d.image || '').replace(/^data:image\/\w+;base64,/, '');
-  if (img.length < 200) return out_({ ok: false, error: 'noimage' });
-  const prompt = 'זו תמונה של אריזת תרופה או מוצר רפואי שיש בבית. קרא את הכיתוב באריזה והחזר JSON בלבד (בלי שום טקסט נוסף ובלי בלוק קוד) עם המפתחות:\n' +
+  const imgs = (Array.isArray(d.images) ? d.images : [d.image]).map(function (x) { return String(x || '').replace(/^data:image\/\w+;base64,/, ''); }).filter(function (x) { return x.length > 200; }).slice(0, 2);
+  if (!imgs.length) return out_({ ok: false, error: 'noimage' });
+  const prompt = (imgs.length > 1 ? 'אלה שתי תמונות של אותה אריזה (למשל החזית, והצד שעליו מודפס התאריך). ' : '') + 'זו תמונה של אריזת תרופה או מוצר רפואי שיש בבית. קרא את הכיתוב באריזה והחזר JSON בלבד (בלי שום טקסט נוסף ובלי בלוק קוד) עם המפתחות:\n' +
     '"he": שם המוצר בעברית כפי שמקובל בישראל, כולל החוזק אם מופיע (למשל "אקמול 500 מ״ג"),\n' +
     '"en": שם המוצר באנגלית (למשל "Acamol 500 mg"),\n' +
     '"desc": עד שני משפטים בעברית: מהו החומר הפעיל, מה התרופה עושה ולמה משתמשים בה. מידע כללי בלבד,\n' +
@@ -694,9 +694,7 @@ function medsIdentify_(d) {
   const res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
     method: 'post', contentType: 'application/json', muteHttpExceptions: true,
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-    payload: JSON.stringify({ model: MEDS_MODEL, max_tokens: 900, messages: [{ role: 'user', content: [
-      { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: img } },
-      { type: 'text', text: prompt }] }] })
+    payload: JSON.stringify({ model: MEDS_MODEL, max_tokens: 900, messages: [{ role: 'user', content: [].concat(imgs.map(function (x) { return { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: x } }; }), [{ type: 'text', text: prompt }]) }] })
   });
   if (res.getResponseCode() !== 200) { console.warn('identify ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 300)); return out_({ ok: false, error: 'ai' + res.getResponseCode() }); }
   try {

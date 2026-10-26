@@ -65,6 +65,8 @@ textarea.in{min-height:70px;resize:vertical}
 .btn.b{width:100%}
 .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.acts .btn{flex:1;min-width:120px}
 .photo{display:flex;gap:12px;align-items:center;margin-top:6px}
+.pv2{width:110px;height:72px;font-size:28px;cursor:pointer}.pv{cursor:pointer}
+.ph2row{display:flex;gap:12px;align-items:center;margin-top:10px}
 .pv{flex:none;width:110px;height:110px;border-radius:16px;background:#e2efec center/cover;display:flex;align-items:center;justify-content:center;font-size:40px;border:1.5px dashed var(--bd)}
 .ai{background:#ecfeff;border:1px solid #a5f3fc;color:#155e75;border-radius:12px;padding:9px 12px;margin-top:10px;font-size:13.5px;line-height:1.5}
 :root[data-theme=dark] .ai{background:#0e2a30;border-color:#1c5560;color:#a5eef7}
@@ -94,10 +96,17 @@ textarea.in{min-height:70px;resize:vertical}
   <div class="dh"><b id="edt">תרופה חדשה</b><button class="x" onclick="$('ed').close()">✕</button></div>
   <div class="db">
     <div class="photo">
-      <div class="pv" id="pv">💊</div>
+      <div class="pv" id="pv" onclick="pick(1,'fgal')">💊</div>
       <div style="flex:1;display:flex;flex-direction:column;gap:8px">
-        <button class="btn" onclick="$('fcam').click()" data-en="📷 Photo of the box">📷 צילום האריזה</button>
-        <button class="btn s" onclick="$('fgal').click()" data-en="🖼️ From gallery">🖼️ מהגלריה</button>
+        <button class="btn" onclick="pick(1,'fcam')" data-en="📷 Photo of the box">📷 צילום האריזה</button>
+        <button class="btn s" onclick="pick(1,'fgal')" data-en="🖼️ From gallery">🖼️ מהגלריה</button>
+      </div>
+    </div>
+    <div class="ph2row">
+      <div class="pv pv2" id="pv2" onclick="pick(2,'fgal')">📅</div>
+      <div style="flex:1;display:flex;gap:8px">
+        <button class="btn s" style="flex:1" onclick="pick(2,'fcam')" data-en="📅 Photo of the date / back">📅 תמונה שנייה (תאריך / גב)</button>
+        <button class="btn s" style="flex:none" onclick="pick(2,'fgal')" title="מהגלריה">🖼️</button>
       </div>
     </div>
     <input type="file" id="fcam" accept="image/*" capture="environment" hidden>
@@ -161,7 +170,8 @@ function goBack(){if(EN)location.href='shopping.html';else goHome()}
 if(EN){document.documentElement.lang='en';document.documentElement.dir='ltr';document.title='Home medicines';
   document.querySelectorAll('[data-en]').forEach(e=>e.textContent=e.dataset.en);
   document.querySelectorAll('[data-enp]').forEach(e=>e.placeholder=e.dataset.enp);}
-let aiInfo=null,items=[],locs=DEF_LOCS.slice(),pw='',ai=null,fLoc='',fSt='',q='',cur=null,photoNew='',thNew='',queue=[];
+let aiInfo=null,items=[],locs=DEF_LOCS.slice(),pw='',ai=null,fLoc='',fSt='',q='',cur=null,photoNew='',thNew='',photo2New='',th2New='',bigs=['',''],slot=1,queue=[];
+function pick(n,inp){slot=n;$(inp).click()}
 try{items=JSON.parse(lg('meds_items')||'[]');locs=JSON.parse(lg('meds_locs')||'null')||locs;queue=JSON.parse(lg('meds_queue')||'[]')}catch(e){}
 
 /* ---------- תאריכים ---------- */
@@ -260,7 +270,7 @@ async function openDetail(id){
   $('dtt').textContent=(EN?it.en||it.he:it.he||it.en)||T('תרופה','Medicine');
   const ds=EN?(it.desc_en||it.desc):(it.desc||it.desc_en);
   const log=(it.log||[]).slice(-5).reverse().map(l=>`<div class="log">• ${esc(l.d)} — ${esc(l.t)}</div>`).join('');
-  $('dtb').innerHTML=`${it.th||it.ph?`<img class="big" id="dph" src="${it.th||''}" alt="">`:''}
+  $('dtb').innerHTML=`${it.th||it.ph?`<img class="big" id="dph" src="${it.th||''}" alt="">`:''}${it.th2||it.ph2?`<img class="big" id="dph2" src="${it.th2||''}" alt="">`:''}
     ${(EN?it.he:it.en)?`<div style="color:var(--mut);font-weight:700">${esc(EN?it.he:it.en)}</div>`:''}
     ${ds?`<div class="desc">${esc(ds)}</div>`:''}
     <div class="kv"><span>${T('מיקום','Place')}</span><b>📍 ${esc(locName(it.loc)||T('ללא מקום','No place'))}</b></div>
@@ -279,7 +289,7 @@ async function openDetail(id){
     </div>
     <div class="note">${T('מידע כללי בלבד, לא תחליף לייעוץ רפואי.','General info only, not medical advice.')}</div>`;
   $('dt').showModal();
-  if(it.ph){try{const r=await api({op:'photo',ph:it.ph});if(r.ok&&cur===it&&$('dph'))$('dph').src=r.data}catch(e){}}
+  for(const [k,el] of [['ph','dph'],['ph2','dph2']])if(it[k]){try{const r=await api({op:'photo',ph:it[k]});if(r.ok&&cur===it&&$(el))$(el).src=r.data}catch(e){}}
 }
 function logUse(it,txt){it.log=(it.log||[]).concat({d:fmt(todayMs()).slice(0,5),t:txt}).slice(-20)}
 function useIt(){
@@ -300,9 +310,9 @@ function openNow(){
   logUse(it,T('נפתח','Opened'));saveItem(it);$('dt').close();render();
   const s=st(it);toast(T('התוקף שנספר: ','Effective expiry: ')+(s.e!=null?fmt(s.e):'—'));
 }
-function saveItem(it,photo){
+function saveItem(it,photo,photo2){
   const copy=JSON.parse(JSON.stringify(it));delete copy.n;
-  push({op:'save',item:copy,photo:photo||undefined});
+  push({op:'save',item:copy,photo:photo||undefined,photo2:photo2||undefined});
   saveLocal();
 }
 
@@ -325,13 +335,14 @@ function drawLocs(sel){
 $('floc').onchange=()=>{$('floc2').hidden=$('floc').value!=='__new';if(!$('floc2').hidden)$('floc2').focus()};
 function showAi(t,err){const e=$('aiMsg');e.hidden=!t;e.innerHTML=t||'';e.style.background=err?'#fef2f2':'';e.style.color=err?'#991b1b':'';e.style.borderColor=err?'#fecaca':''}
 function openEdit(it){
-  cur=it||null;photoNew='';thNew='';aiInfo=null;showAi('');
+  cur=it||null;photoNew='';thNew='';photo2New='';th2New='';bigs=['',''];aiInfo=null;showAi('');
   $('edt').textContent=it?T('עריכת תרופה','Edit medicine'):T('תרופה חדשה','New medicine');
   $('fhe').value=it?.he||'';$('fen').value=it?.en||'';$('fdesc').value=(EN?it?.desc_en:it?.desc)||'';
   ftype=it?.type||'pills';$('fexp').value=it?.exp||'';$('fqty').value=it?.qty??'';$('funit').value=it?.unit||UNITS[ftype];$('flow').value=it?.low??'';
   $('fopen').value=it?.opened||'';$('faftN').value=it?.aft?.n||'';$('faftU').value=it?.aft?.u||'m';$('fnote').value=it?.note||'';
   $('fdel').hidden=!it;
   const pv=$('pv');pv.style.backgroundImage=it?.th?`url(${it.th})`:'';pv.textContent=it?.th?'':'💊';
+  const pv2=$('pv2');pv2.style.backgroundImage=it?.th2?`url(${it.th2})`:'';pv2.textContent=it?.th2?'':'📅';
   drawLocs(it?.loc||fLoc);drawTypes();$('ed').showModal();
 }
 function editIt(){$('dt').close();openEdit(cur)}
@@ -348,14 +359,15 @@ async function onPhoto(e){
   const f=e.target.files[0];e.target.value='';if(!f)return;
   try{
     const [big,mid,th]=await Promise.all([resize(f,1400,.82),resize(f,900,.7),resize(f,160,.6)]);
-    photoNew=mid;thNew=th;$('pv').style.backgroundImage=`url(${th})`;$('pv').textContent='';
-    identify(big);
+    if(slot===2){photo2New=mid;th2New=th;bigs[1]=big;$('pv2').style.backgroundImage=`url(${th})`;$('pv2').textContent=''}
+    else{photoNew=mid;thNew=th;bigs[0]=big;$('pv').style.backgroundImage=`url(${th})`;$('pv').textContent=''}
+    identify(bigs.filter(Boolean));
   }catch(x){showAi(T('לא הצלחתי לקרוא את התמונה','Could not read the image'),true)}
 }
 $('fcam').onchange=onPhoto;$('fgal').onchange=onPhoto;
-async function identify(img){
+async function identify(imgs){
   showAi('<span class="spin" style="border-color:#0e749055;border-top-color:#0e7490"></span> '+T('מזהה את התרופה מהתמונה…','Identifying the medicine…'));
-  let r;try{r=await api({op:'identify',image:img})}catch(e){showAi(T('אין חיבור לאינטרנט, אפשר למלא ידנית','No internet, you can fill it in manually'),true);return}
+  let r;try{r=await api({op:'identify',images:imgs})}catch(e){showAi(T('אין חיבור לאינטרנט, אפשר למלא ידנית','No internet, you can fill it in manually'),true);return}
   if(!r||!r.ok){
     showAi(r&&r.error==='nokey'?T('הזיהוי האוטומטי עוד לא הופעל (חסר מפתח Claude בסקריפט). אפשר למלא ידנית.','Automatic identification is not set up yet. Fill in manually.'):r&&r.error==='password'?T('הסיסמה לא נכונה','Wrong password'):T('הזיהוי לא הצליח (','Identification failed (')+esc(r?.error||'')+T('). אפשר למלא ידנית.','). Fill in manually.'),true);return}
   const i=r.info||{};
@@ -383,9 +395,9 @@ $('fsave').onclick=()=>{
   it.opened=ftype==='pills'?'':$('fopen').value;
   const an=$('faftN').value;it.aft=ftype!=='pills'&&an&&+an>0?{n:+an,u:$('faftU').value}:null;
   it.note=$('fnote').value.trim();
-  if(thNew)it.th=thNew;
+  if(thNew)it.th=thNew;if(th2New)it.th2=th2New;
   const i=items.findIndex(x=>x.id===it.id);if(i>=0)items[i]=it;else items.push(it);
-  saveItem(it,photoNew);$('ed').close();render();toast(T('נשמר ✅','Saved ✅'));
+  saveItem(it,photoNew,photo2New);$('ed').close();render();toast(T('נשמר ✅','Saved ✅'));
 };
 $('fdel').onclick=()=>{
   if(!cur||!confirm(T('למחוק את "','Delete "')+(EN?cur.en||cur.he:cur.he||cur.en)+'"?'))return;
