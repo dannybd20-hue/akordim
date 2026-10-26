@@ -92,8 +92,8 @@ async function ask(name){
 }
 function draw(){
   const D=data;D.title=TITLE;document.title=TITLE;
-  /* "שומש" בלי לכתוב על מה = לא הוצאה אמיתית: לא מוצג ולא נספר */
-  D.ex=(D.ex||[]).filter(x=>String(x.f||'').trim());D.used=D.ex.reduce((s,x)=>s+x.a,0);D.avail=D.tot-D.used;
+  /* הסכום שהוצא נספר תמיד; ברשימה מוצגות רק הוצאות שנכתב עליהן על מה */
+  D.ex=(D.ex||[]).filter(x=>String(x.f||'').trim());
   const byMonth=[];D.dons.forEach(x=>{const k=(x.d||'').slice(0,7);let g=byMonth[byMonth.length-1];if(!g||g.k!==k){g={k,t:0,L:[]};byMonth.push(g)}g.t+=x.a;g.L.push(x)});
   const mName=k=>k?MON[+k.slice(5)-1]+' '+k.slice(0,4):'ללא תאריך';
   let dons='',cnt=0;
