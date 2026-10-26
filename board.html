@@ -118,11 +118,11 @@ function draw(){
   let ex=exL.map(x=>`<div class="r"><span class="d">${dd(x.d)}</span><span class="f">${esc(x.f||'—')}</span><span class="a">${ils(x.a)}</span></div>`).join('')||'<div class="empty">עוד לא הוצא כסף.</div>';
   if(!showAll.e&&D.ex.length>25)ex+=`<button class="more" onclick="showAll.e=true;draw()">הצג הכול ↓</button>`;
   /* מלאי ציוד: מה יש ומה חסר, עם כפתור "אני רוצה לתרום" שפותח וואטסאפ עם הודעה מוכנה */
-  const IS={ok:'✅ יש',low:'⚠️ מעט',out:'❌ חסר'},I=(D.inv&&D.inv.items)||[],wa=D.inv&&D.inv.wa;
+  const IS={ok:'👍 הרבה',low:'⚠️ מעט',out:'❌ חסר'},I=(D.inv&&D.inv.items)||[],wa=D.inv&&D.inv.wa;
   const cats=[...new Set(I.map(x=>x.c||'כללי'))];
   const ord=x=>x.st==='out'?0:x.st==='low'?1:2;
   const inv=I.length?`<div class="note inv"><h2>📦 מה יש בבית הכנסת</h2><div class="sub">${wa?'רוצה לתרום מוצר? לחץ "🙋 אני אתרום" ותיפתח הודעה מוכנה בוואטסאפ. נשאר רק לשלוח.':'מצב הציוד בבית הכנסת.'}</div>
-    <div class="ig">${cats.map(c=>`<div class="ic">${esc(c)}</div>`+I.filter(x=>(x.c||'כללי')===c).sort((a,b)=>ord(a)-ord(b)).map(x=>`<div class="it"><b>${esc(x.n)}</b><span class="st ${x.st}">${IS[x.st]||''}</span>${wa?`<button class="give" data-n="${esc(x.n)}">🙋 אני אתרום</button>`:''}</div>`).join('')).join('')}</div></div>`:'';
+    <div class="ig">${cats.map(c=>`<div class="ic">${esc(c)}</div>`+I.filter(x=>(x.c||'כללי')===c).sort((a,b)=>ord(a)-ord(b)).map(x=>`<div class="it"><b>${esc(x.n)}</b><span class="st ${x.st}">${IS[x.st]||''}${x.q!=null&&x.q!==''?' · '+x.q:''}</span>${wa?`<button class="give" data-n="${esc(x.n)}">🙋 אני אתרום</button>`:''}</div>`).join('')).join('')}</div></div>`:'';
   const at=D.at?new Date(D.at).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
   $('M').innerHTML=`
     <div class="note title"><h1>📌 ${esc(D.title)}</h1><p>לוח מודעות · ${D.n} תרומות</p></div>

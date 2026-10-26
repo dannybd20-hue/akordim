@@ -164,7 +164,7 @@ function boardData_() {
     .sort(function (x, y) { return String(y.d).localeCompare(String(x.d)); }).slice(0, 300);
   const exl = Object.keys(ex).map(function (k) { return ex[k]; }).sort(function (x, y) { return String(y.d).localeCompare(String(x.d)); });
   const inv = invRead_();
-  return { title: BOARD_TITLE, tot: tot, used: used, avail: tot - used, n: D.length, dons: dons, ex: exl, at: raw.savedAt || 0, inv: { items: inv.items.map(function (x) { return { n: x.n, c: x.c, st: x.st }; }), wa: inv.wa } };
+  return { title: BOARD_TITLE, tot: tot, used: used, avail: tot - used, n: D.length, dons: dons, ex: exl, at: raw.savedAt || 0, inv: { items: inv.items.map(function (x) { return { n: x.n, c: x.c, st: x.st, q: x.q == null ? null : x.q }; }), wa: inv.wa } };
 }
 
 /* בקשה מהלוח הציבורי: {action:'board', dev, name} */
@@ -267,7 +267,7 @@ function invFile_() {
 function invRead_() { try { return JSON.parse(invFile_().getBlob().getDataAsString('UTF-8')); } catch (x) { return { items: [], wa: '', rev: 0 }; } }
 function invWrite_(inv) {
   const clean = {
-    items: (inv.items || []).slice(0, 300).map(function (x) { return { id: String(x.id || '').slice(0, 20), n: String(x.n || '').slice(0, 60), c: String(x.c || '').slice(0, 30), st: ['ok', 'low', 'out'].indexOf(x.st) >= 0 ? x.st : 'ok' }; }).filter(function (x) { return x.id && x.n; }),
+    items: (inv.items || []).slice(0, 300).map(function (x) { return { id: String(x.id || '').slice(0, 20), n: String(x.n || '').slice(0, 60), c: String(x.c || '').slice(0, 30), st: ['ok', 'low', 'out'].indexOf(x.st) >= 0 ? x.st : 'ok', q: x.q === '' || x.q == null || isNaN(Number(x.q)) ? null : Math.max(0, Number(x.q)) }; }).filter(function (x) { return x.id && x.n; }),
     wa: String(inv.wa || '').replace(/[^\d]/g, '').slice(0, 15),
     rev: (Number(invRead_().rev) || 0) + 1
   };
