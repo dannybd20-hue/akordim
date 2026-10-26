@@ -283,7 +283,8 @@ async function openDetail(id){
     ${it.note?`<div class="kv"><span>${T('הערה','Note')}</span><b>${esc(it.note)}</b></div>`:''}
     ${log?`<div style="margin-top:10px;font-weight:800">${T('שימושים אחרונים','Recent use')}</div>${log}`:''}
     <div class="acts">
-      <button class="btn" onclick="useIt()">${it.type==='pills'||(it.qty!=null&&it.qty!=='')?T('💊 נטלתי','💊 Took a dose'):T('✅ השתמשתי','✅ Used it')}</button>
+      <button class="btn" onclick="useIt()">${it.type==='pills'?T('💊 לקחתי','💊 Took a dose'):T('✅ השתמשתי','✅ Used it')}</button>
+      <button class="btn s" onclick="setQty()">${T('🔢 עדכון כמות','🔢 Update amount')}</button>
       ${it.type!=='pills'?`<button class="btn s" onclick="openNow()">${T('🧴 פתחתי היום','🧴 Opened today')}</button>`:''}
       <button class="btn s" onclick="editIt()">${T('✏️ עריכה','✏️ Edit')}</button>
     </div>
@@ -295,13 +296,21 @@ function logUse(it,txt){it.log=(it.log||[]).concat({d:fmt(todayMs()).slice(0,5),
 function useIt(){
   const it=cur;if(!it)return;
   let txt=T('השתמשתי','Used');
-  if(it.qty!=null&&it.qty!==''){
-    const a=prompt(EN?'How many '+(it.unit||'units')+' did you take?':'כמה '+(it.unit||'יחידות')+' נטלת?','1');if(a===null)return;
-    const n=Number(String(a).replace(',','.'));if(!(n>0))return;
-    it.qty=Math.max(0,Math.round((+it.qty-n)*100)/100);txt=T('נטלתי ','Took ')+n+' '+(it.unit||'');
-    if(it.low!=null&&it.low!==''&&it.qty<=+it.low)toast(T('⚠️ נשארו ','⚠️ Only ')+it.qty+' '+(it.unit||'')+T(' בלבד',' left'),3500);
+  /* שימוש רק נרשם. רק בכדורים עם כמות מורידים מהכמות את מה שנלקח (0 = רק לרשום) */
+  if(it.type==='pills'&&it.qty!=null&&it.qty!==''){
+    const a=prompt(EN?'How many '+(it.unit||'pills')+' did you take? (0 = just log it)':'כמה '+(it.unit||'כדורים')+' לקחת? (0 = רק לרשום)','1');if(a===null)return;
+    const n=Number(String(a).replace(',','.'));if(!(n>=0))return;
+    if(n>0){
+    it.qty=Math.max(0,Math.round((+it.qty-n)*100)/100);txt=T('לקחתי ','Took ')+n+' '+(it.unit||'');
+    if(it.low!=null&&it.low!==''&&it.qty<=+it.low)toast(T('⚠️ נשארו ','⚠️ Only ')+it.qty+' '+(it.unit||'')+T(' בלבד',' left'),3500);}
   }
-  logUse(it,txt);saveItem(it);$('dt').close();render();
+  logUse(it,txt);saveItem(it);$('dt').close();render();toast(T('נרשם ✓','Logged ✓'));
+}
+function setQty(){
+  const it=cur;if(!it)return;
+  const a=prompt(T('כמה נשאר עכשיו? (ריק = לא לעקוב אחרי כמות)','How much is left now? (empty = don\'t track)'),it.qty??'');if(a===null)return;
+  const v=String(a).trim();if(v!==''&&!(Number(v.replace(',','.'))>=0))return;
+  it.qty=v===''?null:Number(v.replace(',','.'));logUse(it,T('עודכנה כמות: ','Amount set: ')+(it.qty??'—'));saveItem(it);$('dt').close();render();
 }
 function openNow(){
   const it=cur;if(!it)return;

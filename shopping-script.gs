@@ -733,7 +733,7 @@ function medsDaily() {
     let msg = '💊 *תרופות בבית*';
     if (now.length) msg += '\n\n❌ פג תוקף:\n' + now.join('\n');
     if (week.length) msg += '\n\n⚠️ יפוג תוקף בשבוע הקרוב:\n' + week.join('\n');
-    if (low.length) msg += '\n\n📉 נגמר המלאי:\n' + low.join('\n');
+    if (low.length) msg += '\n\n📉 מלאי נמוך:\n' + low.join('\n');
     msg += '\n\nלאפליקציה: ' + MEDS_LINK;
     const chat = PropertiesService.getScriptProperties().getProperty('MEDS_CHAT');
     if (waSend_(msg, chat)) medsSave_(l.f, st);
