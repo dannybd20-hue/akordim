@@ -465,11 +465,13 @@ function drawInv(){
   const cats=[...new Set(INV.items.map(x=>x.c||'כללי'))];
   $('invCats').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join('');
   $('invList').innerHTML=cats.map(c=>`<div style="font-weight:900;color:var(--prd);margin:12px 0 4px">${esc(c)}</div>`+INV.items.filter(x=>(x.c||'כללי')===c).map(x=>`
-    <div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--bd)">
-      <b style="flex:1;min-width:0;color:var(--tx)">${esc(x.n)}</b>
-      <input type="number" inputmode="numeric" min="0" value="${x.q??''}" placeholder="כמות" title="כמות (לא חובה)" style="width:62px;padding:6px;text-align:center" onchange="invQty('${x.id}',this.value)">
-      ${Object.entries(INV_ST).map(([k,v])=>`<button class="btn sm ${x.st===k?'pr':'sec'}" style="padding:6px 7px" onclick="invSet('${x.id}','${k}')" title="${v[1]}">${v[0]} ${v[1]}</button>`).join('')}
-      <button class="btn sec sm" style="padding:6px 8px" onclick="invDel('${x.id}')" title="מחיקה">🗑</button>
+    <div style="padding:8px 0 10px;border-bottom:1px solid var(--bd)">
+      <b style="display:block;color:var(--tx);font-size:15.5px;margin-bottom:6px">${esc(x.n)}${x.q!=null?` <small style="color:var(--mut);font-weight:700">(${x.q})</small>`:''}</b>
+      <div style="display:flex;align-items:center;gap:6px">
+        ${Object.entries(INV_ST).map(([k,v])=>`<button class="btn sm ${x.st===k?'pr':'sec'}" style="padding:7px 4px;flex:1;min-width:0;white-space:nowrap" onclick="invSet('${x.id}','${k}')" title="${v[1]}">${v[0]} ${v[1]}</button>`).join('')}
+        <input type="number" inputmode="numeric" min="0" value="${x.q??''}" placeholder="כמות" title="כמות (לא חובה)" style="width:62px;flex:none;padding:7px 4px;text-align:center" onchange="invQty('${x.id}',this.value)">
+        <button class="btn sec sm" style="padding:7px 8px;flex:none" onclick="invDel('${x.id}')" title="מחיקה">🗑</button>
+      </div>
     </div>`).join('')).join('')||'אין מוצרים. הוסף למטה.';
 }
 function invSave(){clearTimeout(invT);invT=setTimeout(async()=>{try{const r=await cloudPost({action:'inv_save',inv:INV});if(r.ok){INV=r.inv;toast('המלאי נשמר ✓')}else toast('⚠️ השמירה נכשלה')}catch(e){toast('⚠️ אין חיבור לענן')}},700)}
