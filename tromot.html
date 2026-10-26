@@ -189,7 +189,7 @@ dialog h2{font-size:20px;font-weight:800;margin-bottom:14px}
 
 <dialog id="dInv">
   <h2>📦 מלאי ציוד בבית הכנסת</h2>
-  <p class="hint">מסמנים מה יש, מה עומד להיגמר ומה חסר. המלאי מוצג גם בלוח המודעות, ומתפלל יכול ללחוץ "אני רוצה לתרום" ולשלוח לך הודעה בוואטסאפ.</p>
+  <p class="hint">לכל מוצר: הרבה / מעט / חסר, ואפשר גם לכתוב כמות מדויקת. המלאי מוצג גם בלוח המודעות, ומתפלל יכול ללחוץ "אני רוצה לתרום" ולשלוח לך הודעה בוואטסאפ.</p>
   <div id="invList" class="hint">טוען…</div>
   <div style="display:flex;gap:8px;margin-top:12px"><input id="invN" placeholder="מוצר חדש" style="flex:2;min-width:0"><input id="invC" placeholder="קטגוריה" list="invCats" style="flex:1;min-width:0"><button class="btn pr sm" onclick="invAdd()">➕</button></div>
   <datalist id="invCats"></datalist>
@@ -452,7 +452,7 @@ async function connect(){
 }
 /* מלאי ציוד: נשמר בענן (inventory.json) ומוצג בלוח המודעות */
 let INV=null,invT=0;
-const INV_ST={ok:['✅','יש'],low:['⚠️','מעט'],out:['❌','חסר']};
+const INV_ST={ok:['👍','הרבה'],low:['⚠️','מעט'],out:['❌','חסר']};
 async function openInv(){
   if(!cloud){toast('צריך קודם לחבר גיבוי לענן');openCloud();return}
   $('dInv').showModal();$('invList').textContent='טוען…';
@@ -466,13 +466,15 @@ function drawInv(){
   $('invCats').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join('');
   $('invList').innerHTML=cats.map(c=>`<div style="font-weight:900;color:var(--prd);margin:12px 0 4px">${esc(c)}</div>`+INV.items.filter(x=>(x.c||'כללי')===c).map(x=>`
     <div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--bd)">
-      <b style="flex:1;color:var(--tx)">${esc(x.n)}</b>
-      ${Object.entries(INV_ST).map(([k,v])=>`<button class="btn sm ${x.st===k?'pr':'sec'}" style="padding:6px 8px" onclick="invSet('${x.id}','${k}')" title="${v[1]}">${v[0]} ${v[1]}</button>`).join('')}
+      <b style="flex:1;min-width:0;color:var(--tx)">${esc(x.n)}</b>
+      <input type="number" inputmode="numeric" min="0" value="${x.q??''}" placeholder="כמות" title="כמות (לא חובה)" style="width:62px;padding:6px;text-align:center" onchange="invQty('${x.id}',this.value)">
+      ${Object.entries(INV_ST).map(([k,v])=>`<button class="btn sm ${x.st===k?'pr':'sec'}" style="padding:6px 7px" onclick="invSet('${x.id}','${k}')" title="${v[1]}">${v[0]} ${v[1]}</button>`).join('')}
       <button class="btn sec sm" style="padding:6px 8px" onclick="invDel('${x.id}')" title="מחיקה">🗑</button>
     </div>`).join('')).join('')||'אין מוצרים. הוסף למטה.';
 }
 function invSave(){clearTimeout(invT);invT=setTimeout(async()=>{try{const r=await cloudPost({action:'inv_save',inv:INV});if(r.ok){INV=r.inv;toast('המלאי נשמר ✓')}else toast('⚠️ השמירה נכשלה')}catch(e){toast('⚠️ אין חיבור לענן')}},700)}
 function invSet(id,st){const x=INV.items.find(i=>i.id===id);if(!x)return;x.st=st;drawInv();invSave()}
+function invQty(id,v){const x=INV.items.find(i=>i.id===id);if(!x)return;v=String(v).trim();x.q=v===''?null:Math.max(0,Number(v));if(x.q===0)x.st='out';drawInv();invSave()}
 function invDel(id){const x=INV.items.find(i=>i.id===id);if(!x||!confirm('למחוק את "'+x.n+'" מהמלאי?'))return;INV.items=INV.items.filter(i=>i.id!==id);drawInv();invSave()}
 function invAdd(){const n=$('invN').value.trim();if(!n)return;INV.items.push({id:'i'+Date.now().toString(36),n,c:$('invC').value.trim()||'כללי',st:'ok'});$('invN').value='';drawInv();invSave()}
 function invWaSet(){let v=$('invWa').value.replace(/\D/g,'');if(v.startsWith('0'))v='972'+v.slice(1);INV.wa=v;invSave()}
