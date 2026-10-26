@@ -32,6 +32,16 @@ body{margin:0;min-height:100vh;color:var(--ink);font-family:Heebo,system-ui,sans
 .stat:nth-child(3){background:var(--pnk);transform:rotate(.8deg)}
 .stat span{display:block;font-weight:700;color:var(--mut);font-size:14px}
 .stat b{display:block;font-family:Heebo,sans-serif;font-weight:900;font-size:32px;margin-top:4px;direction:ltr}
+.inv{background:#fff8e7;transform:rotate(.3deg);margin-bottom:26px}
+.inv h2{margin:0 0 4px;font-family:'Suez One',serif;font-weight:400;font-size:22px}
+.inv .sub{color:var(--mut);font-size:13.5px;margin-bottom:8px;line-height:1.5}
+.ig{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px 18px}
+.ic{font-weight:900;color:#7a5536;padding:10px 0 2px;grid-column:1/-1;font-size:15px}
+.it{display:flex;align-items:center;gap:8px;min-height:40px;border-bottom:1px solid var(--line)}
+.it b{flex:1;font-weight:700;font-size:15.5px}
+.st{border-radius:999px;padding:2px 9px;font-size:12.5px;font-weight:800;flex:none}
+.st.ok{background:#dcfce7;color:#166534}.st.low{background:#fef3c7;color:#92400e}.st.out{background:#fee2e2;color:#991b1b}
+.give{border:0;border-radius:10px;background:#25d366;color:#fff;font:inherit;font-weight:800;font-size:13px;padding:6px 10px;cursor:pointer;flex:none}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
 .list{background:var(--paper);transform:rotate(-.5deg)}
 .list:nth-child(2){transform:rotate(.6deg)}
@@ -107,6 +117,12 @@ function draw(){
   const exL=showAll.e?D.ex:D.ex.slice(0,25);
   let ex=exL.map(x=>`<div class="r"><span class="d">${dd(x.d)}</span><span class="f">${esc(x.f||'—')}</span><span class="a">${ils(x.a)}</span></div>`).join('')||'<div class="empty">עוד לא הוצא כסף.</div>';
   if(!showAll.e&&D.ex.length>25)ex+=`<button class="more" onclick="showAll.e=true;draw()">הצג הכול ↓</button>`;
+  /* מלאי ציוד: מה יש ומה חסר, עם כפתור "אני רוצה לתרום" שפותח וואטסאפ עם הודעה מוכנה */
+  const IS={ok:'✅ יש',low:'⚠️ מעט',out:'❌ חסר'},I=(D.inv&&D.inv.items)||[],wa=D.inv&&D.inv.wa;
+  const cats=[...new Set(I.map(x=>x.c||'כללי'))];
+  const ord=x=>x.st==='out'?0:x.st==='low'?1:2;
+  const inv=I.length?`<div class="note inv"><h2>📦 מה יש בבית הכנסת</h2><div class="sub">${wa?'רוצה לתרום מוצר? לחץ "🙋 אני אתרום" ותיפתח הודעה מוכנה בוואטסאפ. נשאר רק לשלוח.':'מצב הציוד בבית הכנסת.'}</div>
+    <div class="ig">${cats.map(c=>`<div class="ic">${esc(c)}</div>`+I.filter(x=>(x.c||'כללי')===c).sort((a,b)=>ord(a)-ord(b)).map(x=>`<div class="it"><b>${esc(x.n)}</b><span class="st ${x.st}">${IS[x.st]||''}</span>${wa?`<button class="give" data-n="${esc(x.n)}">🙋 אני אתרום</button>`:''}</div>`).join('')).join('')}</div></div>`:'';
   const at=D.at?new Date(D.at).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
   $('M').innerHTML=`
     <div class="note title"><h1>📌 ${esc(D.title)}</h1><p>לוח מודעות · ${D.n} תרומות</p></div>
@@ -115,11 +131,17 @@ function draw(){
       <div class="note stat"><span>📥 סה״כ נתרם</span><b>${ils(D.tot)}</b></div>
       <div class="note stat"><span>📤 סה״כ הוצא</span><b>${ils(D.used)}</b></div>
     </div>
+    ${inv}
     <div class="cols">
       <div class="note list"><h2>📤 על מה הכסף הוצא</h2><div class="sub">תאריך · מטרה · סכום</div>${ex}</div>
       <div class="note list"><h2>📥 תרומות שנכנסו</h2><div class="sub">לפי חודשים, בלי שמות</div>${dons}</div>
     </div>
     <div class="foot">${at?'עודכן לאחרונה: '+at:''}</div>`;
+  document.querySelectorAll('.give').forEach(b=>b.onclick=()=>{
+    const me=lg('board_name');
+    const msg=`שלום! 🙋\nכאן ${me||'מתפלל'} מלוח המודעות של ${TITLE}.\nאני רוצה לתרום לבית הכנסת: *${b.dataset.n}*\nאיך הכי נוח שאביא?`;
+    location.href='https://wa.me/'+wa+'?text='+encodeURIComponent(msg);
+  });
 }
 if(!K)gate('<h1>📌 לוח מודעות</h1><p>הקישור לא שלם. בקש קישור חדש.</p>');else ask();
 </script>

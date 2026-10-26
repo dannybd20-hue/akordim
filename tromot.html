@@ -134,6 +134,7 @@ dialog h2{font-size:20px;font-weight:800;margin-bottom:14px}
     <button onclick="needNames(exportBackup)">💾 שמירת גיבוי</button>
     <button onclick="needNames(()=>$('imp').click())">📂 ייבוא גיבוי</button>
     <button onclick="needNames(openCloud)">☁️ גיבוי לענן</button>
+    <button onclick="openInv()">📦 מלאי ציוד</button>
     <button onclick="needNames(openBoard)">📋 לוח מודעות</button>
     <button id="nmBtn" onclick="toggleNames()">🔓 הצגת שמות ועריכה</button>
     <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importBackup(this)">
@@ -184,6 +185,16 @@ dialog h2{font-size:20px;font-weight:800;margin-bottom:14px}
   <p class="hint" id="cMsg" style="font-weight:700"></p>
   <div class="dl"><button class="btn sec" onclick="disconnect()" id="cOff">ניתוק</button><button class="btn pr" style="flex:2" onclick="connect()">חיבור וגיבוי</button></div>
   <button class="btn sec sm" style="width:100%;margin-top:10px" onclick="$('dCloud').close()">סגירה</button>
+</dialog>
+
+<dialog id="dInv">
+  <h2>📦 מלאי ציוד בבית הכנסת</h2>
+  <p class="hint">מסמנים מה יש, מה עומד להיגמר ומה חסר. המלאי מוצג גם בלוח המודעות, ומתפלל יכול ללחוץ "אני רוצה לתרום" ולשלוח לך הודעה בוואטסאפ.</p>
+  <div id="invList" class="hint">טוען…</div>
+  <div style="display:flex;gap:8px;margin-top:12px"><input id="invN" placeholder="מוצר חדש" style="flex:2;min-width:0"><input id="invC" placeholder="קטגוריה" list="invCats" style="flex:1;min-width:0"><button class="btn pr sm" onclick="invAdd()">➕</button></div>
+  <datalist id="invCats"></datalist>
+  <div class="fg" style="margin-top:14px"><label>מספר וואטסאפ לקבלת הצעות תרומה</label><input id="invWa" type="tel" inputmode="tel" dir="ltr" placeholder="050-1234567" onchange="invWaSet()"></div>
+  <button class="btn sec sm" style="width:100%;margin-top:6px" onclick="$('dInv').close()">סגירה</button>
 </dialog>
 
 <dialog id="dBoard">
@@ -439,6 +450,33 @@ async function connect(){
   }
   $('dCloud').close();toast('הגיבוי לענן מחובר ✓');
 }
+/* מלאי ציוד: נשמר בענן (inventory.json) ומוצג בלוח המודעות */
+let INV=null,invT=0;
+const INV_ST={ok:['✅','יש'],low:['⚠️','מעט'],out:['❌','חסר']};
+async function openInv(){
+  if(!cloud){toast('צריך קודם לחבר גיבוי לענן');openCloud();return}
+  $('dInv').showModal();$('invList').textContent='טוען…';
+  try{const r=await cloudPost({action:'inv_load'});if(!r.ok){$('invList').textContent=r.error==='unknown action'?'⚠️ צריך לעדכן את סקריפט התרומות בגוגל לגרסה החדשה':'⚠️ שגיאה: '+r.error;return}INV=r.inv;drawInv()}
+  catch(e){$('invList').textContent='אין חיבור לענן'}
+}
+function waShow(n){n=String(n||'');return n.startsWith('972')?'0'+n.slice(3):n}
+function drawInv(){
+  $('invWa').value=waShow(INV.wa);
+  const cats=[...new Set(INV.items.map(x=>x.c||'כללי'))];
+  $('invCats').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join('');
+  $('invList').innerHTML=cats.map(c=>`<div style="font-weight:900;color:var(--prd);margin:12px 0 4px">${esc(c)}</div>`+INV.items.filter(x=>(x.c||'כללי')===c).map(x=>`
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--bd)">
+      <b style="flex:1;color:var(--tx)">${esc(x.n)}</b>
+      ${Object.entries(INV_ST).map(([k,v])=>`<button class="btn sm ${x.st===k?'pr':'sec'}" style="padding:6px 8px" onclick="invSet('${x.id}','${k}')" title="${v[1]}">${v[0]} ${v[1]}</button>`).join('')}
+      <button class="btn sec sm" style="padding:6px 8px" onclick="invDel('${x.id}')" title="מחיקה">🗑</button>
+    </div>`).join('')).join('')||'אין מוצרים. הוסף למטה.';
+}
+function invSave(){clearTimeout(invT);invT=setTimeout(async()=>{try{const r=await cloudPost({action:'inv_save',inv:INV});if(r.ok){INV=r.inv;toast('המלאי נשמר ✓')}else toast('⚠️ השמירה נכשלה')}catch(e){toast('⚠️ אין חיבור לענן')}},700)}
+function invSet(id,st){const x=INV.items.find(i=>i.id===id);if(!x)return;x.st=st;drawInv();invSave()}
+function invDel(id){const x=INV.items.find(i=>i.id===id);if(!x||!confirm('למחוק את "'+x.n+'" מהמלאי?'))return;INV.items=INV.items.filter(i=>i.id!==id);drawInv();invSave()}
+function invAdd(){const n=$('invN').value.trim();if(!n)return;INV.items.push({id:'i'+Date.now().toString(36),n,c:$('invC').value.trim()||'כללי',st:'ok'});$('invN').value='';drawInv();invSave()}
+function invWaSet(){let v=$('invWa').value.replace(/\D/g,'');if(v.startsWith('0'))v='972'+v.slice(1);INV.wa=v;invSave()}
+
 /* לוח מודעות: קישור ציבורי (עם אישור) ורשימת המבקשים */
 function boardUrl(){const m=/\/macros\/s\/([\w-]+)\//.exec(cloud?.url||'');return m?location.href.replace(/[^/]*$/,'')+'board.html?k='+m[1]:''}
 async function openBoard(){
