@@ -11,7 +11,7 @@
   let since=+sg('dbd_since');if(!since){since=Date.now();try{sessionStorage.setItem('dbd_since',since)}catch(e){}}
   const ua=navigator.userAgent;
   const dev=/iPhone/.test(ua)?'אייפון':/iPad/.test(ua)?'אייפד':/Android/.test(ua)?(/Mobile/.test(ua)?'טלפון אנדרואיד':'טאבלט אנדרואיד'):/Windows/.test(ua)?'מחשב Windows':/Mac/.test(ua)?'מחשב Mac':'מחשב';
-  const ROLE={chords:'אקורדים',maaser:'מעשר',tromot:'תרומות',shopping:'קניות',forms:'טפסים',game:'משחק חי'};
+  const ROLE={chords:'אקורדים',maaser:'מעשר',tromot:'תרומות',shopping:'קניות',forms:'טפסים',game:'משחק חי',meds:'תרופות'};
   function role(){let A=[];try{A=JSON.parse(sg('hub_access'))||[]}catch(e){}return A.length>=4?'ראשית':A.map(a=>ROLE[a]||a).join(', ')}
   window.dbdPresence=function(page,onCounts){
     const send=leave=>JSON.stringify({app:'presence',id,page,leave:!!leave,n:lg('dbd_name')||lg('shop_me'),r:role(),d:dev,s:since,admin:sg('hub_admin')});

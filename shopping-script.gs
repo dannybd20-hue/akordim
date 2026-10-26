@@ -94,9 +94,9 @@ function waChat_(c) {
   return g.id;
 }
 function waOn_() { return !!waCfg_(); }
-function waSend_(text) {
+function waSend_(text, to) {
   const c = waCfg_(); if (!c) return false;
-  const chat = waChat_(c); if (!chat) return false;
+  const chat = to || waChat_(c); if (!chat) return false;
   const res = UrlFetchApp.fetch(c.url + '/waInstance' + c.id + '/sendMessage/' + c.token, {
     method: 'post', contentType: 'application/json', muteHttpExceptions: true,
     payload: JSON.stringify({ chatId: chat, message: text })
@@ -197,7 +197,7 @@ function isAdmin_(p) { return typeof ADMIN_PASSWORD === 'string' && ADMIN_PASSWO
 
 /* "מי מחובר עכשיו" בדף הבית: כל דף פתוח באתר שולח מזהה מכשיר אקראי, שם האפליקציה ופרטי מכשיר.
    לכולם מוחזר רק מספר המכשירים בכל אפליקציה. רשימה מפורטת מוחזרת רק עם ADMIN_PASSWORD. */
-const PRESENCE_PAGES = ['home', 'chords', 'maaser', 'tromot', 'shopping', 'forms', 'game'];
+const PRESENCE_PAGES = ['home', 'chords', 'maaser', 'tromot', 'shopping', 'forms', 'game', 'meds'];
 function presence_(d) {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(5000)) return out_({ ok: false, error: 'busy' });
@@ -233,6 +233,7 @@ function doPost(e) {
   if (d.by !== undefined) d.by = heBy_(d.by);
   if (d.app === 'presence') return presence_(d);
   if (d.app === 'maaser') return maaserPost_(d);
+  if (d.app === 'meds') return medsPost_(d);
   if (!isAdmin_(d.password)) {
     if (locked_('shop')) return out_({ ok: false, error: 'locked' });
     if (d.password !== SHOP_PASSWORD && !(EN_PASSWORD && d.password === EN_PASSWORD)) { failed_('shop'); return out_({ ok: false, error: 'password' }); }
@@ -289,6 +290,7 @@ function hourly() {
   }
   notify_(added.map(function (n) { return { n: n, k: 'auto' }; }));
   maaserHourly_();
+  medsHourly_();
   if (new Date().getHours() === 3) ensureReminders_(); // פעם ביום: מוודא שיש טריגרים לתזכורת ולסיכום
 }
 
@@ -585,3 +587,156 @@ function maaserApply(st, o, t) {
   }
   return false;
 }
+
+/* ---------------- תרופות בבית ----------------
+   הנתונים בקובץ meds_data.json בדרייב, והתמונות בקבצים נפרדים (med_<id>.jpg).
+   זיהוי תרופה מתמונה: צריך מפתח של Claude (console.anthropic.com) בתור מאפיין סקריפט ANTHROPIC_KEY.
+   התראות תוקף: כל בוקר ב-8:00 נשלחת הודעת וואטסאפ (אותה הגדרה של GREEN_… כמו בקניות) שבוע לפני פקיעת תוקף וביום הפקיעה.
+   היעד: הקבוצה של הקניות, או צ'אט אחר אם מגדירים מאפיין MEDS_CHAT (למשל 972501234567@c.us). */
+const MEDS_PASSWORD = '';              // סיסמה נוספת לאפליקציה (ריק = רק הסיסמה הראשית)
+const MEDS_FILE = 'meds_data.json';
+const MEDS_MODEL = 'claude-sonnet-5-5';
+const MEDS_LINK = 'https://dannybd20-hue.github.io/akordim/meds.html';
+const MEDS_HOUR = 8;
+const MEDS_LOCS = ['מטבח', 'שירותי הורים', 'שירותי ילדים'];
+
+function medsLoad_() {
+  const it = DriveApp.getFilesByName(MEDS_FILE);
+  if (!it.hasNext()) return { f: null, st: { items: [], locs: MEDS_LOCS.slice(), rev: 0 } };
+  const f = it.next();
+  const st = JSON.parse(f.getBlob().getDataAsString('UTF-8'));
+  if (!st.locs || !st.locs.length) st.locs = MEDS_LOCS.slice();
+  return { f: f, st: st };
+}
+function medsSave_(f, st) {
+  st.rev = (st.rev || 0) + 1;
+  const body = JSON.stringify(st);
+  if (f) f.setContent(body); else DriveApp.createFile(MEDS_FILE, body, MimeType.PLAIN_TEXT);
+}
+function medsDate_(s) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || '')); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : null; }
+function medsFmt_(ms) { const d = new Date(ms); return d.getUTCFullYear() + '-' + ('0' + (d.getUTCMonth() + 1)).slice(-2) + '-' + ('0' + d.getUTCDate()).slice(-2); }
+/* תוקף אפקטיבי: התוקף שעל האריזה, או תאריך הפתיחה + תוקף אחרי פתיחה - המוקדם מביניהם */
+function medsEff_(it) {
+  let e = medsDate_(it.exp);
+  const o = medsDate_(it.opened);
+  if (o != null && it.aft && +it.aft.n > 0) {
+    const d = new Date(o);
+    if (it.aft.u === 'd') d.setUTCDate(d.getUTCDate() + Math.round(+it.aft.n));
+    else d.setUTCMonth(d.getUTCMonth() + Math.round(+it.aft.n));
+    if (e == null || d.getTime() < e) e = d.getTime();
+  }
+  return e;
+}
+function medsPost_(d) {
+  if (!isAdmin_(d.password)) {
+    if (locked_('meds')) return out_({ ok: false, error: 'locked' });
+    if (!MEDS_PASSWORD || d.password !== MEDS_PASSWORD) { failed_('meds'); return out_({ ok: false, error: 'password' }); }
+  }
+  passed_('meds');
+  if (d.op === 'identify') return medsIdentify_(d);
+  if (d.op === 'photo') {
+    try {
+      const f = DriveApp.getFileById(String(d.ph));
+      return out_({ ok: true, data: 'data:image/jpeg;base64,' + Utilities.base64Encode(f.getBlob().getBytes()) });
+    } catch (x) { return out_({ ok: false, error: 'nophoto' }); }
+  }
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const l = medsLoad_(), st = l.st;
+    let changed = !l.f;
+    if (d.op === 'save' && d.item) {
+      const it = d.item;
+      it.id = String(it.id || Utilities.getUuid().slice(0, 8));
+      if (d.photo && String(d.photo).length > 200) {
+        const bytes = Utilities.base64Decode(String(d.photo).replace(/^data:image\/\w+;base64,/, ''));
+        const blob = Utilities.newBlob(bytes, 'image/jpeg', 'med_' + it.id + '.jpg');
+        const old = st.items.filter(function (x) { return x.id === it.id; })[0];
+        if (old && old.ph) { try { DriveApp.getFileById(old.ph).setTrashed(true); } catch (x) {} }
+        it.ph = DriveApp.createFile(blob).getId();
+      }
+      const i = st.items.findIndex(function (x) { return x.id === it.id; });
+      if (i >= 0) { if (!it.ph) it.ph = st.items[i].ph; if (!it.th) it.th = st.items[i].th; it.n = (medsDate_(it.exp) === medsDate_(st.items[i].exp) && it.opened === st.items[i].opened) ? st.items[i].n : {}; st.items[i] = it; }
+      else { it.at = Date.now(); it.n = {}; st.items.push(it); }
+      changed = true;
+    } else if (d.op === 'del') {
+      const i = st.items.findIndex(function (x) { return x.id === String(d.id); });
+      if (i >= 0) { if (st.items[i].ph) { try { DriveApp.getFileById(st.items[i].ph).setTrashed(true); } catch (x) {} } st.items.splice(i, 1); changed = true; }
+    } else if (d.op === 'locs' && Array.isArray(d.locs)) {
+      st.locs = d.locs.map(function (s) { return String(s).slice(0, 30); }).filter(String).slice(0, 40);
+      changed = true;
+    }
+    if (changed) medsSave_(l.f, st);
+    return out_({ ok: true, rev: st.rev, items: st.items, locs: st.locs, ai: !!PropertiesService.getScriptProperties().getProperty('ANTHROPIC_KEY'), item: d.item ? st.items.filter(function (x) { return x.id === d.item.id; })[0] : undefined });
+  } finally { lock.releaseLock(); }
+}
+
+/* זיהוי תרופה מתמונת האריזה (Claude עם ראייה). מחזיר JSON עם שם בעברית ובאנגלית, הסבר קצר, סוג, כמות, תוקף */
+function medsIdentify_(d) {
+  const key = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_KEY');
+  if (!key) return out_({ ok: false, error: 'nokey' });
+  const img = String(d.image || '').replace(/^data:image\/\w+;base64,/, '');
+  if (img.length < 200) return out_({ ok: false, error: 'noimage' });
+  const prompt = 'זו תמונה של אריזת תרופה או מוצר רפואי שיש בבית. קרא את הכיתוב באריזה והחזר JSON בלבד (בלי שום טקסט נוסף ובלי בלוק קוד) עם המפתחות:\n' +
+    '"he": שם המוצר בעברית כפי שמקובל בישראל, כולל החוזק אם מופיע (למשל "אקמול 500 מ״ג"),\n' +
+    '"en": שם המוצר באנגלית (למשל "Acamol 500 mg"),\n' +
+    '"desc": עד שני משפטים בעברית: מהו החומר הפעיל, מה התרופה עושה ולמה משתמשים בה. מידע כללי בלבד,\n' +
+    '"type": "pills" לטבליות/כמוסות/כדורים, "liquid" לנוזל/סירופ/טיפות/תרסיס, "cream" למשחה/קרם/ג׳ל, או "other",\n' +
+    '"qty": מספר היחידות בחבילה אם מודפס (מספר), אחרת null,\n' +
+    '"unit": יחידת הכמות בעברית ("טבליות", "כמוסות", "מ״ל", "גרם"), אחרת "",\n' +
+    '"exp": תאריך התפוגה המודפס בפורמט YYYY-MM-DD (אם מודפס רק חודש ושנה, היום האחרון של החודש), ואם לא נראה בתמונה null,\n' +
+    '"aft": אם כתוב תוקף אחרי פתיחה, אובייקט {"n": מספר, "u": "m" לחודשים או "d" לימים}, אחרת null,\n' +
+    '"conf": "high" או "low" לפי הביטחון בזיהוי.\n' +
+    'אם אינך בטוח במשהו, השאר null או "" ואל תמציא.';
+  const res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+    payload: JSON.stringify({ model: MEDS_MODEL, max_tokens: 900, messages: [{ role: 'user', content: [
+      { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: img } },
+      { type: 'text', text: prompt }] }] })
+  });
+  if (res.getResponseCode() !== 200) { console.warn('identify ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 300)); return out_({ ok: false, error: 'ai' + res.getResponseCode() }); }
+  try {
+    const txt = JSON.parse(res.getContentText()).content.map(function (c) { return c.text || ''; }).join('');
+    const a = txt.indexOf('{'), b = txt.lastIndexOf('}');
+    return out_({ ok: true, info: JSON.parse(txt.slice(a, b + 1)) });
+  } catch (x) { return out_({ ok: false, error: 'parse' }); }
+}
+
+/* בדיקה יומית (נקראת מ-hourly): הודעה שבוע לפני פקיעת תוקף, וביום הפקיעה. כל התראה נשלחת פעם אחת לכל תאריך */
+function medsHourly_() {
+  const h = +Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'H');
+  if (h !== MEDS_HOUR) return;
+  medsDaily();
+}
+function medsDaily() {
+  if (!waOn_()) return;
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const l = medsLoad_(); if (!l.f) return;
+    const t = ilToday_(), today = Date.UTC(t.y, t.m - 1, t.d), st = l.st;
+    const week = [], now = [], low = [];
+    st.items.forEach(function (it) {
+      const e = medsEff_(it); it.n = it.n || {};
+      const line = function () { return '• ' + (it.he || it.en || 'תרופה') + ' — ' + (it.loc || 'ללא מקום') + ' — ' + medsFmt_(e).split('-').reverse().join('/'); };
+      if (e != null) {
+        const days = Math.round((e - today) / 864e5), stamp = medsFmt_(e);
+        if (days <= 0 && it.n.x !== stamp) { now.push(line()); it.n.x = stamp; it.n.w = stamp; }
+        else if (days > 0 && days <= 7 && it.n.w !== stamp) { week.push(line()); it.n.w = stamp; }
+      }
+      if (it.low != null && it.low !== '' && it.qty != null && +it.qty <= +it.low && it.n.l !== String(it.qty)) { low.push('• ' + (it.he || it.en) + ' — נשארו ' + it.qty + ' ' + (it.unit || '')); it.n.l = String(it.qty); }
+      if (it.low != null && it.qty != null && +it.qty > +it.low) delete it.n.l;
+    });
+    if (!week.length && !now.length && !low.length) return;
+    let msg = '💊 *תרופות בבית*';
+    if (now.length) msg += '\n\n❌ פג תוקף:\n' + now.join('\n');
+    if (week.length) msg += '\n\n⚠️ יפוג תוקף בשבוע הקרוב:\n' + week.join('\n');
+    if (low.length) msg += '\n\n📉 נגמר המלאי:\n' + low.join('\n');
+    msg += '\n\nלאפליקציה: ' + MEDS_LINK;
+    const chat = PropertiesService.getScriptProperties().getProperty('MEDS_CHAT');
+    if (waSend_(msg, chat)) medsSave_(l.f, st);
+  } finally { lock.releaseLock(); }
+}
+// לבדיקה מהעורך: מריצים ומקבלים הודעת ניסיון
+function testMeds() { Logger.log(waOn_() ? (waSend_('💊 *תרופות בבית*\nהודעת ניסיון ✅', PropertiesService.getScriptProperties().getProperty('MEDS_CHAT')) ? 'נשלח ✅' : 'לא נשלח') : 'חסרים מאפייני GREEN_…'); }
