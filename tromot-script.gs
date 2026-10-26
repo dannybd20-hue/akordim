@@ -150,7 +150,7 @@ function boardData_() {
   const ex = {};
   D.forEach(function (d) {
     const a = Number(d.amount); tot += a;
-    if (d.used) {
+    if (d.used && String(d.usedFor || '').trim()) { // שומש בלי לכתוב על מה: לא נחשב הוצאה בלוח
       used += a;
       const k = (d.usedFor || '') + '|' + (d.usedDate || '');
       ex[k] = ex[k] || { f: String(d.usedFor || '').slice(0, 80), d: d.usedDate || '', a: 0 };
