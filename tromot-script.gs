@@ -188,7 +188,7 @@ function boardPublic_(req) {
       return out({ ok: true, status: 'pending' });
     }
     if (x.st === 'a') {
-      if (!x.seen || Date.now() - x.seen > 3e5) { x.seen = Date.now(); boardPut_(b); }
+      if (!x.seen || Date.now() - x.seen > 36e5) { x.seen = Date.now(); boardPut_(b); }
     }
   } finally { lock.releaseLock(); }
   if (x.st === 'a') return out({ ok: true, status: 'ok', data: boardData_() });
