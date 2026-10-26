@@ -134,6 +134,7 @@ dialog h2{font-size:20px;font-weight:800;margin-bottom:14px}
     <button onclick="needNames(exportBackup)">💾 שמירת גיבוי</button>
     <button onclick="needNames(()=>$('imp').click())">📂 ייבוא גיבוי</button>
     <button onclick="needNames(openCloud)">☁️ גיבוי לענן</button>
+    <button onclick="needNames(openBoard)">📋 לוח מודעות</button>
     <button id="nmBtn" onclick="toggleNames()">🔓 הצגת שמות ועריכה</button>
     <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importBackup(this)">
   </div>
@@ -183,6 +184,16 @@ dialog h2{font-size:20px;font-weight:800;margin-bottom:14px}
   <p class="hint" id="cMsg" style="font-weight:700"></p>
   <div class="dl"><button class="btn sec" onclick="disconnect()" id="cOff">ניתוק</button><button class="btn pr" style="flex:2" onclick="connect()">חיבור וגיבוי</button></div>
   <button class="btn sec sm" style="width:100%;margin-top:10px" onclick="$('dCloud').close()">סגירה</button>
+</dialog>
+
+<dialog id="dBoard">
+  <h2>📋 לוח מודעות</h2>
+  <p class="hint">קישור לצפייה בלבד: יתרה, סך התרומות, תרומות שנכנסו (בלי שמות) ועל מה הכסף הוצא. מי שנכנס בפעם הראשונה כותב שם, ומגיע אליך מייל לאישור. אחרי אישור הוא נכנס תמיד מאותו מכשיר.</p>
+  <div class="fg"><input id="bLink" dir="ltr" readonly onclick="this.select()"></div>
+  <div class="dl" style="margin-top:6px"><button class="btn sec" onclick="copyBoard()">📋 העתקה</button><button class="btn pr" onclick="shareBoard()">💬 שליחה בוואטסאפ</button></div>
+  <h3 style="margin:18px 0 6px;font-size:16px">מי ביקש לצפות</h3>
+  <div id="bList" class="hint">טוען…</div>
+  <button class="btn sec sm" style="width:100%;margin-top:10px" onclick="$('dBoard').close()">סגירה</button>
 </dialog>
 
 <dialog id="dCode">
@@ -428,6 +439,25 @@ async function connect(){
   }
   $('dCloud').close();toast('הגיבוי לענן מחובר ✓');
 }
+/* לוח מודעות: קישור ציבורי (עם אישור) ורשימת המבקשים */
+function boardUrl(){const m=/\/macros\/s\/([\w-]+)\//.exec(cloud?.url||'');return m?location.href.replace(/[^/]*$/,'')+'board.html?k='+m[1]:''}
+async function openBoard(){
+  if(!cloud){toast('צריך קודם לחבר גיבוי לענן');openCloud();return}
+  $('bLink').value=boardUrl();$('dBoard').showModal();loadBoard();
+}
+async function loadBoard(o){
+  const L=$('bList');
+  let r;try{r=await cloudPost(o||{action:'board_list'})}catch(e){L.textContent='אין חיבור לענן';return}
+  if(!r.ok){L.textContent=r.error==='unknown action'?'⚠️ צריך לעדכן את סקריפט התרומות בגוגל לגרסה החדשה':'⚠️ שגיאה: '+r.error;return}
+  const st={p:'⏳ מחכה',a:'✅ מאושר',d:'❌ נדחה'};
+  L.innerHTML=r.devs.length?r.devs.map(x=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd)">
+    <div style="flex:1"><b style="color:var(--tx)">${esc(x.n)}</b><br><small>${st[x.st]||''} · ${new Date(x.t).toLocaleDateString('he-IL')}${x.seen?' · נכנס לאחרונה '+new Date(x.seen).toLocaleDateString('he-IL'):''}</small></div>
+    ${x.st!=='a'?`<button class="btn pr sm" onclick="loadBoard({action:'board_set',dev:'${x.dev}',st:'a'})">אישור</button>`:''}
+    ${x.st!=='d'?`<button class="btn sec sm" onclick="loadBoard({action:'board_set',dev:'${x.dev}',st:'d'})">${x.st==='a'?'ביטול':'דחייה'}</button>`:''}
+    <button class="btn sec sm" title="מחיקה" onclick="if(confirm('למחוק את ${esc(x.n).replace(/'/g,'')} מהרשימה?'))loadBoard({action:'board_set',dev:'${x.dev}',st:'x'})">🗑</button></div>`).join(''):'עוד אף אחד לא ביקש. שלח את הקישור למי שצריך.';
+}
+function copyBoard(){const v=$('bLink').value;(navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>toast('הקישור הועתק ✓')).catch(()=>{$('bLink').select();document.execCommand('copy');toast('הקישור הועתק ✓')})}
+function shareBoard(){location.href='https://wa.me/?text='+encodeURIComponent('📋 לוח המודעות של קופת בית הכנסת:\n'+$('bLink').value)}
 function disconnect(){if(!confirm('לנתק את הגיבוי לענן במכשיר הזה? הנתונים נשארים גם במכשיר וגם בענן.'))return;cloud=null;try{localStorage.removeItem('tromot_cloud')}catch(e){}$('dCloud').close();cloudSync()}
 
 nmBtn();render();cloudSync();

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>לוח מודעות</title>
+<meta name="description" content="לוח המודעות של קופת בית הכנסת">
+<meta name="theme-color" content="#7a5536">
+<meta name="robots" content="noindex">
+<link rel="icon" href="icons/apps-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;800;900&family=Suez+One&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#3b2a1e;--mut:#7d6656;--paper:#fffdf6;--yel:#fff3b0;--grn:#dff3d6;--pnk:#ffe0e0;--blu:#dceefe;--line:#e9dcc9}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--ink);font-family:Heebo,system-ui,sans-serif;
+  background-color:#b98a5e;
+  background-image:radial-gradient(#a57549 1px,transparent 1.4px),radial-gradient(#c99a6c 1px,transparent 1.6px),radial-gradient(#9a6a40 .8px,transparent 1.2px);
+  background-size:13px 13px,19px 19px,7px 7px;background-position:0 0,6px 9px,3px 2px;
+  padding:18px 14px 50px}
+.frame{max-width:860px;margin:0 auto;border:14px solid #6b4528;border-radius:10px;box-shadow:inset 0 0 30px #00000040,0 10px 30px #0006;padding:22px 16px 26px;
+  background:inherit;background-color:transparent}
+.note{position:relative;background:var(--paper);border-radius:3px;padding:20px 18px 16px;box-shadow:0 8px 16px #0003,0 2px 3px #0002}
+.note::before{content:"";position:absolute;top:-9px;left:50%;width:20px;height:20px;margin-left:-10px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#ff8a80,#d32f2f 60%,#8e1b1b);box-shadow:0 3px 4px #0005}
+.title{text-align:center;transform:rotate(-1deg);background:var(--yel);margin:6px auto 26px;max-width:520px}
+.title h1{margin:0;font-family:'Suez One',serif;font-size:30px;font-weight:400}
+.title p{margin:6px 0 0;color:var(--mut);font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:26px}
+.stat{text-align:center}
+.stat:nth-child(1){background:var(--grn);transform:rotate(1.2deg)}
+.stat:nth-child(2){background:var(--blu);transform:rotate(-1.4deg)}
+.stat:nth-child(3){background:var(--pnk);transform:rotate(.8deg)}
+.stat span{display:block;font-weight:700;color:var(--mut);font-size:14px}
+.stat b{display:block;font-family:Heebo,sans-serif;font-weight:900;font-size:32px;margin-top:4px;direction:ltr}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+.list{background:var(--paper);transform:rotate(-.5deg)}
+.list:nth-child(2){transform:rotate(.6deg)}
+.list h2{margin:0 0 6px;font-family:'Suez One',serif;font-weight:400;font-size:22px}
+.list .sub{color:var(--mut);font-size:13px;margin-bottom:6px}
+.mo{display:flex;justify-content:space-between;font-weight:900;color:#7a5536;padding:10px 0 2px;font-size:15px}
+.r{display:flex;justify-content:space-between;gap:10px;min-height:36px;align-items:center;font-size:16px;border-bottom:1px solid var(--line)}
+.r .d{color:var(--mut);font-size:14px;flex:none}
+.r .f{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.r .a{font-weight:800;direction:ltr;flex:none}
+.more{border:0;background:none;color:#7a5536;font-weight:800;font-size:15px;cursor:pointer;padding:8px 0;font-family:inherit}
+.empty{color:var(--mut);padding:10px 0}
+.foot{text-align:center;color:#fff;margin-top:20px;font-size:13px;text-shadow:0 1px 2px #0008}
+.gate{max-width:420px;margin:40px auto;text-align:center;background:var(--yel);transform:rotate(-1deg)}
+.gate h1{font-family:'Suez One',serif;font-weight:400;margin:4px 0 8px;font-size:26px}
+.gate p{line-height:1.6;margin:8px 0}
+.gate input{width:100%;border:2px solid #d8c48a;background:#fffbe6;border-radius:10px;padding:12px;font:inherit;font-size:18px;text-align:center;outline:none;margin-top:6px}
+.gate button{width:100%;margin-top:12px;border:0;border-radius:12px;padding:13px;font:inherit;font-weight:900;font-size:17px;background:#7a5536;color:#fff;cursor:pointer}
+.err{color:#b3261e;font-weight:700;min-height:22px}
+.spin{width:34px;height:34px;margin:14px auto;border:4px solid #d8c48a;border-top-color:#7a5536;border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (max-width:620px){.stats{grid-template-columns:1fr 1fr}.stat:nth-child(1){grid-column:1/-1}.cols{grid-template-columns:1fr}.stat b{font-size:26px}.frame{border-width:9px;padding:18px 10px}}
+</style>
+</head>
+<body>
+<div class="frame" id="M"><div class="note gate"><div class="spin"></div></div></div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const lg=k=>{try{return localStorage.getItem(k)||''}catch(e){return''}};
+const lp=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const K=(new URLSearchParams(location.search).get('k')||'').replace(/[^\w-]/g,'');
+const URL_='https://script.google.com/macros/s/'+K+'/exec';
+let dev=lg('board_dev');
+if(!dev){dev=(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36)).replace(/[^\w-]/g,'');lp('board_dev',dev)}
+const ils=n=>'₪'+Math.round(n).toLocaleString('he-IL');
+const MON=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const dd=s=>s?s.split('-').reverse().slice(0,2).join('/'):'';
+let pollT=0,showAll={d:false,e:false},data=null;
+
+function gate(html){$('M').innerHTML=`<div class="note gate">${html}</div>`}
+async function ask(name){
+  let r;
+  try{r=await fetch(URL_,{method:'POST',body:JSON.stringify({action:'board',dev,name:name||lg('board_name')})}).then(r=>r.json())}
+  catch(e){gate('<h1>📌 לוח מודעות</h1><p>אין חיבור לאינטרנט. נסה שוב בעוד רגע.</p><button onclick="ask()">נסה שוב</button>');return}
+  clearTimeout(pollT);
+  if(!r||!r.ok){gate('<h1>📌 לוח מודעות</h1><p>הקישור לא תקין.</p>');return}
+  if(r.status==='name'){
+    gate(`<h1>📌 לוח המודעות</h1><p>כדי לצפות בלוח צריך אישור חד-פעמי.<br>כתוב את שמך, והבקשה תישלח לאישור.</p>
+      <input id="nm" placeholder="השם שלך" maxlength="40" autocomplete="name"><div class="err" id="er"></div><button id="go">שליחת בקשה</button>`);
+    const go=()=>{const v=$('nm').value.trim();if(v.length<2){$('er').textContent='נא לכתוב שם';return}lp('board_name',v);gate('<div class="spin"></div>');ask(v)};
+    $('go').onclick=go;$('nm').onkeyup=e=>{if(e.key==='Enter')go()};$('nm').focus();return}
+  if(r.status==='pending'){gate(`<h1>⏳ הבקשה נשלחה</h1><p>הבקשה של <b>${esc(lg('board_name'))}</b> מחכה לאישור.<br>הדף ייפתח לבד ברגע שהיא תאושר, ואחר כך תוכל להיכנס תמיד מהמכשיר הזה.</p><div class="spin"></div>`);pollT=setTimeout(()=>ask(),20000);return}
+  if(r.status==='busy'){gate('<h1>📌 לוח מודעות</h1><p>יש כרגע הרבה בקשות שמחכות. נסה שוב מאוחר יותר.</p>');return}
+  if(r.status==='denied'){gate('<h1>📌 לוח מודעות</h1><p>הבקשה לא אושרה.</p>');return}
+  if(r.status==='ok'){data=r.data;draw();pollT=setTimeout(()=>ask(),120000)}
+}
+function draw(){
+  const D=data;document.title='לוח מודעות · '+D.title;
+  const byMonth=[];D.dons.forEach(x=>{const k=(x.d||'').slice(0,7);let g=byMonth[byMonth.length-1];if(!g||g.k!==k){g={k,t:0,L:[]};byMonth.push(g)}g.t+=x.a;g.L.push(x)});
+  const mName=k=>k?MON[+k.slice(5)-1]+' '+k.slice(0,4):'ללא תאריך';
+  let dons='',cnt=0;
+  for(const g of byMonth){
+    if(!showAll.d&&cnt>=25)break;
+    dons+=`<div class="mo"><span>${mName(g.k)}</span><span>${ils(g.t)}</span></div>`;
+    for(const x of g.L){if(!showAll.d&&cnt>=25)break;cnt++;dons+=`<div class="r"><span class="d">${dd(x.d)}</span><span class="f">תרומה</span><span class="a">${ils(x.a)}</span></div>`}
+  }
+  if(!D.dons.length)dons='<div class="empty">עוד אין תרומות.</div>';
+  else if(!showAll.d&&D.dons.length>25)dons+=`<button class="more" onclick="showAll.d=true;draw()">הצג את כל ${D.dons.length} התרומות ↓</button>`;
+  const exL=showAll.e?D.ex:D.ex.slice(0,25);
+  let ex=exL.map(x=>`<div class="r"><span class="d">${dd(x.d)}</span><span class="f">${esc(x.f||'—')}</span><span class="a">${ils(x.a)}</span></div>`).join('')||'<div class="empty">עוד לא הוצא כסף.</div>';
+  if(!showAll.e&&D.ex.length>25)ex+=`<button class="more" onclick="showAll.e=true;draw()">הצג הכול ↓</button>`;
+  const at=D.at?new Date(D.at).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+  $('M').innerHTML=`
+    <div class="note title"><h1>📌 ${esc(D.title)}</h1><p>לוח מודעות · ${D.n} תרומות</p></div>
+    <div class="stats">
+      <div class="note stat"><span>💰 יתרה בקופה</span><b>${ils(D.avail)}</b></div>
+      <div class="note stat"><span>📥 סה״כ נתרם</span><b>${ils(D.tot)}</b></div>
+      <div class="note stat"><span>📤 סה״כ הוצא</span><b>${ils(D.used)}</b></div>
+    </div>
+    <div class="cols">
+      <div class="note list"><h2>📤 על מה הכסף הוצא</h2><div class="sub">תאריך · מטרה · סכום</div>${ex}</div>
+      <div class="note list"><h2>📥 תרומות שנכנסו</h2><div class="sub">לפי חודשים, בלי שמות</div>${dons}</div>
+    </div>
+    <div class="foot">${at?'עודכן לאחרונה: '+at:''}</div>`;
+}
+if(!K)gate('<h1>📌 לוח מודעות</h1><p>הקישור לא שלם. בקש קישור חדש.</p>');else ask();
+</script>
+</body>
+</html>
