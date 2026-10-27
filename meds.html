@@ -422,12 +422,29 @@ function drawLocList(){
 function addLoc(){const v=$('lcn').value.trim();if(!v||locs.includes(v))return;locs.push(v);$('lcn').value='';push({op:'locs',locs});drawLocList();render()}
 function delLoc(i){const l=locs[i];if(items.some(x=>x.loc===l)&&!confirm(T('יש תרופות במיקום הזה. המיקום יימחק מהרשימה והן יישארו עם המיקום הישן. להמשיך?','Some medicines are in this place. Remove it from the list anyway? They keep their place.')))return;locs.splice(i,1);push({op:'locs',locs});drawLocList();render()}
 
+/* ---------- תרופות שהוכנסו מראש (נוספות פעם אחת לרשימה המשותפת, עם תמונה) ---------- */
+const SEEDS=[
+  {id:'seed-optalgin',he:'אופטלגין טיפות 500 מ״ג/מ״ל',en:'Optalgin Drops 500 mg/ml',desc:'משכך כאבים ומוריד חום. החומר הפעיל: דיפירון (מטמיזול). טיפות לשימוש דרך הפה, בקבוק 50 מ״ל.',desc_en:'Pain reliever and fever reducer. Active ingredient: dipyrone (metamizole). Oral drops, 50 ml bottle.',type:'liquid',qty:null,unit:'מ״ל',exp:'2028-12-31',loc:'',note:'',img:'brand/meds/optalgin.jpg'}
+];
+function urlToJpeg(u,max,q){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>{const k=Math.min(1,max/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};i.onerror=rej;i.src=u})}
+async function seedRun(){
+  if(!pw)return;
+  for(const sd of SEEDS){
+    if(lg('meds_seed_'+sd.id)||items.some(x=>x.id===sd.id)){lp('meds_seed_'+sd.id,'1');continue}
+    try{
+      const [photo,th]=await Promise.all([urlToJpeg(sd.img,900,.8),urlToJpeg(sd.img,160,.6)]);
+      const it=Object.assign({},sd,{th});delete it.img;
+      items.push(it);saveItem(it,photo);lp('meds_seed_'+sd.id,'1');render();
+    }catch(e){}
+  }
+}
+
 /* ---------- התחלה ---------- */
 (async()=>{
   pw=sg('hub_admin')||lg('hub_admin')||lg('meds_pw')||sg('hub_pw')||lg('hub_pw')||lg('shop_pw');
   render();
   if(!pw){await needLogin('');return}
-  await sync();render();
+  await sync();render();seedRun();
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')sync()});
 })();
 </script>
