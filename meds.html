@@ -424,13 +424,16 @@ function delLoc(i){const l=locs[i];if(items.some(x=>x.loc===l)&&!confirm(T('יש
 
 /* ---------- תרופות שהוכנסו מראש (נוספות פעם אחת לרשימה המשותפת, עם תמונה) ---------- */
 const SEEDS=[
-  {id:'seed-optalgin',he:'אופטלגין טיפות 500 מ״ג/מ״ל',en:'Optalgin Drops 500 mg/ml',desc:'משכך כאבים ומוריד חום. החומר הפעיל: דיפירון (מטמיזול). טיפות לשימוש דרך הפה, בקבוק 50 מ״ל.',desc_en:'Pain reliever and fever reducer. Active ingredient: dipyrone (metamizole). Oral drops, 50 ml bottle.',type:'liquid',qty:null,unit:'מ״ל',exp:'2028-12-31',loc:'',note:'',img:'brand/meds/optalgin.jpg'}
+  {id:'seed-optalgin',he:'אופטלגין טיפות 500 מ״ג/מ״ל',en:'Optalgin Drops 500 mg/ml',desc:'משכך כאבים ומוריד חום. החומר הפעיל: דיפירון (מטמיזול). טיפות לשימוש דרך הפה, בקבוק 50 מ״ל.',desc_en:'Pain reliever and fever reducer. Active ingredient: dipyrone (metamizole). Oral drops, 50 ml bottle.',type:'liquid',qty:null,unit:'מ״ל',exp:'2028-12-31',loc:'מטבח',note:'',img:'brand/meds/optalgin.jpg'}
 ];
 function urlToJpeg(u,max,q){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>{const k=Math.min(1,max/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};i.onerror=rej;i.src=u})}
 async function seedRun(){
   if(!pw)return;
   for(const sd of SEEDS){
-    if(lg('meds_seed_'+sd.id)||items.some(x=>x.id===sd.id)){lp('meds_seed_'+sd.id,'1');continue}
+    const ex=items.find(x=>x.id===sd.id);
+    /* כבר נוסף: משלימים רק מיקום שעוד לא נקבע (לא דורסים עריכה) */
+    if(ex){if(!ex.loc&&sd.loc){ex.loc=sd.loc;saveItem(ex);render()}lp('meds_seed_'+sd.id,'1');continue}
+    if(lg('meds_seed_'+sd.id))continue;
     try{
       const [photo,th]=await Promise.all([urlToJpeg(sd.img,900,.8),urlToJpeg(sd.img,160,.6)]);
       const it=Object.assign({},sd,{th});delete it.img;
