@@ -256,7 +256,7 @@ function render(){
   if(!items.length)h+=`<div class="empty">${T('עוד לא הוספת תרופות.<br>לחץ על ＋ וצלם את האריזה: השם, ההסבר והתוקף יתמלאו לבד.','No medicines yet.<br>Tap ＋ and take a photo of the box: name, description and expiry fill in automatically.')}</div>`;
   else if(!v.length)h+=`<div class="empty">${T('לא נמצאו תרופות.','No medicines found.')}</div>`;
   h+=v.map(it=>{const s=st(it),t=TYPES[it.type]||TYPES.other;
-    return `<div class="card ${s.k==='ok'?'':s.k}" data-id="${esc(it.id)}"><div class="th" style="${it.th?`background-image:url(${it.th})`:''}">${it.th?'':t[0]}</div>
+    return `<div class="card ${s.k==='ok'?'':s.k}" data-id="${esc(it.id)}"><div class="th" style="${seedImg(it,1)||it.th?`background-image:url(${seedImg(it,1)||it.th})`:''}">${seedImg(it,1)||it.th?'':t[0]}</div>
     <div class="ci"><b>${esc((EN?it.en||it.he:it.he||it.en)||T('תרופה','Medicine'))}</b>${it.en&&it.he?`<small>${esc(EN?it.he:it.en)}</small>`:''}
     <div class="meta"><span class="tag ${s.k}">${s.e!=null?'⏳ '+s.t:s.t}</span><span class="tag">📍 ${esc(locName(it.loc)||T('ללא מקום','No place'))}</span>${it.qty!=null&&it.qty!==''?`<span class="tag ${it.low!=null&&it.low!==''&&+it.qty<=+it.low?'x':''}">${esc(it.qty)} ${esc(it.unit||'')}</span>`:''}${it.opened?'<span class="tag">'+T('נפתח','Opened')+'</span>':''}</div></div></div>`}).join('');
   $('M').innerHTML=h;
@@ -272,7 +272,8 @@ async function openDetail(id){
   $('dtt').textContent=(EN?it.en||it.he:it.he||it.en)||T('תרופה','Medicine');
   const ds=EN?(it.desc_en||it.desc):(it.desc||it.desc_en);
   const log=(it.log||[]).slice(-5).reverse().map(l=>`<div class="log">• ${esc(l.d)} — ${esc(l.t)}</div>`).join('');
-  $('dtb').innerHTML=`${it.th||it.ph?`<img class="big" id="dph" src="${it.th||''}" alt="">`:''}${it.th2||it.ph2?`<img class="big" id="dph2" src="${it.th2||''}" alt="">`:''}
+  const s1=seedImg(it,1),s2=seedImg(it,2);
+  $('dtb').innerHTML=`${s1||it.th||it.ph?`<img class="big" id="dph" src="${s1||it.th||''}" alt="">`:''}${s2||it.th2||it.ph2?`<img class="big" id="dph2" src="${s2||it.th2||''}" alt="">`:''}
     ${(EN?it.he:it.en)?`<div style="color:var(--mut);font-weight:700">${esc(EN?it.he:it.en)}</div>`:''}
     ${ds?`<div class="desc">${esc(ds)}</div>`:''}
     <div class="kv"><span>${T('מיקום','Place')}</span><b>📍 ${esc(locName(it.loc)||T('ללא מקום','No place'))}</b></div>
@@ -292,7 +293,7 @@ async function openDetail(id){
     </div>
     <div class="note">${T('מידע כללי בלבד, לא תחליף לייעוץ רפואי.','General info only, not medical advice.')}</div>`;
   $('dt').showModal();
-  for(const [k,el] of [['ph','dph'],['ph2','dph2']])if(it[k]){try{const r=await api({op:'photo',ph:it[k]});if(r.ok&&cur===it&&$(el))$(el).src=r.data}catch(e){}}
+  for(const [k,el,si] of [['ph','dph',s1],['ph2','dph2',s2]])if(it[k]&&!si){try{const r=await api({op:'photo',ph:it[k]});if(r.ok&&cur===it&&$(el))$(el).src=r.data}catch(e){}}
 }
 function logUse(it,txt){it.log=(it.log||[]).concat({d:fmt(todayMs()).slice(0,5),t:txt}).slice(-20)}
 function useIt(){
@@ -406,7 +407,7 @@ $('fsave').onclick=()=>{
   it.opened=ftype==='pills'?'':$('fopen').value;
   const an=$('faftN').value;it.aft=ftype!=='pills'&&an&&+an>0?{n:+an,u:$('faftU').value}:null;
   it.note=$('fnote').value.trim();
-  if(thNew)it.th=thNew;if(th2New)it.th2=th2New;
+  if(thNew)it.th=thNew;if(th2New)it.th2=th2New;if(thNew||th2New)it.own=true;
   const i=items.findIndex(x=>x.id===it.id);if(i>=0)items[i]=it;else items.push(it);
   saveItem(it,photoNew,photo2New);$('ed').close();render();toast(T('נשמר ✅','Saved ✅'));
 };
@@ -447,6 +448,8 @@ const SEEDS=[
   {id:'seed-anaesthetic',he:'אנסתטיק טיפות אוזניים',en:'Anaesthetic ear drops (Amethocaine 0.5% + Phenazone 5%)',desc:'טיפות להקלה בכאב אוזניים (אמטוקאין ופנאזון). לשימוש באוזן בלבד. בקבוק 10 מ״ל.',desc_en:'Ear drops to relieve ear pain (amethocaine and phenazone). For use in the ear only. 10 ml bottle.',type:'liquid',qty:null,unit:'מ״ל',exp:'2027-05-31',loc:'מטבח',note:'',img:'brand/meds/anaesthetic.jpg',img2:'brand/meds/anaesthetic_date.jpg'},
   {id:'seed-nurofen40',he:'נורופן קפסולות נוזל 200 מ״ג (40)',en:'Nurofen Liquid Capsules 200 mg (40)',desc:'משכך כאבים, מוריד חום ונוגד דלקת (איבופרופן). משמש לכאבי ראש, שיניים, מחזור, שרירים וחום.',desc_en:'Pain reliever, fever reducer and anti-inflammatory (ibuprofen) for headache, toothache, period and muscle pain, and fever.',type:'pills',qty:40,unit:'קפסולות',exp:'2027-10-31',loc:'מטבח',note:'',img:'brand/meds/nurofen40.jpg',img2:'brand/meds/nurofen40_date.jpg'}
 ];
+/* תרופה שהוכנסה מראש: התמונה מוצגת ישר מהאתר (חדה ומהירה), עד שמחליפים אותה בעריכה */
+function seedImg(it,n){if(it.own)return'';const sd=SEEDS.find(x=>x.id===it.id);return sd?(n===2?sd.img2||'':sd.img||''):''}
 function urlToJpeg(u,max,q){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>{const k=Math.min(1,max/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};i.onerror=rej;i.src=u})}
 async function seedRun(){
   if(!pw)return;
