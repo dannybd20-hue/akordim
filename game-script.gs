@@ -23,7 +23,7 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 19; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 20; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
 function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
 
 function doPost(e) {
@@ -246,7 +246,7 @@ function game_(d, admin) {
     const def = gget_('gd:' + pin), pid = String(d.pid || ''), pl = gget_('gp:' + pin) || {};
     if (!pl[pid]) return { ok: true, kicked: true, phase: g.phase };
     const r = { ok: true, now: now, phase: g.phase, q: g.q, n: g.n, qStart: g.qStart, dur: g.dur, title: g.title, name: pl[pid],
-      score: g.scores[pid] || 0, last: g.last[pid] || null, closed: !!g.closed };
+      score: g.scores[pid] || 0, last: g.last[pid] || null, closed: !!g.closed, chg: g.chg !== false };
     if (g.phase === 'question' && def) {
       const Q = def.qs[g.q]; r.text = Q.t; r.ch = Q.ch; r.img = gget_('gi:' + pin + ':' + g.q) || null; // התמונה של השאלה (כתובת באתר), כדי שהשחקן יראה אותה גם בטלפון
       const my = gget_('ga:' + pin + ':' + g.q + ':' + pid);
@@ -274,7 +274,7 @@ function game_(d, admin) {
     const t = isFinite(el) && el >= 0 ? Math.max(st - 3000, Math.min(st, el)) : st;
     const k = 'ga:' + pin + ':' + g.q + ':' + String(d.pid || '');
     /* שינוי תשובה: מותר כל עוד הזמן של השאלה לא נגמר (התשובה האחרונה היא הקובעת, וגם הזמן שלה) */
-    if (CacheService.getScriptCache().get(k) && st > g.dur * 1000 + 1500) return { ok: true, already: true };
+    if (CacheService.getScriptCache().get(k) && (g.chg === false || st > g.dur * 1000 + 1500)) return { ok: true, already: true };
     gput_(k, { c: c, t: Math.max(0, t) });
     return { ok: true };
   }
@@ -333,6 +333,12 @@ function game_(d, admin) {
       gput_('gp:' + pin, pl2);
       return { ok: true };
     } finally { lock.releaseLock(); }
+  }
+
+  if (a === 'g_set') { // הגדרות המארח באמצע המשחק: chg = האם מותר לשנות תשובה עד שהזמן נגמר
+    const lock = LockService.getScriptLock(); lock.waitLock(10000);
+    try { const g2 = gget_('g:' + pin); if ('chg' in d) g2.chg = !!d.chg; gput_('g:' + pin, g2); return { ok: true, now: now, game: g2 }; }
+    finally { lock.releaseLock(); }
   }
 
   if (a === 'g_next') { // לובי ← שאלה ← חשיפה ← (טבלת מובילים לפי ההגדרה) ← שאלה ← ... ← סיום
