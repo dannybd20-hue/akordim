@@ -131,7 +131,7 @@ body.hot::after{opacity:1;animation:hotf 1s infinite}
 </style>
 </head>
 <body>
-<header><span id="logo"><img src="icons/apps-192.png" alt="" style="border-radius:12px"></span><h1 id="ttl">🎮 משחק חי</h1><button class="hb" id="altB" hidden></button><button class="hb" id="nextB" hidden onclick="next()"></button><button class="hb" id="gtB" hidden onclick="gotoQ()">☰ שאלות</button><button class="hb" id="qrB" hidden onclick="joinQR()">➕ 📷</button><button class="hb" id="plB" hidden onclick="manage()">👥</button><button class="hb" id="modeB" hidden onclick="setMode(!REM)"></button><button class="hb" id="backB" onclick="location.href='./'">→ אפליקציות</button></header>
+<header><span id="logo"><img src="icons/apps-192.png" alt="" style="border-radius:12px"></span><h1 id="ttl">🎮 משחק חי</h1><button class="hb" id="altB" hidden></button><button class="hb" id="nextB" hidden onclick="next()"></button><button class="hb" id="gtB" hidden onclick="gotoQ()">☰ שאלות</button><button class="hb" id="qrB" hidden onclick="joinQR()">➕ 📷</button><button class="hb" id="plB" hidden onclick="manage()">👥</button><button class="hb" id="chgB" hidden onclick="toggleChg()" title="האם שחקן יכול לשנות תשובה עד שהזמן נגמר"></button><button class="hb" id="modeB" hidden onclick="setMode(!REM)"></button><button class="hb" id="backB" onclick="location.href='./'">→ אפליקציות</button></header>
 <main id="M"><div class="spin"></div></main>
 <script>
 /* מסך המארח (מקרן / טלוויזיה): פותח משחק מטופס בוחן, מציג ברקוד וקוד, מריץ שאלות, טיימר, חשיפה וטבלת מובילים */
@@ -209,9 +209,13 @@ async function loop(){
 }
 function started(){try{localStorage.setItem('game_host_last',G.pin)}catch(e){}
  
-  $('backB').hidden=true;$('plB').hidden=false;$('qrB').hidden=false;$('gtB').hidden=false;$('modeB').hidden=false;modeLbl();
+  $('backB').hidden=true;$('plB').hidden=false;$('qrB').hidden=false;$('gtB').hidden=false;$('modeB').hidden=false;modeLbl();$('chgB').hidden=false;chgLbl();
   if(!looping){looping=setInterval(loop,1000);loop()}
 }
+/* שינוי תשובה: פתוח = שחקן יכול לשנות עד שהזמן נגמר (ולא עוברים לבד כשכולם ענו); סגור = תשובה ראשונה סופית, ועוברים כשכולם ענו */
+const chgOn=()=>G&&G.chg!==false;
+function chgLbl(){const b=$('chgB');if(b)b.textContent=chgOn()?'🔄 שינוי תשובה: פתוח':'🔒 שינוי תשובה: סגור'}
+async function toggleChg(){const v=!chgOn();G.chg=v;chgLbl();try{const r=await api({action:'g_set',pin:G.pin,chg:v?1:0});if(r.ok&&r.game){G.chg=r.game.chg;chgLbl()}}catch(e){}}
 function modeLbl(){$('modeB').textContent=REM?'🖥 מסך':'📱 שלט'}
 function setMode(r){REM=r;modeLbl();shown='';const u=new URL(location.href);u.searchParams.set('remote',r?1:0);history.replaceState(null,'',u);render()}
 /* שלט מצגת: PageDown / רווח / Enter / חץ שמאלה = הבא. B = הצג או דלג על טבלת המובילים. אין "אחורה" */
@@ -231,8 +235,8 @@ function render(){
   if(ph==='question'){
     if(REM)remote();else if(shown!==qk())showQ();
     else{const a=$('ansN');if(a)a.textContent=answered;waitList()}
-    /* כולם ענו: לא עוברים לבד, כי שחקנים יכולים לשנות תשובה עד שהזמן נגמר. אפשר ללחוץ "דלג" */
-    return}
+    /* כולם ענו: אם שינוי תשובה סגור עוברים לבד; אם פתוח מחכים לסוף הזמן (אפשר ללחוץ "דלג") */
+    if(!chgOn()&&players.length&&answered>=players.length)next();chgLbl();return}
   if(REM){remote();return}
   if(ph==='lobby'){updLobby();return}
   if(ph==='reveal'&&shown!=='r'+G.q)showReveal();
