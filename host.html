@@ -217,7 +217,8 @@ function setMode(r){REM=r;modeLbl();shown='';const u=new URL(location.href);u.se
 /* שלט מצגת: PageDown / רווח / Enter / חץ שמאלה = הבא. B = הצג או דלג על טבלת המובילים. אין "אחורה" */
 document.addEventListener('keydown',e=>{
   if(!G||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)||$('ov'))return;
-  if(['PageDown','ArrowLeft','ArrowDown',' ','Enter'].includes(e.key)){e.preventDefault();if(!$('nextB').hidden)next()}
+  /* במסך ההמתנה המשחק מתחיל רק בלחיצה על הכפתור, לא ממקש (אנטר/רווח/שלט) */
+  if(['PageDown','ArrowLeft','ArrowDown',' ','Enter'].includes(e.key)){e.preventDefault();if(!$('nextB').hidden&&G.phase!=='lobby')next()}
   else if(e.key==='b'||e.key==='B'||e.key==='נ'){e.preventDefault();const a=$('altB');if(!a.hidden)a.click()}
 });
 const qk=()=>'q'+G.q+':'+G.qStart;
