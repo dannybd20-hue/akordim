@@ -58,6 +58,7 @@ body.hot::after{opacity:1;animation:hotf 1s infinite}
 .imgb{border:1.5px solid var(--bd);background:var(--card);border-radius:99px;padding:5px 14px;font-weight:800;font-size:14px;cursor:pointer}
 .zoom{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:20;padding:10px}.zoom img{max-width:100%;max-height:100%;border-radius:10px;background:#fff}
 .net{font-size:13px;font-weight:800;color:var(--no)}
+.ans button.me{outline:5px solid #fff;box-shadow:0 0 0 9px rgba(0,0,0,.35);transform:scale(1.02)}
 .sent{font-size:15px;font-weight:800;color:var(--ok)}
 .rank{font-size:58px;font-weight:900;line-height:1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 </style>
@@ -124,10 +125,11 @@ function draw(){
   if(st.closed){if(shown!=='closed'){shown='closed';clearInterval(timer);document.body.classList.remove('hot');try{localStorage.removeItem('game_last')}catch(e){}M.innerHTML='<div class="big">המשחק נסגר</div><div class="mid">המארח סגר את המשחק</div>'}return}
   if(st.phase==='lobby'){if(shown!=='lobby'){shown='lobby';M.innerHTML=`<div class="big">אתה בפנים! 🎉</div><div class="mid">רואים את השם שלך על המסך?<br>מחכים שהמשחק יתחיל…</div><div class="spin"></div>`}return}
   if(st.phase==='question'){
-    if(st.answered){if(shown!==key){shown=key;pend=null;M.innerHTML=`<div class="big">✓ התשובה התקבלה</div>${mine()}<div class="mid">מחכים לשאר השחקנים…</div><div class="spin"></div>`}return}
+    const tl=()=>st.qStart+st.dur*1000-(Date.now()+off);
+    if(st.answered&&!(changing===st.q&&tl()>0)){if(shown!==key){shown=key;pend=null;M.innerHTML=`<span class="timer" id="tm"></span><div class="big">✓ התשובה התקבלה</div>${mine()}<button class="go" id="chg" style="max-width:380px;background:#fff;color:var(--pr);border:2px solid var(--pr);box-shadow:none" onclick="changeAns()">🔄 שינוי תשובה</button><div class="mid">אפשר לשנות עד שהזמן נגמר</div><div class="spin"></div>`;clearInterval(timer);timer=setInterval(tick,250);tick()}return}
     if(pend&&pend.q===st.q)return; // התשובה עדיין בדרך לשרת
-    if(shown!==key){shown=key;qShown=Date.now();
-      M.innerHTML=`<span class="timer" id="tm"></span><div class="qt">${esc(st.text)}</div>${st.img?`<div class="pimg"><img id="qimg" src="${esc(st.img)}" alt="" onclick="zoomImg(this.src)" ${showImg?'':'hidden'}><button class="imgb" id="imgb" onclick="toggleImg()">${showImg?'🖼 הסתר תמונה':'🖼 הצג תמונה'}</button></div>`:''}<div class="ans">${st.ch.map((c,i)=>`<button class="c${i}" onclick="answer(${i})"><span class="s">${SH[i]}</span>${esc(c)}</button>`).join('')}</div>`;
+    if(shown!==key+(changing===st.q?':c':'')){shown=key+(changing===st.q?':c':'');if(changing!==st.q)qShown=Date.now();
+      M.innerHTML=`<span class="timer" id="tm"></span><div class="qt">${esc(st.text)}</div>${st.img?`<div class="pimg"><img id="qimg" src="${esc(st.img)}" alt="" onclick="zoomImg(this.src)" ${showImg?'':'hidden'}><button class="imgb" id="imgb" onclick="toggleImg()">${showImg?'🖼 הסתר תמונה':'🖼 הצג תמונה'}</button></div>`:''}${changing===st.q?'<div class="mid">בחר תשובה חדשה</div>':''}<div class="ans">${st.ch.map((c,i)=>`<button class="c${i}${changing===st.q&&myC()===i?' me':''}" onclick="answer(${i})"><span class="s">${SH[i]}</span>${esc(c)}</button>`).join('')}</div>`;
       clearInterval(timer);timer=setInterval(tick,250);tick()}
     return;
   }
@@ -160,7 +162,7 @@ function hot(left){
   if(left===0&&lastTick!==0){lastTick=0;beep(300,.5);document.body.classList.remove('hot')}
   if(left>5)lastTick=-1;
 }
-function tick(){const left=Math.max(0,Math.ceil((st.qStart+st.dur*1000-(Date.now()+off))/1000));const t=$('tm');if(t)t.textContent='⏱ '+left;hot(left);if(!left)clearInterval(timer)}
+function tick(){const left=Math.max(0,Math.ceil((st.qStart+st.dur*1000-(Date.now()+off))/1000));const t=$('tm');if(t)t.textContent='⏱ '+left;hot(left);const b=$('chg');if(b&&!left)b.remove();if(!left)clearInterval(timer)}
 /* התמונה של השאלה: אפשר להסתיר (חוסך אינטרנט ומקום), והבחירה נשמרת. לחיצה על התמונה מגדילה אותה */
 let showImg=true;try{showImg=localStorage.getItem('game_img')!=='0'}catch(e){}
 function toggleImg(){showImg=!showImg;try{localStorage.setItem('game_img',showImg?'1':'0')}catch(e){}
@@ -188,7 +190,11 @@ async function regRetake(){
   catch(e){if(er)er.textContent='אין חיבור, נסה שוב'}
 }
 function copyRt(u){try{navigator.clipboard.writeText(u).then(()=>{const b=$('cpb');if(b)b.textContent='✓ הועתק'})}catch(e){prompt('העתק את הקישור',u)}}
-function mine(){const c=pend?pend.c:(window._mc&&_mc.q===st.q?_mc.c:-1);return c>=0&&st.ch?`<div class="qt c${c}" style="border-inline-start:6px solid var(--c)">${SH[c]} · ${esc(st.ch[c])}</div>`:''}
+let changing=-1;
+function myC(){return pend?pend.c:(window._mc&&_mc.q===st.q?_mc.c:(st.ac!=null?st.ac:-1))}
+/* שינוי תשובה: חוזרים למסך התשובות כל עוד הזמן רץ; התשובה החדשה מחליפה את הקודמת */
+function changeAns(){if(st.qStart+st.dur*1000-(Date.now()+off)<=0)return;changing=st.q;shown='';draw()}
+function mine(){const c=myC();return c>=0&&st.ch?`<div class="qt c${c}" style="border-inline-start:6px solid var(--c)">${SH[c]} · ${esc(st.ch[c])}</div>`:''}
 /* שליחת תשובה עם אישור קבלה: אם הקליטה חלשה מנסים שוב (השרת מתעלם מכפילויות).
    הזמן נמדד בטלפון מהרגע שהשאלה הופיעה, כדי שמי שהאינטרנט שלו איטי לא יפסיד נקודות */
 async function answer(i){
@@ -202,7 +208,7 @@ async function answer(i){
     try{const r=await api({action:'g_answer',pin,pid,c:i,el});lastOk=Date.now();
       if(!pend)return;
       if(!r.ok&&r.error==='late'){pend=null;shown=st.phase+':'+st.q+':1';M.innerHTML=`<div class="big">הזמן נגמר ⌛</div><div class="spin"></div>`;return}
-      if(r.ok){st.answered=true;shown='';pend=null;draw();return}
+      if(r.ok){st.answered=true;st.ac=i;changing=-1;shown='';pend=null;draw();return}
     }catch(e){}
   }
   if(pend){pend=null;shown='';draw()} // לא הצליח – מציגים שוב את התשובות כדי לנסות שוב
