@@ -231,7 +231,8 @@ function render(){
   if(ph==='question'){
     if(REM)remote();else if(shown!==qk())showQ();
     else{const a=$('ansN');if(a)a.textContent=answered;waitList()}
-    if(players.length&&answered>=players.length)next();return}
+    /* כולם ענו: לא עוברים לבד, כי שחקנים יכולים לשנות תשובה עד שהזמן נגמר. אפשר ללחוץ "דלג" */
+    return}
   if(REM){remote();return}
   if(ph==='lobby'){updLobby();return}
   if(ph==='reveal'&&shown!=='r'+G.q)showReveal();

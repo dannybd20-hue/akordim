@@ -23,7 +23,7 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 18; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 19; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
 function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
 
 function doPost(e) {
@@ -249,7 +249,8 @@ function game_(d, admin) {
       score: g.scores[pid] || 0, last: g.last[pid] || null, closed: !!g.closed };
     if (g.phase === 'question' && def) {
       const Q = def.qs[g.q]; r.text = Q.t; r.ch = Q.ch; r.img = gget_('gi:' + pin + ':' + g.q) || null; // התמונה של השאלה (כתובת באתר), כדי שהשחקן יראה אותה גם בטלפון
-      r.answered = !!CacheService.getScriptCache().get('ga:' + pin + ':' + g.q + ':' + pid);
+      const my = gget_('ga:' + pin + ':' + g.q + ':' + pid);
+      r.answered = !!my; if (my) r.ac = my.c; // התשובה שנבחרה, כדי שהשחקן יראה אותה ויוכל לשנות
     }
     if (g.phase === 'end' && g.pass && !g.closed) {
       const ex = gget_('gx:' + pin) || { cor: {}, reg: {} }, c = ex.cor[pid] || 0;
@@ -272,7 +273,8 @@ function game_(d, admin) {
     const el = Number(d.el);
     const t = isFinite(el) && el >= 0 ? Math.max(st - 3000, Math.min(st, el)) : st;
     const k = 'ga:' + pin + ':' + g.q + ':' + String(d.pid || '');
-    if (CacheService.getScriptCache().get(k)) return { ok: true, already: true };
+    /* שינוי תשובה: מותר כל עוד הזמן של השאלה לא נגמר (התשובה האחרונה היא הקובעת, וגם הזמן שלה) */
+    if (CacheService.getScriptCache().get(k) && st > g.dur * 1000 + 1500) return { ok: true, already: true };
     gput_(k, { c: c, t: Math.max(0, t) });
     return { ok: true };
   }
