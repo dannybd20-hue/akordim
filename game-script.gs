@@ -23,7 +23,7 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 25; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 26; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
 const CHANGE_SECONDS = 10; // ברירת מחדל: כמה שניות מהתשובה הראשונה שחקן יכול לשנות תשובה (המארח יכול לשנות במשחק)
 function chs_(g) { const n = Number(g.chs); return n > 0 ? n : CHANGE_SECONDS; }
 function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
@@ -174,6 +174,18 @@ const MOTO_QUIZ = {
 
 const GAMES = { hatzalah: HATZALAH_QUIZ, moto: MOTO_QUIZ };
 
+/* שאלון חד-פעמי: נכתב במסך המארח ונשלח עם פתיחת המשחק, לא נשמר בסקריפט */
+function custom_(c) {
+  if (!c || !Array.isArray(c.questions)) return null;
+  const qs = c.questions.slice(0, 60).map(function (x) {
+    const a = (Array.isArray(x.a) ? x.a : []).slice(0, 4).map(function (t) { return String(t || '').slice(0, 150).trim(); }).filter(String);
+    const r = Math.round(Number(x.right));
+    return { q: String(x.q || '').slice(0, 300).trim(), a: a, right: r >= 0 && r < a.length ? r : 0 };
+  }).filter(function (x) { return x.q && x.a.length >= 2; });
+  if (!qs.length) return null;
+  return { title: String(c.title || 'שאלון משפחתי').slice(0, 80).trim() || 'שאלון משפחתי', img: '', questions: qs };
+}
+
 /* ================= משחק חי בסגנון קהוט =================
    המארח פותח משחק מרשימת GAMES ומקבל קוד בן 6 ספרות. השחקנים נכנסים עם הקוד ושם,
    ורואים בטלפון כפתורים צבעוניים. ניקוד: תשובה נכונה = עד 1000 נקודות, לפי מהירות.
@@ -192,8 +204,8 @@ function game_(d, admin) {
   if (a === 'g_create') {
     if (!admin) return { ok: false, error: 'password' };
     /* משחק מהשאלות שבסקריפט (GAMES); התמונות נטענות ישירות מהאתר */
-    const G = GAMES[d.key];
-    if (!G) return { ok: false, error: 'משחק לא קיים' };
+    const G = d.key === '__custom' ? custom_(d.custom) : GAMES[d.key]; // __custom = שאלון חד-פעמי שנכתב במסך המארח
+    if (!G) return { ok: false, error: d.key === '__custom' ? 'השאלון לא תקין' : 'משחק לא קיים' };
     const def = { title: G.title, qs: G.questions.map(function (x) { return { t: x.q, ch: x.a, right: x.right }; }),
       imgs: G.questions.map(function (x) { return x.img ? G.img + x.img : null; }),
       rimgs: G.questions.map(function (x) { return x.rimg ? G.img + x.rimg : null; }) };
