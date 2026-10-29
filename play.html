@@ -109,7 +109,7 @@ async function poll(){
   if(busy)return;busy=true;
   try{const r=await api({action:'g_state',pin,pid});lastOk=Date.now();
     if(r.ok&&r.kicked){kicked();busy=false;return}
-    if(r.ok){off=r.now-Date.now();st=r;draw()}else if(r.error==='nogame'){try{localStorage.removeItem('game_last')}catch(e){}wait('המשחק הסתיים','אפשר לסגור את הדף')}}catch(e){}
+    if(r.ok){off=r.now-Date.now();st=r;sndLbl();draw()}else if(r.error==='nogame'){try{localStorage.removeItem('game_last')}catch(e){}wait('המשחק הסתיים','אפשר לסגור את הדף')}}catch(e){}
   busy=false;
 }
 function kicked(){
@@ -152,10 +152,12 @@ function draw(){
 let ac=null;
 /* צליל: אם הטלפון על שקט/רטט אפשר לכבות כאן. באייפון מתג השקט מנמיך לבד את הצליל */
 let snd=true;try{snd=localStorage.getItem('game_snd')!=='0'}catch(e){}
-function sndLbl(){const b=$('sndB');if(b)b.textContent=snd?'🔊':'🔇'}
+/* המארח יכול להפעיל צליל לכולם, גם למי שהשתיק */
+const sndOn=()=>snd||!!(st&&st.force);
+function sndLbl(){const b=$('sndB');if(b){b.textContent=sndOn()?'🔊':'🔇';b.title=st&&st.force&&!snd?'המארח הפעיל צליל לכולם':''}}
 function toggleSnd(){snd=!snd;try{localStorage.setItem('game_snd',snd?'1':'0')}catch(e){}sndLbl();if(snd)pick2()}
 function pick2(){beep(660,.08);setTimeout(()=>beep(880,.1),90)}
-function beep(f,d){if(!snd)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.18,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+function beep(f,d){if(!sndOn())return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.18,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.start();o.stop(ac.currentTime+d)}catch(e){}}
 /* צליל טעות (חצוצרה עצובה) + רטט (כשהמארח הפעיל "צליל טעות"). מתנגן גם אם השחקן השתיק את הצפצופים */
 function tromb(ac){
   /* "חצוצרה עצובה": וואה-וואה-וואה-וואאאה, ארבעה צלילים יורדים לאט, האחרון ארוך ורועד */
@@ -176,7 +178,7 @@ function buzz(){try{navigator.vibrate&&navigator.vibrate([450,150,450,150,450,15
   if(tromA&&tromA.src){try{tromA.muted=false;tromA.volume=1;tromA.currentTime=0;const p=tromA.play();if(p&&p.catch)p.catch(()=>webTromb());return}catch(e){}}webTromb()}
 function webTromb(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();tromb(ac)}catch(e){}}
 /* הקראה בקול (למשל "הזמן נגמר") */
-function say(t){if(!snd)return;try{const u=new SpeechSynthesisUtterance(t);u.lang='he-IL';u.rate=.95;u.volume=1;const v=speechSynthesis.getVoices().find(v=>/^he|^iw/i.test(v.lang));if(v)u.voice=v;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+function say(t){if(!sndOn())return;try{const u=new SpeechSynthesisUtterance(t);u.lang='he-IL';u.rate=.95;u.volume=1;const v=speechSynthesis.getVoices().find(v=>/^he|^iw/i.test(v.lang));if(v)u.voice=v;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
 /* פתיחת הצליל בלחיצה הראשונה (הטלפון לא מאפשר צליל בלי לחיצה קודמת) */
 let unl=false;
 function unlockAudio(){try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
