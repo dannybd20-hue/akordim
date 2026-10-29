@@ -131,7 +131,7 @@ body.hot::after{opacity:1;animation:hotf 1s infinite}
 </style>
 </head>
 <body>
-<header><span id="logo"><img src="icons/apps-192.png" alt="" style="border-radius:12px"></span><h1 id="ttl">🎮 משחק חי</h1><button class="hb" id="altB" hidden></button><button class="hb" id="nextB" hidden onclick="next()"></button><button class="hb" id="gtB" hidden onclick="gotoQ()">☰ שאלות</button><button class="hb" id="qrB" hidden onclick="joinQR()">➕ 📷</button><button class="hb" id="plB" hidden onclick="manage()">👥</button><button class="hb" id="chgB" hidden onclick="toggleChg()" title="האם שחקן יכול לשנות תשובה"></button><button class="hb" id="chsB" hidden onclick="setChs()" title="כמה שניות מהתשובה הראשונה אפשר לשנות"></button><button class="hb" id="modeB" hidden onclick="setMode(!REM)"></button><button class="hb" id="backB" onclick="location.href='./'">→ אפליקציות</button></header>
+<header><span id="logo"><img src="icons/apps-192.png" alt="" style="border-radius:12px"></span><h1 id="ttl">🎮 משחק חי</h1><button class="hb" id="altB" hidden></button><button class="hb" id="nextB" hidden onclick="next()"></button><button class="hb" id="gtB" hidden onclick="gotoQ()">☰ שאלות</button><button class="hb" id="qrB" hidden onclick="joinQR()">➕ 📷</button><button class="hb" id="plB" hidden onclick="manage()">👥</button><button class="hb" id="chgB" hidden onclick="toggleChg()" title="האם שחקן יכול לשנות תשובה"></button><button class="hb" id="chsB" hidden onclick="setChs()" title="כמה שניות מהתשובה הראשונה אפשר לשנות"></button><button class="hb" id="bzB" hidden onclick="toggleBuzz()" title="צליל חזק ורטט בטלפון של מי שטעה"></button><button class="hb" id="modeB" hidden onclick="setMode(!REM)"></button><button class="hb" id="backB" onclick="location.href='./'">→ אפליקציות</button></header>
 <main id="M"><div class="spin"></div></main>
 <script>
 /* מסך המארח (מקרן / טלוויזיה): פותח משחק מטופס בוחן, מציג ברקוד וקוד, מריץ שאלות, טיימר, חשיפה וטבלת מובילים */
@@ -209,10 +209,12 @@ async function loop(){
 }
 function started(){try{localStorage.setItem('game_host_last',G.pin)}catch(e){}
  
-  $('backB').hidden=true;$('plB').hidden=false;$('qrB').hidden=false;$('gtB').hidden=false;$('modeB').hidden=false;modeLbl();$('chgB').hidden=false;chgLbl();
+  $('backB').hidden=true;$('plB').hidden=false;$('qrB').hidden=false;$('gtB').hidden=false;$('modeB').hidden=false;modeLbl();$('chgB').hidden=false;chgLbl();$('bzB').hidden=false;bzLbl();
   if(!looping){looping=setInterval(loop,1000);loop()}
 }
 /* שינוי תשובה: פתוח = שחקן יכול לשנות עד שהזמן נגמר (ולא עוברים לבד כשכולם ענו); סגור = תשובה ראשונה סופית, ועוברים כשכולם ענו */
+function bzLbl(){const b=$('bzB');if(b)b.textContent=G&&G.buzz?'📢 צליל טעות: פתוח':'🔕 צליל טעות: סגור'}
+async function toggleBuzz(){const v=!(G&&G.buzz);G.buzz=v;bzLbl();try{const r=await api({action:'g_set',pin:G.pin,buzz:v?1:0});if(r.ok&&r.game){G.buzz=r.game.buzz;bzLbl()}}catch(e){}}
 const chgOn=()=>G&&G.chg!==false;
 function chgLbl(){const b=$('chgB');if(b)b.textContent=chgOn()?'🔄 שינוי תשובה: פתוח':'🔒 שינוי תשובה: סגור';const c=$('chsB');if(c){c.hidden=!b||b.hidden||!chgOn();c.textContent='⏱ '+chsN()+' שנ׳ לשינוי'}}
 const chsN=()=>(G&&G.chs>0)?G.chs:10;
