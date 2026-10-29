@@ -20,10 +20,15 @@ function dbdCert(o){
     x.fillStyle='#64748b';x.font='700 34px Heebo, Arial, sans-serif';x.fillText('על עמידה מוצלחת ב',W/2,630);
     x.fillStyle=DK;x.font='900 54px Heebo, Arial, sans-serif';
     const t=String(o.title||'');let s2=54;while(x.measureText(t).width>W-220&&s2>28){s2-=2;x.font='900 '+s2+'px Heebo, Arial, sans-serif'}
-    x.fillText(t,W/2,705);
-    if(o.score){x.fillStyle=OR;x.font='900 48px Heebo, Arial, sans-serif';x.fillText(o.score,W/2,785)}
+    x.fillText(t,W/2,690);
+    /* סוג הרכב: בוחן אופנוע = אופנוע, כל השאר = אמבולנס/רכב */
+    const veh=o.veh||(/אופנוע/.test(t)?'אופנוע':'אמבולנס/רכב');
+    x.font='900 40px Heebo, Arial, sans-serif';const vt='סוג רכב: '+veh,vw=x.measureText(vt).width+70;
+    x.fillStyle='#fff1e8';x.strokeStyle=OR;x.lineWidth=3;x.beginPath();x.roundRect?x.roundRect(W/2-vw/2,722,vw,62,31):x.rect(W/2-vw/2,722,vw,62);x.fill();x.stroke();
+    x.fillStyle=DK;x.fillText(vt,W/2,767);
+    if(o.score){x.fillStyle=OR;x.font='900 46px Heebo, Arial, sans-serif';x.fillText(o.score,W/2,840)}
     x.fillStyle='#64748b';x.font='600 28px Heebo, Arial, sans-serif';
-    x.fillText(new Date().toLocaleDateString('he-IL'),W/2,850);
+    x.fillText(new Date().toLocaleDateString('he-IL'),W/2,890);
     x.fillStyle='#94a3b8';x.font='600 22px Heebo, Arial, sans-serif';x.direction='rtl';
     x.fillText(o.id?('מזהה אימות: '+o.id):'',W/2,H-62);
     show(c,o);
