@@ -38,10 +38,16 @@ function show(c,o){
   const b=(t,f)=>{const e=document.createElement('button');e.textContent=t;e.style.cssText='border:0;border-radius:12px;padding:12px 18px;font:inherit;font-weight:900;font-size:16px;background:#f26a21;color:#fff;cursor:pointer';e.onclick=f;return e};
   const name='תעודת עובר - '+(o.name||'');
   const blob=()=>new Promise(r=>c.toBlob(r,'image/png'));
+  /* כפתור הורדה גדול ובולט בתחתית התעודה. באייפון אין הורדה ישירה, לכן נפתח חלון השמירה של המכשיר ("שמור תמונה") */
+  const dl=document.createElement('button');dl.textContent='⬇ הורדה';
+  dl.style.cssText='border:0;border-radius:16px;padding:16px 20px;width:min(100%,420px);font:inherit;font-weight:900;font-size:22px;color:#fff;cursor:pointer;background:linear-gradient(135deg,#f26a21,#ff9248);box-shadow:0 8px 24px rgba(242,106,33,.45),inset 0 -3px 0 rgba(0,0,0,.15)';
+  dl.onclick=async()=>{const bl=await blob();const ios=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+    if(ios){try{const f=new File([bl],name+'.png',{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}}catch(e){if(e&&e.name==='AbortError')return}}
+    const u=URL.createObjectURL(bl);const a=document.createElement('a');a.href=u;a.download=name+'.png';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000)};
   row.append(
-    b('⬇ הורדה',async()=>{const u=URL.createObjectURL(await blob());const a=document.createElement('a');a.href=u;a.download=name+'.png';document.body.append(a);a.click();a.remove()}),
     b('📤 שליחה',async()=>{try{const f=new File([await blob()],name+'.png',{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f],title:name});else{const u=URL.createObjectURL(f);window.open(u,'_blank')}}catch(e){}}),
     b('✕ סגירה',()=>ov.remove()));
   row.lastChild.style.background='#475569';
-  ov.append(c,row);ov.onclick=e=>{if(e.target===ov)ov.remove()};document.body.append(ov);
+  row.querySelectorAll('button').forEach(e=>{e.style.padding='10px 16px';e.style.fontSize='15px'});
+  ov.append(c,dl,row);ov.onclick=e=>{if(e.target===ov)ov.remove()};document.body.append(ov);
 }
