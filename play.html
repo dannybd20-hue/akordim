@@ -179,7 +179,7 @@ function buzz(){try{navigator.vibrate&&navigator.vibrate([450,150,450,150,450,15
   if(tromA&&tromA.src){try{tromA.muted=false;tromA.volume=1;tromA.currentTime=0;const p=tromA.play();if(p&&p.catch)p.catch(()=>webTromb());return}catch(e){}}webTromb()}
 function webTromb(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();tromb(ac)}catch(e){}}
 /* הקראה בקול (למשל "הזמן נגמר") */
-function say(t){if(!sndOn())return;try{const u=new SpeechSynthesisUtterance(t);u.lang='he-IL';u.rate=.95;u.volume=1;const v=speechSynthesis.getVoices().find(v=>/^he|^iw/i.test(v.lang));if(v)u.voice=v;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+function say(t){if(!sndOn())return;try{const u=new SpeechSynthesisUtterance(t);u.lang='he-IL';u.rate=.92;u.volume=1;const vs=speechSynthesis.getVoices().filter(v=>/^he|^iw/i.test(v.lang)),m=vs.find(v=>/asaf|avri|male|גבר/i.test(v.name)&&!/female/i.test(v.name)),v=m||vs[0];if(v)u.voice=v;u.pitch=m?1:.5; /* קול גבר: אם יש קול גברי בטלפון משתמשים בו, אחרת מנמיכים את הקול */speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
 /* פתיחת הצליל בלחיצה הראשונה (הטלפון לא מאפשר צליל בלי לחיצה קודמת) */
 let unl=false;
 function unlockAudio(){try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
