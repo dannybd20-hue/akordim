@@ -142,6 +142,7 @@ function draw(){
     M.innerHTML+=`<div class="mid">אתה במקום <b>${st.rank}</b> מתוך ${st.players}</div>`;
     if(st.rimg&&showImg)M.insertAdjacentHTML('beforeend',`<div class="pimg"><img src="${esc(st.rimg)}" alt="" onclick="zoomImg(this.src)"></div>`);
     if(L.ok&&window.confetti)confetti({particleCount:90,spread:75,origin:{y:.35}});
+    if(st.buzz&&!L.ok&&!L.none)buzz();
   }else if(st.phase==='leader'){M.innerHTML=`<div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות</div><div class="mid">מחכים לשאלה הבאה…</div>`}
   else if(st.phase==='end'){if(st.rank<=3&&window.confetti)confetti({particleCount:150,spread:100,origin:{y:.4}});M.innerHTML=examBlock()+`<div class="big">${st.rank===1?'🏆 ניצחת!':st.rank<=3?'🥈 על הפודיום!':'סוף המשחק'}</div><div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות · מתוך ${st.players} שחקנים</div>`}
 }
@@ -154,6 +155,13 @@ function sndLbl(){const b=$('sndB');if(b)b.textContent=snd?'🔊':'🔇'}
 function toggleSnd(){snd=!snd;try{localStorage.setItem('game_snd',snd?'1':'0')}catch(e){}sndLbl();if(snd)pick2()}
 function pick2(){beep(660,.08);setTimeout(()=>beep(880,.1),90)}
 function beep(f,d){if(!snd)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.18,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+/* צליל טעות חזק + רטט (כשהמארח הפעיל "צליל טעות"). מתנגן גם אם השחקן השתיק את הצפצופים */
+function buzz(){try{navigator.vibrate&&navigator.vibrate([500,120,500,120,800])}catch(e){}
+  try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const t=ac.currentTime,m=ac.createGain();m.gain.value=1;m.connect(ac.destination);
+    [0,.42,.84].forEach((d,i)=>{const len=i===2?.7:.34;[140,147].forEach(f=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sawtooth';o.frequency.value=f;o.connect(g);g.connect(m);
+      g.gain.setValueAtTime(0,t+d);g.gain.linearRampToValueAtTime(.5,t+d+.02);g.gain.setValueAtTime(.5,t+d+len-.05);g.gain.linearRampToValueAtTime(0,t+d+len);o.start(t+d);o.stop(t+d+len+.02)})})}catch(e){}}
+/* פתיחת הצליל בלחיצה הראשונה (הטלפון לא מאפשר צליל בלי לחיצה קודמת) */
+document.addEventListener('pointerdown',()=>{try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(e){}},true);
 let lastTick=-1;
 function hot(left){
   const t=$('tm');document.body.classList.toggle('hot',left>0&&left<=5);
