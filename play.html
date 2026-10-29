@@ -183,7 +183,7 @@ const WIN=['אלוף אתה אח שלי','כל הכבוד, תותח','וואו, 
 const LATE=['הזמן נגמר','שים לב, אתה לא עוקב אחרי הזמן?','נו, נרדמת?','הזמן עבר אחי, צריך להיות יותר מהיר','איפה היית? הזמן נגמר','תתעורר, הזמן נגמר','לאט לאט, אבל הזמן לא מחכה','בפעם הבאה תענה מהר יותר'];
 let lastW='';function pickW(a){let w;do{w=a[Math.floor(Math.random()*a.length)]}while(a.length>1&&w===lastW);lastW=w;return w}
 /* הקראה בקול (למשל "הזמן נגמר") */
-function say(t){if(!sndOn())return;try{const u=new SpeechSynthesisUtterance(t);u.lang='he-IL';u.rate=.95;u.volume=1;const v=speechSynthesis.getVoices().find(v=>/^he|^iw/i.test(v.lang));if(v)u.voice=v;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+function say(t){if(!sndOn())return;try{const u=new SpeechSynthesisUtterance(t);u.lang='he-IL';u.rate=1;u.pitch=1.1;u.volume=1;const vs=speechSynthesis.getVoices().filter(v=>/^he|^iw/i.test(v.lang)),v=vs.find(v=>/female|carmit|hila|אישה/i.test(v.name))||vs.find(v=>!/male|asaf/i.test(v.name))||vs[0];if(v)u.voice=v; /* קול אישה רגיל */speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
 /* פתיחת הצליל בלחיצה הראשונה (הטלפון לא מאפשר צליל בלי לחיצה קודמת) */
 let unl=false;
 function unlockAudio(){try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
