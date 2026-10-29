@@ -23,8 +23,9 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 21;
-const CHANGE_SECONDS = 10; // כמה שניות מהתשובה הראשונה שחקן יכול לשנות תשובה (כשהשינוי פתוח) // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 22; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const CHANGE_SECONDS = 10; // ברירת מחדל: כמה שניות מהתשובה הראשונה שחקן יכול לשנות תשובה (המארח יכול לשנות במשחק)
+function chs_(g) { const n = Number(g.chs); return n > 0 ? n : CHANGE_SECONDS; }
 function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
 
 function doPost(e) {
@@ -247,11 +248,11 @@ function game_(d, admin) {
     const def = gget_('gd:' + pin), pid = String(d.pid || ''), pl = gget_('gp:' + pin) || {};
     if (!pl[pid]) return { ok: true, kicked: true, phase: g.phase };
     const r = { ok: true, now: now, phase: g.phase, q: g.q, n: g.n, qStart: g.qStart, dur: g.dur, title: g.title, name: pl[pid],
-      score: g.scores[pid] || 0, last: g.last[pid] || null, closed: !!g.closed, chg: g.chg !== false };
+      score: g.scores[pid] || 0, last: g.last[pid] || null, closed: !!g.closed, chg: g.chg !== false, chs: chs_(g) };
     if (g.phase === 'question' && def) {
       const Q = def.qs[g.q]; r.text = Q.t; r.ch = Q.ch; r.img = gget_('gi:' + pin + ':' + g.q) || null; // התמונה של השאלה (כתובת באתר), כדי שהשחקן יראה אותה גם בטלפון
       const my = gget_('ga:' + pin + ':' + g.q + ':' + pid);
-      r.answered = !!my; if (my) { r.ac = my.c; r.until = (my.at || 0) + CHANGE_SECONDS * 1000; } // התשובה שנבחרה ועד מתי אפשר לשנות
+      r.answered = !!my; if (my) { r.ac = my.c; r.until = (my.at || 0) + chs_(g) * 1000; } // התשובה שנבחרה ועד מתי אפשר לשנות
     }
     if (g.phase === 'end' && g.pass && !g.closed) {
       const ex = gget_('gx:' + pin) || { cor: {}, reg: {} }, c = ex.cor[pid] || 0;
@@ -277,9 +278,9 @@ function game_(d, admin) {
     /* שינוי תשובה: מותר רק CHANGE_SECONDS שניות מהתשובה הראשונה, וכל עוד הזמן של השאלה לא נגמר.
        התשובה האחרונה היא הקובעת, וגם הזמן שלה */
     const prev = gget_(k);
-    if (prev && (g.chg === false || st > g.dur * 1000 + 1500 || now - (prev.at || 0) > CHANGE_SECONDS * 1000 + 1500)) return { ok: true, already: true };
+    if (prev && (g.chg === false || st > g.dur * 1000 + 1500 || now - (prev.at || 0) > chs_(g) * 1000 + 1500)) return { ok: true, already: true };
     gput_(k, { c: c, t: Math.max(0, t), at: prev ? prev.at : now });
-    return { ok: true, until: (prev ? prev.at : now) + CHANGE_SECONDS * 1000, now: now };
+    return { ok: true, until: (prev ? prev.at : now) + chs_(g) * 1000, now: now };
   }
 
   if (a === 'g_retake') { // שחקן שנכשל נרשם לבחינה חוזרת ומקבל קוד
@@ -340,7 +341,7 @@ function game_(d, admin) {
 
   if (a === 'g_set') { // הגדרות המארח באמצע המשחק: chg = האם מותר לשנות תשובה עד שהזמן נגמר
     const lock = LockService.getScriptLock(); lock.waitLock(10000);
-    try { const g2 = gget_('g:' + pin); if ('chg' in d) g2.chg = !!d.chg; gput_('g:' + pin, g2); return { ok: true, now: now, game: g2 }; }
+    try { const g2 = gget_('g:' + pin); if ('chg' in d) g2.chg = !!d.chg; if ('chs' in d) { const n = Math.round(Number(d.chs)); if (n > 0 && n <= 600) g2.chs = n; } gput_('g:' + pin, g2); return { ok: true, now: now, game: g2 }; }
     finally { lock.releaseLock(); }
   }
 

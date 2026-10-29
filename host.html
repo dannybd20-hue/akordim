@@ -131,7 +131,7 @@ body.hot::after{opacity:1;animation:hotf 1s infinite}
 </style>
 </head>
 <body>
-<header><span id="logo"><img src="icons/apps-192.png" alt="" style="border-radius:12px"></span><h1 id="ttl">🎮 משחק חי</h1><button class="hb" id="altB" hidden></button><button class="hb" id="nextB" hidden onclick="next()"></button><button class="hb" id="gtB" hidden onclick="gotoQ()">☰ שאלות</button><button class="hb" id="qrB" hidden onclick="joinQR()">➕ 📷</button><button class="hb" id="plB" hidden onclick="manage()">👥</button><button class="hb" id="chgB" hidden onclick="toggleChg()" title="האם שחקן יכול לשנות תשובה עד שהזמן נגמר"></button><button class="hb" id="modeB" hidden onclick="setMode(!REM)"></button><button class="hb" id="backB" onclick="location.href='./'">→ אפליקציות</button></header>
+<header><span id="logo"><img src="icons/apps-192.png" alt="" style="border-radius:12px"></span><h1 id="ttl">🎮 משחק חי</h1><button class="hb" id="altB" hidden></button><button class="hb" id="nextB" hidden onclick="next()"></button><button class="hb" id="gtB" hidden onclick="gotoQ()">☰ שאלות</button><button class="hb" id="qrB" hidden onclick="joinQR()">➕ 📷</button><button class="hb" id="plB" hidden onclick="manage()">👥</button><button class="hb" id="chgB" hidden onclick="toggleChg()" title="האם שחקן יכול לשנות תשובה"></button><button class="hb" id="chsB" hidden onclick="setChs()" title="כמה שניות מהתשובה הראשונה אפשר לשנות"></button><button class="hb" id="modeB" hidden onclick="setMode(!REM)"></button><button class="hb" id="backB" onclick="location.href='./'">→ אפליקציות</button></header>
 <main id="M"><div class="spin"></div></main>
 <script>
 /* מסך המארח (מקרן / טלוויזיה): פותח משחק מטופס בוחן, מציג ברקוד וקוד, מריץ שאלות, טיימר, חשיפה וטבלת מובילים */
@@ -214,7 +214,9 @@ function started(){try{localStorage.setItem('game_host_last',G.pin)}catch(e){}
 }
 /* שינוי תשובה: פתוח = שחקן יכול לשנות עד שהזמן נגמר (ולא עוברים לבד כשכולם ענו); סגור = תשובה ראשונה סופית, ועוברים כשכולם ענו */
 const chgOn=()=>G&&G.chg!==false;
-function chgLbl(){const b=$('chgB');if(b)b.textContent=chgOn()?'🔄 שינוי תשובה: פתוח':'🔒 שינוי תשובה: סגור'}
+function chgLbl(){const b=$('chgB');if(b)b.textContent=chgOn()?'🔄 שינוי תשובה: פתוח':'🔒 שינוי תשובה: סגור';const c=$('chsB');if(c){c.hidden=!b||b.hidden||!chgOn();c.textContent='⏱ '+chsN()+' שנ׳ לשינוי'}}
+const chsN=()=>(G&&G.chs>0)?G.chs:10;
+async function setChs(){const v=prompt('כמה שניות אפשר לשנות תשובה (מהתשובה הראשונה)?',chsN());if(v==null)return;const n=Math.round(Number(v));if(!(n>0&&n<=600)){alert('מספר בין 1 ל-600');return}G.chs=n;chgLbl();try{const r=await api({action:'g_set',pin:G.pin,chs:n});if(r.ok&&r.game){G.chs=r.game.chs;chgLbl()}}catch(e){}}
 async function toggleChg(){const v=!chgOn();G.chg=v;chgLbl();try{const r=await api({action:'g_set',pin:G.pin,chg:v?1:0});if(r.ok&&r.game){G.chg=r.game.chg;chgLbl()}}catch(e){}}
 function modeLbl(){$('modeB').textContent=REM?'🖥 מסך':'📱 שלט'}
 function setMode(r){REM=r;modeLbl();shown='';const u=new URL(location.href);u.searchParams.set('remote',r?1:0);history.replaceState(null,'',u);render()}
