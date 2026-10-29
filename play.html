@@ -137,14 +137,14 @@ function draw(){
   if(shown===key)return;shown=key;
   pend=null;const L=st.last||{none:true};
   if(st.phase==='reveal'){
-    if(L.none&&tUp!==st.q){tUp=st.q;say('הזמן נגמר')}
+    if(L.none&&tUp!==st.q){tUp=st.q;say(pickW(LATE))}
     M.innerHTML=L.none?`<div class="res no"><div class="ic">⌛</div><div class="big">הזמן נגמר!</div><div class="pts">לא ענית בזמן</div></div>`:
       `<div class="res ${L.ok?'ok':'no'}"><div class="ic">${L.ok?'✓':'✗'}</div><div class="big">${L.ok?'נכון!':'לא נכון'}</div><div class="pts">+${L.p}</div></div>`;
     M.innerHTML+=`<div class="mid">אתה במקום <b>${st.rank}</b> מתוך ${st.players}</div>`;
     if(st.rimg&&showImg)M.insertAdjacentHTML('beforeend',`<div class="pimg"><img src="${esc(st.rimg)}" alt="" onclick="zoomImg(this.src)"></div>`);
     if(L.ok&&window.confetti)confetti({particleCount:90,spread:75,origin:{y:.35}});
     if(st.buzz&&!L.ok&&!L.none)buzz();
-    if(L.ok){say('אלוף אתה אח שלי');M.insertAdjacentHTML('afterbegin','<div class="big" style="margin-bottom:6px">🏆 אלוף אתה אח שלי!</div>')}
+    if(L.ok){const w=pickW(WIN);say(w);M.insertAdjacentHTML('afterbegin','<div class="big" style="margin-bottom:6px">🏆 '+w+'!</div>')}
   }else if(st.phase==='leader'){M.innerHTML=`<div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות</div><div class="mid">מחכים לשאלה הבאה…</div>`}
   else if(st.phase==='end'){if(st.rank<=3&&window.confetti)confetti({particleCount:150,spread:100,origin:{y:.4}});M.innerHTML=examBlock()+`<div class="big">${st.rank===1?'🏆 ניצחת!':st.rank<=3?'🥈 על הפודיום!':'סוף המשחק'}</div><div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות · מתוך ${st.players} שחקנים</div>`}
 }
@@ -178,6 +178,10 @@ function prepTromb(){if(tromA)return;try{tromA=new Audio();tromA.preload='auto';
 function buzz(){try{navigator.vibrate&&navigator.vibrate([450,150,450,150,450,150,1200])}catch(e){}
   if(tromA&&tromA.src){try{tromA.muted=false;tromA.volume=1;tromA.currentTime=0;const p=tromA.play();if(p&&p.catch)p.catch(()=>webTromb());return}catch(e){}}webTromb()}
 function webTromb(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();tromb(ac)}catch(e){}}
+/* משפטים להקראה: אחד אקראי בכל פעם (אפשר להוסיף/לשנות) */
+const WIN=['אלוף אתה אח שלי','כל הכבוד, תותח','וואו, איזה גאון','בול! אתה מלך','יפה מאוד, ככה עושים את זה','מקצוען אמיתי','אש עליך','אין עליך, אחי','נכון! אתה פשוט אלוף','תשובה של מומחה'];
+const LATE=['הזמן נגמר','שים לב, אתה לא עוקב אחרי הזמן?','נו, נרדמת?','הזמן עבר אחי, צריך להיות יותר מהיר','איפה היית? הזמן נגמר','תתעורר, הזמן נגמר','לאט לאט, אבל הזמן לא מחכה','בפעם הבאה תענה מהר יותר'];
+let lastW='';function pickW(a){let w;do{w=a[Math.floor(Math.random()*a.length)]}while(a.length>1&&w===lastW);lastW=w;return w}
 /* הקראה בקול (למשל "הזמן נגמר") */
 function say(t){if(!sndOn())return;try{const u=new SpeechSynthesisUtterance(t);u.lang='he-IL';u.rate=.92;u.volume=1;const vs=speechSynthesis.getVoices().filter(v=>/^he|^iw/i.test(v.lang)),m=vs.find(v=>/asaf|avri|male|גבר/i.test(v.name)&&!/female/i.test(v.name)),v=m||vs[0];if(v)u.voice=v;u.pitch=m?1:.5; /* קול גבר: אם יש קול גברי בטלפון משתמשים בו, אחרת מנמיכים את הקול */speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
 /* פתיחת הצליל בלחיצה הראשונה (הטלפון לא מאפשר צליל בלי לחיצה קודמת) */
@@ -198,7 +202,7 @@ function hot(left){
   if(left>5)lastTick=-1;
 }
 function tick(){const left=Math.max(0,Math.ceil((st.qStart+st.dur*1000-(Date.now()+off))/1000));const t=$('tm');if(t)t.textContent='⏱ '+left;hot(left);
-  if(!left&&st.phase==='question'&&!st.answered&&!pend&&tUp!==st.q){tUp=st.q;changing=-1;M.innerHTML='<div class="res no"><div class="ic">⌛</div><div class="big">הזמן נגמר!</div></div><div class="mid">מחכים לתשובה הנכונה…</div><div class="spin"></div>';say('הזמן נגמר');try{navigator.vibrate&&navigator.vibrate([300,100,300])}catch(e){}clearInterval(timer);return}const b=$('chg'),ct=$('chgT'),cl=Math.ceil(chgLeft()/1000);
+  if(!left&&st.phase==='question'&&!st.answered&&!pend&&tUp!==st.q){tUp=st.q;changing=-1;const w=pickW(LATE);M.innerHTML='<div class="res no"><div class="ic">⌛</div><div class="big">הזמן נגמר!</div></div><div class="mid"><b>'+w+'</b></div><div class="mid">מחכים לתשובה הנכונה…</div><div class="spin"></div>';say(w);try{navigator.vibrate&&navigator.vibrate([300,100,300])}catch(e){}clearInterval(timer);return}const b=$('chg'),ct=$('chgT'),cl=Math.ceil(chgLeft()/1000);
   if(b){if(cl<=0){b.remove();if(ct)ct.textContent='מחכים לשאר השחקנים…'}else if(ct)ct.textContent='אפשר לשנות עוד '+cl+' שניות'}
   if(changing===st.q&&!pend){const h=$('chgH');if(cl<=0){changing=-1;shown='';draw();return}if(h)h.textContent='בחר תשובה חדשה · עוד '+cl+' שניות'}if(!left)clearInterval(timer)}
 /* התמונה של השאלה: אפשר להסתיר (חוסך אינטרנט ומקום), והבחירה נשמרת. לחיצה על התמונה מגדילה אותה */
