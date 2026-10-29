@@ -23,7 +23,7 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 23; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 24; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
 const CHANGE_SECONDS = 10; // ברירת מחדל: כמה שניות מהתשובה הראשונה שחקן יכול לשנות תשובה (המארח יכול לשנות במשחק)
 function chs_(g) { const n = Number(g.chs); return n > 0 ? n : CHANGE_SECONDS; }
 function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
@@ -248,7 +248,7 @@ function game_(d, admin) {
     const def = gget_('gd:' + pin), pid = String(d.pid || ''), pl = gget_('gp:' + pin) || {};
     if (!pl[pid]) return { ok: true, kicked: true, phase: g.phase };
     const r = { ok: true, now: now, phase: g.phase, q: g.q, n: g.n, qStart: g.qStart, dur: g.dur, title: g.title, name: pl[pid],
-      score: g.scores[pid] || 0, last: g.last[pid] || null, closed: !!g.closed, chg: g.chg !== false, chs: chs_(g), buzz: !!g.buzz };
+      score: g.scores[pid] || 0, last: g.last[pid] || null, closed: !!g.closed, chg: g.chg !== false, chs: chs_(g), buzz: !!g.buzz, force: !!g.force };
     if (g.phase === 'question' && def) {
       const Q = def.qs[g.q]; r.text = Q.t; r.ch = Q.ch; r.img = gget_('gi:' + pin + ':' + g.q) || null; // התמונה של השאלה (כתובת באתר), כדי שהשחקן יראה אותה גם בטלפון
       const my = gget_('ga:' + pin + ':' + g.q + ':' + pid);
@@ -341,7 +341,7 @@ function game_(d, admin) {
 
   if (a === 'g_set') { // הגדרות המארח באמצע המשחק: chg = האם מותר לשנות תשובה עד שהזמן נגמר
     const lock = LockService.getScriptLock(); lock.waitLock(10000);
-    try { const g2 = gget_('g:' + pin); if ('chg' in d) g2.chg = !!d.chg; if ('buzz' in d) g2.buzz = !!d.buzz; if ('chs' in d) { const n = Math.round(Number(d.chs)); if (n > 0 && n <= 600) g2.chs = n; } gput_('g:' + pin, g2); return { ok: true, now: now, game: g2 }; }
+    try { const g2 = gget_('g:' + pin); if ('chg' in d) g2.chg = !!d.chg; if ('buzz' in d) g2.buzz = !!d.buzz; if ('force' in d) g2.force = !!d.force; if ('chs' in d) { const n = Math.round(Number(d.chs)); if (n > 0 && n <= 600) g2.chs = n; } gput_('g:' + pin, g2); return { ok: true, now: now, game: g2 }; }
     finally { lock.releaseLock(); }
   }
 
