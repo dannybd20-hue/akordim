@@ -22,7 +22,7 @@ function dbdCert(o){
     const t=String(o.title||'');let s2=54;while(x.measureText(t).width>W-220&&s2>28){s2-=2;x.font='900 '+s2+'px Heebo, Arial, sans-serif'}
     x.fillText(t,W/2,690);
     /* סוג הרכב: בוחן אופנוע = אופנוע, כל השאר = אמבולנס/רכב */
-    const veh=o.veh||(/אופנוע/.test(t)?'אופנוע':'אמבולנס/רכב');
+    const veh=o.veh||(/אופנוע/.test(t)?'אופנוע':'רכב/אמבולנס');
     x.font='900 40px Heebo, Arial, sans-serif';const vt='סוג רכב: '+veh,vw=x.measureText(vt).width+70;
     x.fillStyle='#fff1e8';x.strokeStyle=OR;x.lineWidth=3;x.beginPath();x.roundRect?x.roundRect(W/2-vw/2,722,vw,62,31):x.rect(W/2-vw/2,722,vw,62);x.fill();x.stroke();
     x.fillStyle=DK;x.fillText(vt,W/2,767);

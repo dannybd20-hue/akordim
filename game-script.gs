@@ -23,7 +23,7 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 24; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 25; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
 const CHANGE_SECONDS = 10; // ברירת מחדל: כמה שניות מהתשובה הראשונה שחקן יכול לשנות תשובה (המארח יכול לשנות במשחק)
 function chs_(g) { const n = Number(g.chs); return n > 0 ? n : CHANGE_SECONDS; }
 function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
@@ -50,7 +50,7 @@ const HATZALAH_QUIZ = {
   passCorrect: 10,       // מבחן: כמה תשובות נכונות צריך כדי לעבור (0 = בלי מבחן, משחק רגיל)
   retakeCount: 10,       // בחינה חוזרת: כמה שאלות אקראיות מתוך כל השאלות
   retakePassCorrect: 8,  // בחינה חוזרת: כמה נכונות צריך כדי לעבור (8 מתוך 10 = 80%)
-  title: 'איחוד הצלה – בוחן ריענון נהיגה ובטיחות',
+  title: 'איחוד הצלה - רכב/אמבולנס',
   description: 'בוחן לפי השתלמות הבטיחות השנתית 2026 ורענון הנהיגה המקצועי 2025 של מחלקת קציני הבטיחות. 38 שאלות, בהצלחה!',
   img: 'https://dannybd20-hue.github.io/akordim/brand/uh/',
   questions: [
@@ -123,7 +123,7 @@ const MOTO_QUIZ = {
   passCorrect: 10,       // מבחן: כמה תשובות נכונות צריך כדי לעבור
   retakeCount: 10,       // בחינה חוזרת: כמה שאלות אקראיות מתוך כל השאלות
   retakePassCorrect: 8,  // בחינה חוזרת: כמה נכונות צריך כדי לעבור (8 מתוך 10 = 80%)
-  title: 'בוחן בטיחות אופנוע',
+  title: 'איחוד הצלה - אופנוע',
   description: 'בוחן בטיחות לרוכבי אופנוע, לפי קורס רוכבי האופנוע 2026.',
   img: 'https://dannybd20-hue.github.io/akordim/brand/',
   questions: [
