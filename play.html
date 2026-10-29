@@ -144,6 +144,7 @@ function draw(){
     if(st.rimg&&showImg)M.insertAdjacentHTML('beforeend',`<div class="pimg"><img src="${esc(st.rimg)}" alt="" onclick="zoomImg(this.src)"></div>`);
     if(L.ok&&window.confetti)confetti({particleCount:90,spread:75,origin:{y:.35}});
     if(st.buzz&&!L.ok&&!L.none)buzz();
+    if(L.ok){say('אלוף אתה אח שלי');M.insertAdjacentHTML('afterbegin','<div class="big" style="margin-bottom:6px">🏆 אלוף אתה אח שלי!</div>')}
   }else if(st.phase==='leader'){M.innerHTML=`<div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות</div><div class="mid">מחכים לשאלה הבאה…</div>`}
   else if(st.phase==='end'){if(st.rank<=3&&window.confetti)confetti({particleCount:150,spread:100,origin:{y:.4}});M.innerHTML=examBlock()+`<div class="big">${st.rank===1?'🏆 ניצחת!':st.rank<=3?'🥈 על הפודיום!':'סוף המשחק'}</div><div class="mid">המקום שלך</div><div class="rank">${st.rank}</div><div class="mid">${st.score.toLocaleString('he-IL')} נקודות · מתוך ${st.players} שחקנים</div>`}
 }
