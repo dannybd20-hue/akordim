@@ -137,7 +137,8 @@ function draw(){
   if(shown===key)return;shown=key;
   pend=null;const L=st.last||{none:true};
   if(st.phase==='reveal'){
-    M.innerHTML=L.none?`<div class="res no"><div class="ic">⌛</div><div class="big">לא ענית בזמן</div></div>`:
+    if(L.none&&tUp!==st.q){tUp=st.q;say('הזמן נגמר')}
+    M.innerHTML=L.none?`<div class="res no"><div class="ic">⌛</div><div class="big">הזמן נגמר!</div><div class="pts">לא ענית בזמן</div></div>`:
       `<div class="res ${L.ok?'ok':'no'}"><div class="ic">${L.ok?'✓':'✗'}</div><div class="big">${L.ok?'נכון!':'לא נכון'}</div><div class="pts">+${L.p}</div></div>`;
     M.innerHTML+=`<div class="mid">אתה במקום <b>${st.rank}</b> מתוך ${st.players}</div>`;
     if(st.rimg&&showImg)M.insertAdjacentHTML('beforeend',`<div class="pimg"><img src="${esc(st.rimg)}" alt="" onclick="zoomImg(this.src)"></div>`);
@@ -156,18 +157,36 @@ function toggleSnd(){snd=!snd;try{localStorage.setItem('game_snd',snd?'1':'0')}c
 function pick2(){beep(660,.08);setTimeout(()=>beep(880,.1),90)}
 function beep(f,d){if(!snd)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.18,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.start();o.stop(ac.currentTime+d)}catch(e){}}
 /* צליל טעות (חצוצרה עצובה) + רטט (כשהמארח הפעיל "צליל טעות"). מתנגן גם אם השחקן השתיק את הצפצופים */
-function buzz(){try{navigator.vibrate&&navigator.vibrate([450,150,450,150,450,150,1200])}catch(e){}
+function tromb(ac){
   /* "חצוצרה עצובה": וואה-וואה-וואה-וואאאה, ארבעה צלילים יורדים לאט, האחרון ארוך ורועד */
-  try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();const t0=ac.currentTime+.05,m=ac.createGain();m.gain.value=.65;m.connect(ac.destination);
+  try{const t0=ac.currentTime+.05,m=ac.createGain();m.gain.value=.65;m.connect(ac.destination);
     [[293.7,0,.6],[277.2,.65,.6],[261.6,1.3,.6],[246.9,1.95,1.7]].forEach(([f,d,len],i)=>{const t=t0+d,last=i===3;
       const lp=ac.createBiquadFilter();lp.type='lowpass';lp.Q.value=4;lp.frequency.setValueAtTime(400,t);lp.frequency.linearRampToValueAtTime(2400,t+.15);lp.frequency.linearRampToValueAtTime(900,t+len);lp.connect(m);
       const g=ac.createGain();g.connect(lp);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.55,t+.08);g.gain.setValueAtTime(.5,t+len-.25);g.gain.linearRampToValueAtTime(0,t+len);
       [1,1.004].forEach(k=>{const o=ac.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(f*k,t);o.frequency.linearRampToValueAtTime(f*k*.985,t+len);
         if(last){o.frequency.linearRampToValueAtTime(f*k*.94,t+len);const v=ac.createOscillator(),vg=ac.createGain();v.frequency.value=5.5;vg.gain.setValueAtTime(0,t);vg.gain.linearRampToValueAtTime(f*.03,t+.5);v.connect(vg);vg.connect(o.frequency);v.start(t);v.stop(t+len+.05)}
         o.connect(g);o.start(t);o.stop(t+len+.05)})})}catch(e){}}
+/* הצליל נשמר כקובץ ומתנגן דרך נגן רגיל: כך הוא נשמע גם באייפון (גם כשהטלפון על שקט) ובקול מלא */
+let tromA=null;
+function prepTromb(){if(tromA)return;try{tromA=new Audio();tromA.preload='auto';const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext,oc=new OC(1,44100*3.9,44100);tromb(oc);
+  oc.startRendering().then(buf=>{const x=buf.getChannelData(0),n=x.length,ab=new ArrayBuffer(44+n*2),dv=new DataView(ab),w=(o,t)=>{for(let k=0;k<t.length;k++)dv.setUint8(o+k,t.charCodeAt(k))};
+    w(0,'RIFF');dv.setUint32(4,36+n*2,true);w(8,'WAVEfmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);dv.setUint32(24,44100,true);dv.setUint32(28,88200,true);dv.setUint16(32,2,true);dv.setUint16(34,16,true);w(36,'data');dv.setUint32(40,n*2,true);
+    for(let k=0;k<n;k++)dv.setInt16(44+k*2,Math.max(-1,Math.min(1,x[k]))*32767,true);tromA.src=URL.createObjectURL(new Blob([ab],{type:'audio/wav'}))}).catch(()=>{})}catch(e){}}
+function buzz(){try{navigator.vibrate&&navigator.vibrate([450,150,450,150,450,150,1200])}catch(e){}
+  if(tromA&&tromA.src){try{tromA.muted=false;tromA.volume=1;tromA.currentTime=0;const p=tromA.play();if(p&&p.catch)p.catch(()=>webTromb());return}catch(e){}}webTromb()}
+function webTromb(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();tromb(ac)}catch(e){}}
+/* הקראה בקול (למשל "הזמן נגמר") */
+function say(t){if(!snd)return;try{const u=new SpeechSynthesisUtterance(t);u.lang='he-IL';u.rate=.95;u.volume=1;const v=speechSynthesis.getVoices().find(v=>/^he|^iw/i.test(v.lang));if(v)u.voice=v;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
 /* פתיחת הצליל בלחיצה הראשונה (הטלפון לא מאפשר צליל בלי לחיצה קודמת) */
-document.addEventListener('pointerdown',()=>{try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(e){}},true);
-let lastTick=-1;
+let unl=false;
+function unlockAudio(){try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+  try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(e){}
+  prepTromb();if(unl)return;
+  if(tromA&&tromA.src){unl=true;try{tromA.muted=true;const p=tromA.play();const st2=()=>{tromA.pause();tromA.currentTime=0;tromA.muted=false};if(p&&p.then)p.then(st2,()=>{unl=false});else st2()}catch(e){unl=false}}
+  try{if(window.speechSynthesis&&!unlockAudio.sp){unlockAudio.sp=1;const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}}catch(e){}}
+['pointerdown','touchend','click'].forEach(ev=>document.addEventListener(ev,unlockAudio,true));
+prepTromb();
+let lastTick=-1,tUp=-1;
 function hot(left){
   const t=$('tm');document.body.classList.toggle('hot',left>0&&left<=5);
   if(t)t.classList.toggle('hotn',left>0&&left<=5);
@@ -175,7 +194,8 @@ function hot(left){
   if(left===0&&lastTick!==0){lastTick=0;beep(300,.5);document.body.classList.remove('hot')}
   if(left>5)lastTick=-1;
 }
-function tick(){const left=Math.max(0,Math.ceil((st.qStart+st.dur*1000-(Date.now()+off))/1000));const t=$('tm');if(t)t.textContent='⏱ '+left;hot(left);const b=$('chg'),ct=$('chgT'),cl=Math.ceil(chgLeft()/1000);
+function tick(){const left=Math.max(0,Math.ceil((st.qStart+st.dur*1000-(Date.now()+off))/1000));const t=$('tm');if(t)t.textContent='⏱ '+left;hot(left);
+  if(!left&&st.phase==='question'&&!st.answered&&!pend&&tUp!==st.q){tUp=st.q;changing=-1;M.innerHTML='<div class="res no"><div class="ic">⌛</div><div class="big">הזמן נגמר!</div></div><div class="mid">מחכים לתשובה הנכונה…</div><div class="spin"></div>';say('הזמן נגמר');try{navigator.vibrate&&navigator.vibrate([300,100,300])}catch(e){}clearInterval(timer);return}const b=$('chg'),ct=$('chgT'),cl=Math.ceil(chgLeft()/1000);
   if(b){if(cl<=0){b.remove();if(ct)ct.textContent='מחכים לשאר השחקנים…'}else if(ct)ct.textContent='אפשר לשנות עוד '+cl+' שניות'}
   if(changing===st.q&&!pend){const h=$('chgH');if(cl<=0){changing=-1;shown='';draw();return}if(h)h.textContent='בחר תשובה חדשה · עוד '+cl+' שניות'}if(!left)clearInterval(timer)}
 /* התמונה של השאלה: אפשר להסתיר (חוסך אינטרנט ומקום), והבחירה נשמרת. לחיצה על התמונה מגדילה אותה */
