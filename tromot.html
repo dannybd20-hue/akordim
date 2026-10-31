@@ -458,9 +458,18 @@ const INV_ST={ok:['👍','הרבה'],low:['⚠️','מעט'],out:['❌','חסר'
 async function openInv(){
   if(!cloud){toast('צריך קודם לחבר גיבוי לענן');openCloud();return}
   $('dInv').showModal();$('invList').textContent='טוען…';
-  try{const r=await cloudPost({action:'inv_load'});if(!r.ok){$('invList').textContent=r.error==='unknown action'?'⚠️ צריך לעדכן את סקריפט התרומות בגוגל לגרסה החדשה':'⚠️ שגיאה: '+r.error;return}INV=r.inv;drawInv()}
+  try{const r=await cloudPost({action:'inv_load'});if(!r.ok){$('invList').textContent=r.error==='unknown action'?'⚠️ צריך לעדכן את סקריפט התרומות בגוגל לגרסה החדשה':'⚠️ שגיאה: '+r.error;return}INV=r.inv;invSeed();drawInv()}
   catch(e){$('invList').textContent='אין חיבור לענן'}
 }
+/* הכנסה חד-פעמית של ציוד (31/10/2026). פריט שכבר קיים באותו שם מקבל רק את הכמות */
+const INV_SEED=[['קרקרים',3,'כיבוד'],['טונה',8,'כיבוד'],['מזלגות (חבילות)',2,'חד פעמי'],['קולה',5,'שתייה'],['קולה זירו',5,'שתייה'],['סודה תות',3,'שתייה'],['סודה רגיל',2,'שתייה'],['בירה',5,'שתייה']];
+function invSeed(){
+  if(localStorage.getItem('tromot_inv_seed_2610'))return;
+  const key=t=>String(t).replace(/\s+/g,' ').trim();
+  INV_SEED.forEach(([n,q,c],i)=>{const x=INV.items.find(it=>key(it.n)===key(n));if(x){x.q=q;x.st='ok'}else INV.items.push({id:'i'+Date.now().toString(36)+i,n,c,st:'ok',q})});
+  invSeedPending=true;invSave();
+}
+let invSeedPending=false;
 function waShow(n){n=String(n||'');return n.startsWith('972')?'0'+n.slice(3):n}
 function drawInv(){
   $('invWa').value=waShow(INV.wa);
@@ -476,7 +485,7 @@ function drawInv(){
       </div>
     </div>`).join('')).join('')||'אין מוצרים. הוסף למטה.';
 }
-function invSave(){clearTimeout(invT);invT=setTimeout(async()=>{try{const r=await cloudPost({action:'inv_save',inv:INV});if(r.ok){INV=r.inv;toast('המלאי נשמר ✓')}else toast('⚠️ השמירה נכשלה')}catch(e){toast('⚠️ אין חיבור לענן')}},700)}
+function invSave(){clearTimeout(invT);invT=setTimeout(async()=>{try{const r=await cloudPost({action:'inv_save',inv:INV});if(r.ok){INV=r.inv;if(invSeedPending){invSeedPending=false;try{localStorage.setItem('tromot_inv_seed_2610','1')}catch(e){}drawInv()}toast('המלאי נשמר ✓')}else toast('⚠️ השמירה נכשלה')}catch(e){toast('⚠️ אין חיבור לענן')}},700)}
 function invSet(id,st){const x=INV.items.find(i=>i.id===id);if(!x)return;x.st=st;drawInv();invSave()}
 function invQty(id,v){const x=INV.items.find(i=>i.id===id);if(!x)return;v=String(v).trim();x.q=v===''?null:Math.max(0,Number(v));if(x.q===0)x.st='out';drawInv();invSave()}
 function invDel(id){const x=INV.items.find(i=>i.id===id);if(!x||!confirm('למחוק את "'+x.n+'" מהמלאי?'))return;INV.items=INV.items.filter(i=>i.id!==id);drawInv();invSave()}
