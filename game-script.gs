@@ -23,7 +23,7 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 27; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 28; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
 const CHANGE_SECONDS = 10; // ברירת מחדל: כמה שניות מהתשובה הראשונה שחקן יכול לשנות תשובה (המארח יכול לשנות במשחק)
 function chs_(g) { const n = Number(g.chs); return n > 0 ? n : CHANGE_SECONDS; }
 function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
@@ -658,23 +658,6 @@ function examRecord_(g, pin, pl) {
   });
   if (rows.length) examWrite_(sh, sh.getLastRow() + 1, rows);
   return { pass: pass, fail: fail, url: ss.getUrl() };
-}
-/* ניקוי טבלת המבחנים: מוחק את מי שנכשל ולא נרשם לבחינה חוזרת. מי שעבר ומי שנרשם נשארים.
-   מריצים ידנית מהעורך: בוחרים למעלה את cleanExamSheet ולוחצים ▶ הפעלה. לפני המחיקה נשמר עותק גיבוי של הטבלה. */
-function cleanExamSheet() {
-  const ss = examSheet_(), sh = ss.getSheets()[0], n = sh.getLastRow();
-  if (n < 2) { Logger.log('הטבלה ריקה'); return; }
-  const lock = LockService.getScriptLock(); lock.waitLock(30000);
-  try {
-    const f = DriveApp.getFileById(ss.getId());
-    f.makeCopy(f.getName() + ' – גיבוי לפני ניקוי ' + Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd.MM.yyyy HH:mm'));
-    const v = sh.getRange(2, 1, n - 1, EXAM_HEAD.length).getValues();
-    let del = 0;
-    for (let i = v.length - 1; i >= 0; i--) {
-      if (String(v[i][7]).trim() === 'לא עובר' && !String(v[i][9]).trim() && !String(v[i][10]).trim()) { sh.deleteRow(i + 2); del++; }
-    }
-    Logger.log('נמחקו ' + del + ' שורות. נשארו ' + (v.length - del) + '. גיבוי נשמר בדרייב.');
-  } finally { lock.releaseLock(); }
 }
 /* בחינה חוזרת: סדר התשובות בכל שאלה מעורבב לכל נבחן (קבוע לפי הקוד האישי שלו, כך שפתיחה חוזרת מציגה אותו סדר) */
 function perm_(code, i, n) {
