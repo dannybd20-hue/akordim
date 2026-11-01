@@ -724,9 +724,9 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
 
         <div id="calcBox">
         <div class="form-group">
-            <label>מחיר קנייה כולל מע"מ (₪)</label>
+            <label>מחיר קנייה כולל מע"מ (₪) <small style="font-weight:500;color:#9e9e9e">· לא חובה</small></label>
             <input type="number" step="any" id="buyPrice" placeholder="0.00" oninput="calculate()">
-            <div class="hint">* מע"מ (18%) מנוכה אוטומטית לצורך חישוב הרווח</div>
+            <div class="hint">* מע"מ (18%) מנוכה אוטומטית לצורך חישוב הרווח. עבודה בלי עלות של מוצרים? השאר ריק.</div>
         </div>
 
         <div class="form-group">
@@ -908,7 +908,7 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
                 <div class="card-content">
                     <div class="card-title">${t.productName}</div>
                     <div class="card-subtitle">
-                        ${t.direct ? 'סכום ישיר' : `קנייה: ₪${t.buyPrice.toFixed(2)} | מכירה: ₪${t.sellPrice.toFixed(2)} | רווח נקי: ₪${t.profit.toFixed(2)}`}
+                        ${t.direct ? 'סכום ישיר' : `${t.buyPrice ? 'קנייה: ₪' + t.buyPrice.toFixed(2) : 'עבודה ללא עלות'} | מכירה: ₪${t.sellPrice.toFixed(2)} | רווח נקי: ₪${t.profit.toFixed(2)}`}
                     </div>
                 </div>
                 <div class="card-meta">
@@ -1019,10 +1019,10 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
             closeModals(); clearTransactionForm();
             return;
         }
-        const buy = parseFloat(document.getElementById('buyPrice').value);
+        const buy = parseFloat(document.getElementById('buyPrice').value) || 0; // ריק = עבודה בלי עלות
         const sell = parseFloat(document.getElementById('sellPrice').value);
 
-        if (!productName || isNaN(buy) || isNaN(sell)) {
+        if (!productName || isNaN(sell)) {
             alert('נא למלא את כל השדות בצורה תקינה!');
             return;
         }
