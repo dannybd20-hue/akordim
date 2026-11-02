@@ -46,6 +46,7 @@ main{max-width:760px;margin:0 auto;padding:6px 12px 40px}
 .pv{flex:none;font-size:12px;font-weight:800;color:var(--dk);background:#ffedd5;border-radius:8px;padding:2px 7px}
 :root[data-theme=dark] .pv{background:#431407;color:#fed7aa}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .pv{background:#431407;color:#fed7aa}}
+.pv.car{background:#dbeafe;color:#1e3a8a}
 .call{flex:none;width:42px;height:42px;border-radius:50%;border:0;background:#16a34a;color:#fff;font-size:18px;display:grid;place-items:center;text-decoration:none}
 .empty{text-align:center;color:var(--mut);padding:50px 10px;font-weight:700}
 mark{background:#fde68a;color:inherit;border-radius:3px;padding:0 1px}
@@ -99,7 +100,7 @@ a.it{text-decoration:none;color:inherit}a.it .v span{color:var(--pr)}
 <header id="hd">
   <div class="hrow"><h1>📇 ספר טלפונים</h1><button class="hb" id="lockB" hidden onclick="relock()" title="נעילה ושכחת הסיסמה במכשיר">🔒</button><button class="hb" onclick="goHome()">→ אפליקציות</button></div>
   <div id="tools" hidden>
-    <div class="srch"><span class="ic">🔍</span><input id="q" type="search" placeholder="חיפוש: שם, טלפון, פרייבט, יישוב, סניף…" autocomplete="off" oninput="onQ()"><button class="clr" id="clr" hidden onclick="$('q').value='';onQ();$('q').focus()">✕</button></div>
+    <div class="srch"><span class="ic">🔍</span><input id="q" type="text" enterkeyhint="search" placeholder="חיפוש: שם, טלפון, פרייבט, מס׳ רכב, יישוב…" autocomplete="off" oninput="onQ()"><button class="clr" id="clr" hidden onclick="$('q').value='';onQ();$('q').focus()">✕</button></div>
     <div class="flt"><select id="fd" onchange="onDist()"></select><select id="fb" onchange="apply()"></select></div>
     <div class="flt"><select id="fx" onchange="apply()"></select></div>
   </div>
@@ -174,6 +175,9 @@ function apply(){
   else if(x[0]==='b'){const n=+x.slice(1);const W=bdWindow(n);xf=o=>{const k=hb(o);return !!k&&W.has(k.m+'|'+k.d)}}
   LIST=ALL.filter(o=>xf(o)&&(!d||o.dist===d)&&(!b||o.br===b)&&words.every(w=>o.s.includes(w)||(/\d/.test(w)&&w.replace(/\D/g,'').length>=3&&o.d.includes(w.replace(/\D/g,'')))));
   if(x[0]==='b')LIST.sort((a,b)=>nextBd(a).n-nextBd(b).n);
+  /* חיפוש מספר: מי שמספר הרכב הארגוני או הפרייבט שלו זהה בדיוק - ראשון ברשימה */
+  ALL.forEach(o=>o._ex=0);
+  if(x[0]!=='b'&&words.length===1&&/^\d+$/.test(words[0])){const w=words[0];LIST.forEach(o=>o._ex=o.car===w?2:o.pv===w?1:0);LIST.sort((a,b)=>b._ex-a._ex)}
   shown=0;$('M').innerHTML=`<div class="cnt"><span>${LIST.length.toLocaleString('he-IL')} אנשי קשר</span><span>עודכן ${esc(DB.date||'')}</span></div><div id="L"></div><div id="more"></div>`;
   if(!LIST.length){$('L').innerHTML='<div class="empty">לא נמצאו תוצאות 🤷‍♂️</div>';return}
   more();scrollTo(0,0);
@@ -185,9 +189,9 @@ function more(){
   if(shown>=LIST.length)return;const L=$('L'),end=Math.min(LIST.length,shown+120);
   let grp=L.lastElementChild,last=L.dataset.lt||'',buf='';
   const flush=()=>{if(buf&&grp)grp.insertAdjacentHTML('beforeend',buf);buf=''};
-  for(let k=shown;k<end;k++){const o=LIST[k],lt=(o.n.charAt(0)||'#').toUpperCase();
+  for(let k=shown;k<end;k++){const o=LIST[k],lt=o._ex===2?'🚑 מספר רכב ארגוני '+words[0]:o._ex===1?'🏷️ פרייבט '+words[0]:(o.n.charAt(0)||'#').toUpperCase();
     if(lt!==last){flush();L.insertAdjacentHTML('beforeend',`<div class="lt">${esc(lt)}</div><div class="grp"></div>`);grp=L.lastElementChild;last=lt}
-    buf+=`<div class="row" onclick="card(${o.i})"><div class="av" style="background:${o.c}">${esc(ini(o.n))}</div><div class="nm"><b>${hl(o.n)}${soon(o)?' 🎂':''}</b><small>${hl([o.br,o.city].filter(Boolean).join(' · '))}</small></div>${o.pv?`<span class="pv">${esc(o.pv)}</span>`:''}${o.ph?`<a class="call" href="tel:${esc(o.d)}" onclick="event.stopPropagation()" aria-label="חיוג">📞</a>`:''}</div>`}
+    buf+=`<div class="row" onclick="card(${o.i})"><div class="av" style="background:${o.c}">${esc(ini(o.n))}</div><div class="nm"><b>${hl(o.n)}${soon(o)?' 🎂':''}</b><small>${hl([o.br,o.city].filter(Boolean).join(' · '))}</small></div>${o.car?`<span class="pv car" title="מספר פנימי רכב ארגוני">🚑 ${words.includes(o.car)?`<mark>${esc(o.car)}</mark>`:esc(o.car)}</span>`:''}${o.pv?`<span class="pv">${esc(o.pv)}</span>`:''}${o.ph?`<a class="call" href="tel:${esc(o.d)}" onclick="event.stopPropagation()" aria-label="חיוג">📞</a>`:''}</div>`}
   flush();L.dataset.lt=last;shown=end;
 }
 
