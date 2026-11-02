@@ -73,7 +73,7 @@ a.it{text-decoration:none;color:inherit}a.it .v span{color:var(--pr)}
 .it .v small{display:block;color:var(--mut);font-size:12px;font-weight:700}
 .it .v span{display:block;font-size:15.5px;font-weight:600;word-break:break-word}
 .it a.v{text-decoration:none}
-.tag{display:inline-block;background:#ffedd5;color:var(--dk);border-radius:999px;padding:2px 10px;margin:3px 0 0 4px;font-size:13px;font-weight:800}
+.it .v span.tag,.tag{display:inline-block;background:#ffedd5;color:var(--dk);border-radius:999px;padding:2px 10px;margin:3px 0 0 4px;font-size:13px;font-weight:800}
 :root[data-theme=dark] .tag{background:#431407;color:#fed7aa}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .tag{background:#431407;color:#fed7aa}}
 .lnk{color:var(--pr);font-weight:800;cursor:pointer}
@@ -101,6 +101,7 @@ a.it{text-decoration:none;color:inherit}a.it .v span{color:var(--pr)}
   <div id="tools" hidden>
     <div class="srch"><span class="ic">🔍</span><input id="q" type="search" placeholder="חיפוש: שם, טלפון, פרייבט, יישוב, סניף…" autocomplete="off" oninput="onQ()"><button class="clr" id="clr" hidden onclick="$('q').value='';onQ();$('q').focus()">✕</button></div>
     <div class="flt"><select id="fd" onchange="onDist()"></select><select id="fb" onchange="apply()"></select></div>
+    <div class="flt"><select id="fx" onchange="apply()"></select></div>
   </div>
 </header>
 <main id="M"></main>
@@ -151,6 +152,10 @@ function ready(){
   const col=new Intl.Collator('he');ALL.sort((a,b)=>col.compare(a.n,b.n));
   const dists=[...new Set(ALL.map(o=>o.dist).filter(Boolean))].sort(col.compare);
   $('fd').innerHTML='<option value="">כל המחוזות</option>'+dists.map(d=>`<option>${esc(d)}</option>`).join('');
+  /* הרשאות נהיגה / סוגי כלי רכב: לפי כמות */
+  const pc={};ALL.forEach(o=>{o.perms=[...new Set((o.perm||'').split(/;\s*/).map(x=>x.trim()).filter(Boolean))];o.perms.forEach(x=>pc[x]=(pc[x]||0)+1)});
+  $('fx').innerHTML='<option value="">סינון נוסף: ימי הולדת / הרשאות נהיגה</option><optgroup label="ימי הולדת עבריים"><option value="b0">🎂 יום הולדת עברי היום</option><option value="b7">🎂 יום הולדת עברי השבוע</option><option value="b30">🎂 יום הולדת עברי החודש (30 יום)</option></optgroup><optgroup label="רכב"><option value="car">🚑 יש מספר רכב ארגוני</option><option value="anyp">🪪 יש הרשאת נהיגה כלשהי</option></optgroup><optgroup label="הרשאת נהיגה / סוג כלי רכב">'+
+    Object.keys(pc).sort((a,b)=>pc[b]-pc[a]).map(x=>`<option value="p:${esc(x)}">${esc(x)} (${pc[x]})</option>`).join('')+'</optgroup>';
   $('tools').hidden=false;$('lockB').hidden=false;fillBr();apply();setHH();
 }
 function fillBr(){const d=$('fd').value,col=new Intl.Collator('he');const brs=[...new Set(ALL.filter(o=>!d||o.dist===d).map(o=>o.br).filter(Boolean))].sort(col.compare);
@@ -164,7 +169,11 @@ addEventListener('resize',setHH);
 let words=[];
 function apply(){
   const q=norm($('q').value),d=$('fd').value,b=$('fb').value;words=q?q.split(' '):[];
-  LIST=ALL.filter(o=>(!d||o.dist===d)&&(!b||o.br===b)&&words.every(w=>o.s.includes(w)||(/\d/.test(w)&&w.replace(/\D/g,'').length>=3&&o.d.includes(w.replace(/\D/g,'')))));
+  const x=$('fx').value;let xf=()=>true;
+  if(x==='car')xf=o=>!!o.car;else if(x==='anyp')xf=o=>o.perms.length>0;else if(x.startsWith('p:')){const p=x.slice(2);xf=o=>o.perms.includes(p)}
+  else if(x[0]==='b'){const n=+x.slice(1);const W=bdWindow(n);xf=o=>{const k=hb(o);return !!k&&W.has(k.m+'|'+k.d)}}
+  LIST=ALL.filter(o=>xf(o)&&(!d||o.dist===d)&&(!b||o.br===b)&&words.every(w=>o.s.includes(w)||(/\d/.test(w)&&w.replace(/\D/g,'').length>=3&&o.d.includes(w.replace(/\D/g,'')))));
+  if(x[0]==='b')LIST.sort((a,b)=>nextBd(a).n-nextBd(b).n);
   shown=0;$('M').innerHTML=`<div class="cnt"><span>${LIST.length.toLocaleString('he-IL')} אנשי קשר</span><span>עודכן ${esc(DB.date||'')}</span></div><div id="L"></div><div id="more"></div>`;
   if(!LIST.length){$('L').innerHTML='<div class="empty">לא נמצאו תוצאות 🤷‍♂️</div>';return}
   more();scrollTo(0,0);
@@ -178,7 +187,7 @@ function more(){
   const flush=()=>{if(buf&&grp)grp.insertAdjacentHTML('beforeend',buf);buf=''};
   for(let k=shown;k<end;k++){const o=LIST[k],lt=(o.n.charAt(0)||'#').toUpperCase();
     if(lt!==last){flush();L.insertAdjacentHTML('beforeend',`<div class="lt">${esc(lt)}</div><div class="grp"></div>`);grp=L.lastElementChild;last=lt}
-    buf+=`<div class="row" onclick="card(${o.i})"><div class="av" style="background:${o.c}">${esc(ini(o.n))}</div><div class="nm"><b>${hl(o.n)}</b><small>${hl([o.br,o.city].filter(Boolean).join(' · '))}</small></div>${o.pv?`<span class="pv">${esc(o.pv)}</span>`:''}${o.ph?`<a class="call" href="tel:${esc(o.d)}" onclick="event.stopPropagation()" aria-label="חיוג">📞</a>`:''}</div>`}
+    buf+=`<div class="row" onclick="card(${o.i})"><div class="av" style="background:${o.c}">${esc(ini(o.n))}</div><div class="nm"><b>${hl(o.n)}${soon(o)?' 🎂':''}</b><small>${hl([o.br,o.city].filter(Boolean).join(' · '))}</small></div>${o.pv?`<span class="pv">${esc(o.pv)}</span>`:''}${o.ph?`<a class="call" href="tel:${esc(o.d)}" onclick="event.stopPropagation()" aria-label="חיוג">📞</a>`:''}</div>`}
   flush();L.dataset.lt=last;shown=end;
 }
 
@@ -202,10 +211,38 @@ function card(i){
   </div>
   <div class="box"><h3>פרטי קשר</h3>${it('📱','טלפון נייד',o.ph,o.ph?'tel:'+o.d:'')}${it('📧','מייל',o.em,o.em?'mailto:'+o.em:'')}${it('🏠','כתובת',addr,addr?'https://waze.com/ul?q='+encodeURIComponent(addr)+'&navigate=yes':'')}</div>
   <div class="box"><h3>ארגון</h3>${it('🏷️','פרייבט',o.pv)}${it('🏢','סניף',o.br)}${it('🗺️','מחוז',o.dist)}${it('👤','ראש סניף / מנהל אגף',o.head?person(o.head):'',0,1)}${it('👥','סגן ראש סניף',o.dep?person(o.dep):'',0,1)}${it('🚗','רכז תחבורה סניפי',o.trans?person(o.trans):'',0,1)}${it('🦺','קצין בטיחות מחוזי',o.safe?person(o.safe):'',0,1)}</div>
-  ${o.bd||o.car||perm?`<div class="box"><h3>פרטים נוספים</h3>${it('🎂','תאריך לידה',o.bd?o.bd+(a?` (גיל ${a})`:''):'')}${it('🚑','מספר פנימי רכב ארגוני',o.car)}${it('🪪','אישור נהיגה ברכב ארגוני',perm,0,1)}</div>`:''}
+  ${o.bd||o.car||perm?`<div class="box"><h3>פרטים נוספים</h3>${it('🎂','תאריך לידה',o.bd?o.bd+(a?` (גיל ${a})`:''):'')}${hebLine(o)}${it('🚑','מספר פנימי רכב ארגוני',o.car)}${it('🪪','אישור נהיגה ברכב ארגוני',perm,0,1)}</div>`:''}
   </div>`;
   ov.onclick=e=>{if(e.target===ov)ov.remove()};const old=$('ov');if(old)old.remove();document.body.append(ov);
 }
+/* ---------- יום הולדת עברי ----------
+   מחושב מתאריך הלידה הלועזי. מי שנולד אחרי השקיעה - יום ההולדת העברי שלו יום אחד אחרי (אין לנו שעת לידה). */
+const HM={Tishri:'תשרי',Heshvan:'חשוון',Kislev:'כסלו',Tevet:'טבת',Shevat:'שבט',Adar:'אדר','Adar I':'אדר א׳','Adar II':'אדר ב׳',Nisan:'ניסן',Iyar:'אייר',Sivan:'סיוון',Tamuz:'תמוז',Av:'אב',Elul:'אלול'};
+const HF=new Intl.DateTimeFormat('en-u-ca-hebrew',{day:'numeric',month:'long',year:'numeric'});
+function hparts(dt){const p={};HF.formatToParts(dt).forEach(x=>p[x.type]=x.value);return {m:p.month,d:+p.day,y:+p.year}}
+function gem(n){/* מספר לאותיות עבריות: 15=ט״ו, 16=ט״ז, 5765=תשס״ה */
+  n%=1000;let s='';while(n>=400){s+='ת';n-=400}for(const [v,c] of [[300,'ש'],[200,'ר'],[100,'ק']])if(n>=v){s+=c;n-=v}
+  if(n===15)s+='טו';else if(n===16)s+='טז';else s+=['','י','כ','ל','מ','נ','ס','ע','פ','צ'][Math.floor(n/10)]+['','א','ב','ג','ד','ה','ו','ז','ח','ט'][n%10];
+  return fin(s)}
+function fin(s){return s.length>1?s.slice(0,-1)+'״'+s.slice(-1):s+'׳'}
+function bdDate(bd){const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(bd||'');return m?new Date(+m[3],m[2]-1,+m[1],12):null}
+function hb(o){if(o._h!==undefined)return o._h;const dt=bdDate(o.bd);o._h=dt?hparts(dt):null;return o._h}
+/* אילו (חודש|יום) עבריים נחגגים בתאריך מסוים: אדר בשנה פשוטה = גם אדר א׳/ב׳; בשנה מעוברת מי שנולד באדר חוגג באדר ב׳.
+   מי שנולד ביום ל׳ בחודש שהשנה יש בו רק 29 יום - חוגג בא׳ בחודש הבא */
+const KC={};
+function dayKeys(dt){const id=dt.toDateString();if(KC[id])return KC[id];const h=hparts(dt),ks=[h.m+'|'+h.d];
+  if(h.m==='Adar')ks.push('Adar I|'+h.d,'Adar II|'+h.d);if(h.m==='Adar II')ks.push('Adar|'+h.d);
+  if(h.d===1){const pv=hparts(new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()-1,12));if(pv.d===29){ks.push(pv.m+'|30');if(pv.m==='Adar')ks.push('Adar I|30','Adar II|30')}}
+  return KC[id]=ks}
+function bdWindow(n){const W=new Set(),t=new Date();for(let i=0;i<=n;i++)dayKeys(new Date(t.getFullYear(),t.getMonth(),t.getDate()+i,12)).forEach(k=>W.add(k));return W}
+function nextBd(o){if(o._nb&&o._nb.t===new Date().toDateString())return o._nb;const k=hb(o),t=new Date();let r={n:9999,dt:null,t:t.toDateString()};
+  if(k){const key=k.m+'|'+k.d;for(let i=0;i<=390;i++){const dt=new Date(t.getFullYear(),t.getMonth(),t.getDate()+i,12);if(dayKeys(dt).includes(key)){r={n:i,dt,t:r.t};break}}}return o._nb=r}
+let W7=null;function soon(o){if(!o.bd)return false;if(!W7)W7=bdWindow(7);const k=hb(o);return !!k&&W7.has(k.m+'|'+k.d)}
+function hebStr(o){const k=hb(o);return k?gem(k.d)+' ב'+(HM[k.m]||k.m)+' '+gem(k.y):''}
+function hebLine(o){const k=hb(o);if(!k)return '';const nb=nextBd(o);
+  const when=nb.dt?(nb.n===0?'🎉 היום!':nb.n===1?'מחר':`${['יום א׳','יום ב׳','יום ג׳','יום ד׳','יום ה׳','יום ו׳','שבת'][nb.dt.getDay()]} ${nb.dt.getDate()}.${nb.dt.getMonth()+1}.${nb.dt.getFullYear()} (בעוד ${nb.n} ימים)`):'';
+  return `<div class="it"><span class="k">✡️</span><span class="v"><small>יום הולדת עברי</small><span>${hebStr(o)}</span>${when?`<small style="margin-top:2px">הבא: ${when}</small>`:''}</span></div>`}
+
 /* שמירה לאנשי הקשר בטלפון (קובץ vCard) */
 function vcf(i){const o=byI(i);const v=['BEGIN:VCARD','VERSION:3.0','FN:'+o.n,'N:'+o.n+';;;;',o.ph?'TEL;TYPE=CELL:'+o.ph:'',o.em?'EMAIL:'+o.em:'',o.st||o.city?'ADR;TYPE=HOME:;;'+(o.st||'')+';'+(o.city||'')+';;;':'','ORG:איחוד הצלה'+(o.br?';'+o.br:''),o.pv?'NOTE:פרייבט '+o.pv:'','END:VCARD'].filter(Boolean).join('\r\n');
   const u=URL.createObjectURL(new Blob([v],{type:'text/vcard'}));const a=document.createElement('a');a.href=u;a.download=o.n+'.vcf';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000)}
