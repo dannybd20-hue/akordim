@@ -222,7 +222,7 @@ function card(i){
   ov.innerHTML=`<div class="sheet"><div class="top"><button class="x" onclick="$('ov').remove()">✕</button><div class="av big" style="background:${o.c};border:3px solid #fff">${esc(ini(o.n))}</div><h2>${esc(o.n)}</h2><div class="sub">${esc([o.pv?'פרייבט '+o.pv:'',o.br].filter(Boolean).join(' · '))}</div></div>
   <div class="acts">
     <a class="act${o.ph?'':' dis'}" href="tel:${esc(o.d)}"><i>📞</i>חיוג</a>
-    <a class="act${o.d.length>=9?'':' dis'}" href="https://wa.me/${esc(intl(o.d))}" target="_blank"><i>💬</i>וואטסאפ</a>
+    ${o.perms.length?`<a class="act${o.d.length>=9?'':' dis'}" href="https://wa.me/${esc(intl(o.d))}" target="_blank"><i>💬</i>וואטסאפ</a>`:''}
     <a class="act${o.ph?'':' dis'}" href="sms:${esc(o.d)}"><i>✉️</i>הודעה</a>
     <a class="act${o.em?'':' dis'}" href="mailto:${esc(o.em)}"><i>📧</i>מייל</a>
     ${o.ph&&o.perms.length&&nextBd(o).n===0?`<a class="act" href="${esc(mazalUrl(o))}" target="_blank" onclick="sentMark(${o.i})"><i style="background:#fde68a">🎉</i>מזל טוב</a>`:''}
