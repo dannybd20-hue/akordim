@@ -276,8 +276,15 @@ function bdayBanner(d,b){const W=bdWindow(0),T=ALL.filter(o=>o.perms.length&&(!d
     T.map(o=>{const sent=!!lget(sentKey(o));return `<div class="br"><div class="av" style="background:${o.c};width:36px;height:36px;font-size:13px" onclick="card(${o.i})">${esc(ini(o.n))}</div><div class="nm" onclick="card(${o.i})"><b>${esc(o.n)}</b><small>${esc([o.br,age(o.bd)?'גיל '+age(o.bd):''].filter(Boolean).join(' · '))}</small></div><a class="mz${sent?' ok':''}" data-mz="${o.i}" href="${esc(mazalUrl(o))}" target="_blank" onclick="sentMark(${o.i})">${sent?'✓ נשלח':'🎉 מזל טוב'}</a></div>`}).join('')+'</details>'}
 
 /* שמירה לאנשי הקשר בטלפון (קובץ vCard) */
-function vcf(i){const o=byI(i);const v=['BEGIN:VCARD','VERSION:3.0','FN:'+o.n,'N:'+o.n+';;;;',o.ph?'TEL;TYPE=CELL:'+o.ph:'',o.em?'EMAIL:'+o.em:'',o.st||o.city?'ADR;TYPE=HOME:;;'+(o.st||'')+';'+(o.city||'')+';;;':'','ORG:איחוד הצלה'+(o.br?';'+o.br:''),o.pv?'NOTE:פרייבט '+o.pv:'','END:VCARD'].filter(Boolean).join('\r\n');
-  const u=URL.createObjectURL(new Blob([v],{type:'text/vcard'}));const a=document.createElement('a');a.href=u;a.download=o.n+'.vcf';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000)}
+function vcf(i){const o=byI(i),e=t=>String(t||'').replace(/\\/g,'\\\\').replace(/[,;]/g,m=>'\\'+m).replace(/\n/g,'\\n');
+  /* כמו אנשי הקשר הקיימים בטלפון: שם + פרייבט, ובהערות: ראש סניף, סגן, רכז, קצב"ת, גיל, מס כלי, אישור נהיגה */
+  const nm=o.n+(o.pv?' '+o.pv:''),m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(o.bd||''),ag=age(o.bd);
+  const note=[o.head&&'ראש סניף: '+o.head,o.dep&&'סגן: '+o.dep,o.trans&&'רכז: '+o.trans,o.safe&&'קצב"ת: '+o.safe,ag&&'גיל: '+ag,o.car&&'מס כלי: '+o.car,o.perm&&'אישור נהיגה: '+o.perm,
+    o.br&&'סניף: '+o.br,o.roles.length&&'תפקיד: '+o.roles.join('; '),o.plate&&'רישוי פרטי: '+o.plate,hb(o)&&'יום הולדת עברי: '+hebStr(o)].filter(Boolean).join('\n');
+  const v=['BEGIN:VCARD','VERSION:3.0','N;CHARSET=UTF-8:;'+e(nm)+';;;','FN;CHARSET=UTF-8:'+e(nm),o.ph?'TEL;TYPE=CELL:'+o.ph:'',o.em?'EMAIL;TYPE=HOME:'+o.em:'',
+    o.st||o.city?'ADR;TYPE=HOME;CHARSET=UTF-8:;;'+e(o.st)+';'+e(o.city)+';;;':'',m?'BDAY:'+m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0'):'',
+    'ORG;CHARSET=UTF-8:איחוד הצלה',note?'NOTE;CHARSET=UTF-8:'+e(note):'','END:VCARD'].filter(Boolean).join('\r\n')+'\r\n';
+  const u=URL.createObjectURL(new Blob([v],{type:'text/vcard;charset=utf-8'}));const a=document.createElement('a');a.href=u;a.download=nm+'.vcf';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000)}
 addEventListener('keydown',e=>{if(e.key==='Escape'){const o=$('ov');if(o)o.remove()}});
 
 /* כפתור "למסך הבית": מתקין את ספר הטלפונים כאפליקציה נפרדת עם אייקון משלו */
