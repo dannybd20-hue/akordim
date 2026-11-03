@@ -48,6 +48,14 @@ main{max-width:760px;margin:0 auto;padding:6px 12px 40px}
 :root[data-theme=dark] .pv{background:#431407;color:#fed7aa}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .pv{background:#431407;color:#fed7aa}}
 .pv.car{background:#dbeafe;color:#1e3a8a}
+.bday{background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:16px;margin:10px 0 4px;box-shadow:var(--sh);overflow:hidden;color:#78350f}
+.bday summary{list-style:none;cursor:pointer;padding:12px 14px;font-weight:900;font-size:15.5px;display:flex;align-items:center;gap:8px}
+.bday summary::-webkit-details-marker{display:none}
+.bday summary .ar{margin-inline-start:auto;font-size:13px;background:#78350f;color:#fff;border-radius:999px;padding:3px 10px}
+.bday .br{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid #f59e0b55}
+.bday .br .nm small{color:#92400e}
+.mz{flex:none;border:0;border-radius:999px;padding:8px 12px;font-weight:900;font-size:14px;background:#16a34a;color:#fff;text-decoration:none;white-space:nowrap}
+.mz.ok{background:#a3a3a3}
 .call{flex:none;width:42px;height:42px;border-radius:50%;border:0;background:#16a34a;color:#fff;font-size:18px;display:grid;place-items:center;text-decoration:none}
 .empty{text-align:center;color:var(--mut);padding:50px 10px;font-weight:700}
 mark{background:#fde68a;color:inherit;border-radius:3px;padding:0 1px}
@@ -184,7 +192,7 @@ function apply(){
   /* חיפוש מספר: מי שמספר הרכב הארגוני או הפרייבט שלו זהה בדיוק - ראשון ברשימה */
   ALL.forEach(o=>o._ex=0);
   if(x[0]!=='b'&&words.length===1&&/^\d+$/.test(words[0])){const w=words[0];LIST.forEach(o=>o._ex=o.car===w?2:o.pv===w?1:0);LIST.sort((a,b)=>b._ex-a._ex)}
-  shown=0;$('M').innerHTML=`<div class="cnt"><span>${LIST.length.toLocaleString('he-IL')} אנשי קשר</span><span>עודכן ${esc(DB.date||'')}</span></div><div id="L"></div><div id="more"></div>`;
+  shown=0;$('M').innerHTML=(words.length?'':bdayBanner(d,b))+`<div class="cnt"><span>${LIST.length.toLocaleString('he-IL')} אנשי קשר</span><span>עודכן ${esc(DB.date||'')}</span></div><div id="L"></div><div id="more"></div>`;
   if(!LIST.length){$('L').innerHTML='<div class="empty">לא נמצאו תוצאות 🤷‍♂️</div>';return}
   more();scrollTo(0,0);
   const ob=new IntersectionObserver(es=>{if(es[0].isIntersecting)more()},{rootMargin:'600px'});ob.observe($('more'));
@@ -217,6 +225,7 @@ function card(i){
     <a class="act${o.d.length>=9?'':' dis'}" href="https://wa.me/${esc(intl(o.d))}" target="_blank"><i>💬</i>וואטסאפ</a>
     <a class="act${o.ph?'':' dis'}" href="sms:${esc(o.d)}"><i>✉️</i>הודעה</a>
     <a class="act${o.em?'':' dis'}" href="mailto:${esc(o.em)}"><i>📧</i>מייל</a>
+    ${o.ph&&nextBd(o).n===0?`<a class="act" href="${esc(mazalUrl(o))}" target="_blank" onclick="sentMark(${o.i})"><i style="background:#fde68a">🎉</i>מזל טוב</a>`:''}
     <button class="act" onclick="vcf(${o.i})"><i>💾</i>שמירה</button>
   </div>
   <div class="box"><h3>פרטי קשר</h3>${it('📱','טלפון נייד',o.ph,o.ph?'tel:'+o.d:'')}${it('📧','מייל',o.em,o.em?'mailto:'+o.em:'')}${it('🏠','כתובת',addr,addr?'https://waze.com/ul?q='+encodeURIComponent(addr)+'&navigate=yes':'')}</div>
@@ -252,6 +261,19 @@ function hebStr(o){const k=hb(o);return k?gem(k.d)+' ב'+(HM[k.m]||k.m)+' '+gem(
 function hebLine(o){const k=hb(o);if(!k)return '';const nb=nextBd(o);
   const when=nb.dt?(nb.n===0?'🎉 היום!':nb.n===1?'מחר':`${['יום א׳','יום ב׳','יום ג׳','יום ד׳','יום ה׳','יום ו׳','שבת'][nb.dt.getDay()]} ${nb.dt.getDate()}.${nb.dt.getMonth()+1}.${nb.dt.getFullYear()} (בעוד ${nb.n} ימים)`):'';
   return `<div class="it"><span class="k">✡️</span><span class="v"><small>יום הולדת עברי</small><span>${hebStr(o)}</span>${when?`<small style="margin-top:2px">הבא: ${when}</small>`:''}</span></div>`}
+
+/* ---------- מזל טוב ביום ההולדת העברי: הודעה מוכנה בוואטסאפ, חתומה בשם שלי ---------- */
+const SIGN='דני בן דוד';
+function mazalText(o){const k=hb(o),first=String(o.n).trim().split(/\s+/)[0];
+  return `מזל טוב ${first}! 🎉🎂\nהיום, ${gem(k.d)} ב${HM[k.m]||k.m}, יום ההולדת העברי שלך.\nמאחל לך שנה של בריאות, שמחה, הצלחה וברכה בכל מעשיך, והמשך הצלת חיים בכוח ובשמחה! 🚑💪\n\n${SIGN}`}
+function mazalUrl(o){return 'https://wa.me/'+intl(o.d)+'?text='+encodeURIComponent(mazalText(o))}
+const sentKey=o=>'pb_mz_'+new Date().getFullYear()+'_'+(o.pv||o.d||o.n);
+function sentMark(i){const o=byI(i);lput(sentKey(o),'1');document.querySelectorAll('[data-mz="'+i+'"]').forEach(e=>{e.classList.add('ok');e.textContent='✓ נשלח'});
+  const ar=document.querySelector('.bday .ar');if(ar){const n=document.querySelectorAll('.bday .mz:not(.ok)').length;ar.textContent=n?n+' לשלוח ▾':'✓ נשלח לכולם'}}
+function bdayBanner(d,b){const W=bdWindow(0),T=ALL.filter(o=>(!d||o.dist===d)&&(!b||o.br===b)&&o.d.length>=9&&(()=>{const k=hb(o);return !!k&&W.has(k.m+'|'+k.d)})());
+  if(!T.length)return '';const left=T.filter(o=>!lget(sentKey(o))).length;
+  return `<details class="bday"${T.length<=5?' open':''}><summary>🎂 היום יום הולדת עברי ל-${T.length}${d||b?' ('+esc(b||d)+')':''}<span class="ar">${left?left+' לשלוח ▾':'✓ נשלח לכולם'}</span></summary>`+
+    T.map(o=>{const sent=!!lget(sentKey(o));return `<div class="br"><div class="av" style="background:${o.c};width:36px;height:36px;font-size:13px" onclick="card(${o.i})">${esc(ini(o.n))}</div><div class="nm" onclick="card(${o.i})"><b>${esc(o.n)}</b><small>${esc([o.br,age(o.bd)?'גיל '+age(o.bd):''].filter(Boolean).join(' · '))}</small></div><a class="mz${sent?' ok':''}" data-mz="${o.i}" href="${esc(mazalUrl(o))}" target="_blank" onclick="sentMark(${o.i})">${sent?'✓ נשלח':'🎉 מזל טוב'}</a></div>`}).join('')+'</details>'}
 
 /* שמירה לאנשי הקשר בטלפון (קובץ vCard) */
 function vcf(i){const o=byI(i);const v=['BEGIN:VCARD','VERSION:3.0','FN:'+o.n,'N:'+o.n+';;;;',o.ph?'TEL;TYPE=CELL:'+o.ph:'',o.em?'EMAIL:'+o.em:'',o.st||o.city?'ADR;TYPE=HOME:;;'+(o.st||'')+';'+(o.city||'')+';;;':'','ORG:איחוד הצלה'+(o.br?';'+o.br:''),o.pv?'NOTE:פרייבט '+o.pv:'','END:VCARD'].filter(Boolean).join('\r\n');
