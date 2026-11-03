@@ -33,7 +33,8 @@ header h1{margin:0;font-size:21px;font-weight:900;flex:1;white-space:nowrap;over
 .flt select{flex:1;min-width:0;border:0;border-radius:12px;padding:9px 10px;background:#ffffff2e;color:#fff;font-weight:700;font-size:14px}
 .flt select option{color:#1c1917;background:#fff}
 main{max-width:760px;margin:0 auto;padding:6px 12px 40px}
-.cnt{color:var(--mut);font-size:13px;font-weight:700;padding:8px 4px 2px;display:flex;justify-content:space-between;gap:8px}
+.dla{border:0;background:var(--card);box-shadow:var(--sh);color:var(--pr);font-weight:900;font-size:13px;border-radius:999px;padding:5px 12px;cursor:pointer}
+.cnt{color:var(--mut);font-size:13px;font-weight:700;padding:8px 4px 2px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .lt{position:sticky;top:var(--hh,150px);z-index:5;background:var(--bg);color:var(--pr);font-weight:900;font-size:15px;padding:10px 6px 4px}
 .grp{background:var(--card);border-radius:16px;box-shadow:var(--sh);overflow:hidden}
 .row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--bd);cursor:pointer}
@@ -192,7 +193,7 @@ function apply(){
   /* חיפוש מספר: מי שמספר הרכב הארגוני או הפרייבט שלו זהה בדיוק - ראשון ברשימה */
   ALL.forEach(o=>o._ex=0);
   if(x[0]!=='b'&&words.length===1&&/^[\da-z-]+$/.test(words[0])&&/\d/.test(words[0])){const w=words[0],wp=w.replace(/-/g,'');LIST.forEach(o=>o._ex=o.car===w?3:o.pd&&o.pd===wp?2:o.pv===w?1:0);LIST.sort((a,b)=>b._ex-a._ex)}
-  shown=0;$('M').innerHTML=(words.length?'':bdayBanner(d,b))+`<div class="cnt"><span>${LIST.length.toLocaleString('he-IL')} אנשי קשר</span><span>עודכן ${esc(DB.date||'')}</span></div><div id="L"></div><div id="more"></div>`;
+  shown=0;$('M').innerHTML=(words.length?'':bdayBanner(d,b))+`<div class="cnt"><span>${LIST.length.toLocaleString('he-IL')} אנשי קשר</span><button class="dla" onclick="vcfAll()">💾 הורדת כולם</button><span>עודכן ${esc(DB.date||'')}</span></div><div id="L"></div><div id="more"></div>`;
   if(!LIST.length){$('L').innerHTML='<div class="empty">לא נמצאו תוצאות 🤷‍♂️</div>';return}
   more();scrollTo(0,0);
   const ob=new IntersectionObserver(es=>{if(es[0].isIntersecting)more()},{rootMargin:'600px'});ob.observe($('more'));
@@ -276,7 +277,11 @@ function bdayBanner(d,b){const W=bdWindow(0),T=ALL.filter(o=>o.perms.length&&(!d
     T.map(o=>{const sent=!!lget(sentKey(o));return `<div class="br"><div class="av" style="background:${o.c};width:36px;height:36px;font-size:13px" onclick="card(${o.i})">${esc(ini(o.n))}</div><div class="nm" onclick="card(${o.i})"><b>${esc(o.n)}</b><small>${esc([o.br,age(o.bd)?'גיל '+age(o.bd):''].filter(Boolean).join(' · '))}</small></div><a class="mz${sent?' ok':''}" data-mz="${o.i}" href="${esc(mazalUrl(o))}" target="_blank" onclick="sentMark(${o.i})">${sent?'✓ נשלח':'🎉 מזל טוב'}</a></div>`}).join('')+'</details>'}
 
 /* שמירה לאנשי הקשר בטלפון (קובץ vCard) */
-function vcf(i){const o=byI(i),e=t=>String(t||'').replace(/\\/g,'\\\\').replace(/[,;]/g,m=>'\\'+m).replace(/\n/g,'\\n');
+function vcf(i){const o=byI(i);dlVcf(vcard(o),o.n+(o.pv?' '+o.pv:''))}
+/* הורדת כל אנשי הקשר שברשימה (לפי החיפוש והסינון) לקובץ אחד, לייבוא לאנשי הקשר בטלפון */
+function vcfAll(){if(!LIST.length)return;if(!confirm('להוריד '+LIST.length.toLocaleString('he-IL')+' אנשי קשר לקובץ אחד?\nאחר כך פותחים את הקובץ ובוחרים "ייבוא" לאנשי הקשר.'))return;
+  const f=[$('fb').value,$('fd').value].find(Boolean);dlVcf(LIST.map(vcard).join(''),'אנשי קשר'+(f?' - '+f:'')+' ('+LIST.length+')')}
+function vcard(o){const e=t=>String(t||'').replace(/\\/g,'\\\\').replace(/[,;]/g,m=>'\\'+m).replace(/\n/g,'\\n');
   /* כמו אנשי הקשר הקיימים בטלפון: שם + פרייבט, ובהערות: ראש סניף, סגן, רכז, קצב"ת, גיל, מס כלי, אישור נהיגה */
   const nm=o.n+(o.pv?' '+o.pv:''),m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(o.bd||''),ag=age(o.bd);
   const note=[o.head&&'👤 ראש סניף: '+o.head,o.dep&&'👥 סגן: '+o.dep,o.trans&&'🚗 רכז: '+o.trans,o.safe&&'🦺 קצב"ת: '+o.safe,ag&&'🎂 גיל: '+ag,o.car&&'🚑 מס כלי: '+o.car,o.perm&&'🪪 אישור נהיגה: '+o.perm,
@@ -284,7 +289,8 @@ function vcf(i){const o=byI(i),e=t=>String(t||'').replace(/\\/g,'\\\\').replace(
   const v=['BEGIN:VCARD','VERSION:3.0','N;CHARSET=UTF-8:;'+e(nm)+';;;','FN;CHARSET=UTF-8:'+e(nm),o.ph?'TEL;TYPE=CELL:'+o.ph:'',o.em?'EMAIL;TYPE=HOME:'+o.em:'',
     o.st||o.city?'ADR;TYPE=HOME;CHARSET=UTF-8:;;'+e(o.st)+';'+e(o.city)+';;;':'',m?'BDAY:'+m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0'):'',
     'ORG;CHARSET=UTF-8:איחוד הצלה',note?'NOTE;CHARSET=UTF-8:'+e(note):'','END:VCARD'].filter(Boolean).join('\r\n')+'\r\n';
-  const u=URL.createObjectURL(new Blob([v],{type:'text/vcard;charset=utf-8'}));const a=document.createElement('a');a.href=u;a.download=nm+'.vcf';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000)}
+  return v}
+function dlVcf(text,name){const u=URL.createObjectURL(new Blob([text],{type:'text/vcard;charset=utf-8'}));const a=document.createElement('a');a.href=u;a.download=name+'.vcf';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000)}
 addEventListener('keydown',e=>{if(e.key==='Escape'){const o=$('ov');if(o)o.remove()}});
 
 /* כפתור "למסך הבית": מתקין את ספר הטלפונים כאפליקציה נפרדת עם אייקון משלו */
