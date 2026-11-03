@@ -225,7 +225,7 @@ function card(i){
     <a class="act${o.d.length>=9?'':' dis'}" href="https://wa.me/${esc(intl(o.d))}" target="_blank"><i>💬</i>וואטסאפ</a>
     <a class="act${o.ph?'':' dis'}" href="sms:${esc(o.d)}"><i>✉️</i>הודעה</a>
     <a class="act${o.em?'':' dis'}" href="mailto:${esc(o.em)}"><i>📧</i>מייל</a>
-    ${o.ph&&nextBd(o).n===0?`<a class="act" href="${esc(mazalUrl(o))}" target="_blank" onclick="sentMark(${o.i})"><i style="background:#fde68a">🎉</i>מזל טוב</a>`:''}
+    ${o.ph&&o.perms.length&&nextBd(o).n===0?`<a class="act" href="${esc(mazalUrl(o))}" target="_blank" onclick="sentMark(${o.i})"><i style="background:#fde68a">🎉</i>מזל טוב</a>`:''}
     <button class="act" onclick="vcf(${o.i})"><i>💾</i>שמירה</button>
   </div>
   <div class="box"><h3>פרטי קשר</h3>${it('📱','טלפון נייד',o.ph,o.ph?'tel:'+o.d:'')}${it('📧','מייל',o.em,o.em?'mailto:'+o.em:'')}${it('🏠','כתובת',addr,addr?'https://waze.com/ul?q='+encodeURIComponent(addr)+'&navigate=yes':'')}</div>
@@ -270,9 +270,9 @@ function mazalUrl(o){return 'https://wa.me/'+intl(o.d)+'?text='+encodeURICompone
 const sentKey=o=>'pb_mz_'+new Date().getFullYear()+'_'+(o.pv||o.d||o.n);
 function sentMark(i){const o=byI(i);lput(sentKey(o),'1');document.querySelectorAll('[data-mz="'+i+'"]').forEach(e=>{e.classList.add('ok');e.textContent='✓ נשלח'});
   const ar=document.querySelector('.bday .ar');if(ar){const n=document.querySelectorAll('.bday .mz:not(.ok)').length;ar.textContent=n?n+' לשלוח ▾':'✓ נשלח לכולם'}}
-function bdayBanner(d,b){const W=bdWindow(0),T=ALL.filter(o=>(!d||o.dist===d)&&(!b||o.br===b)&&o.d.length>=9&&(()=>{const k=hb(o);return !!k&&W.has(k.m+'|'+k.d)})());
+function bdayBanner(d,b){const W=bdWindow(0),T=ALL.filter(o=>o.perms.length&&(!d||o.dist===d)&&(!b||o.br===b)&&o.d.length>=9&&(()=>{const k=hb(o);return !!k&&W.has(k.m+'|'+k.d)})());
   if(!T.length)return '';const left=T.filter(o=>!lget(sentKey(o))).length;
-  return `<details class="bday"${T.length<=5?' open':''}><summary>🎂 היום יום הולדת עברי ל-${T.length}${d||b?' ('+esc(b||d)+')':''}<span class="ar">${left?left+' לשלוח ▾':'✓ נשלח לכולם'}</span></summary>`+
+  return `<details class="bday"${T.length<=5?' open':''}><summary>🎂 יום הולדת עברי היום · ${T.length} נהגים${d||b?' ('+esc(b||d)+')':''}<span class="ar">${left?left+' לשלוח ▾':'✓ נשלח לכולם'}</span></summary>`+
     T.map(o=>{const sent=!!lget(sentKey(o));return `<div class="br"><div class="av" style="background:${o.c};width:36px;height:36px;font-size:13px" onclick="card(${o.i})">${esc(ini(o.n))}</div><div class="nm" onclick="card(${o.i})"><b>${esc(o.n)}</b><small>${esc([o.br,age(o.bd)?'גיל '+age(o.bd):''].filter(Boolean).join(' · '))}</small></div><a class="mz${sent?' ok':''}" data-mz="${o.i}" href="${esc(mazalUrl(o))}" target="_blank" onclick="sentMark(${o.i})">${sent?'✓ נשלח':'🎉 מזל טוב'}</a></div>`}).join('')+'</details>'}
 
 /* שמירה לאנשי הקשר בטלפון (קובץ vCard) */
