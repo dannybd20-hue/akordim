@@ -148,14 +148,16 @@ const COLORS=['#ea580c','#dc2626','#db2777','#9333ea','#4f46e5','#2563eb','#0891
 const norm=s=>String(s||'').toLowerCase().replace(/["'״׳`]/g,'').replace(/[ךםןףץ]/g,c=>({'ך':'כ','ם':'מ','ן':'נ','ף':'פ','ץ':'צ'})[c]).replace(/\s+/g,' ').trim();
 function ready(){
   const B=DB.b; // [סניף, מחוז, ראש סניף, סגן, רכז תחבורה, קצין בטיחות]
-  ALL=DB.r.map((r,i)=>{const b=B[r[9]]||[];const o={i,n:r[0],pv:r[1],ph:r[2],city:r[3],st:r[4],em:r[5],bd:r[6],car:r[7],perm:r[8],br:b[0]||'',dist:b[1]||'',head:b[2]||'',dep:b[3]||'',trans:b[4]||'',safe:b[5]||''};
-    o.s=norm([o.n,o.pv,o.city,o.br,o.dist,o.em,o.car,o.st].join(' '));o.d=String(o.ph||'').replace(/\D/g,'');let h=0;for(const ch of o.n)h=(h*31+ch.charCodeAt(0))|0;o.c=COLORS[Math.abs(h)%COLORS.length];return o});
+  ALL=DB.r.map((r,i)=>{const b=B[r[9]]||[];const o={i,n:r[0],pv:r[1],ph:r[2],city:r[3],st:r[4],em:r[5],bd:r[6],car:r[7],perm:r[8],br:b[0]||'',dist:b[1]||'',head:b[2]||'',dep:b[3]||'',trans:b[4]||'',safe:b[5]||'',role:r[10]||'',pveh:r[11]||''};o.roles=[...new Set(o.role.split(/;\s*/).map(x=>x.trim()).filter(Boolean))];
+    o.s=norm([o.n,o.pv,o.city,o.br,o.dist,o.em,o.car,o.st,o.role,o.pveh].join(' '));o.d=String(o.ph||'').replace(/\D/g,'');let h=0;for(const ch of o.n)h=(h*31+ch.charCodeAt(0))|0;o.c=COLORS[Math.abs(h)%COLORS.length];return o});
   const col=new Intl.Collator('he');ALL.sort((a,b)=>col.compare(a.n,b.n));
   const dists=[...new Set(ALL.map(o=>o.dist).filter(Boolean))].sort(col.compare);
   $('fd').innerHTML='<option value="">כל המחוזות</option>'+dists.map(d=>`<option>${esc(d)}</option>`).join('');
   /* הרשאות נהיגה / סוגי כלי רכב: לפי כמות */
   const pc={};ALL.forEach(o=>{o.perms=[...new Set((o.perm||'').split(/;\s*/).map(x=>x.trim()).filter(Boolean))];o.perms.forEach(x=>pc[x]=(pc[x]||0)+1)});
-  $('fx').innerHTML='<option value="">סינון נוסף: ימי הולדת / הרשאות נהיגה</option><optgroup label="ימי הולדת עבריים"><option value="b0">🎂 יום הולדת עברי היום</option><option value="b7">🎂 יום הולדת עברי השבוע</option><option value="b30">🎂 יום הולדת עברי החודש (30 יום)</option></optgroup><optgroup label="רכב"><option value="car">🚑 יש מספר רכב ארגוני</option><option value="anyp">🪪 יש הרשאת נהיגה כלשהי</option></optgroup><optgroup label="הרשאת נהיגה / סוג כלי רכב">'+
+  const rc={},vc={};ALL.forEach(o=>{o.roles.forEach(x=>rc[x]=(rc[x]||0)+1);if(o.pveh)vc[o.pveh]=(vc[o.pveh]||0)+1});
+  const og=(lab,pre,c,min)=>'<optgroup label="'+lab+'">'+Object.keys(c).filter(k=>c[k]>=(min||1)).sort((a,b)=>c[b]-c[a]).map(k=>`<option value="${pre}${esc(k)}">${esc(k)} (${c[k]})</option>`).join('')+'</optgroup>';
+  $('fx').innerHTML='<option value="">סינון נוסף: תפקיד / רכב / ימי הולדת</option>'+og('תפקיד','r:',rc,3)+og('סוג רכב פרטי','v:',vc)+'<optgroup label="ימי הולדת עבריים"><option value="b0">🎂 יום הולדת עברי היום</option><option value="b7">🎂 יום הולדת עברי השבוע</option><option value="b30">🎂 יום הולדת עברי החודש (30 יום)</option></optgroup><optgroup label="רכב"><option value="car">🚑 יש מספר רכב ארגוני</option><option value="anyp">🪪 יש הרשאת נהיגה כלשהי</option></optgroup><optgroup label="הרשאת נהיגה / סוג כלי רכב">'+
     Object.keys(pc).sort((a,b)=>pc[b]-pc[a]).map(x=>`<option value="p:${esc(x)}">${esc(x)} (${pc[x]})</option>`).join('')+'</optgroup>';
   $('tools').hidden=false;$('lockB').hidden=false;fillBr();apply();setHH();
 }
@@ -171,7 +173,7 @@ let words=[];
 function apply(){
   const q=norm($('q').value),d=$('fd').value,b=$('fb').value;words=q?q.split(' '):[];
   const x=$('fx').value;let xf=()=>true;
-  if(x==='car')xf=o=>!!o.car;else if(x==='anyp')xf=o=>o.perms.length>0;else if(x.startsWith('p:')){const p=x.slice(2);xf=o=>o.perms.includes(p)}
+  if(x==='car')xf=o=>!!o.car;else if(x==='anyp')xf=o=>o.perms.length>0;else if(x.startsWith('p:')){const p=x.slice(2);xf=o=>o.perms.includes(p)}else if(x.startsWith('r:')){const p=x.slice(2);xf=o=>o.roles.includes(p)}else if(x.startsWith('v:')){const p=x.slice(2);xf=o=>o.pveh===p}
   else if(x[0]==='b'){const n=+x.slice(1);const W=bdWindow(n);xf=o=>{const k=hb(o);return !!k&&W.has(k.m+'|'+k.d)}}
   LIST=ALL.filter(o=>xf(o)&&(!d||o.dist===d)&&(!b||o.br===b)&&words.every(w=>o.s.includes(w)||(/\d/.test(w)&&w.replace(/\D/g,'').length>=3&&o.d.includes(w.replace(/\D/g,'')))));
   if(x[0]==='b')LIST.sort((a,b)=>nextBd(a).n-nextBd(b).n);
@@ -191,7 +193,7 @@ function more(){
   const flush=()=>{if(buf&&grp)grp.insertAdjacentHTML('beforeend',buf);buf=''};
   for(let k=shown;k<end;k++){const o=LIST[k],lt=o._ex===2?'🚑 מספר רכב ארגוני '+words[0]:o._ex===1?'🏷️ פרייבט '+words[0]:(o.n.charAt(0)||'#').toUpperCase();
     if(lt!==last){flush();L.insertAdjacentHTML('beforeend',`<div class="lt">${esc(lt)}</div><div class="grp"></div>`);grp=L.lastElementChild;last=lt}
-    buf+=`<div class="row" onclick="card(${o.i})"><div class="av" style="background:${o.c}">${esc(ini(o.n))}</div><div class="nm"><b>${hl(o.n)}${soon(o)?' 🎂':''}</b><small>${hl([o.br,o.city].filter(Boolean).join(' · '))}</small></div>${o.car?`<span class="pv car" title="מספר פנימי רכב ארגוני">🚑 ${words.includes(o.car)?`<mark>${esc(o.car)}</mark>`:esc(o.car)}</span>`:''}${o.pv?`<span class="pv">${esc(o.pv)}</span>`:''}${o.ph?`<a class="call" href="tel:${esc(o.d)}" onclick="event.stopPropagation()" aria-label="חיוג">📞</a>`:''}</div>`}
+    buf+=`<div class="row" onclick="card(${o.i})"><div class="av" style="background:${o.c}">${esc(ini(o.n))}</div><div class="nm"><b>${hl(o.n)}${soon(o)?' 🎂':''}</b><small>${hl([o.roles[0],o.br,o.city].filter(Boolean).join(' · '))}</small></div>${o.car?`<span class="pv car" title="מספר פנימי רכב ארגוני">🚑 ${words.includes(o.car)?`<mark>${esc(o.car)}</mark>`:esc(o.car)}</span>`:''}${o.pv?`<span class="pv">${esc(o.pv)}</span>`:''}${o.ph?`<a class="call" href="tel:${esc(o.d)}" onclick="event.stopPropagation()" aria-label="חיוג">📞</a>`:''}</div>`}
   flush();L.dataset.lt=last;shown=end;
 }
 
@@ -214,8 +216,8 @@ function card(i){
     <button class="act" onclick="vcf(${o.i})"><i>💾</i>שמירה</button>
   </div>
   <div class="box"><h3>פרטי קשר</h3>${it('📱','טלפון נייד',o.ph,o.ph?'tel:'+o.d:'')}${it('📧','מייל',o.em,o.em?'mailto:'+o.em:'')}${it('🏠','כתובת',addr,addr?'https://waze.com/ul?q='+encodeURIComponent(addr)+'&navigate=yes':'')}</div>
-  <div class="box"><h3>ארגון</h3>${it('🏷️','פרייבט',o.pv)}${it('🏢','סניף',o.br)}${it('🗺️','מחוז',o.dist)}${it('👤','ראש סניף / מנהל אגף',o.head?person(o.head):'',0,1)}${it('👥','סגן ראש סניף',o.dep?person(o.dep):'',0,1)}${it('🚗','רכז תחבורה סניפי',o.trans?person(o.trans):'',0,1)}${it('🦺','קצין בטיחות מחוזי',o.safe?person(o.safe):'',0,1)}</div>
-  ${o.bd||o.car||perm?`<div class="box"><h3>פרטים נוספים</h3>${it('🎂','תאריך לידה',o.bd?o.bd+(a?` (גיל ${a})`:''):'')}${hebLine(o)}${it('🚑','מספר פנימי רכב ארגוני',o.car)}${it('🪪','אישור נהיגה ברכב ארגוני',perm,0,1)}</div>`:''}
+  <div class="box"><h3>ארגון</h3>${it('🏷️','פרייבט',o.pv)}${it('🧑‍⚕️','תפקיד',o.roles.map(p=>`<span class="tag">${esc(p)}</span>`).join(''),0,1)}${it('🏢','סניף',o.br)}${it('🗺️','מחוז',o.dist)}${it('👤','ראש סניף / מנהל אגף',o.head?person(o.head):'',0,1)}${it('👥','סגן ראש סניף',o.dep?person(o.dep):'',0,1)}${it('🚗','רכז תחבורה סניפי',o.trans?person(o.trans):'',0,1)}${it('🦺','קצין בטיחות מחוזי',o.safe?person(o.safe):'',0,1)}</div>
+  ${o.bd||o.car||perm||o.pveh?`<div class="box"><h3>פרטים נוספים</h3>${it('🎂','תאריך לידה',o.bd?o.bd+(a?` (גיל ${a})`:''):'')}${hebLine(o)}${it('🚙','סוג רכב פרטי',o.pveh)}${it('🚑','מספר פנימי רכב ארגוני',o.car)}${it('🪪','אישור נהיגה ברכב ארגוני',perm,0,1)}</div>`:''}
   </div>`;
   ov.onclick=e=>{if(e.target===ov)ov.remove()};const old=$('ov');if(old)old.remove();document.body.append(ov);
 }
