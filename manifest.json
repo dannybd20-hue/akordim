@@ -10,8 +10,35 @@
   "background_color": "#eef2ff",
   "theme_color": "#312e81",
   "icons": [
-    {"src": "icons/apps-192.png", "sizes": "192x192", "type": "image/png"},
-    {"src": "icons/apps-512.png", "sizes": "512x512", "type": "image/png"},
-    {"src": "icons/apps-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+    {
+      "src": "icons/apps-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/apps-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/apps-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "חיפוש בספר הטלפונים",
+      "short_name": "ספר טלפונים",
+      "url": "go/phonebook.html?focus=1",
+      "icons": [
+        {
+          "src": "icons/pb-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }

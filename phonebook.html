@@ -2,14 +2,14 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<script>try{if(sessionStorage.getItem('gate_phonebook')!=='1'){document.documentElement.style.display='none';location.replace('./?open=phonebook')}}catch(e){location.replace('./')}
+<script>try{if(sessionStorage.getItem('gate_phonebook')!=='1'){document.documentElement.style.display='none';location.replace('./?open=phonebook'+(location.search?'&'+location.search.slice(1):''))}}catch(e){location.replace('./')}
 function goHome(){try{sessionStorage.removeItem('gate_phonebook')}catch(e){}location.href='./'}</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ספר טלפונים</title>
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="pb-manifest.json">
 <meta name="theme-color" content="#c2410c">
+<link rel="apple-touch-icon" href="icons/pb-192.png">
 <link rel="icon" href="icons/apps-192.png">
-<link rel="apple-touch-icon" href="icons/apps-apple-180.png">
 <meta name="robots" content="noindex">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -98,7 +98,7 @@ a.it{text-decoration:none;color:inherit}a.it .v span{color:var(--pr)}
 </head>
 <body>
 <header id="hd">
-  <div class="hrow"><h1>📇 ספר טלפונים</h1><button class="hb" id="lockB" hidden onclick="relock()" title="נעילה ושכחת הסיסמה במכשיר">🔒</button><button class="hb" onclick="goHome()">→ אפליקציות</button></div>
+  <div class="hrow"><h1>📇 ספר טלפונים</h1><button class="hb" id="instB" hidden onclick="install()" title="הוספה למסך הבית">📲 למסך הבית</button><button class="hb" id="lockB" hidden onclick="relock()" title="נעילה ושכחת הסיסמה במכשיר">🔒</button><button class="hb" onclick="goHome()">→ אפליקציות</button></div>
   <div id="tools" hidden>
     <div class="srch"><span class="ic">🔍</span><input id="q" type="text" enterkeyhint="search" placeholder="חיפוש: שם, טלפון, פרייבט, מס׳ רכב, יישוב…" autocomplete="off" oninput="onQ()"><button class="clr" id="clr" hidden onclick="$('q').value='';onQ();$('q').focus()">✕</button></div>
     <div class="flt"><select id="fd" onchange="onDist()"></select><select id="fb" onchange="apply()"></select></div>
@@ -159,7 +159,10 @@ function ready(){
   const og=(lab,pre,c,min)=>'<optgroup label="'+lab+'">'+Object.keys(c).filter(k=>c[k]>=(min||1)).sort((a,b)=>c[b]-c[a]).map(k=>`<option value="${pre}${esc(k)}">${esc(k)} (${c[k]})</option>`).join('')+'</optgroup>';
   $('fx').innerHTML='<option value="">סינון נוסף: תפקיד / רכב / ימי הולדת</option>'+og('תפקיד','r:',rc,3)+og('סוג רכב פרטי','v:',vc)+'<optgroup label="ימי הולדת עבריים"><option value="b0">🎂 יום הולדת עברי היום</option><option value="b7">🎂 יום הולדת עברי השבוע</option><option value="b30">🎂 יום הולדת עברי החודש (30 יום)</option></optgroup><optgroup label="רכב"><option value="car">🚑 יש מספר רכב ארגוני</option><option value="anyp">🪪 יש הרשאת נהיגה כלשהי</option></optgroup><optgroup label="הרשאת נהיגה / סוג כלי רכב">'+
     Object.keys(pc).sort((a,b)=>pc[b]-pc[a]).map(x=>`<option value="p:${esc(x)}">${esc(x)} (${pc[x]})</option>`).join('')+'</optgroup>';
-  $('tools').hidden=false;$('lockB').hidden=false;fillBr();apply();setHH();
+  $('tools').hidden=false;$('lockB').hidden=false;fillBr();
+  /* פתיחה מהאייקון במסך הבית: ?focus=1 פותח ישר את המקלדת בשורת החיפוש, ?q= מחפש מיד */
+  const U=new URLSearchParams(location.search);if(U.get('q')){$('q').value=U.get('q');$('clr').hidden=false}
+  apply();setHH();if(U.get('focus')||U.get('q'))setTimeout(()=>$('q').focus(),100);
 }
 function fillBr(){const d=$('fd').value,col=new Intl.Collator('he');const brs=[...new Set(ALL.filter(o=>!d||o.dist===d).map(o=>o.br).filter(Boolean))].sort(col.compare);
   $('fb').innerHTML='<option value="">כל הסניפים</option>'+brs.map(b=>`<option>${esc(b)}</option>`).join('')}
@@ -254,6 +257,10 @@ function vcf(i){const o=byI(i);const v=['BEGIN:VCARD','VERSION:3.0','FN:'+o.n,'N
   const u=URL.createObjectURL(new Blob([v],{type:'text/vcard'}));const a=document.createElement('a');a.href=u;a.download=o.n+'.vcf';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000)}
 addEventListener('keydown',e=>{if(e.key==='Escape'){const o=$('ov');if(o)o.remove()}});
 
+/* כפתור "למסך הבית": מתקין את ספר הטלפונים כאפליקציה נפרדת עם אייקון משלו */
+let instEv=null;addEventListener('beforeinstallprompt',e=>{e.preventDefault();instEv=e;$('instB').hidden=false});
+async function install(){if(!instEv){alert('בתפריט הדפדפן (⋮) בחר "הוספה למסך הבית"');return}instEv.prompt();try{await instEv.userChoice}catch(e){}instEv=null;$('instB').hidden=true}
+addEventListener('appinstalled',()=>{$('instB').hidden=true});
 const sv=lget('pb_pw');if(sv)unlock(sv);else lockView();
 </script>
 </body>
