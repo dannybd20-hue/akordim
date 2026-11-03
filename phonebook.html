@@ -165,9 +165,9 @@ function ready(){
   /* הרשאות נהיגה / סוגי כלי רכב: לפי כמות */
   const pc={};ALL.forEach(o=>{o.perms=[...new Set((o.perm||'').split(/;\s*/).map(x=>x.trim()).filter(Boolean))];o.perms.forEach(x=>pc[x]=(pc[x]||0)+1)});
   const rc={},vc={};ALL.forEach(o=>{o.roles.forEach(x=>rc[x]=(rc[x]||0)+1);if(o.pveh)vc[o.pveh]=(vc[o.pveh]||0)+1});
-  const og=(lab,pre,c,min)=>'<optgroup label="'+lab+'">'+Object.keys(c).filter(k=>c[k]>=(min||1)).sort((a,b)=>c[b]-c[a]).map(k=>`<option value="${pre}${esc(k)}">${esc(k)} (${c[k]})</option>`).join('')+'</optgroup>';
+  const og=(lab,pre,c,min)=>'<optgroup label="'+lab+'">'+Object.keys(c).filter(k=>c[k]>=(min||1)).sort(new Intl.Collator("he").compare).map(k=>`<option value="${pre}${esc(k)}">${esc(k)} (${c[k]})</option>`).join('')+'</optgroup>';
   $('fx').innerHTML='<option value="">סינון נוסף: תפקיד / רכב / ימי הולדת</option>'+og('תפקיד','r:',rc,3)+og('סוג רכב פרטי','v:',vc)+'<optgroup label="ימי הולדת עבריים"><option value="b0">🎂 יום הולדת עברי היום</option><option value="b7">🎂 יום הולדת עברי השבוע</option><option value="b30">🎂 יום הולדת עברי החודש (30 יום)</option></optgroup><optgroup label="רכב"><option value="car">🚑 יש מספר רכב ארגוני</option><option value="anyp">🪪 יש הרשאת נהיגה כלשהי</option></optgroup><optgroup label="הרשאת נהיגה / סוג כלי רכב">'+
-    Object.keys(pc).sort((a,b)=>pc[b]-pc[a]).map(x=>`<option value="p:${esc(x)}">${esc(x)} (${pc[x]})</option>`).join('')+'</optgroup>';
+    Object.keys(pc).sort(new Intl.Collator("he").compare).map(x=>`<option value="p:${esc(x)}">${esc(x)} (${pc[x]})</option>`).join('')+'</optgroup>';
   $('tools').hidden=false;$('lockB').hidden=false;fillBr();
   /* פתיחה מהאייקון במסך הבית: ?focus=1 פותח ישר את המקלדת בשורת החיפוש, ?q= מחפש מיד */
   const U=new URLSearchParams(location.search);if(U.get('q')){$('q').value=U.get('q');$('clr').hidden=false}
