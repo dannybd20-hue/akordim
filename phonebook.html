@@ -264,8 +264,8 @@ function hebLine(o){const k=hb(o);if(!k)return '';const nb=nextBd(o);
 
 /* ---------- מזל טוב ביום ההולדת העברי: הודעה מוכנה בוואטסאפ, חתומה בשם שלי ---------- */
 const SIGN='דני בן דוד';
-function mazalText(o){const k=hb(o),first=String(o.n).trim().split(/\s+/)[0];
-  return `מזל טוב ${first}! 🎉🎂\nהיום, ${gem(k.d)} ב${HM[k.m]||k.m}, יום ההולדת העברי שלך.\nמאחל לך שנה של בריאות, שמחה, הצלחה וברכה בכל מעשיך, והמשך הצלת חיים בכוח ובשמחה! 🚑💪\n\n${SIGN}`}
+function mazalText(o){
+  return `מזל טוב אח שלי היקר 🎉🎂\nמאחל לך שנה של בריאות, שמחה, הצלחה וברכה בכל מעשיך, והמשך בהצלת חיים בכוח ובשמחה! 🚑💪\n\n${SIGN}`}
 function mazalUrl(o){return 'https://wa.me/'+intl(o.d)+'?text='+encodeURIComponent(mazalText(o))}
 const sentKey=o=>'pb_mz_'+new Date().getFullYear()+'_'+(o.pv||o.d||o.n);
 function sentMark(i){const o=byI(i);lput(sentKey(o),'1');document.querySelectorAll('[data-mz="'+i+'"]').forEach(e=>{e.classList.add('ok');e.textContent='✓ נשלח'});
