@@ -57,7 +57,8 @@ main{max-width:760px;margin:0 auto;padding:6px 12px 40px}
 .bday .br .nm small{color:#92400e}
 .mz{flex:none;border:0;border-radius:999px;padding:8px 12px;font-weight:900;font-size:14px;background:#16a34a;color:#fff;text-decoration:none;white-space:nowrap}
 .mz.ok{background:#a3a3a3}
-.call{flex:none;width:42px;height:42px;border-radius:50%;border:0;background:#16a34a;color:#fff;font-size:18px;display:grid;place-items:center;text-decoration:none}
+.call.wa{background:#25d366}.call svg{width:22px;height:22px;fill:#fff}
+.call{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:#2563eb;color:#fff;font-size:18px;display:grid;place-items:center;text-decoration:none}
 .empty{text-align:center;color:var(--mut);padding:50px 10px;font-weight:700}
 mark{background:#fde68a;color:inherit;border-radius:3px;padding:0 1px}
 /* כרטיס איש קשר */
@@ -199,6 +200,9 @@ function apply(){
   const ob=new IntersectionObserver(es=>{if(es[0].isIntersecting)more()},{rootMargin:'600px'});ob.observe($('more'));
 }
 function hl(s){s=esc(s);if(!words.length)return s;for(const w of words){if(!w||/\d/.test(w))continue;const re=new RegExp('('+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','i');s=s.replace(re,'<mark>$1</mark>')}return s}
+/* כפתורים בשורה: כחול = חיוג, ירוק = וואטסאפ (רק למי שיש הרשאת נהיגה) */
+const PH_SVG='<svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>';
+const WA_SVG='<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-3 .78.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.55.12-.16.25-.63.8-.78.97-.14.16-.29.18-.53.06a6.7 6.7 0 0 1-3.34-2.92c-.25-.43.25-.4.72-1.33.08-.16.04-.3-.02-.43-.06-.12-.55-1.33-.76-1.82-.2-.48-.4-.41-.55-.42h-.47a.9.9 0 0 0-.65.3 2.7 2.7 0 0 0-.85 2.02 4.7 4.7 0 0 0 1 2.5 10.8 10.8 0 0 0 4.13 3.65c1.54.66 2.14.72 2.91.6.47-.07 1.46-.6 1.66-1.17.2-.58.2-1.07.14-1.17-.06-.1-.22-.16-.47-.28z"/></svg>';
 const ini=n=>{const p=String(n).trim().split(/\s+/);return (p[0]||'').charAt(0)+(p.length>1?p[p.length-1].charAt(0):'')};
 function more(){
   if(shown>=LIST.length)return;const L=$('L'),end=Math.min(LIST.length,shown+120);
@@ -206,7 +210,7 @@ function more(){
   const flush=()=>{if(buf&&grp)grp.insertAdjacentHTML('beforeend',buf);buf=''};
   for(let k=shown;k<end;k++){const o=LIST[k],lt=o._ex===3?'🚑 מספר רכב ארגוני '+words[0]:o._ex===2?'🚗 מספר רישוי '+o.plate:o._ex===1?'🏷️ פרייבט '+words[0]:(o.n.charAt(0)||'#').toUpperCase();
     if(lt!==last){flush();L.insertAdjacentHTML('beforeend',`<div class="lt">${esc(lt)}</div><div class="grp"></div>`);grp=L.lastElementChild;last=lt}
-    buf+=`<div class="row" onclick="card(${o.i})"><div class="av" style="background:${o.c}">${esc(ini(o.n))}</div><div class="nm"><b>${hl(o.n)}${soon(o)?' 🎂':''}</b><small>${hl([o.roles[0],o.br,o.city].filter(Boolean).join(' · '))}</small></div>${o.car?`<span class="pv car" title="מספר פנימי רכב ארגוני">🚑 ${words.includes(o.car)?`<mark>${esc(o.car)}</mark>`:esc(o.car)}</span>`:''}${o.pv?`<span class="pv">${esc(o.pv)}</span>`:''}${o.ph?`<a class="call" href="tel:${esc(o.d)}" onclick="event.stopPropagation()" aria-label="חיוג">📞</a>`:''}</div>`}
+    buf+=`<div class="row" onclick="card(${o.i})"><div class="av" style="background:${o.c}">${esc(ini(o.n))}</div><div class="nm"><b>${hl(o.n)}${soon(o)?' 🎂':''}</b><small>${hl([o.roles[0],o.br,o.city].filter(Boolean).join(' · '))}</small></div>${o.car?`<span class="pv car" title="מספר פנימי רכב ארגוני">🚑 ${words.includes(o.car)?`<mark>${esc(o.car)}</mark>`:esc(o.car)}</span>`:''}${o.pv?`<span class="pv">${esc(o.pv)}</span>`:''}${o.ph?`<a class="call" href="tel:${esc(o.d)}" onclick="event.stopPropagation()" aria-label="חיוג">${PH_SVG}</a>${o.perms.length&&o.d.length>=9?`<a class="call wa" href="https://wa.me/${esc(intl(o.d))}" target="_blank" onclick="event.stopPropagation()" aria-label="וואטסאפ">${WA_SVG}</a>`:''}`:''}</div>`}
   flush();L.dataset.lt=last;shown=end;
 }
 
