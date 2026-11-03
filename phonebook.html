@@ -279,8 +279,8 @@ function bdayBanner(d,b){const W=bdWindow(0),T=ALL.filter(o=>o.perms.length&&(!d
 function vcf(i){const o=byI(i),e=t=>String(t||'').replace(/\\/g,'\\\\').replace(/[,;]/g,m=>'\\'+m).replace(/\n/g,'\\n');
   /* כמו אנשי הקשר הקיימים בטלפון: שם + פרייבט, ובהערות: ראש סניף, סגן, רכז, קצב"ת, גיל, מס כלי, אישור נהיגה */
   const nm=o.n+(o.pv?' '+o.pv:''),m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(o.bd||''),ag=age(o.bd);
-  const note=[o.head&&'ראש סניף: '+o.head,o.dep&&'סגן: '+o.dep,o.trans&&'רכז: '+o.trans,o.safe&&'קצב"ת: '+o.safe,ag&&'גיל: '+ag,o.car&&'מס כלי: '+o.car,o.perm&&'אישור נהיגה: '+o.perm,
-    o.br&&'סניף: '+o.br,o.roles.length&&'תפקיד: '+o.roles.join('; '),o.plate&&'רישוי פרטי: '+o.plate,hb(o)&&'יום הולדת עברי: '+hebStr(o)].filter(Boolean).join('\n');
+  const note=[o.head&&'👤 ראש סניף: '+o.head,o.dep&&'👥 סגן: '+o.dep,o.trans&&'🚗 רכז: '+o.trans,o.safe&&'🦺 קצב"ת: '+o.safe,ag&&'🎂 גיל: '+ag,o.car&&'🚑 מס כלי: '+o.car,o.perm&&'🪪 אישור נהיגה: '+o.perm,
+    o.br&&'🏢 סניף: '+o.br,o.roles.length&&'🧑‍⚕️ תפקיד: '+o.roles.join('; '),o.plate&&'🚙 רישוי פרטי: '+o.plate,hb(o)&&'✡️ יום הולדת עברי: '+hebStr(o)].filter(Boolean).join('\n');
   const v=['BEGIN:VCARD','VERSION:3.0','N;CHARSET=UTF-8:;'+e(nm)+';;;','FN;CHARSET=UTF-8:'+e(nm),o.ph?'TEL;TYPE=CELL:'+o.ph:'',o.em?'EMAIL;TYPE=HOME:'+o.em:'',
     o.st||o.city?'ADR;TYPE=HOME;CHARSET=UTF-8:;;'+e(o.st)+';'+e(o.city)+';;;':'',m?'BDAY:'+m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0'):'',
     'ORG;CHARSET=UTF-8:איחוד הצלה',note?'NOTE;CHARSET=UTF-8:'+e(note):'','END:VCARD'].filter(Boolean).join('\r\n')+'\r\n';
