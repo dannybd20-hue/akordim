@@ -264,9 +264,18 @@ let instEv=null;addEventListener('beforeinstallprompt',e=>{e.preventDefault();in
 const STANDALONE=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
 async function install(){
   if(!instEv){
-    if(STANDALONE&&/Android/i.test(navigator.userAgent)){if(confirm('כדי להוסיף אייקון נפרד למסך הבית, ספר הטלפונים ייפתח בכרום.\nשם לחץ שוב על 📲 למעלה.')){location.href='intent://'+location.host+location.pathname.replace(/[^/]*$/,'')+'phonebook.html?focus=1#Intent;scheme=https;package=com.android.chrome;end'}return}
+    if(STANDALONE){instHelp();return}
     if(/iPhone|iPad/i.test(navigator.userAgent)){alert('בספארי: לחץ על כפתור השיתוף (⬆️) ובחר "הוסף למסך הבית"');return}
     alert('בתפריט הדפדפן (⋮) בחר "הוספה למסך הבית" או "התקנת אפליקציה"');return}instEv.prompt();try{await instEv.userChoice}catch(e){}instEv=null;$('instB').hidden=true}
+/* עזרה להתקנה כשנמצאים בתוך האפליקציה הראשית: פתיחה בכרום או העתקת הקישור */
+function instHelp(){const url=location.origin+location.pathname.replace(/[^/]*$/,'')+'phonebook.html?focus=1',an=/Android/i.test(navigator.userAgent);
+  const ov=document.createElement('div');ov.className='ov';ov.id='ov';ov.onclick=e=>{if(e.target===ov)ov.remove()};
+  ov.innerHTML=`<div class="sheet" style="padding:0 0 20px"><div class="top"><button class="x" onclick="$('ov').remove()">✕</button><div style="font-size:44px">📲</div><h2>אייקון לספר הטלפונים</h2><div class="sub">מכאן אי אפשר להתקין. פותחים בדפדפן ומוסיפים משם</div></div>
+  <div class="box" style="padding:14px;line-height:1.7;font-size:15px"><b>1.</b> ${an?'לחץ "פתח בכרום", או העתק את הקישור והדבק אותו בכרום.':'העתק את הקישור והדבק אותו בספארי.'}<br><b>2.</b> ${an?'בכרום: ⋮ (שלוש נקודות למעלה) ← <b>"הוספה למסך הבית"</b>.':'בספארי: כפתור השיתוף ⬆️ ← <b>"הוסף למסך הבית"</b>.'}<br><b>3.</b> על מסך הבית יופיע אייקון כתום "ספר טלפונים".</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin:14px 12px 0">${an?`<a class="go" style="text-align:center;text-decoration:none" href="intent://${esc(url.replace(/^https?:\/\//,''))}#Intent;scheme=https;package=com.android.chrome;end">🌐 פתח בכרום</a>`:''}
+  <button class="go" style="background:#475569;box-shadow:none" onclick="navigator.clipboard.writeText('${esc(url)}').then(()=>{this.textContent='✓ הקישור הועתק'},()=>prompt('העתק את הקישור:','${esc(url)}'))">📋 העתק קישור</button>
+  <div style="direction:ltr;text-align:center;font-size:13px;color:var(--mut);word-break:break-all">${esc(url)}</div></div></div>`;
+  const o=$('ov');if(o)o.remove();document.body.append(ov)}
 addEventListener('appinstalled',()=>{$('instB').hidden=true});
 const sv=lget('pb_pw');if(sv)unlock(sv);else lockView();
 </script>
