@@ -133,9 +133,9 @@ const WA_ICON='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><
 /* ===== נוסחי הודעות ===== */
 const FORM_URL='https://dannybd20-hue.github.io/akordim/bdika.html';
 const SIGN='בברכה,\nדני בן דוד\nקצין בטיחות בתעבורה\nמרחב ירושלים';
-const APP_PATH='*אזור אישי > פרטים אישיים > פרטי רישיון נהיגה > למטה: עדכון פרטי רישיון.*';
+const APP_PATH='*אזור אישי > פרטי רישיון נהיגה > למטה: עדכון פרטי רישיון.*';
 function first(n){return (n||'').split(' ')[0]}
-function carTxt(c){return `כלי מס' ${c.num}${c.type?' – '+c.type:''}`}
+function carTxt(c){return `כלי מס' ${c.num}`}
 function carLine(d){return d.cars&&d.cars.length?`\n(${d.cars.map(carTxt).join(', ')})`:''}
 // i = {k, lvl, n, dateStr, srcStr}
 const MSG={
