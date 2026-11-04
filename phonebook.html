@@ -236,8 +236,32 @@ function card(i){
   <div class="box"><h3>פרטי קשר</h3>${it('📱','טלפון נייד',o.ph,o.ph?'tel:'+o.d:'')}${it('📧','מייל',o.em,o.em?'mailto:'+o.em:'')}${it('🏠','כתובת',addr,addr?'https://waze.com/ul?q='+encodeURIComponent(addr)+'&navigate=yes':'')}</div>
   <div class="box"><h3>ארגון</h3>${it('🏷️','פרייבט',o.pv)}${it('🧑‍⚕️','תפקיד',o.roles.map(p=>`<span class="tag">${esc(p)}</span>`).join(''),0,1)}${it('🏢','סניף',o.br)}${it('🗺️','מחוז',o.dist)}${it('👤','ראש סניף / מנהל אגף',o.head?person(o.head):'',0,1)}${it('👥','סגן ראש סניף',o.dep?person(o.dep):'',0,1)}${it('🚗','רכז תחבורה סניפי',o.trans?person(o.trans):'',0,1)}${it('🦺','קצין בטיחות מחוזי',o.safe?person(o.safe):'',0,1)}</div>
   ${o.bd||o.car||perm||o.pveh||o.plate?`<div class="box"><h3>פרטים נוספים</h3>${it('🎂','תאריך לידה',o.bd?o.bd+(a?` (גיל ${a})`:''):'')}${hebLine(o)}${it('🚙','סוג רכב פרטי',o.pveh)}${it('🚗','מספר רישוי רכב פרטי',o.plate)}${it('🚑','מספר פנימי רכב ארגוני',o.car)}${it('🪪','אישור נהיגה ברכב ארגוני',perm,0,1)}</div>`:''}
+  <div class="box" id="rideBox" hidden></div>
   </div>`;
-  ov.onclick=e=>{if(e.target===ov)ov.remove()};const old=$('ov');if(old)old.remove();document.body.append(ov);
+  ov.onclick=e=>{if(e.target===ov)ov.remove()};const old=$('ov');if(old)old.remove();document.body.append(ov);rideBox(o);
+}
+/* ---------- ציוני רכיבה (חיים בדרכים 2025–2026) ----------
+   נשמרים מוצפנים ב-kbt/ride.bin, ונפתחים עם אותה סיסמה של ניהול קצב"ת (נשמרת במכשיר) */
+let RIDES=null;
+async function rideLoad(pw){
+  const buf=new Uint8Array(await (await fetch('kbt/ride.bin',{cache:'no-cache'})).arrayBuffer());
+  const salt=buf.slice(3,19),iv=buf.slice(19,31),ct=buf.slice(31);
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:600000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+  const gz=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);
+  return JSON.parse(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
+}
+function rideSc(x){const n=parseFloat(String(x).replace(/[^\d.]/g,''));return isNaN(n)||n>10?null:n}
+async function rideBox(o){
+  const b=$('rideBox');if(!b||!o.pv)return;
+  if(!RIDES){const pw=lget('kbt_pw');if(!pw)return;b.hidden=false;b.innerHTML='<h3>🏍️ ציוני רכיבה</h3><div class="empty" style="padding:6px">טוען…</div>';
+    try{RIDES=await rideLoad(pw)}catch(e){b.hidden=true;return}}
+  const L=(RIDES.r||{})[String(o.pv)];if(!L||!L.length){b.hidden=true;return}
+  const nums=L.map(x=>rideSc(x.sc)).filter(x=>x!=null),avg=nums.length?(nums.reduce((a,c)=>a+c,0)/nums.length).toFixed(1):'—';
+  b.hidden=false;
+  b.innerHTML=`<h3>🏍️ ציוני רכיבה 2025–2026</h3><div class="it"><span class="k">📊</span><span class="v"><small>${L.length} מבחנים · ממוצע</small><span>${avg}</span></span></div>`+
+    L.map(x=>{const n=rideSc(x.sc),c=n==null?'#78716c':n<6.5?'#dc2626':n<7.5?'#d97706':'#16a34a';
+      return `<div class="it" style="align-items:flex-start"><span class="k" style="color:${c};font-weight:900;min-width:2.4em;text-align:center">${esc(x.sc||'—')}</span><span class="v"><small>${esc(x.d)}${x.ins?' · מדריך: '+esc(x.ins):''}${x.urg?' · 🚨 דחופה':''}</small><span>${esc([x.op,x.note,x.gen].filter(Boolean).join(' · ')||'—')}${x.pas?`<br><small>הרכבת רוכב נוסף: ${esc(x.pas)}</small>`:''}</span></span></div>`}).join('');
 }
 /* ---------- יום הולדת עברי ----------
    מחושב מתאריך הלידה הלועזי. מי שנולד אחרי השקיעה - יום ההולדת העברי שלו יום אחד אחרי (אין לנו שעת לידה). */
