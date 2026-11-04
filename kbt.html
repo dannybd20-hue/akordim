@@ -88,6 +88,8 @@ h2 .cnt{font-family:var(--f-body);font-weight:700;font-size:.85rem;color:var(--m
 .veh{margin-top:6px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .veh.none{color:var(--muted);font-weight:600;font-size:.88rem}
 .issues{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:8px}
+.irow.dovi{background:var(--bg);border-radius:10px;padding:6px 8px}
+.irow.dovi .dl{font-size:.86rem;font-weight:700;color:var(--muted)}
 .irow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .btns{display:flex;gap:6px;flex-wrap:wrap}
 .sm{padding:6px 10px!important;font-size:.88rem;border-radius:8px}
@@ -137,6 +139,8 @@ const APP_PATH='*אזור אישי > פרטי רישיון נהיגה > למטה
 function first(n){return (n||'').split(' ')[0]}
 function carTxt(c){return `כלי מס' ${c.num}`}
 function carLine(d){return d.cars&&d.cars.length?`\n(${d.cars.map(carTxt).join(', ')})`:''}
+const DOVI={wa:'972502073341',mail:'doviD@1221.org.il',cc:'yehudalv@1221.org.il'};
+function doviMsg(d,i){return `שלום דובי,\n\nלנהג שפרטיו מופיעים מטה פג תוקף בדיקת המידע התעבורתי (עבר תעבורתי) בתאריך ${i.dateStr}.\nאודה לך אם תוציא עבורו בדיקה חדשה, ותעדכן אותי ברגע שהבדיקה בוצעה.\n\n*פרטי הנהג:*\nשם: ${d.name}\nת.ז.: ${d.idn||'________'}\nמס' רישיון נהיגה: ________\nפרייבט: ${d.priv||'—'}\nסניף: ${d.branch||'—'}\n\nתודה רבה,\n${SIGN.replace('בברכה,\n','')}`}
 // i = {k, lvl, n, dateStr, srcStr}
 function soonTxt(i,f){return i.n===1?(f?'*תפוג מחר*':'*יפוג מחר*'):`*${f?'תפוג':'יפוג'} בעוד ${i.n} ימים*`}
 const MSG={
@@ -263,7 +267,12 @@ function card(r){
     const wa=o.phone?`<a class="wa sm${sent?' done':''}" href="${waLink(o.phone,text)}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}${sent?'נפתח היום':'וואטסאפ'}</a>`:'';
     const ml=o.email?`<a class="mail sm" href="mailto:${esc(o.email)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(text.replace(/\*/g,''))}" data-sent="${esc(sk)}">מייל</a>`:'';
     const cp=`<button class="mail sm" type="button" data-copy="${esc(text)}">העתק</button>`;
-    return `<div class="irow"><span class="chip ${i.lvl}">${esc(i.chip)}</span><span class="btns">${wa}${ml}${cp}</span></div>`;
+    let dov='';
+    if(i.k==='traffic'&&(i.lvl==='bad'||i.lvl==='today')){
+      const t=doviMsg(o,i),dk='sent:'+r.key+':dovi:'+TODAY_KEY,ds=ls(dk);
+      dov=`<div class="irow dovi"><span class="dl">בקשה לבדיקה חדשה מדובי</span><span class="btns"><a class="wa sm${ds?' done':''}" href="${waLink(DOVI.wa,t)}" target="_blank" rel="noopener" data-sent="${esc(dk)}">${WA_ICON}${ds?'נפתח היום':'לדובי'}</a><a class="mail sm" href="mailto:${DOVI.mail}?cc=${DOVI.cc}&subject=${encodeURIComponent('בקשה לבדיקת מידע תעבורתי – '+o.name)}&body=${encodeURIComponent(t.replace(/\*/g,''))}" data-sent="${esc(dk)}">מייל לדובי</a><button class="mail sm" type="button" data-copy="${esc(t)}">העתק</button></span></div>`;
+    }
+    return `<div class="irow"><span class="chip ${i.lvl}">${esc(i.chip)}</span><span class="btns">${wa}${ml}${cp}</span></div>${dov}`;
   }).join('');
   return `<div class="card"><div class="who"><div class="name">${esc(o.name)}</div><div class="meta">${isV?'<span>נהג</span>':''}${meta}</div>${veh}</div>${contact}<div class="issues">${rows}</div></div>`;
 }
