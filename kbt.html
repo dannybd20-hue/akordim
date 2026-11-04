@@ -138,22 +138,17 @@ function first(n){return (n||'').split(' ')[0]}
 function carTxt(c){return `כלי מס' ${c.num}`}
 function carLine(d){return d.cars&&d.cars.length?`\n(${d.cars.map(carTxt).join(', ')})`:''}
 // i = {k, lvl, n, dateStr, srcStr}
+function soonTxt(i,f){return i.n===1?(f?'*תפוג מחר*':'*יפוג מחר*'):`*${f?'תפוג':'יפוג'} בעוד ${i.n} ימים*`}
 const MSG={
-  lic:(d,i)=>i.lvl==='warn'
-    ?`מה קורה ${first(d.name)},\nלתשומת לבך – רישיון הנהיגה שלך במערכות הארגון *יפוג בעוד ${i.n} ימים* (${i.dateStr}).${carLine(d)}\n\nכדי להמשיך לנהוג בכלי הארגון בלי הפסקה, יש לחדש את הרישיון ולהעלות אותו דרך אפליקציית איחוד הצלה:\n${APP_PATH}\n\n${SIGN}`
-    :`מה קורה ${first(d.name)},\nלתשומת לבך – רישיון הנהיגה שלך במערכות הארגון *פג תוקף* (${i.dateStr}).${carLine(d)}\n\nמרגע קבלת הודעה זו, *אין אישור לנהוג בכלי הארגון עד להסדרת הנושא.*\n\nיש להעלות רישיון נהיגה בתוקף דרך אפליקציית איחוד הצלה בהקדם:\n${APP_PATH}\n\n*בהצלחה.*\n${SIGN}`,
-  health:(d,i)=>i.lvl==='warn'
-    ?`מה קורה ${first(d.name)},\nלתשומת לבך – תיק נהג במערכות הארגון *יפוג בעוד ${i.n} ימים* (${i.dateStr}).${carLine(d)}\n\nכדי להמשיך לנהוג בכלי הארגון בלי הפסקה, יש למלא באפליקציית איחוד הצלה לפני המועד:\n*טפסים כללים > תיק נהג באיחוד הצלה.*\n\n*בהצלחה.*\n${SIGN}`
-    :`מה קורה ${first(d.name)},\nלתשומת לבך – תיק נהג במערכות הארגון *פג תוקף* (${i.dateStr}).${carLine(d)}\n\nמרגע קבלת הודעה זו, *אין אישור לנהוג בכלי הארגון עד להסדרת הנושא.*\n\nיש למלא באפליקציית איחוד הצלה בהקדם:\n*טפסים כללים > תיק נהג באיחוד הצלה.*\n\n*בהצלחה.*\n${SIGN}`,
-  traffic:(d,i)=>i.lvl==='warn'
-    ?`מה קורה ${first(d.name)},\nלתשומת לבך – בדיקת המידע התעבורתי שלך במערכות הארגון *תפוג בעוד ${i.n} ימים* (${i.dateStr}).${carLine(d)}\n\nיש לחדש את האישור דרך אפליקציית איחוד הצלה לפני המועד, כדי שתוכל להמשיך לנהוג בכלי הארגון.\nאם לא ברור איך – תחזור אליי.\n\n${SIGN}`
-    :`מה קורה ${first(d.name)},\nלתשומת לבך – בדיקת המידע התעבורתי שלך במערכות הארגון *פגה תוקף* (${i.dateStr}).${carLine(d)}\n\nמרגע קבלת הודעה זו, *אין אישור לנהוג בכלי הארגון עד להסדרת הנושא.*\n\nיש לחדש את האישור דרך אפליקציית איחוד הצלה בהקדם. אם לא ברור איך – תחזור אליי.\n\n*בהצלחה.*\n${SIGN}`,
+  lic:(d,i)=>`מה קורה ${first(d.name)},\nלתשומת לבך – רישיון הנהיגה שלך במערכות הארגון ${i.lvl==='warn'?soonTxt(i):'*פג תוקף*'} (${i.dateStr}).${carLine(d)}\n\n${i.lvl==='warn'?'מתאריך זה, *לא יהיה אישור לנהוג בכלי הארגון עד להסדרת הנושא.*':'מרגע קבלת הודעה זו, *אין אישור לנהוג בכלי הארגון עד להסדרת הנושא.*'}\n\nיש להעלות רישיון נהיגה בתוקף דרך אפליקציית איחוד הצלה בהקדם:\n${APP_PATH}\n\n*בהצלחה.*\n${SIGN}`,
+  health:(d,i)=>`מה קורה ${first(d.name)},\nלתשומת לבך – תיק נהג במערכות הארגון ${i.lvl==='warn'?soonTxt(i):'*פג תוקף*'} (${i.dateStr}).${carLine(d)}\n\n${i.lvl==='warn'?'מתאריך זה, *לא יהיה אישור לנהוג בכלי הארגון עד להסדרת הנושא.*':'מרגע קבלת הודעה זו, *אין אישור לנהוג בכלי הארגון עד להסדרת הנושא.*'}\n\nיש למלא באפליקציית איחוד הצלה בהקדם:\n*טפסים כללים > תיק נהג באיחוד הצלה.*\n\n*בהצלחה.*\n${SIGN}`,
+  traffic:(d,i)=>`מה קורה ${first(d.name)},\nלתשומת לבך – בדיקת המידע התעבורתי שלך במערכות הארגון ${i.lvl==='warn'?soonTxt(i,1):'*פגה תוקף*'} (${i.dateStr}).${carLine(d)}\n\n${i.lvl==='warn'?'מתאריך זה, *לא יהיה אישור לנהוג בכלי הארגון עד להסדרת הנושא.*':'מרגע קבלת הודעה זו, *אין אישור לנהוג בכלי הארגון עד להסדרת הנושא.*'}\n\nיש לחדש את האישור דרך אפליקציית איחוד הצלה בהקדם. אם לא ברור איך – תחזור אליי.\n\n*בהצלחה.*\n${SIGN}`,
   service:(v,i)=>`*מה קורה אח שלי,*\n\nבהתאם לנהלי התחזוקה והבטיחות, נדרש לבצע טיפול תקופתי לכלי הרכב שברשותך – אחת לשנה או לפי הקילומטראז', המוקדם מביניהם.\n\n*כלי מס' ${v.num}* (${v.type}, רישוי ${v.plate})\n`+
     (i.lvl==='warn'
       ?`הטיפול האחרון בוצע ב־${i.srcStr}, כך שבעוד ${i.n} ימים תעבור *שנה מהטיפול.*\n\nלכן, יש לתאם טיפול תקופתי בהקדם: למלא את הבקשה באפליקציה של איחוד הצלה ולהיכנס למוסך לפני המועד.`
       :`לפי הנתונים במערכת, הטיפול האחרון בוצע ב־${i.srcStr} – *לפני יותר משנה.*\n\nלכן, יש לגשת בהקדם למוסך לביצוע טיפול תקופתי: למלא את הבקשה באפליקציה של איחוד הצלה ולהיכנס למוסך בהקדם.`)+`\n\n${SIGN}`,
   test:(v,i)=>i.lvl==='warn'
-    ?`שלום ${first(v.name)},\nשים לב כי רישיון הרכב של *כלי מס' ${v.num}* (${v.type}, רישוי ${v.plate}) *יפוג בעוד ${i.n} ימים* (${i.dateStr}).\n\nיש לתאם טסט במכון הרישוי *לפני* תאריך זה, כדי שהכלי לא יושבת.\nאחרי ביצוע הטסט, יש להעלות את רישיון הרכב החדש *לקישור באפליקציית איחוד הצלה*.\n\n${SIGN}`
+    ?`שלום ${first(v.name)},\nשים לב כי רישיון הרכב של *כלי מס' ${v.num}* (${v.type}, רישוי ${v.plate}) שמופיע במערכות הארגון ${soonTxt(i)} (${i.dateStr}).\n\n*יש לבצע טסט לפני תאריך זה.* מתאריך זה *חל איסור להזיז או לנסוע עם הרכב בשום אופן*, ולצורך ביצוע הטסט יהיה צורך *לגרור את הכלי למכון הרישוי*.\n\nבמידה והטסט כבר בוצע, יש להעלות את רישיון הרכב החדש *לקישור באפליקציית איחוד הצלה*.\n\nכל עוד הרישיון החדש *לא מופיע במערכות הארגון – אין לנסוע ברכב אחרי ${i.dateStr}.*\n\n${SIGN}`
     :`שלום ${first(v.name)},\nשים לב כי רישיון הרכב של *כלי מס' ${v.num}* (${v.type}, רישוי ${v.plate}) שמופיע במערכות הארגון *פג תוקף* (${i.dateStr}).\n\n*חל איסור להזיז או לנסוע עם הרכב בשום אופן.*\nלצורך ביצוע הטסט יש *לגרור את הכלי למכון הרישוי*.\n\nבמידה והטסט כבר בוצע, יש להעלות את רישיון הרכב החדש *לקישור באפליקציית איחוד הצלה*.\n\nכל עוד הרישיון החדש *לא מופיע במערכות הארגון – אין לנסוע ברכב.*\n\n${SIGN}`,
   check:(v,i)=>`מה נשמע אח שלי,\n\nאני צריך את העזרה שלך בבקשה 🙏\nאני צריך לבצע בדיקה לכלי מס' *${v.num}* (${v.type}, רישוי ${v.plate})`+
     (i.lvl==='warn'?` – מועד הבדיקה הוא ${i.dateStr}.`:` – מועד הבדיקה עבר ב־${i.dateStr}.`)+
@@ -197,7 +192,7 @@ const RANK={today:0,bad:1,warn:2,miss:3};
 
 /* ===== אחסון מקומי ===== */
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
-const state={view:'alerts',cat:ls('cat')||'',kind:ls('kind')||'all',win:+(ls('win')||30),q:'',branch:'',showMiss:ls('miss')==='1',limit:60};
+const state={view:'alerts',cat:ls('cat')||'',kind:ls('kind')||'all',win:+(ls('win3')||3),q:'',branch:'',showMiss:ls('miss')==='1',limit:60};
 
 function waLink(phone,text){let p=(phone||'').replace(/\D/g,'');if(p.startsWith('0'))p='972'+p.slice(1);return `https://wa.me/${p}?text=${encodeURIComponent(text)}`}
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
@@ -285,7 +280,7 @@ function controls(withKind){
     <input id="q" type="search" placeholder="חיפוש שם, פרייבט, מס' רכב, טלפון…" value="${esc(state.q)}">
     <select id="branch"><option value="">כל הסניפים</option>${branches.map(b=>`<option${b===state.branch?' selected':''}>${esc(b)}</option>`).join('')}</select>
     ${withKind?`<div class="seg" role="group" aria-label="סוג">${[['all','הכל'],['vehicle','רכבים'],['driver','נהגים']].map(([k,l])=>`<button data-kind="${k}" aria-pressed="${state.kind===k}">${l}</button>`).join('')}</div>
-    <select id="win" aria-label="התראה מוקדמת">${[0,7,14,30,60].map(n=>`<option value="${n}"${n===state.win?' selected':''}>${n?`התראה ${n} ימים מראש`:'רק מה שכבר פג'}</option>`).join('')}</select>`:''}
+    <select id="win" aria-label="התראה מוקדמת">${[3,7,14,30,60,0].map(n=>`<option value="${n}"${n===state.win?' selected':''}>${n?`התראה ${n} ימים מראש`:'רק מה שכבר פג'}</option>`).join('')}</select>`:''}
   </div>`;
 }
 
@@ -334,7 +329,7 @@ function bind(){
   const q=document.getElementById('q');
   if(q){q.oninput=e=>{state.q=e.target.value;state.limit=60;const pos=e.target.selectionStart;render();const n=document.getElementById('q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}}
   const b=document.getElementById('branch');if(b)b.onchange=e=>{state.branch=e.target.value;render()};
-  const w=document.getElementById('win');if(w)w.onchange=e=>{state.win=+e.target.value;ls('win',state.win);render()};
+  const w=document.getElementById('win');if(w)w.onchange=e=>{state.win=+e.target.value;ls('win3',state.win);render()};
   const m=document.getElementById('miss');if(m)m.onchange=e=>{state.showMiss=e.target.checked;ls('miss',e.target.checked?'1':'0');render()};
   const mo=document.getElementById('more');if(mo)mo.onclick=()=>{state.limit+=60;render()};
   document.querySelectorAll('[data-kind]').forEach(x=>x.onclick=()=>{state.kind=x.dataset.kind;ls('kind',state.kind);const vk=['test','service','check'];if(state.cat&&state.kind!=='all'&&(state.kind==='vehicle')!==vk.includes(state.cat)){state.cat='';ls('cat','')}render()});
