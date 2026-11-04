@@ -226,7 +226,7 @@ function analysis(v){
   let t=`*ניתוח ביצועי נהיגה – איתוראן סייפטי*\n${v.n} · פרייבט ${v.pv} · ${v.br}${r.to?` · עד ${r.to}`:''}\n\n`;
   t+=`*נתוני פעילות*\n`;
   if(r.km!=null&&r.trips)t+=`• ${r.km.toLocaleString('he-IL')} ק"מ ב־${r.trips} נסיעות (ממוצע ${(r.km/r.trips).toFixed(1)} ק"מ לנסיעה)\n`;
-  if(r.eng)t+=`• זמן מנוע: ${r.eng}${r.idle?` · עמידה בסרק: ${r.idle}${idlePct!=null?` (${idlePct}% מזמן המנוע)`:''}`:''}\n`;
+  
   t+=`\n*ציונים*\n• ציון בטיחות: *${r.score??v.s[v.s.length-1]}*${r.comp?` (ממוצע איחוד הצלה ${r.comp}${r.itu?`, כלל לקוחות איתוראן ${r.itu}`:''})`:''}\n`;
   if(r.fuel!=null)t+=`• ציון דלק: ${r.fuel}\n`;
   if(r.rank)t+=`• דירוג: ${r.rank[0].toLocaleString('he-IL')} מתוך ${r.rank[1].toLocaleString('he-IL')}${rk!=null?(rk<50?` (בין ה־${Math.max(1,rk)}% התחתונים)`:` (בין ה־${100-rk}% העליונים)`):''}\n`;
@@ -239,7 +239,6 @@ function analysis(v){
   if(P('תאוצות')>=12)plan.push(...PLAN.accel);
   if(P('חריגות מהירות')>=10){risks.push(`• *חריגות מהירות* – ${N('חריגות מהירות')} אירועים.`);plan.push(...PLAN.speed)}
   if(P('מעבר נתיב')>=10)plan.push(...PLAN.lane);
-  if(idleRaw!=null&&idleRaw>25){risks.push(`• *עמידה בסרק* – כ־${idlePct}% מזמן המנוע. פוגע בציון הדלק ובבלאי הרכב.`);plan.push(...PLAN.idle)}
   if(risks.length)t+=`\n*מוקדי הסיכון*\n${risks.join('\n')}\n`;
   if(plan.length)t+=`\n*תוכנית לשיפור*\n${plan.join('\n')}\n`;
   return t.trim();
@@ -278,7 +277,6 @@ function talk(v,ins){
   if(!ins||(!ins.lines.length&&!ins.tips.length))return `בדוח הסייפטי באפליקציה אפשר לראות בדיוק על מה ירדו לך הנקודות. תסתכל עליו, ואם תרצה – נעבור עליו יחד ונבין מה הכי כדאי לשפר.`;
   let t=`כשהסתכלתי על הפירוט שלך: ${ins.lines.join(' ')}`;
   if(ins.tips.length)t+=`\n\n${ins.tips.length>1?'שני דברים קטנים שיעשו את רוב העבודה':'דבר אחד קטן שיעשה את רוב העבודה'}:\n${ins.tips.map((x,i)=>ins.tips.length>1?`${i+1}. ${x}`:x).join('\n')}`;
-  if(ins.idle>25)t+=`\n\nועוד טיפ קטן: ראיתי שהרכב עמד מונע בערך ${ins.idle<=28?'רבע':Math.round(ins.idle)+'%'} מהזמן – במשמרת של 8 שעות זה יותר משעתיים. בעצירה של יותר מדקה–שתיים כדאי לכבות.`;
   return t;
 }
 const MSG={
