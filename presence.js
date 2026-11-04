@@ -2,6 +2,12 @@
    נשלחים: מספר מכשיר אקראי, האפליקציה הפתוחה, שם המכשיר (אם נבחר), סוג המכשיר ועם איזו סיסמה נכנסו.
    את הפירוט הסקריפט מחזיר רק למי שנכנס עם הסיסמה הראשית; כל השאר מקבלים רק מספרים.
    מכשיר שלא דיווח 100 שניות לא נספר. */
+/* שימוש פעיל באתר: מעדכן את "נכנס לאחרונה" במכשיר, כדי שלא תתבקש סיסמה/אצבע לפני 30 דקות בלי שימוש */
+(function(){
+  const touch=()=>{try{if(document.visibilityState!=='hidden'&&sessionStorage.getItem('hub_access')&&localStorage.getItem('hub_grace'))localStorage.setItem('hub_last',String(Date.now()))}catch(e){}};
+  touch();document.addEventListener('visibilitychange',touch);setInterval(touch,60000);
+  let lt=0;document.addEventListener('pointerdown',()=>{const n=Date.now();if(n-lt>20000){lt=n;touch()}},true);
+})();
 (function(){
   const URL='https://script.google.com/macros/s/AKfycbw_ZAnKnbqY_G0pRA186ylvFoUOpEVtL9rHYEDJGtfmcX2eYlAzIIamDschjgnKCXtuXw/exec';
   const lg=k=>{try{return localStorage.getItem(k)||''}catch(e){return''}};
