@@ -226,7 +226,7 @@ async function submit(){
   if(A.length>=4){sput('hub_admin',v);if($('rem').checked)lput('hub_admin',v)}
   /* "לזכור במכשיר": הגישה נשמרת גם אחרי סגירת הדפדפן, עד שלוחצים יציאה */
   if($('rem').checked){lput('hub_access',JSON.stringify(A));lput('hub_pw',A.includes('shopping')||A.includes('forms')?v:null)}
-  sput('hub_seen','1');
+  sput('hub_seen','1');saveGrace();
   $('p1').value='';
   lput('shop_lang',isEn?'en':null); /* קוד באנגלית: הקניות נפתחות ישר באנגלית; כל קוד אחר מחזיר לעברית */
   if(isEn){location.replace('shopping.html');return}
@@ -252,6 +252,13 @@ function afterLogin(){
 const b64=buf=>btoa(String.fromCharCode(...new Uint8Array(buf)));
 const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 const rnd=n=>crypto.getRandomValues(new Uint8Array(n));
+/* 30 דקות חסד: מי שנכנס (סיסמה או אצבע) ומשתמש באתר לא יתבקש שוב, עד שעוברות 30 דקות בלי שימוש באף אפליקציה.
+   hub_last מתעדכן מכל דף פתוח (presence.js); hub_grace שומר את הגישה כדי לשחזר אותה בפתיחה הבאה */
+const GRACE_MIN=30;
+function saveGrace(){lput('hub_grace',JSON.stringify({A:access(),pw:sget('hub_pw'),admin:sget('hub_admin')}));lput('hub_last',String(Date.now()))}
+function useGrace(){try{const g=JSON.parse(get('hub_grace')),t=+get('hub_last')||0;
+  if(!g||!g.A||!g.A.length)return false;if(Date.now()-t>GRACE_MIN*60000){lput('hub_grace',null);return false}
+  grant(g.A,g.pw);if(g.admin)sput('hub_admin',g.admin);lput('hub_last',String(Date.now()));return true}catch(e){return false}}
 function bioData(){try{return JSON.parse(get('dbd_bio'))}catch(e){return null}}
 async function bioAvail(){try{return !!(window.PublicKeyCredential&&await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())}catch(e){return false}}
 function only(id){['lockv','namev','biov','biolock'].forEach(x=>$(x).hidden=x!==id);$('appsv').hidden=true}
@@ -277,7 +284,7 @@ async function bioLogin(){
   const d=bioData();if(!d)return bioToPw();$('bioLErr').textContent='';
   try{
     await navigator.credentials.get({publicKey:{challenge:rnd(32),allowCredentials:[{type:'public-key',id:unb64(d.id)}],userVerification:'required',timeout:60000}});
-    grant(d.A,d.pw);if(d.admin)sput('hub_admin',d.admin);sput('hub_seen','1');
+    grant(d.A,d.pw);if(d.admin)sput('hub_admin',d.admin);sput('hub_seen','1');saveGrace();
     if(!myName()){only('namev');setTimeout(()=>$('nmIn').focus(),50);return}
     afterLogin();
   }catch(e){$('bioLErr').textContent='האימות לא הצליח. נסה שוב, או הקלד סיסמה.'}
@@ -289,6 +296,7 @@ async function bioToggle(){
   lput('bio_skip',null);only('biov');
 }
 function logout(){
+  lput('hub_grace',null);lput('hub_last',null);
   lput('hub_access',null);lput('hub_pw',null);lput('hub_admin',null);sput('hub_admin',null);lput('tromot_names',null);
   sput('hub_access',null);sput('hub_pw',null);Object.keys(PAGES).forEach(a=>sput('gate_'+a,null));show();
 }
@@ -319,6 +327,7 @@ $('nmIn').addEventListener('keyup',e=>{if(e.key==='Enter')saveName()});
   /* טביעת אצבע רשומה ואין עדיין גישה בדפדפן הזה: מבקשים אצבע (מנסים מיד; אם הדפדפן דורש לחיצה, יש כפתור) */
   /* קוד הקניות באנגלית: מקבל גם את אפליקציית התרופות (גם במכשיר שנכנס לפני שהיא נוספה) */
   if(get('shop_lang')==='en'&&access().length&&!access().includes('meds')){const A2=access().concat('meds');grant(A2,sget('hub_pw')||get('hub_pw'));if(get('hub_access'))lput('hub_access',JSON.stringify(A2))}
+  if(!access().length)useGrace();
   if(!access().length&&bioData()){only('biolock');bioLogin();return}
   const A=access(),want=new URLSearchParams(location.search).get('open');
   /* מכשיר שכבר נכנס אבל עוד לא נתן שם: מבקשים את השם פעם אחת */
