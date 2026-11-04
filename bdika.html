@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<link rel="icon" href="icons/apps-192.png">
+<meta name="theme-color" content="#1f4f8f">
+<meta name="description" content="איחוד הצלה · קצב&quot;ת ירושלים">
+<meta property="og:type" content="website">
+<meta property="og:title" content="בדיקת תקינות כלי">
+<meta property="og:description" content="איחוד הצלה · קצב&quot;ת ירושלים · לוקח בערך 3 דקות">
+<meta property="og:image" content="https://dannybd20-hue.github.io/akordim/brand/uh-og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<title>בדיקת תקינות כלי</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Secular+One&display=swap">
+<style>
+/* Layout: one narrow column, header band, checklist rows with three-way toggles, send panel at the end */
+:root{
+  --bg:#f3f5f8; --surface:#fff; --fg:#17202b; --muted:#5d6876; --line:#dde2e9;
+  --accent:#1f4f8f; --accent-fg:#fff;
+  --ok:#1d7a46; --ok-bg:#e3f4ea; --bad:#c62f2f; --bad-bg:#fbe9e9; --na:#5d6876; --na-bg:#eceff3;
+  --wa:#1b9e52; --plate:#f6c800;
+  --f-display:"Secular One","Assistant",system-ui,sans-serif;
+  --f-body:"Assistant",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141b; --surface:#18202a; --fg:#e7ecf2; --muted:#9aa6b4; --line:#2a3542; --accent:#6fa3e8; --accent-fg:#0b1220;
+  --ok:#6fd49a; --ok-bg:#16301f; --bad:#ff7b7b; --bad-bg:#3a1c1f; --na:#9aa6b4; --na-bg:#232c37; --wa:#3ccf7c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141b; --surface:#18202a; --fg:#e7ecf2; --muted:#9aa6b4; --line:#2a3542; --accent:#6fa3e8; --accent-fg:#0b1220;
+  --ok:#6fd49a; --ok-bg:#16301f; --bad:#ff7b7b; --bad-bg:#3a1c1f; --na:#9aa6b4; --na-bg:#232c37; --wa:#3ccf7c; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0}
+[hidden]{display:none!important}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:17px;line-height:1.45;direction:rtl}
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{background:var(--accent);color:var(--accent-fg)}
+header .wrap{padding-block:20px 18px}
+h1{font-family:var(--f-display);font-weight:400;font-size:1.7rem;margin:0}
+header p{margin:6px 0 0;opacity:.9;font-size:.98rem}
+main .wrap{padding-block:18px 60px;display:flex;flex-direction:column;gap:18px}
+section{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+h2{font-family:var(--f-display);font-weight:400;font-size:1.15rem;margin:0}
+.hint{color:var(--muted);font-size:.9rem;margin:0}
+label.f{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:.95rem}
+input[type=text],input[type=tel],input[type=number],textarea,select{font:inherit;font-weight:400;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);width:100%;min-width:0}
+textarea{min-height:70px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:460px){.grid2{grid-template-columns:1fr}}
+.item{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.item:first-of-type{border-top:0;padding-top:0}
+.q{font-weight:600}
+.q small{display:block;font-weight:400;color:var(--muted);font-size:.85rem}
+.tri{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tri input{position:absolute;opacity:0;pointer-events:none}
+.tri label{display:block;text-align:center;padding:9px 4px;border:1.5px solid var(--line);border-radius:10px;font-weight:600;cursor:pointer;font-size:.95rem}
+.tri input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+.tri label:has(input[value=ok]:checked){background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.tri label:has(input[value=bad]:checked){background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.tri label:has(input[value=na]:checked){background:var(--na-bg);border-color:var(--na);color:var(--na)}
+.tri label:has(input[value=other]:checked){background:var(--na-bg);border-color:var(--na);color:var(--fg)}
+.types{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.types input{position:absolute;opacity:0;pointer-events:none}
+.types label{display:block;text-align:center;padding:14px 8px;border:1.5px solid var(--line);border-radius:12px;font-weight:700;cursor:pointer}
+.types label:has(input:checked){background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.types label:has(input:focus-visible){outline:3px solid var(--accent);outline-offset:2px}
+.types.missing label{border-color:var(--bad)}
+label.f.missing{color:var(--bad)}
+#items{display:flex;flex-direction:column;gap:12px}
+.sub{font-weight:700;color:var(--accent);border-top:2px solid var(--line);padding-top:12px;margin-top:4px}
+.photo{display:flex;flex-direction:column;gap:4px;background:var(--bg);border:1px dashed var(--line);border-radius:10px;padding:12px;font-size:.95rem}
+.photo span{color:var(--muted)}
+.item .why{display:none}
+.item.is-bad .why{display:block}
+.item.missing .q{color:var(--bad)}
+.stop{display:flex;gap:10px}
+.btn{appearance:none;border:0;font:700 1.05rem var(--f-body);padding:13px 16px;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;text-align:center}
+.btn.primary{background:var(--accent);color:var(--accent-fg);width:100%}
+.btn.wa{background:var(--wa);color:#fff}
+.btn.mail{background:var(--surface);color:var(--fg);border:1.5px solid var(--line)}
+.btn.ghost{background:transparent;color:var(--muted);border:1px dashed var(--line);font-size:.95rem}
+.send{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.send{grid-template-columns:1fr}}
+.err{color:var(--bad);font-weight:600;margin:0}
+pre.preview{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit;font-size:.92rem;margin:0;max-height:300px;overflow:auto}
+.plate{display:inline-block;background:var(--plate);color:#111;border:1.5px solid #111;border-radius:4px;padding:0 6px;font:700 .9rem/1.5 ui-monospace,Menlo,Consolas,monospace;direction:ltr}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.foot{text-align:center;color:var(--muted);font-size:.88rem}
+.sign{display:block;margin-top:10px;color:var(--fg);font-weight:700;font-size:1rem;line-height:1.35}
+.logo{background:#fff;border-radius:12px;padding:10px 14px;width:fit-content;max-width:100%;margin-bottom:12px}
+.logo img{display:block;width:170px;height:auto}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="logo"><img src="brand/uh-logo.png" alt="איחוד הצלה" width="440" height="273"></div>
+  <h1>בדיקת תקינות כלי</h1>
+  <p>קצב"ת מרחב ירושלים · לוקח בערך 3 דקות. אם משהו לא תקין, כתוב מה הבעיה וזה יעזור לי לטפל בכלי מהר.</p>
+</div></header>
+
+<main><div class="wrap">
+<form id="f" novalidate>
+<div style="display:flex;flex-direction:column;gap:18px">
+  <section>
+    <h2>פרטים</h2>
+    <div class="grid2">
+      <label class="f">שם מלא<input id="name" type="text" autocomplete="name" required></label>
+      <label class="f">מספר פרייבט<input id="priv" type="number" inputmode="numeric"></label>
+      <label class="f">מספר פנימי של הכלי<input id="num" type="number" inputmode="numeric" required></label>
+      <label class="f">קילומטראז' נוכחי<input id="km" type="number" inputmode="numeric"></label>
+    </div>
+  </section>
+
+  <section>
+    <h2>סוג כלי</h2>
+    <div class="types" role="radiogroup" aria-label="סוג כלי" id="types"></div>
+  </section>
+
+  <section id="checks" hidden>
+    <h2 id="checksTitle">בדיקת הכלי</h2>
+    <p class="hint">לכל סעיף: תקין, לא תקין, או אחר. אם משהו לא תקין, כתוב מה הבעיה.</p>
+    <div id="items"></div>
+  </section>
+
+  <section id="summary" hidden>
+    <h2>סיכום</h2>
+    <div class="item" style="border:0;padding:0">
+      <div class="q">יש תקלה שמונעת נסיעה בטוחה בכלי?</div>
+      <div class="tri" style="grid-template-columns:1fr 1fr">
+        <label><input type="radio" name="stop" value="bad"><span>כן, יש</span></label>
+        <label><input type="radio" name="stop" value="ok"><span>לא, הכלי בטוח</span></label>
+      </div>
+    </div>
+    <label class="f" id="generalL">תקלה כללית שיש<textarea id="general" placeholder="כל תקלה או דבר שנראה לך לא תקין. אם אין, כתוב &quot;אין&quot;"></textarea></label>
+    <div class="photo">
+      <b>📷 צילום של התקלה או מה שלא תקין</b>
+      <span>אם זה צמיג, ברקסים, מכות וכו'. אחרי שליחת הטופס, צרף את התמונות באותו צ'אט בוואטסאפ או כקובץ מצורף במייל.</span>
+    </div>
+  </section>
+
+  <p class="err" id="err" hidden></p>
+  <button class="btn primary" type="submit">סיימתי, הכן לשליחה</button>
+</div>
+</form>
+
+<section id="out" hidden>
+  <h2>שליחת הבדיקה</h2>
+  <p class="hint">בחר איך לשלוח. הבדיקה מגיעה אליי רק אחרי שתלחץ "שלח" בוואטסאפ או במייל.</p>
+  <div class="send">
+    <a class="btn wa" id="waBtn" target="_blank" rel="noopener">שליחה בוואטסאפ</a>
+    <a class="btn mail" id="mailBtn">שליחה במייל</a>
+  </div>
+  <button class="btn ghost" id="copyBtn" type="button">העתק את הטקסט</button>
+  <p class="hint" id="mailHint"></p>
+  <p class="hint"><b>אל תשכח לצרף תמונות</b> של מה שלא תקין.</p>
+  <pre class="preview" id="preview"></pre>
+  <button class="btn ghost" id="back" type="button">חזרה לעריכה</button>
+</section>
+
+<p class="foot">אם אתה לא בטוח במשהו, תשלח לי הודעה. זה חשוב שלא תזלזל בבדיקה, אני פה לכל שאלה.<span class="sign">דני בן דוד<br>קצב"ת ירושלים</span></p>
+</div></main>
+
+<script>
+const CONTACT={phone:'972508820408', email:'danny.b.d.20@gmail.com'};
+const Q={
+  tires4:['4 צמיגים','יש להסתכל על הצמיגים לראות שהם לא יבשים, קרועים, ושיש בצמיג עוד עובי'],
+  tires4x4:['4 צמיגים','יש להסתכל על הצמיגים לראות שאין יותר מדי תולעים, ובמיוחד בדופן, ושיש עוד בשר בצמיג'],
+  tires2:['2 צמיגים','יש להסתכל על הצמיגים לראות שהם לא יבשים, קרועים, ושיש בצמיג עוד עובי'],
+  lights:['תאורה כללית','אור דרך, אור ברקס ורוורס'],
+  hood:null,
+  wiper:['מים לווישרים',''],
+  coolant:['מים אדומים',''],
+  coolant4x4:['מים אדומים','אם לא יודעים איפה זה, תייג אליי'],
+  cabin:null,
+  ext:['מטף','בתוקף, והמד על הצבע הירוק'],
+  belts:['חגורות בטיחות תקינות','יש לראות אם החגורה נחגרת'],
+  dash:['האם קיימת תקלה בלוח השעונים','כל נורת חריגה שדולקת'],
+  mirrors:['מראות תקינות',''],
+  brakes:['ברקסים','יש לראות האם יש מספיק עובי לרפידה'],
+  shocks:['בולמים','יש לראות שאין נזילה מהבולם הקדמי']
+};
+const HEAD={hood:'יש לפתוח מכסה מנוע (צד שמאל, ליד הרגל של הנהג)',cabin:'פנים האמבולנס'};
+const TYPES={
+  'אופנוע':['tires2','brakes','shocks','dash'],
+  'אמבולנס':['tires4','lights','hood','wiper','coolant','cabin','ext','belts','dash'],
+  'רכב סניפי':['tires4','lights','hood','wiper','coolant','belts','dash'],
+  'מינילנס':['tires4','lights','hood','wiper','coolant','belts','dash'],
+  'רכב שטח':['tires4x4','lights','coolant4x4','belts','dash','mirrors']
+};
+const $=id=>document.getElementById(id);
+let curType='';
+$('types').innerHTML=Object.keys(TYPES).map(t=>`<label><input type="radio" name="type" value="${t}"><span>${t}</span></label>`).join('');
+$('types').addEventListener('change',e=>{curType=e.target.value;buildItems();$('types').classList.remove('missing')});
+function keys(){return (TYPES[curType]||[]).filter(k=>Q[k])}
+function buildItems(){
+  // keep answers when switching between types that share questions
+  const prev={};keys().forEach(k=>prev[k]=val(k));
+  const box=$('items');box.innerHTML='';
+  for(const k of TYPES[curType]){
+    if(!Q[k]){const h=document.createElement('div');h.className='sub';h.textContent=HEAD[k];box.appendChild(h);continue}
+    const [t,h]=Q[k];
+    const d=document.createElement('div');d.className='item';d.dataset.k=k;
+    d.innerHTML=`<div class="q">${t}${h?`<small>${h}</small>`:''}</div>
+    <div class="tri" role="radiogroup" aria-label="${t}">
+      <label><input type="radio" name="c_${k}" value="ok"><span>תקין</span></label>
+      <label><input type="radio" name="c_${k}" value="bad"><span>לא תקין</span></label>
+      <label><input type="radio" name="c_${k}" value="other"><span>אחר</span></label>
+    </div>
+    <textarea class="why" id="why_${k}" placeholder="מה הבעיה?"></textarea>`;
+    d.addEventListener('change',()=>{const v=val(k);d.classList.toggle('is-bad',v==='bad'||v==='other');$('why_'+k).placeholder=v==='other'?'פרט':'מה הבעיה?';d.classList.remove('missing')});
+    box.appendChild(d);
+  }
+  $('checksTitle').textContent='בדיקת '+curType;
+  $('checks').hidden=false;$('summary').hidden=false;
+}
+function val(k){const r=document.querySelector(`input[name="c_${k}"]:checked`);return r?r.value:''}
+
+const m=/^#v(\d+)$/.exec(location.hash);if(m)$('num').value=m[1];
+
+$('f').addEventListener('submit',e=>{
+  e.preventDefault();
+  const errs=[];
+  if(!$('name').value.trim()||!$('num').value.trim())errs.push('חסרים שם או מספר כלי.');
+  if(!curType){errs.push('נא לבחור סוג כלי.');$('types').classList.add('missing')}
+  const ks=keys();
+  const miss=ks.filter(k=>!val(k));
+  document.querySelectorAll('.item[data-k]').forEach(d=>d.classList.toggle('missing',!val(d.dataset.k)));
+  if(miss.length)errs.push(`נשארו ${miss.length} סעיפים בלי סימון (מסומנים באדום).`);
+  const otherEmpty=ks.filter(k=>val(k)==='other'&&!$('why_'+k).value.trim());
+  if(otherEmpty.length)errs.push('בסעיף שסימנת "אחר" צריך לפרט.');
+  const stop=document.querySelector('input[name=stop]:checked');
+  if(curType&&!stop)errs.push('נא לענות אם יש תקלה שמונעת נסיעה.');
+  if(curType&&!$('general').value.trim()){errs.push('נא למלא "תקלה כללית שיש" (אם אין, כתוב "אין").');$('generalL').classList.add('missing')}else $('generalL').classList.remove('missing');
+  if(errs.length){$('err').hidden=false;$('err').textContent=errs[0];return}
+  $('err').hidden=true;
+  const bad=ks.filter(k=>val(k)==='bad'), oth=ks.filter(k=>val(k)==='other');
+  const today=new Date().toLocaleDateString('he-IL');
+  let t=`*בדיקת תקינות כלי – ${today}*\n`;
+  t+=`שם: ${$('name').value.trim()}${$('priv').value?` (פרייבט ${$('priv').value})`:''}\n`;
+  t+=`כלי מס' ${$('num').value} · ${curType}${$('km').value?` · ${$('km').value} ק"מ`:''}\n`;
+  t+=`\n${stop.value==='bad'?'🔴 *יש תקלה שמונעת נסיעה בטוחה*':'🟢 הכלי בטוח לנסיעה לדעת הנהג'}\n`;
+  t+=`\nתקין: ${ks.length-bad.length-oth.length} מתוך ${ks.length}\n`;
+  if(bad.length)t+=`\n*לא תקין:*\n`+bad.map(k=>`❌ ${Q[k][0]}${$('why_'+k).value.trim()?' – '+$('why_'+k).value.trim():''}`).join('\n')+'\n';
+  if(oth.length)t+=`\n*אחר:*\n`+oth.map(k=>`⚠️ ${Q[k][0]} – ${$('why_'+k).value.trim()}`).join('\n')+'\n';
+  t+=`\n*תקלה כללית:* ${$('general').value.trim()}\n`;
+  $('preview').textContent=t;
+  $('waBtn').href=`https://wa.me/${CONTACT.phone}?text=${encodeURIComponent(t)}`;
+  $('mailBtn').href=`mailto:${CONTACT.email}?subject=${encodeURIComponent(`בדיקת תקינות כלי ${$('num').value} – ${$('name').value.trim()}`)}&body=${encodeURIComponent(t.replace(/\*/g,''))}`;
+  $('mailHint').textContent=`אם המייל לא נפתח: העתק את הטקסט ושלח לכתובת ${CONTACT.email}`;
+  $('f').hidden=true;$('out').hidden=false;window.scrollTo(0,0);
+});
+$('back').onclick=()=>{$('out').hidden=true;$('f').hidden=false};
+$('copyBtn').onclick=async()=>{
+  try{await navigator.clipboard.writeText($('preview').textContent);$('copyBtn').textContent='הועתק'}
+  catch(e){const r=document.createRange();r.selectNodeContents($('preview'));const s=getSelection();s.removeAllRanges();s.addRange(r);$('copyBtn').textContent='הטקסט מסומן, העתק אותו'}
+};
+</script>
+</body>
+</html>

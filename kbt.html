@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<script>try{if(sessionStorage.getItem('gate_kbt')!=='1'){document.documentElement.style.display='none';location.replace('./?open=kbt')}}catch(e){location.replace('./')}
+function goHome(){try{sessionStorage.removeItem('gate_kbt')}catch(e){}location.href='./'}</script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<link rel="icon" href="icons/apps-192.png">
+<meta name="theme-color" content="#1f4f8f">
+<title>ניהול קצב"ת י"ם</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Secular+One&display=swap">
+<style>
+/* Layout: sticky header with tabs, single column of person/vehicle cards grouped by severity */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --fg:#17202b; --muted:#5d6876; --line:#dde2e9;
+  --accent:#1f4f8f; --accent-fg:#ffffff;
+  --bad:#c62f2f; --bad-bg:#fbe9e9; --warn:#a96200; --warn-bg:#fdf1dd; --ok:#1d7a46; --ok-bg:#e3f4ea;
+  --today:#7a2bb8; --today-bg:#f1e7fb;
+  --plate:#f6c800; --plate-fg:#111;
+  --wa:#1b9e52;
+  --f-display:"Secular One","Assistant",system-ui,sans-serif;
+  --f-body:"Assistant",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141b; --surface:#18202a; --fg:#e7ecf2; --muted:#9aa6b4; --line:#2a3542;
+  --accent:#6fa3e8; --accent-fg:#0b1220;
+  --bad:#ff7b7b; --bad-bg:#3a1c1f; --warn:#f0b257; --warn-bg:#352813; --ok:#6fd49a; --ok-bg:#16301f;
+  --today:#c99bf3; --today-bg:#2c1d3c; --plate:#e8bd00; --plate-fg:#111; --wa:#3ccf7c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141b; --surface:#18202a; --fg:#e7ecf2; --muted:#9aa6b4; --line:#2a3542;
+  --accent:#6fa3e8; --accent-fg:#0b1220;
+  --bad:#ff7b7b; --bad-bg:#3a1c1f; --warn:#f0b257; --warn-bg:#352813; --ok:#6fd49a; --ok-bg:#16301f;
+  --today:#c99bf3; --today-bg:#2c1d3c; --plate:#e8bd00; --plate-fg:#111; --wa:#3ccf7c; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.45;direction:rtl}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--accent)}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--accent);color:var(--accent-fg)}
+header .wrap{padding-block:14px 0}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{background:#fff;border-radius:10px;padding:5px 8px;flex:none}
+.logo img{display:block;width:84px;height:auto}
+.hbs{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hb{border:0;background:#ffffff26;color:inherit;border-radius:10px;padding:7px 11px;font:700 .9rem var(--f-body);cursor:pointer;white-space:nowrap}
+.lockc{max-width:380px;margin:30px auto;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:12px;text-align:center}
+.lockc h2{margin:0;font-family:var(--f-display);font-weight:400}
+.lockc input[type=password],.lockc input[type=text]{font:inherit;padding:12px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg);text-align:center;direction:ltr;width:100%}
+.lockc .go{border:0;border-radius:12px;padding:13px;font:700 1.05rem var(--f-body);background:var(--accent);color:var(--accent-fg);cursor:pointer}
+.lockc .err{color:var(--bad);font-weight:700;min-height:1.2em}
+h1{font-family:var(--f-display);font-weight:400;font-size:1.6rem;margin:0;letter-spacing:.01em}
+.upd{font-size:.85rem;opacity:.85}
+.tabs{display:flex;gap:4px;margin-top:10px;overflow-x:auto}
+.tab{appearance:none;border:0;background:transparent;color:inherit;font:600 1rem var(--f-body);padding:10px 14px;border-radius:10px 10px 0 0;opacity:.8;cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{background:var(--bg);color:var(--fg);opacity:1}
+.tab .n{display:inline-block;min-width:1.6em;padding:0 .4em;margin-inline-start:6px;border-radius:99px;background:var(--bad);color:#fff;font-size:.8rem;text-align:center}
+main .wrap{padding-block:16px 48px;display:flex;flex-direction:column;gap:16px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.stat b{display:block;font-family:var(--f-display);font-weight:400;font-size:1.7rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{font-size:.85rem;color:var(--muted)}
+.stat.today b{color:var(--today)} .stat.bad b{color:var(--bad)} .stat.warn b{color:var(--warn)}
+.controls{display:flex;gap:8px;flex-wrap:wrap}
+.controls input,.controls select{font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);min-width:0}
+.controls input{flex:1 1 200px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{appearance:none;border:0;background:transparent;color:var(--fg);font:600 .95rem var(--f-body);padding:9px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+h2{font-family:var(--f-display);font-weight:400;font-size:1.15rem;margin:8px 0 0;display:flex;align-items:center;gap:8px}
+h2 .cnt{font-family:var(--f-body);font-weight:700;font-size:.85rem;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.list{display:flex;flex-direction:column;gap:8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:start}
+.card .who{min-width:0}
+.name{font-weight:700;font-size:1.05rem}
+.meta{color:var(--muted);font-size:.88rem;display:flex;gap:4px 10px;flex-wrap:wrap;align-items:center}
+.plate{display:inline-block;background:var(--plate);color:var(--plate-fg);border:1.5px solid #111;border-radius:4px;padding:0 6px;font:700 .85rem/1.5 ui-monospace,Menlo,Consolas,monospace;direction:ltr;letter-spacing:.04em}
+.issues{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:8px}
+.irow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+.sm{padding:6px 10px!important;font-size:.88rem;border-radius:8px}
+.mail{display:inline-flex;align-items:center;text-decoration:none;background:transparent;color:var(--accent);border:1.5px solid var(--accent);font:700 .88rem var(--f-body);cursor:pointer}
+.em{direction:ltr;unicode-bidi:isolate;word-break:break-all}
+.chip{font-size:.86rem;font-weight:600;padding:3px 9px;border-radius:99px;font-variant-numeric:tabular-nums}
+.chip.bad{background:var(--bad-bg);color:var(--bad)} .chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.today{background:var(--today-bg);color:var(--today)} .chip.ok{background:var(--ok-bg);color:var(--ok)}
+.chip.miss{background:var(--bg);color:var(--muted);border:1px dashed var(--line)}
+.acts{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.wa{display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;background:var(--wa);color:#fff;font-weight:700;padding:8px 12px;border-radius:10px;white-space:nowrap}
+.wa svg{width:18px;height:18px}
+.wa.done{background:transparent;color:var(--wa);border:1.5px solid var(--wa)}
+.nophone{font-size:.82rem;color:var(--muted);text-align:center}
+.tel{font-size:.85rem;color:var(--muted);direction:ltr;text-align:center;user-select:all;font-variant-numeric:tabular-nums}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:20px;text-align:center;color:var(--muted)}
+.tbl-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:start;white-space:nowrap}
+th{position:sticky;top:0;background:var(--surface);color:var(--muted);font-weight:700;font-size:.8rem}
+td.d-bad{color:var(--bad);font-weight:700} td.d-warn{color:var(--warn);font-weight:700} td.d-today{color:var(--today);font-weight:700}
+.more{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 .95rem var(--f-body);padding:10px;border-radius:10px;cursor:pointer}
+.legend{font-size:.85rem;color:var(--muted)}
+@media (max-width:520px){.card{grid-template-columns:1fr}.acts{flex-direction:row;flex-wrap:wrap}.wa{flex:1}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top"><div class="brand"><span class="logo"><img src="brand/uh-logo.png" alt="איחוד הצלה" width="440" height="273"></span><h1>ניהול קצב"ת י"ם</h1></div><span class="hbs"><span class="upd" id="upd"></span><button class="hb" id="lockB" hidden onclick="relock()" title="נעילה ושכחת הסיסמה במכשיר">🔒</button><button class="hb" onclick="goHome()">→ אפליקציות</button></span></div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="t-alerts" aria-selected="true" data-v="alerts">חריגות<span class="n" id="n-alerts"></span></button>
+      <button class="tab" role="tab" id="t-veh" aria-selected="false" data-v="veh">רכבים</button>
+      <button class="tab" role="tab" id="t-drv" aria-selected="false" data-v="drv">נהגים</button>
+    </div>
+  </div>
+</header>
+<main><div class="wrap" id="app"><div class="empty">טוען נתונים…</div></div></main>
+
+<script>
+const WA_ICON='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5 0a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.7-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-1 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7a2.8 2.8 0 0 0 1.8-1.3 2.3 2.3 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3Z"/></svg>';
+
+/* ===== נוסחי הודעות ===== */
+const FORM_URL='https://dannybd20-hue.github.io/akordim/bdika.html';
+const SIGN='בברכה,\nדני בן דוד\nקצין בטיחות בתעבורה\nמרחב ירושלים';
+const APP_PATH='*אזור אישי > פרטים אישיים > פרטי רישיון נהיגה > למטה: עדכון פרטי רישיון.*';
+function first(n){return (n||'').split(' ')[0]}
+function carLine(d){return d.car?`\n(כלי מס' ${d.car.split(',')[0].trim()})`:''}
+// i = {k, lvl, n, dateStr, srcStr}
+const MSG={
+  lic:(d,i)=>i.lvl==='warn'
+    ?`מה קורה ${first(d.name)},\nלתשומת לבך – רישיון הנהיגה שלך במערכות הארגון *יפוג בעוד ${i.n} ימים* (${i.dateStr}).${carLine(d)}\n\nכדי להמשיך לנהוג בכלי הארגון בלי הפסקה, יש לחדש את הרישיון ולהעלות אותו דרך אפליקציית איחוד הצלה:\n${APP_PATH}\n\n${SIGN}`
+    :`מה קורה ${first(d.name)},\nלתשומת לבך – רישיון הנהיגה שלך במערכות הארגון *פג תוקף* (${i.dateStr}).${carLine(d)}\n\nמרגע קבלת הודעה זו, *אין אישור לנהוג בכלי הארגון עד להסדרת הנושא.*\n\nיש להעלות רישיון נהיגה בתוקף דרך אפליקציית איחוד הצלה בהקדם:\n${APP_PATH}\n\n*בהצלחה.*\n${SIGN}`,
+  health:(d,i)=>i.lvl==='warn'
+    ?`מה קורה ${first(d.name)},\nלתשומת לבך – הצהרת הבריאות שלך במערכות הארגון *תפוג בעוד ${i.n} ימים* (${i.dateStr}).${carLine(d)}\n\nיש לחדש את הצהרת הבריאות דרך אפליקציית איחוד הצלה לפני המועד, כדי שתוכל להמשיך לנהוג בכלי הארגון.\n\n${SIGN}`
+    :`מה קורה ${first(d.name)},\nלתשומת לבך – הצהרת הבריאות שלך במערכות הארגון *פגה תוקף* (${i.dateStr}).${carLine(d)}\n\nמרגע קבלת הודעה זו, *אין אישור לנהוג בכלי הארגון עד להסדרת הנושא.*\n\nיש למלא הצהרת בריאות מחודשת דרך אפליקציית איחוד הצלה בהקדם.\n\n*בהצלחה.*\n${SIGN}`,
+  traffic:(d,i)=>i.lvl==='warn'
+    ?`מה קורה ${first(d.name)},\nלתשומת לבך – בדיקת המידע התעבורתי שלך במערכות הארגון *תפוג בעוד ${i.n} ימים* (${i.dateStr}).${carLine(d)}\n\nיש לחדש את האישור דרך אפליקציית איחוד הצלה לפני המועד, כדי שתוכל להמשיך לנהוג בכלי הארגון.\nאם לא ברור איך – תחזור אליי.\n\n${SIGN}`
+    :`מה קורה ${first(d.name)},\nלתשומת לבך – בדיקת המידע התעבורתי שלך במערכות הארגון *פגה תוקף* (${i.dateStr}).${carLine(d)}\n\nמרגע קבלת הודעה זו, *אין אישור לנהוג בכלי הארגון עד להסדרת הנושא.*\n\nיש לחדש את האישור דרך אפליקציית איחוד הצלה בהקדם. אם לא ברור איך – תחזור אליי.\n\n*בהצלחה.*\n${SIGN}`,
+  service:(v,i)=>`*מה קורה אח שלי,*\n\nבהתאם לנהלי התחזוקה והבטיחות, נדרש לבצע טיפול תקופתי לכלי הרכב שברשותך – אחת לשנה או לפי הקילומטראז', המוקדם מביניהם.\n\n*כלי מס' ${v.num}* (${v.type}, רישוי ${v.plate})\n`+
+    (i.lvl==='warn'
+      ?`הטיפול האחרון בוצע ב־${i.srcStr}, כך שבעוד ${i.n} ימים תעבור *שנה מהטיפול.*\n\nלכן, יש לתאם טיפול תקופתי בהקדם: למלא את הבקשה באפליקציה של איחוד הצלה ולהיכנס למוסך לפני המועד.`
+      :`לפי הנתונים במערכת, הטיפול האחרון בוצע ב־${i.srcStr} – *לפני יותר משנה.*\n\nלכן, יש לגשת בהקדם למוסך לביצוע טיפול תקופתי: למלא את הבקשה באפליקציה של איחוד הצלה ולהיכנס למוסך בהקדם.`)+`\n\n${SIGN}`,
+  test:(v,i)=>i.lvl==='warn'
+    ?`שלום ${first(v.name)},\nשים לב כי רישיון הרכב של *כלי מס' ${v.num}* (${v.type}, רישוי ${v.plate}) *יפוג בעוד ${i.n} ימים* (${i.dateStr}).\n\nיש לתאם טסט במכון הרישוי *לפני* תאריך זה, כדי שהכלי לא יושבת.\nאחרי ביצוע הטסט, יש להעלות את רישיון הרכב החדש *לקישור באפליקציית איחוד הצלה*.\n\n${SIGN}`
+    :`שלום ${first(v.name)},\nשים לב כי רישיון הרכב של *כלי מס' ${v.num}* (${v.type}, רישוי ${v.plate}) שמופיע במערכות הארגון *פג תוקף* (${i.dateStr}).\n\n*חל איסור להזיז או לנסוע עם הרכב בשום אופן.*\nלצורך ביצוע הטסט יש *לגרור את הכלי למכון הרישוי*.\n\nבמידה והטסט כבר בוצע, יש להעלות את רישיון הרכב החדש *לקישור באפליקציית איחוד הצלה*.\n\nכל עוד הרישיון החדש *לא מופיע במערכות הארגון – אין לנסוע ברכב.*\n\n${SIGN}`,
+  check:(v,i)=>`מה נשמע אח שלי,\n\nאני צריך את העזרה שלך בבקשה 🙏\nאני צריך לבצע בדיקה לכלי מס' *${v.num}* (${v.type}, רישוי ${v.plate})`+
+    (i.lvl==='warn'?` – מועד הבדיקה הוא ${i.dateStr}.`:` – מועד הבדיקה עבר ב־${i.dateStr}.`)+
+    `\nחשוב לי לוודא שהוא תקין, בטוח, ושאפשר לנסוע בו בראש שקט.\n\nמצורף כאן טופס קצר שיעזור לי לדעת איפה עומדים עם הכלי.\nאם יש תקלות או בעיות – תכתוב אותן, זה רק יעזור לי לטפל לך בכלי בצורה הכי טובה ומהירה שאפשר.\n\n📎 ${FORM_URL}#v${v.num}\n\nתודה רבה מראש על שיתוף הפעולה – זה לטובת כולנו!\n\nדני בן דוד\nקצב"ת ירושלים\n\n*אם אתה לא בטוח במשהו תשלח לי הודעה חוזרת,*\n*זה חשוב שלא תזלזל בבדיקה, אני פה לכל שאלה.*`
+};
+
+/* ===== כללי חריגה ===== */
+const DAY=86400000;
+const T0=(()=>{const d=new Date();d.setHours(0,0,0,0);return d})();
+const TODAY_KEY=T0.toISOString().slice(0,10);
+function pd(s){const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s||'');if(!m)return null;return new Date(+m[3],+m[2]-1,+m[1])}
+function fmt(d){return d?d.toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric'}):'—'}
+function addYear(d){const x=new Date(d);x.setFullYear(x.getFullYear()+1);return x}
+function diff(d){return Math.round((d-T0)/DAY)}
+
+const VEH_ITEMS=[
+  {k:'test',label:'טסט (רישיון רכב)',due:v=>pd(v.test),word:'בתוקף עד'},
+  {k:'service',label:'טיפול שנתי',due:v=>{const d=pd(v.service);return d?addYear(d):null},word:'טיפול אחרון',src:v=>pd(v.service)},
+  {k:'check',label:'בדיקת תקינות',due:v=>pd(v.check),word:'מועד הבדיקה'}
+];
+const DRV_ITEMS=[
+  {k:'lic',label:'רישיון נהיגה',due:d=>pd(d.lic),word:'בתוקף עד'},
+  {k:'health',label:'הצהרת בריאות',due:d=>pd(d.health),word:'בתוקף עד'},
+  {k:'traffic',label:'מידע תעבורתי',due:d=>pd(d.traffic),word:'בתוקף עד'}
+];
+function evalItems(rec,items,win){
+  const out=[];
+  for(const it of items){
+    const due=it.due(rec);
+    if(!due){out.push({k:it.k,label:it.label,lvl:'miss',chip:`${it.label}: חסר תאריך`});continue}
+    const n=diff(due);
+    const base={k:it.k,label:it.label,n,dateStr:fmt(due),srcStr:it.src?fmt(it.src(rec)):fmt(due)};
+    if(n===0) out.push({...base,lvl:'today',chip:`${it.label} · פג היום`});
+    else if(n<0) out.push({...base,lvl:'bad',chip:`${it.label} · באיחור ${-n} ימים`});
+    else if(n<=win) out.push({...base,lvl:'warn',chip:`${it.label} · עוד ${n} ימים`});
+  }
+  return out;
+}
+const RANK={today:0,bad:1,warn:2,miss:3};
+
+/* ===== אחסון מקומי ===== */
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+const state={view:'alerts',kind:ls('kind')||'all',win:+(ls('win')||30),q:'',branch:'',showMiss:ls('miss')==='1',limit:60};
+
+function waLink(phone,text){let p=(phone||'').replace(/\D/g,'');if(p.startsWith('0'))p='972'+p.slice(1);return `https://wa.me/${p}?text=${encodeURIComponent(text)}`}
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function fmtPhone(p){p=(p||'').replace(/\D/g,'');return p.length===10?p.slice(0,3)+'-'+p.slice(3):p}
+
+let DATA=null;
+/* הנתונים שמורים באתר רק כקובץ מוצפן (kbt/kbt.bin), ונפתחים בטלפון עם הסיסמה.
+   הצפנה: PBKDF2 (600,000 סבבים) + AES-GCM, כמו ספר הטלפונים. */
+async function decrypt(pw){
+  const buf=new Uint8Array(await (await fetch('kbt/kbt.bin',{cache:'no-cache'})).arrayBuffer());
+  if(String.fromCharCode(buf[0],buf[1],buf[2])!=='KB1')throw new Error('file');
+  const salt=buf.slice(3,19),iv=buf.slice(19,31),ct=buf.slice(31);
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:600000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+  let gz;try{gz=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct)}catch(e){throw new Error('pw')}
+  const txt=await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  return JSON.parse(txt);
+}
+function lockView(err){
+  document.getElementById('lockB').hidden=true;
+  document.getElementById('app').innerHTML=`<div class="lockc"><h2>🔐 ניהול קצב"ת י"ם</h2><p class="hint" style="margin:0;color:var(--muted)">הנתונים מוצפנים. הקלד את הסיסמה</p>
+  <input id="pw" type="password" autocomplete="current-password" placeholder="סיסמה" onkeydown="if(event.key==='Enter')unlock()">
+  <label style="color:var(--muted);font-weight:600"><input type="checkbox" id="rem" checked> לזכור במכשיר הזה</label>
+  <button class="go" id="ub" onclick="unlock()">פתיחה 🔓</button><div class="err">${esc(err||'')}</div></div>`;
+  setTimeout(()=>{const i=document.getElementById('pw');if(i)i.focus()},50);
+}
+async function unlock(saved){
+  const pw=saved||(document.getElementById('pw')&&document.getElementById('pw').value.trim());if(!pw)return;
+  if(!saved){const b=document.getElementById('ub');b.disabled=true;b.textContent='פותח… (כמה שניות)'}
+  else document.getElementById('app').innerHTML='<div class="empty">פותח את הנתונים…</div>';
+  try{DATA=await decrypt(pw);if(!saved)ls('kbt_pw',document.getElementById('rem').checked?pw:'');document.getElementById('lockB').hidden=false;document.getElementById('upd').textContent='עודכן: '+DATA.updated;render()}
+  catch(e){if(saved&&e.message==='pw')ls('kbt_pw','');lockView(e.message==='pw'?'סיסמה שגויה':!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
+}
+function relock(){if(!confirm('לנעול ולשכוח את הסיסמה במכשיר הזה?'))return;ls('kbt_pw','');DATA=null;lockView()}
+/* הסיסמה מוקלדת פעם אחת ונשמרת במכשיר; אחרי זה האפליקציה נפתחת ישר */
+{const p=ls('kbt_pw');p?unlock(p):lockView()}
+
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{state.view=b.dataset.v;state.limit=60;document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===b));render()});
+
+function buildAlerts(){
+  const rows=[];
+  for(const v of DATA.vehicles){let is=evalItems(v,VEH_ITEMS,state.win);if(!state.showMiss)is=is.filter(i=>i.lvl!=='miss');if(is.length)rows.push({type:'vehicle',rec:v,is,key:'v:'+v.plate})}
+  for(const d of DATA.drivers){let is=evalItems(d,DRV_ITEMS,state.win);if(!state.showMiss)is=is.filter(i=>i.lvl!=='miss');if(is.length)rows.push({type:'driver',rec:d,is,key:'d:'+(d.id||d.priv)})}
+  rows.forEach(r=>{r.is.sort((a,b)=>RANK[a.lvl]-RANK[b.lvl]);r.lvl=r.is[0].lvl});
+  return rows;
+}
+function matches(r){
+  const q=state.q.trim();const o=r.rec;
+  if(state.branch&&o.branch!==state.branch)return false;
+  if(!q)return true;
+  return [o.name,o.priv,o.num,o.plate,o.phone,o.branch,o.car].some(x=>(x||'').toString().includes(q));
+}
+
+const SUBJ={lic:'רישיון נהיגה',health:'הצהרת בריאות',traffic:'מידע תעבורתי',service:'טיפול תקופתי',test:'רישיון רכב (טסט)',check:'בדיקת תקינות'};
+function card(r){
+  const o=r.rec,isV=r.type==='vehicle';
+  const meta=isV
+    ?`<span class="plate">${esc(o.plate)}</span><span>מס' פנימי ${esc(o.num)}</span><span>${esc(o.type)}</span><span>${esc(o.branch)}</span>`
+    :`<span>פרייבט ${esc(o.priv)}</span><span>${esc(o.branch)}</span>${o.car?`<span>רכב ${esc(o.car)}</span>`:''}`;
+  const contact=`<div class="tel">${o.phone?fmtPhone(o.phone):'אין טלפון'}${o.email?`<br><span class="em">${esc(o.email)}</span>`:''}</div>`;
+  const rows=r.is.map(i=>{
+    if(i.lvl==='miss'||!MSG[i.k])return `<div class="irow"><span class="chip ${i.lvl}">${esc(i.chip)}</span></div>`;
+    const text=MSG[i.k](o,i);
+    const sk='sent:'+r.key+':'+i.k+':'+TODAY_KEY;const sent=ls(sk);
+    const subj=`${SUBJ[i.k]}${isV?` – כלי ${o.num}`:''} – קצב"ת ירושלים`;
+    const wa=o.phone?`<a class="wa sm${sent?' done':''}" href="${waLink(o.phone,text)}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}${sent?'נפתח היום':'וואטסאפ'}</a>`:'';
+    const ml=o.email?`<a class="mail sm" href="mailto:${esc(o.email)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(text.replace(/\*/g,''))}" data-sent="${esc(sk)}">מייל</a>`:'';
+    const cp=`<button class="mail sm" type="button" data-copy="${esc(text)}">העתק</button>`;
+    return `<div class="irow"><span class="chip ${i.lvl}">${esc(i.chip)}</span><span class="btns">${wa}${ml}${cp}</span></div>`;
+  }).join('');
+  return `<div class="card"><div class="who"><div class="name">${esc(o.name)}</div><div class="meta">${isV?'<span>נהג</span>':''}${meta}</div></div>${contact}<div class="issues">${rows}</div></div>`;
+}
+
+function controls(withKind){
+  const branches=[...new Set([...DATA.vehicles,...DATA.drivers].map(x=>x.branch).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'he'));
+  return `<div class="controls">
+    <input id="q" type="search" placeholder="חיפוש שם, פרייבט, מס' רכב, טלפון…" value="${esc(state.q)}">
+    <select id="branch"><option value="">כל הסניפים</option>${branches.map(b=>`<option${b===state.branch?' selected':''}>${esc(b)}</option>`).join('')}</select>
+    ${withKind?`<div class="seg" role="group" aria-label="סוג">${[['all','הכל'],['vehicle','רכבים'],['driver','נהגים']].map(([k,l])=>`<button data-kind="${k}" aria-pressed="${state.kind===k}">${l}</button>`).join('')}</div>
+    <select id="win" aria-label="התראה מוקדמת">${[0,7,14,30,60].map(n=>`<option value="${n}"${n===state.win?' selected':''}>${n?`התראה ${n} ימים מראש`:'רק מה שכבר פג'}</option>`).join('')}</select>`:''}
+  </div>`;
+}
+
+function render(){
+  if(!DATA)return;
+  const app=document.getElementById('app');
+  const all=buildAlerts();
+  document.getElementById('n-alerts').textContent=all.filter(r=>r.lvl==='today'||r.lvl==='bad').length||'';
+  if(state.view==='alerts'){
+    const rows=all.filter(r=>(state.kind==='all'||r.type===state.kind)&&matches(r));
+    const c=l=>rows.filter(r=>r.lvl===l).length;
+    const groups=[['today','נכנסו לחריגה היום','var(--today)'],['bad','בחריגה','var(--bad)'],['warn',`יפוג ב־${state.win} הימים הקרובים`,'var(--warn)'],['miss','חסר תאריך במערכת','var(--muted)']];
+    let html=`<div class="summary">
+      <div class="stat today"><b>${c('today')}</b><span>חריגות חדשות היום</span></div>
+      <div class="stat bad"><b>${c('bad')}</b><span>בחריגה</span></div>
+      <div class="stat warn"><b>${c('warn')}</b><span>מתקרבים לפקיעה</span></div>
+      <div class="stat"><b>${DATA.vehicles.length} / ${DATA.drivers.length}</b><span>רכבים / נהגים במעקב</span></div>
+    </div>${controls(true)}
+    <label class="legend"><input type="checkbox" id="miss"${state.showMiss?' checked':''}> הצג גם רשומות בלי תאריך</label>
+    <div class="legend">טיפול שנתי נחשב בחריגה כשעברה שנה מהטיפול האחרון.</div>`;
+    let shown=0;
+    for(const [l,t,col] of groups){
+      const g=rows.filter(r=>r.lvl===l).sort((a,b)=>(a.is[0].n??0)-(b.is[0].n??0));
+      if(!g.length)continue;
+      const slice=g.slice(0,Math.max(0,state.limit-shown));shown+=slice.length;
+      html+=`<h2><span class="dot" style="background:${col}"></span>${t}<span class="cnt">${g.length}</span></h2><div class="list">${slice.map(card).join('')}</div>`;
+      if(slice.length<g.length){html+=`<button class="more" id="more">הצג עוד</button>`;break}
+    }
+    if(!rows.length)html+=`<div class="empty">אין חריגות לפי הסינון הנוכחי.</div>`;
+    app.innerHTML=html;
+  } else {
+    const isV=state.view==='veh';
+    const list=(isV?DATA.vehicles:DATA.drivers).filter(o=>matches({rec:o}));
+    const cell=(d,src)=>{if(!d)return '<td>—</td>';const n=diff(d);const cl=n<0?'d-bad':n===0?'d-today':n<=state.win?'d-warn':'';return `<td class="${cl}">${fmt(src||d)}</td>`};
+    const head=isV?['רישוי','מס\' פנימי','סוג','נהג','סניף','טסט עד','טיפול אחרון','בדיקת תקינות','ביטוח עד','טלפון']
+                  :['שם','פרייבט','סניף','רכב','רישיון נהיגה','הצהרת בריאות','מידע תעבורתי','הדרכה שנתית','טלפון'];
+    const body=list.map(o=>isV
+      ?`<tr><td><span class="plate">${esc(o.plate)}</span></td><td>${esc(o.num)}</td><td>${esc(o.type)}</td><td>${esc(o.name)}</td><td>${esc(o.branch)}</td>${cell(pd(o.test))}${cell(pd(o.service)?addYear(pd(o.service)):null,pd(o.service))}${cell(pd(o.check))}${cell(pd(o.ins))}<td dir="ltr">${fmtPhone(o.phone)}</td></tr>`
+      :`<tr><td>${esc(o.name)}</td><td>${esc(o.priv)}</td><td>${esc(o.branch)}</td><td>${esc(o.car)}</td>${cell(pd(o.lic))}${cell(pd(o.health))}${cell(pd(o.traffic))}${cell(pd(o.train))}<td dir="ltr">${fmtPhone(o.phone)||'—'}</td></tr>`).join('');
+    app.innerHTML=`${controls(false)}<div class="legend">${list.length} רשומות · <span style="color:var(--bad)">אדום</span> = פג, <span style="color:var(--warn)">כתום</span> = יפוג בקרוב</div><div class="tbl-wrap"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
+  }
+  bind();
+}
+function bind(){
+  const q=document.getElementById('q');
+  if(q){q.oninput=e=>{state.q=e.target.value;state.limit=60;const pos=e.target.selectionStart;render();const n=document.getElementById('q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}}
+  const b=document.getElementById('branch');if(b)b.onchange=e=>{state.branch=e.target.value;render()};
+  const w=document.getElementById('win');if(w)w.onchange=e=>{state.win=+e.target.value;ls('win',state.win);render()};
+  const m=document.getElementById('miss');if(m)m.onchange=e=>{state.showMiss=e.target.checked;ls('miss',e.target.checked?'1':'0');render()};
+  const mo=document.getElementById('more');if(mo)mo.onclick=()=>{state.limit+=60;render()};
+  document.querySelectorAll('[data-kind]').forEach(x=>x.onclick=()=>{state.kind=x.dataset.kind;ls('kind',state.kind);render()});
+  document.querySelectorAll('a[data-sent]').forEach(a=>a.addEventListener('click',()=>{ls(a.dataset.sent,'1');setTimeout(render,300)}));
+  document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.copy);b.textContent='הועתק'}catch(e){b.textContent='לא הועתק'}});
+}
+</script>
+</body>
+</html>
