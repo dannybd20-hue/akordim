@@ -74,7 +74,8 @@ label.f.missing{color:var(--bad)}
 .sub{font-weight:700;color:var(--accent);border-top:2px solid var(--line);padding-top:12px;margin-top:4px}
 .photo{display:flex;flex-direction:column;gap:4px;background:var(--bg);border:1px dashed var(--line);border-radius:10px;padding:12px;font-size:.95rem}
 .photo span{color:var(--muted)}
-.pick{margin-top:6px;cursor:pointer}
+.okmark{width:64px;height:64px;border-radius:50%;background:var(--ok-bg);color:var(--ok);display:grid;place-items:center;font-size:2rem;font-weight:700;margin:0 auto}
+#okBox{text-align:center}
 .thumbs{display:flex;flex-wrap:wrap;gap:8px}
 .th{position:relative}
 .th img{width:76px;height:76px;object-fit:cover;border-radius:10px;display:block}
@@ -145,9 +146,7 @@ pre.preview{white-space:pre-wrap;background:var(--bg);border:1px solid var(--lin
     <label class="f" id="generalL">תקלה כללית שיש (לא חובה)<textarea id="general" placeholder="כל תקלה או דבר שנראה לך לא תקין"></textarea></label>
     <div class="photo">
       <b>📷 צילום של התקלה או מה שלא תקין</b>
-      <span>אם זה צמיג, ברקסים, מכות וכו'. התמונות יישלחו יחד עם הבדיקה בוואטסאפ.</span>
-      <label class="btn mail pick"><input id="pics" type="file" accept="image/*" multiple hidden>📷 צילום / הוספת תמונות</label>
-      <div class="thumbs" id="thumbs"></div>
+      <span>אם זה צמיג, ברקסים, מכות וכו'. אחרי שליחת הטופס יופיע כפתור לשליחת התמונות אליי בוואטסאפ.</span>
     </div>
   </section>
 
@@ -156,18 +155,25 @@ pre.preview{white-space:pre-wrap;background:var(--bg);border:1px solid var(--lin
 </div>
 </form>
 
+<section id="okBox" hidden>
+  <div class="okmark">✓</div>
+  <h2 style="text-align:center">הבדיקה נקלטה, תודה!</h2>
+  <p class="hint" style="text-align:center">יש תמונות של תקלה או נזק? שלח אותן אליי עכשיו בוואטסאפ.</p>
+  <a class="btn wa" id="picWa" target="_blank" rel="noopener">📷 שליחת תמונות בוואטסאפ</a>
+  <button class="btn ghost" id="again" type="button">מילוי בדיקה נוספת</button>
+</section>
+
 <section id="out" hidden>
   <h2>שליחת הבדיקה</h2>
+  <p class="err" id="sendErr" hidden>לא הצלחתי לשלוח את הבדיקה (אין קליטה?). שלח אותה בוואטסאפ או במייל.</p>
   <p class="hint">בחר איך לשלוח. הבדיקה מגיעה אליי רק אחרי שתלחץ "שלח" בוואטסאפ או במייל.</p>
   <div class="send">
-    <button class="btn wa" id="shareBtn" type="button" hidden>שליחה בוואטסאפ עם התמונות</button>
     <a class="btn wa" id="waBtn" target="_blank" rel="noopener">שליחה בוואטסאפ</a>
     <a class="btn mail" id="mailBtn">שליחה במייל</a>
   </div>
   <button class="btn ghost" id="copyBtn" type="button">העתק את הטקסט</button>
   <p class="hint" id="mailHint"></p>
-  <p class="hint" id="shareHint" hidden>בחלון שנפתח בחר <b>וואטסאפ</b>, ואז את <b>דני בן דוד</b>. הבדיקה והתמונות יישלחו יחד.</p>
-  <p class="hint" id="picHint" hidden><b>הטלפון הזה לא תומך בשליחת תמונות מהטופס.</b> אחרי שליחת הטקסט, צרף את התמונות באותו צ'אט.</p>
+  <p class="hint">אחרי שליחת הטקסט, צרף את התמונות באותו צ'אט.</p>
   <pre class="preview" id="preview"></pre>
   <button class="btn ghost" id="back" type="button">חזרה לעריכה</button>
 </section>
@@ -176,6 +182,9 @@ pre.preview{white-space:pre-wrap;background:var(--bg);border:1px solid var(--lin
 </div></main>
 
 <script>
+/* כתובת סקריפט הגוגל שמכניס כל בדיקה לגיליון. ריק = שליחה בוואטסאפ/מייל בלבד */
+const SHEET_URL='';
+if(SHEET_URL)document.querySelector('#f button[type=submit]').textContent='סיימתי, שלח';
 const CONTACT={phone:'972508820408', email:'danny.b.d.20@gmail.com'};
 const Q={
   tires4:['4 צמיגים','יש להסתכל על הצמיגים לראות שהם לא יבשים, קרועים, ושיש בצמיג עוד עובי'],
@@ -232,7 +241,7 @@ function val(k){const r=document.querySelector(`input[name="c_${k}"]:checked`);r
 
 const m=/^#v(\d+)$/.exec(location.hash);if(m)$('num').value=m[1];
 
-$('f').addEventListener('submit',e=>{
+$('f').addEventListener('submit',async e=>{
   e.preventDefault();
   const errs=[];
   if(!$('name').value.trim()||!$('num').value.trim())errs.push('חסרים שם או מספר כלי.');
@@ -258,31 +267,27 @@ $('f').addEventListener('submit',e=>{
   if(bad.length)t+=`\n*לא תקין:*\n`+bad.map(k=>`❌ ${Q[k][0]}${$('why_'+k).value.trim()?' – '+$('why_'+k).value.trim():''}`).join('\n')+'\n';
   if(oth.length)t+=`\n*אחר:*\n`+oth.map(k=>`⚠️ ${Q[k][0]} – ${$('why_'+k).value.trim()}`).join('\n')+'\n';
   if($('general').value.trim())t+=`\n*תקלה כללית:* ${$('general').value.trim()}\n`;
-  if(PICS.length)t+=`\n📷 מצורפות ${PICS.length} תמונות\n`;
   $('preview').textContent=t;
   $('waBtn').href=`https://wa.me/${CONTACT.phone}?text=${encodeURIComponent(t)}`;
   $('mailBtn').href=`mailto:${CONTACT.email}?subject=${encodeURIComponent(`בדיקת תקינות כלי ${$('num').value} – ${$('name').value.trim()}`)}&body=${encodeURIComponent(t.replace(/\*/g,''))}`;
   $('mailHint').textContent=`אם המייל לא נפתח: העתק את הטקסט ושלח לכתובת ${CONTACT.email}`;
-  const canFiles=PICS.length&&navigator.canShare&&navigator.canShare({files:PICS});
-  $('shareBtn').hidden=!canFiles;$('shareHint').hidden=!canFiles;$('picHint').hidden=!(PICS.length&&!canFiles);
-  $('waBtn').textContent=canFiles?'שליחה בוואטסאפ בלי תמונות':'שליחה בוואטסאפ';$('waBtn').classList.toggle('alt',!!canFiles);
+
+  $('picWa').href=`https://wa.me/${CONTACT.phone}?text=${encodeURIComponent(`📷 תמונות לבדיקת כלי מס' ${$('num').value} – ${$('name').value.trim()}`)}`;
+  if(SHEET_URL){
+    const sb=$('f').querySelector('button[type=submit]');sb.disabled=true;sb.textContent='שולח…';
+    const rec={name:$('name').value.trim(),priv:$('priv').value,num:$('num').value,type:curType,km:$('km').value,stop:stop.value==='bad',
+      ok:ks.length-bad.length-oth.length,bad:bad.map(k=>Q[k][0]+($('why_'+k).value.trim()?' – '+$('why_'+k).value.trim():'')).join('; '),
+      other:oth.map(k=>Q[k][0]+' – '+$('why_'+k).value.trim()).join('; '),general:$('general').value.trim(),text:t.replace(/\*/g,'')};
+    try{
+      const r=await fetch(SHEET_URL,{method:'POST',body:JSON.stringify({r:rec})}).then(r=>r.json());
+      if(!r.ok)throw new Error(r.error||'x');
+      $('f').hidden=true;$('okBox').hidden=false;window.scrollTo(0,0);return;
+    }catch(e){$('sendErr').hidden=false}
+    finally{sb.disabled=false;sb.textContent='סיימתי, שלח'}
+  }
   $('f').hidden=true;$('out').hidden=false;window.scrollTo(0,0);
 });
-/* תמונות: מוקטנות בטלפון ונשלחות יחד עם הטקסט דרך חלון השיתוף */
-let PICS=[];
-async function shrink(file){
-  try{const bmp=await createImageBitmap(file);const s=Math.min(1,1600/Math.max(bmp.width,bmp.height));
-    const c=document.createElement('canvas');c.width=Math.round(bmp.width*s);c.height=Math.round(bmp.height*s);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
-    const b=await new Promise(r=>c.toBlob(r,'image/jpeg',.82));return b?new File([b],(file.name||'photo').replace(/\.\w+$/,'')+'.jpg',{type:'image/jpeg'}):file}
-  catch(e){return file}
-}
-function drawThumbs(){$('thumbs').innerHTML=PICS.map((f,k)=>`<span class="th"><img src="${URL.createObjectURL(f)}" alt=""><button type="button" data-rm="${k}" aria-label="הסר תמונה">✕</button></span>`).join('');
-  $('thumbs').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{PICS.splice(+b.dataset.rm,1);drawThumbs()})}
-$('pics').onchange=async e=>{for(const f of e.target.files)PICS.push(await shrink(f));e.target.value='';drawThumbs()};
-$('shareBtn').onclick=async()=>{
-  try{await navigator.share({files:PICS,text:$('preview').textContent})}
-  catch(e){if(e.name!=='AbortError'){$('picHint').hidden=false}}
-};
+$('again').onclick=()=>location.reload();
 $('back').onclick=()=>{$('out').hidden=true;$('f').hidden=false};
 $('copyBtn').onclick=async()=>{
   try{await navigator.clipboard.writeText($('preview').textContent);$('copyBtn').textContent='הועתק'}
