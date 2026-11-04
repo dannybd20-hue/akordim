@@ -67,6 +67,11 @@ main .wrap{padding-block:16px 48px;display:flex;flex-direction:column;gap:16px}
 .controls{display:flex;gap:8px;flex-wrap:wrap}
 .controls input,.controls select{font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);min-width:0}
 .controls input{flex:1 1 200px}
+.cats{display:flex;gap:6px;flex-wrap:wrap}
+.cats button{appearance:none;flex:none;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);font:600 .95rem var(--f-body);padding:8px 12px;border-radius:99px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.cats button span{font-size:.78rem;font-weight:700;background:var(--bg);color:var(--muted);border-radius:99px;padding:0 7px;font-variant-numeric:tabular-nums}
+.cats button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.cats button[aria-pressed="true"] span{background:#ffffff33;color:inherit}
 .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
 .seg button{appearance:none;border:0;background:transparent;color:var(--fg);font:600 .95rem var(--f-body);padding:9px 12px;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
@@ -188,7 +193,7 @@ const RANK={today:0,bad:1,warn:2,miss:3};
 
 /* ===== אחסון מקומי ===== */
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
-const state={view:'alerts',kind:ls('kind')||'all',win:+(ls('win')||30),q:'',branch:'',showMiss:ls('miss')==='1',limit:60};
+const state={view:'alerts',cat:ls('cat')||'',kind:ls('kind')||'all',win:+(ls('win')||30),q:'',branch:'',showMiss:ls('miss')==='1',limit:60};
 
 function waLink(phone,text){let p=(phone||'').replace(/\D/g,'');if(p.startsWith('0'))p='972'+p.slice(1);return `https://wa.me/${p}?text=${encodeURIComponent(text)}`}
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
@@ -228,10 +233,10 @@ function relock(){if(!confirm('לנעול ולשכוח את הסיסמה במכ�
 
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{state.view=b.dataset.v;state.limit=60;document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===b));render()});
 
-function buildAlerts(){
+function buildAlerts(allCats){
   const rows=[];
-  for(const v of DATA.vehicles){let is=evalItems(v,VEH_ITEMS,state.win);if(!state.showMiss)is=is.filter(i=>i.lvl!=='miss');if(is.length)rows.push({type:'vehicle',rec:v,is,key:'v:'+v.plate})}
-  for(const d of DATA.drivers){let is=evalItems(d,DRV_ITEMS,state.win);if(!state.showMiss)is=is.filter(i=>i.lvl!=='miss');if(is.length)rows.push({type:'driver',rec:d,is,key:'d:'+(d.id||d.priv)})}
+  for(const v of DATA.vehicles){let is=evalItems(v,VEH_ITEMS,state.win);if(!state.showMiss)is=is.filter(i=>i.lvl!=='miss');if(state.cat&&!allCats)is=is.filter(i=>i.k===state.cat);if(is.length)rows.push({type:'vehicle',rec:v,is,key:'v:'+v.plate})}
+  for(const d of DATA.drivers){let is=evalItems(d,DRV_ITEMS,state.win);if(!state.showMiss)is=is.filter(i=>i.lvl!=='miss');if(state.cat&&!allCats)is=is.filter(i=>i.k===state.cat);if(is.length)rows.push({type:'driver',rec:d,is,key:'d:'+(d.id||d.priv)})}
   rows.forEach(r=>{r.is.sort((a,b)=>RANK[a.lvl]-RANK[b.lvl]);r.lvl=r.is[0].lvl});
   return rows;
 }
@@ -262,6 +267,12 @@ function card(r){
   return `<div class="card"><div class="who"><div class="name">${esc(o.name)}</div><div class="meta">${isV?'<span>נהג</span>':''}${meta}</div></div>${contact}<div class="issues">${rows}</div></div>`;
 }
 
+const CATS=[['','הכל'],['test','טסט'],['service','טיפול שנתי'],['check','בדיקת תקינות'],['lic','רישיון נהיגה'],['health','הצהרת בריאות'],['traffic','מידע תעבורתי']];
+function catBar(every){
+  const n={};every.forEach(r=>{if(state.kind!=='all'&&r.type!==state.kind)return;r.is.forEach(i=>{if(i.lvl!=='miss'){n[i.k]=(n[i.k]||0)+1;n['']=(n['']||0)+1}})});
+  const vk=['test','service','check'],dk=['lic','health','traffic'];
+  return `<div class="cats" role="group" aria-label="קטגוריית חריגה">${CATS.filter(([k])=>!k||state.kind==='all'||(state.kind==='vehicle'?vk:dk).includes(k)).map(([k,l])=>`<button data-cat="${k}" aria-pressed="${state.cat===k}">${l}<span>${n[k]||0}</span></button>`).join('')}</div>`;
+}
 function controls(withKind){
   const branches=[...new Set([...DATA.vehicles,...DATA.drivers].map(x=>x.branch).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'he'));
   return `<div class="controls">
@@ -275,8 +286,8 @@ function controls(withKind){
 function render(){
   if(!DATA)return;
   const app=document.getElementById('app');
-  const all=buildAlerts();
-  document.getElementById('n-alerts').textContent=all.filter(r=>r.lvl==='today'||r.lvl==='bad').length||'';
+  const all=buildAlerts(),every=buildAlerts(true);
+  document.getElementById('n-alerts').textContent=every.filter(r=>r.lvl==='today'||r.lvl==='bad').length||'';
   if(state.view==='alerts'){
     const rows=all.filter(r=>(state.kind==='all'||r.type===state.kind)&&matches(r));
     const c=l=>rows.filter(r=>r.lvl===l).length;
@@ -287,6 +298,7 @@ function render(){
       <div class="stat warn"><b>${c('warn')}</b><span>מתקרבים לפקיעה</span></div>
       <div class="stat"><b>${DATA.vehicles.length} / ${DATA.drivers.length}</b><span>רכבים / נהגים במעקב</span></div>
     </div>${controls(true)}
+    ${catBar(every)}
     <label class="legend"><input type="checkbox" id="miss"${state.showMiss?' checked':''}> הצג גם רשומות בלי תאריך</label>
     <div class="legend">טיפול שנתי נחשב בחריגה כשעברה שנה מהטיפול האחרון.</div>`;
     let shown=0;
@@ -319,7 +331,8 @@ function bind(){
   const w=document.getElementById('win');if(w)w.onchange=e=>{state.win=+e.target.value;ls('win',state.win);render()};
   const m=document.getElementById('miss');if(m)m.onchange=e=>{state.showMiss=e.target.checked;ls('miss',e.target.checked?'1':'0');render()};
   const mo=document.getElementById('more');if(mo)mo.onclick=()=>{state.limit+=60;render()};
-  document.querySelectorAll('[data-kind]').forEach(x=>x.onclick=()=>{state.kind=x.dataset.kind;ls('kind',state.kind);render()});
+  document.querySelectorAll('[data-kind]').forEach(x=>x.onclick=()=>{state.kind=x.dataset.kind;ls('kind',state.kind);const vk=['test','service','check'];if(state.cat&&state.kind!=='all'&&(state.kind==='vehicle')!==vk.includes(state.cat)){state.cat='';ls('cat','')}render()});
+  document.querySelectorAll('[data-cat]').forEach(x=>x.onclick=()=>{state.cat=x.dataset.cat;ls('cat',state.cat);state.limit=60;render()});
   document.querySelectorAll('a[data-sent]').forEach(a=>a.addEventListener('click',()=>{ls(a.dataset.sent,'1');setTimeout(render,300)}));
   document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.copy);b.textContent='הועתק'}catch(e){b.textContent='לא הועתק'}});
 }
