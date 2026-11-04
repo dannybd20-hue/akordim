@@ -200,6 +200,12 @@ dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:.
 table{border-collapse:collapse;width:100%;font-size:.88rem}
 th,td{padding:9px 12px;border-top:1px solid var(--line);text-align:start;vertical-align:top}
 th{color:var(--muted);font-weight:700;font-size:.78rem;background:var(--soft);border-top:0}
+/* הגנה: סימן מים, בלי בחירת טקסט, טשטוש כשהאפליקציה ברקע */
+body.secure{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+body.secure input,body.secure textarea{-webkit-user-select:text;user-select:text}
+#wm{position:fixed;inset:0;z-index:40;pointer-events:none;background-repeat:repeat;opacity:.11}
+body.hide-all main,body.hide-all .ov{filter:blur(18px)}
+@media print{body{display:none!important}}
 /* lock */
 .lockc{max-width:380px;margin:40px auto;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:26px;display:flex;flex-direction:column;gap:12px;text-align:center;box-shadow:var(--sh)}
 .lockc h2{margin:0;font-weight:800}
@@ -498,7 +504,18 @@ function bind(){
   const cp=$('cpm');if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(coordMsg(DATA.br));cp.textContent='הועתק'}catch(e){cp.textContent='לא הועתק'}};
   const a=$('adm');if(a)a.onchange=async e=>{const b=e.target.value;$('app').innerHTML='<div class="empty">פותח…</div>';DATA=await dec(await fileOf(ADMIN[b].pw),ADMIN[b].pw);ls('coord_adm_br',b);st.sel=null;st.f={};show()};
 }
-function show(){$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
+function watermark(){
+  let w=$('wm');if(!w){w=document.createElement('div');w.id='wm';document.body.append(w)}
+  const t=`${DATA.br} · ${ADMIN?'מנהל':(DATA.coord||'רכז')} · ${new Date().toLocaleDateString('he-IL')}`;
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><text x="160" y="95" font-family="Arial" font-size="15" font-weight="700" fill="#0f2a4a" text-anchor="middle" transform="rotate(-24 160 90)" direction="rtl">${t.replace(/[<&>"]/g,'')}</text></svg>`;
+  w.style.backgroundImage=`url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
+  document.body.classList.add('secure');
+}
+document.addEventListener('visibilitychange',()=>document.body.classList.toggle('hide-all',document.hidden));
+window.addEventListener('blur',()=>document.body.classList.add('hide-all'));window.addEventListener('focus',()=>document.body.classList.remove('hide-all'));
+document.addEventListener('copy',e=>{if(document.body.classList.contains('secure')&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||''))e.preventDefault()});
+document.addEventListener('contextmenu',e=>{if(document.body.classList.contains('secure'))e.preventDefault()});
+function show(){watermark();$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
 
 /* ===== כניסה ===== */
 function lockView(err){
