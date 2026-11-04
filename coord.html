@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<link rel="icon" href="icons/apps-192.png">
+<meta name="theme-color" content="#1f4f8f">
+<title>בטיחות סניף</title>
+<meta property="og:title" content="בטיחות סניף – רכזי תחבורה">
+<meta property="og:description" content="איחוד הצלה · קצב&quot;ת ירושלים">
+<meta property="og:image" content="https://dannybd20-hue.github.io/akordim/brand/uh-og.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Secular+One&display=swap">
+<style>
+/* Layout: sticky header with tabs, single column of person/vehicle cards grouped by severity */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --fg:#17202b; --muted:#5d6876; --line:#dde2e9;
+  --accent:#1f4f8f; --accent-fg:#ffffff;
+  --bad:#c62f2f; --bad-bg:#fbe9e9; --warn:#a96200; --warn-bg:#fdf1dd; --ok:#1d7a46; --ok-bg:#e3f4ea;
+  --today:#7a2bb8; --today-bg:#f1e7fb;
+  --plate:#f6c800; --plate-fg:#111;
+  --wa:#1b9e52;
+  --f-display:"Secular One","Assistant",system-ui,sans-serif;
+  --f-body:"Assistant",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141b; --surface:#18202a; --fg:#e7ecf2; --muted:#9aa6b4; --line:#2a3542;
+  --accent:#6fa3e8; --accent-fg:#0b1220;
+  --bad:#ff7b7b; --bad-bg:#3a1c1f; --warn:#f0b257; --warn-bg:#352813; --ok:#6fd49a; --ok-bg:#16301f;
+  --today:#c99bf3; --today-bg:#2c1d3c; --plate:#e8bd00; --plate-fg:#111; --wa:#3ccf7c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141b; --surface:#18202a; --fg:#e7ecf2; --muted:#9aa6b4; --line:#2a3542;
+  --accent:#6fa3e8; --accent-fg:#0b1220;
+  --bad:#ff7b7b; --bad-bg:#3a1c1f; --warn:#f0b257; --warn-bg:#352813; --ok:#6fd49a; --ok-bg:#16301f;
+  --today:#c99bf3; --today-bg:#2c1d3c; --plate:#e8bd00; --plate-fg:#111; --wa:#3ccf7c; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.45;direction:rtl}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--accent)}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--accent);color:var(--accent-fg)}
+header .wrap{padding-block:14px 0}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{background:#fff;border-radius:10px;padding:5px 8px;flex:none}
+.logo img{display:block;width:84px;height:auto}
+.hbs{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hb{border:0;background:#ffffff26;color:inherit;border-radius:10px;padding:7px 11px;font:700 .9rem var(--f-body);cursor:pointer;white-space:nowrap}
+.lockc{max-width:380px;margin:30px auto;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:12px;text-align:center}
+.lockc h2{margin:0;font-family:var(--f-display);font-weight:400}
+.lockc input[type=password],.lockc input[type=text]{font:inherit;padding:12px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg);text-align:center;direction:ltr;width:100%}
+.lockc .go{border:0;border-radius:12px;padding:13px;font:700 1.05rem var(--f-body);background:var(--accent);color:var(--accent-fg);cursor:pointer}
+.lockc .err{color:var(--bad);font-weight:700;min-height:1.2em}
+h1{font-family:var(--f-display);font-weight:400;font-size:1.6rem;margin:0;letter-spacing:.01em}
+.upd{font-size:.85rem;opacity:.85}
+.tabs{display:flex;gap:4px;margin-top:10px;overflow-x:auto}
+.tab{appearance:none;border:0;background:transparent;color:inherit;font:600 1rem var(--f-body);padding:10px 14px;border-radius:10px 10px 0 0;opacity:.8;cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{background:var(--bg);color:var(--fg);opacity:1}
+.tab .n{display:inline-block;min-width:1.6em;padding:0 .4em;margin-inline-start:6px;border-radius:99px;background:var(--bad);color:#fff;font-size:.8rem;text-align:center}
+main .wrap{padding-block:16px 48px;display:flex;flex-direction:column;gap:16px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.stat b{display:block;font-family:var(--f-display);font-weight:400;font-size:1.7rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{font-size:.85rem;color:var(--muted)}
+.stat.today b{color:var(--today)} .stat.bad b{color:var(--bad)} .stat.warn b{color:var(--warn)}
+.controls{display:flex;gap:8px;flex-wrap:wrap}
+.controls input,.controls select{font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);min-width:0}
+.controls input{flex:1 1 200px}
+.cats{display:flex;gap:6px;flex-wrap:wrap}
+.cats button{appearance:none;flex:none;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);font:600 .95rem var(--f-body);padding:8px 12px;border-radius:99px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.cats button span{font-size:.78rem;font-weight:700;background:var(--bg);color:var(--muted);border-radius:99px;padding:0 7px;font-variant-numeric:tabular-nums}
+.cats button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.cats button[aria-pressed="true"] span{background:#ffffff33;color:inherit}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{appearance:none;border:0;background:transparent;color:var(--fg);font:600 .95rem var(--f-body);padding:9px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+h2{font-family:var(--f-display);font-weight:400;font-size:1.15rem;margin:8px 0 0;display:flex;align-items:center;gap:8px}
+h2 .cnt{font-family:var(--f-body);font-weight:700;font-size:.85rem;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.list{display:flex;flex-direction:column;gap:8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:start}
+.card .who{min-width:0}
+.name{font-weight:700;font-size:1.05rem}
+.meta{color:var(--muted);font-size:.88rem;display:flex;gap:4px 10px;flex-wrap:wrap;align-items:center}
+.plate{display:inline-block;background:var(--plate);color:var(--plate-fg);border:1.5px solid #111;border-radius:4px;padding:0 6px;font:700 .85rem/1.5 ui-monospace,Menlo,Consolas,monospace;direction:ltr;letter-spacing:.04em}
+.veh{margin-top:6px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.veh.none{color:var(--muted);font-weight:600;font-size:.88rem}
+.issues{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:8px}
+.irow.dovi{background:var(--bg);border-radius:10px;padding:6px 8px}
+.irow.dovi .dl{font-size:.86rem;font-weight:700;color:var(--muted)}
+.routebar{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.go-maps{display:block;text-align:center;text-decoration:none;background:var(--accent);color:var(--accent-fg);font-weight:700;padding:11px;border-radius:10px}
+.stopn{display:inline-grid;place-items:center;min-width:1.7em;height:1.7em;border-radius:50%;background:var(--accent);color:var(--accent-fg);font-size:.85rem;margin-inline-end:8px}
+.card.off{opacity:.55}
+.addr{display:flex;gap:6px;margin-top:8px;align-items:center}
+.addr input{flex:1;min-width:0;font:inherit;font-size:.92rem;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+.inc{display:inline-flex;align-items:center;gap:4px;font-size:.88rem;font-weight:600;color:var(--muted)}
+.irow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+.sm{padding:6px 10px!important;font-size:.88rem;border-radius:8px}
+.mail{display:inline-flex;align-items:center;text-decoration:none;background:transparent;color:var(--accent);border:1.5px solid var(--accent);font:700 .88rem var(--f-body);cursor:pointer}
+.em{direction:ltr;unicode-bidi:isolate;word-break:break-all}
+.chip{font-size:.86rem;font-weight:600;padding:3px 9px;border-radius:99px;font-variant-numeric:tabular-nums}
+.chip.bad{background:var(--bad-bg);color:var(--bad)} .chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.today{background:var(--today-bg);color:var(--today)} .chip.ok{background:var(--ok-bg);color:var(--ok)}
+.chip.miss{background:var(--bg);color:var(--muted);border:1px dashed var(--line)}
+.acts{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.wa{display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;background:var(--wa);color:#fff;font-weight:700;padding:8px 12px;border-radius:10px;white-space:nowrap}
+.wa svg{width:18px;height:18px}
+.wa.done{background:transparent;color:var(--wa);border:1.5px solid var(--wa)}
+.nophone{font-size:.82rem;color:var(--muted);text-align:center}
+.tel{font-size:.85rem;color:var(--muted);direction:ltr;text-align:center;user-select:all;font-variant-numeric:tabular-nums}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:20px;text-align:center;color:var(--muted)}
+.tbl-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:start;white-space:nowrap}
+th{position:sticky;top:0;background:var(--surface);color:var(--muted);font-weight:700;font-size:.8rem}
+td.d-bad{color:var(--bad);font-weight:700} td.d-warn{color:var(--warn);font-weight:700} td.d-today{color:var(--today);font-weight:700}
+.more{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 .95rem var(--f-body);padding:10px;border-radius:10px;cursor:pointer}
+.legend{font-size:.85rem;color:var(--muted)}
+@media (max-width:520px){.card{grid-template-columns:1fr}.acts{flex-direction:row;flex-wrap:wrap}.wa{flex:1}}
+</style>
+<style>
+.pcard{cursor:pointer}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.92rem}
+.kv b{color:var(--muted);font-weight:600}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.sec h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:1.05rem}
+.rec{border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.rec.ok{background:var(--ok-bg);color:var(--ok)}.rec.warn{background:var(--warn-bg);color:var(--warn)}.rec.bad{background:var(--bad-bg);color:var(--bad)}
+.rec b{font-size:1.15rem}
+.rec ul{margin:0;padding-inline-start:18px;color:var(--fg)}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form label{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:.92rem}
+.form input,.form select,.form textarea{font:inherit;font-weight:400;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);min-width:0}
+.form .full{grid-column:1/-1}
+@media (max-width:520px){.form{grid-template-columns:1fr}}
+.big{font:700 1rem var(--f-body);padding:11px 14px;border-radius:10px;border:0;cursor:pointer}
+.big.yes{background:var(--ok);color:#fff}.big.no{background:var(--bad);color:#fff}
+.hist td,.hist th{white-space:normal}
+.ov{position:fixed;inset:0;background:#0007;z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:760px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px max(16px,env(safe-area-inset-left,0px)) calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+.sheet .x{align-self:flex-start;border:0;background:var(--surface);border-radius:50%;width:36px;height:36px;font-size:1.1rem;cursor:pointer;color:var(--fg)}
+.ro{font-size:.82rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top"><div class="brand"><span class="logo"><img src="brand/uh-logo.png" alt="איחוד הצלה" width="440" height="273"></span><h1 id="ttl">בטיחות סניף</h1></div><span class="hbs"><span class="upd" id="upd"></span><button class="hb" id="lockB" hidden onclick="relock()" title="יציאה">🔒 יציאה</button></span></div>
+    <div class="tabs" role="tablist" id="tabs" hidden>
+      <button class="tab" role="tab" aria-selected="true" data-v="sum">סיכום</button>
+      <button class="tab" role="tab" aria-selected="false" data-v="ppl">נהגים</button>
+      <button class="tab" role="tab" aria-selected="false" data-v="veh">רכבים</button>
+      <button class="tab" role="tab" aria-selected="false" data-v="exit">יציאה מגזרה</button>
+    </div>
+  </div>
+</header>
+<main><div class="wrap" id="app"><div class="empty">טוען…</div></div></main>
+
+<script>
+const WA_ICON='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5 0a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.7-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-1 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7a2.8 2.8 0 0 0 1.8-1.3 2.3 2.3 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3Z"/></svg>';
+const $=id=>document.getElementById(id);
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){return null}}
+const first=n=>(n||'').split(' ')[0];
+function waLink(p,t){p=(p||'').replace(/\D/g,'');if(p.startsWith('0'))p='972'+p.slice(1);return `https://wa.me/${p}?text=${encodeURIComponent(t)}`}
+const fmtPhone=p=>{p=(p||'').replace(/\D/g,'');return p.length===10?p.slice(0,3)+'-'+p.slice(3):p};
+const T0=(()=>{const d=new Date();d.setHours(0,0,0,0);return d})();
+function pd(s){const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s||'');return m?new Date(+m[3],+m[2]-1,+m[1]):null}
+const days=d=>Math.round((d-T0)/864e5);
+const fmt=d=>d?d.toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+const num=x=>{const n=parseFloat(String(x||'').replace(/[^\d.]/g,''));return isNaN(n)||n>10?null:n};
+
+/* ===== הצפנה ===== */
+async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+async function dec(path,pw){
+  const r=await fetch(path,{cache:'no-cache'});if(!r.ok)throw new Error('pw');
+  const buf=new Uint8Array(await r.arrayBuffer());const salt=buf.slice(3,19),iv=buf.slice(19,31),ct=buf.slice(31);
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:600000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+  let gz;try{gz=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct)}catch(e){throw new Error('pw')}
+  return JSON.parse(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
+}
+const fileOf=async pw=>'coord/'+(await sha('dbd-coord:'+pw)).slice(0,24)+'.bin';
+
+/* ===== מצב תקינות של נהג ===== */
+function docStatus(p){
+  const out=[];
+  const chk=(k,l)=>{const d=pd(p[k]);if(!d){if(k!=='traffic'||!p.pp)out.push({l,lvl:'miss',t:'אין תאריך'});return}const n=days(d);out.push({l,lvl:n<0?'bad':n<=30?'warn':'ok',t:n<0?`פג ב־${fmt(d)}`:`בתוקף עד ${fmt(d)}`,n})};
+  chk('lic','רישיון נהיגה');chk('health','תיק נהג (הצהרת בריאות)');if(!p.pp)chk('traffic','מידע תעבורתי');
+  return out;
+}
+function safetyNow(p){if(!p.s)return null;let m=p.s.length-1;while(m>=0&&p.s[m]==null)m--;if(m<0)return null;let k=0;for(let j=m;j>=0&&p.s[j]!=null&&p.s[j]<25;j--)k++;let prev=null;for(let j=m-1;j>=0;j--)if(p.s[j]!=null){prev=p.s[j];break}return {x:p.s[m],m,streak:k,prev}}
+const lastRide=p=>(p.ride||[])[0]||null, lastAlt=p=>(p.alt||[])[0]||null;
+const isMoto=p=>/אופנוע/.test(p.perm||'')||(p.cars||[]).some(c=>/אופנוע/.test(c.type||''));
+function vehOf(p){return DATA.veh.filter(v=>(p.cars||[]).some(c=>c.num===v.num)||(p.ph&&v.phone===p.ph))}
+function vehIssues(v){const r=[];const t=pd(v.test);if(t&&days(t)<0)r.push({lvl:'bad',t:`טסט פג ב־${fmt(t)}`});else if(t&&days(t)<=14)r.push({lvl:'warn',t:`טסט פג בעוד ${days(t)} ימים`});
+  const s=pd(v.service);if(s){const due=new Date(s);due.setFullYear(due.getFullYear()+1);if(days(due)<0)r.push({lvl:'warn',t:`טיפול אחרון ${fmt(s)} – עברה שנה`})}
+  const c=pd(v.check);if(c&&days(c)<0)r.push({lvl:'warn',t:`בדיקת קצב"ת באיחור (${fmt(c)})`});
+  const i=pd(v.ins);if(i&&days(i)<0)r.push({lvl:'bad',t:`ביטוח פג ב־${fmt(i)}`});return r}
+
+/* ===== המלצה ליציאה מגזרה ===== */
+function evaluate(p,f){
+  const bad=[],warn=[],good=[];
+  docStatus(p).forEach(d=>{if(d.lvl==='bad')bad.push(`${d.l}: ${d.t}`);else if(d.lvl==='miss')warn.push(`${d.l}: אין תאריך במערכת`);else if(f.to&&d.n!=null&&d.n<days(f.to))warn.push(`${d.l} פג לפני סוף היציאה (${d.t.replace('בתוקף עד ','')})`)});
+  const sn=safetyNow(p);
+  if(sn){const M=DATA.months[sn.m];if(sn.x<25&&sn.streak>=2)bad.push(`ציון סייפטי ${sn.x} ב${M} – ${sn.streak} חודשים ברצף מתחת ל־25`);else if(sn.x<25)warn.push(`ציון סייפטי ${sn.x} ב${M} – מתחת לרף`);else if(sn.prev!=null&&sn.prev-sn.x>=20)warn.push(`ציון סייפטי ירד מ־${sn.prev} ל־${sn.x}`);else if(sn.x>=50)good.push(`ציון סייפטי טוב: ${sn.x}`);else good.push(`ציון סייפטי ${sn.x}`)}
+  else warn.push('אין ציון סייפטי במערכת');
+  const r=lastRide(p),rs=r&&num(r.sc);
+  if(isMoto(p)||r){if(!r)warn.push('אין מבחן רכיבה ב־2025–2026');else if(/לא עבר/.test(r.sc))bad.push(`מבחן רכיבה אחרון (${r.d}): לא עבר`);else if(rs!=null&&rs<6.5)bad.push(`ציון רכיבה נמוך: ${rs} (${r.d})`);else if(rs!=null&&rs<7)warn.push(`ציון רכיבה ${rs} (${r.d})`);else if(rs!=null)good.push(`ציון רכיבה ${rs} (${r.d})`)}
+  const a=lastAlt(p),as=a&&num(a.g);
+  if(a){if(as!=null&&as<7)bad.push(`ציון מגרש (אלטרנתיבי) נמוך: ${as} (${a.d})`);else if(as!=null&&as<8)warn.push(`ציון מגרש ${as} (${a.d})`);else if(as!=null)good.push(`ציון מגרש ${as} (${a.d})`)}
+  if((p.acc||[]).length>=2)warn.push(`${p.acc.length} תאונות בעבר`);
+  const v=f.veh?DATA.veh.find(x=>x.num===f.veh):null;
+  if(v)vehIssues(v).forEach(i=>(i.lvl==='bad'?bad:warn).push(`כלי ${v.num}: ${i.t}`));
+  const H=hist().filter(h=>h.pv===p.pv&&h.dec==='yes'),recent=H.filter(h=>(Date.now()-h.ts)/864e5<=30);
+  if(recent.length>=3)warn.push(`${recent.length} יציאות מהגזרה ב־30 הימים האחרונים`);
+  const lvl=bad.length?'bad':warn.length?'warn':'ok';
+  return {lvl,bad,warn,good,title:lvl==='bad'?'לא מומלץ לאשר':lvl==='warn'?'אפשר לאשר – לשים לב':'מומלץ לאשר'};
+}
+function safetyMsg(p,f){
+  const moto=isMoto(p)||(f.veh&&/אופנוע|אופניים/.test((DATA.veh.find(x=>x.num===f.veh)||{}).type||''));
+  const when=f.from?(f.to&&f.to!==f.from?` בין ${fmt(new Date(f.from))} ל־${fmt(new Date(f.to))}`:` ב־${fmt(new Date(f.from))}`):'';
+  return `מה קורה ${first(p.n)},\nהיציאה שלך מהגזרה${f.dest?` ל${f.dest}`:''}${when} *אושרה* ✅\n\nלפני שיוצאים, כמה דברים שחשוב לי שתעשה:\n• לנסוע לפי החוק ולשמור על המהירות המותרת\n• לבדוק שמן ומים\n• למלא אוויר בצמיגים ולבדוק שאין בהם נזק\n• לבדוק שאין נזילות מתחת לכלי\n• לוודא שהתאורה והאיתותים עובדים\n• לקחת רישיון רכב וביטוח${moto?'\n• קסדה וביגוד מגן – חובה':''}\n\nנסיעה בטוחה, ותעדכן אותי כשחזרת.\n${DATA.coord||'רכז התחבורה'}\nרכז תחבורה – ${DATA.br}`;
+}
+/* היסטוריית יציאות – נשמרת במכשיר של הרכז */
+const HK=()=>'exit:'+DATA.br;
+function hist(){try{return JSON.parse(ls(HK())||'[]')}catch(e){return[]}}
+function addHist(h){const H=hist();H.unshift(h);ls(HK(),JSON.stringify(H.slice(0,500)))}
+
+/* ===== תצוגה ===== */
+let DATA=null,ADMIN=null;const st={view:'sum',q:'',sel:null};
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{st.view=b.dataset.v;document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===b));render()});
+const chip=(lvl,t)=>`<span class="chip ${lvl}">${esc(t)}</span>`;
+function pRow(p){
+  const sn=safetyNow(p),ds=docStatus(p),r=lastRide(p),a=lastAlt(p),bad=ds.filter(d=>d.lvl==='bad').length;
+  return `<div class="card pcard" data-p="${esc(p.pv||p.n)}"><div class="who"><div class="name">${esc(p.n)}</div><div class="meta"><span>פרייבט ${esc(p.pv||'—')}</span>${(p.cars||[]).map(c=>`<span>🚑 ${esc(c.num)}${c.type?' '+esc(c.type):''}</span>`).join('')}</div>
+    <div class="meta">${sn?chip(sn.x<25?'bad':sn.x<35?'warn':'ok','סייפטי '+sn.x):''}${r?chip(num(r.sc)!=null&&num(r.sc)<7?'warn':'ok','רכיבה '+(r.sc||'—')):''}${a?chip(num(a.g)!=null&&num(a.g)<8?'warn':'ok','מגרש '+(a.g||'—')):''}${bad?chip('bad',bad+' מסמכים פגים'):''}</div></div>
+    <div class="tel">${fmtPhone(p.ph)}</div></div>`;
+}
+function render(){
+  const app=$('app');if(!DATA)return;
+  if(st.view==='sum'){
+    const P=DATA.people,low=P.filter(p=>{const s=safetyNow(p);return s&&s.x<25}),docs=P.filter(p=>docStatus(p).some(d=>d.lvl==='bad')),vi=DATA.veh.filter(v=>vehIssues(v).length);
+    const H=hist(),yes=H.filter(h=>h.dec==='yes').length;
+    const sc=P.map(safetyNow).filter(Boolean),avg=sc.length?Math.round(sc.reduce((a,c)=>a+c.x,0)/sc.length):'—';
+    app.innerHTML=`${ADMIN?adminBar():''}<div class="summary">
+      <div class="stat"><b>${P.length}</b><span>נהגים בסניף</span></div><div class="stat"><b>${DATA.veh.length}</b><span>כלים בסניף</span></div>
+      <div class="stat"><b>${avg}</b><span>ממוצע סייפטי · ${esc(DATA.months[DATA.months.length-1])}</span></div><div class="stat bad"><b>${low.length}</b><span>מתחת ל־25 בסייפטי</span></div>
+      <div class="stat bad"><b>${docs.length}</b><span>נהגים עם מסמך פג</span></div><div class="stat warn"><b>${vi.length}</b><span>כלים עם חריגה</span></div>
+      <div class="stat"><b>${yes}</b><span>יציאות מגזרה שאושרו</span></div></div>
+      <div class="sec"><h3>נהגים שדורשים תשומת לב</h3><div class="list">${[...new Set([...low,...docs])].map(pRow).join('')||'<div class="empty">אין</div>'}</div></div>
+      <p class="ro">צפייה בלבד. הנתונים מתעדכנים ממשרד הקצב"ת · עודכן ${esc(DATA.upd)}</p>`;
+  } else if(st.view==='ppl'){
+    const q=st.q.trim(),L=DATA.people.filter(p=>!q||[p.n,p.pv,p.ph,p.city].some(x=>(x||'').includes(q)));
+    app.innerHTML=`${ADMIN?adminBar():''}<div class="controls"><input id="q" type="search" placeholder="חיפוש שם, פרייבט, טלפון…" value="${esc(st.q)}"></div><div class="legend">${L.length} נהגים עם הרשאת נהיגה בסניף · לחיצה פותחת את כל הפרטים</div><div class="list">${L.map(pRow).join('')}</div>`;
+  } else if(st.view==='veh'){
+    app.innerHTML=`${ADMIN?adminBar():''}<div class="tbl-wrap"><table><thead><tr><th>רישוי</th><th>מס'</th><th>סוג</th><th>נהג</th><th>טסט עד</th><th>טיפול אחרון</th><th>בדיקת קצב"ת</th><th>ביטוח עד</th><th>חריגות</th></tr></thead><tbody>${DATA.veh.map(v=>{const is=vehIssues(v);return `<tr><td><span class="plate">${esc(v.plate)}</span></td><td>${esc(v.num)}</td><td>${esc(v.type)}</td><td>${esc(v.name)}</td><td>${esc(v.test||'—')}</td><td>${esc(v.service||'—')}</td><td>${esc(v.check||'—')}</td><td>${esc(v.ins||'—')}</td><td>${is.map(i=>chip(i.lvl,i.t)).join(' ')||chip('ok','תקין')}</td></tr>`}).join('')}</tbody></table></div>`;
+  } else exitView();
+  bind();
+}
+function personSheet(key){
+  const p=DATA.people.find(x=>(x.pv||x.n)===key);if(!p)return;
+  const ds=docStatus(p),V=vehOf(p),H=hist().filter(h=>h.pv===p.pv);
+  const sc=p.s?`<div class="tbl-wrap"><table><thead><tr>${DATA.months.map(m=>`<th>${esc(m)}</th>`).join('')}</tr></thead><tbody><tr>${p.s.map(x=>`<td class="s ${x==null?'':x<25?'d-bad':x<35?'d-warn':''}" style="text-align:center">${x??'—'}</td>`).join('')}</tr></tbody></table></div>${p.ev?`<div class="meta">${Object.entries(p.ev).sort((a,b)=>b[1][1]-a[1][1]).slice(0,4).map(([c,[n,pc]])=>chip(pc>=25?'bad':pc>=10?'warn':'miss',`${c} ${Math.round(pc)}%`)).join('')}</div>`:''}`:'<div class="ro">אין ציוני סייפטי</div>';
+  const ov=document.createElement('div');ov.className='ov';ov.innerHTML=`<div class="sheet"><button class="x" aria-label="סגירה">✕</button>
+    <div><div class="name" style="font-size:1.3rem">${esc(p.n)}</div><div class="meta"><span>פרייבט ${esc(p.pv||'—')}</span><span>${esc(DATA.br)}</span></div></div>
+    <div class="sec"><h3>פרטי קשר</h3><div class="kv"><b>טלפון</b><span>${p.ph?`<a href="tel:${esc(p.ph)}">${fmtPhone(p.ph)}</a>`:'—'}</span><b>מייל</b><span>${esc(p.em||'—')}</span><b>כתובת</b><span>${esc([p.st,p.city].filter(Boolean).join(', ')||'—')}</span><b>תאריך לידה</b><span>${esc(p.bd||'—')}</span><b>הרשאות נהיגה</b><span>${esc((p.perm||'—').replace(/;\s*/g,', '))}</span></div>${p.ph?`<div class="btns"><a class="wa sm" href="${waLink(p.ph,'')}" target="_blank" rel="noopener">${WA_ICON}וואטסאפ</a></div>`:''}</div>
+    <div class="sec"><h3>מסמכים</h3><div class="meta">${ds.map(d=>chip(d.lvl==='miss'?'miss':d.lvl,`${d.l}: ${d.t}`)).join('')}${p.pp?chip('miss','בעל דרכון – ללא מידע תעבורתי'):''}</div></div>
+    <div class="sec"><h3>כלים</h3>${V.length?V.map(v=>`<div class="meta"><span class="plate">${esc(v.plate)}</span><span>כלי ${esc(v.num)} · ${esc(v.type)}</span>${vehIssues(v).map(i=>chip(i.lvl,i.t)).join('')||chip('ok','תקין')}</div>`).join(''):'<div class="ro">אין כלי צמוד</div>'}</div>
+    <div class="sec"><h3>ציוני סייפטי (חודשי)</h3>${sc}</div>
+    <div class="sec"><h3>🏍️ מבחני רכיבה 2025–2026</h3>${(p.ride||[]).length?p.ride.map(x=>`<div class="kv"><b style="color:${num(x.sc)!=null&&num(x.sc)<7?'var(--bad)':'var(--ok)'}">${esc(x.sc||'—')}</b><span><small class="ro">${esc(x.d)} · ${esc(x.ins)}${x.urg?' · דחופה':''}</small><br>${esc([x.op,x.note,x.gen].filter(Boolean).join(' · ')||'—')}</span></div>`).join(''):'<div class="ro">אין</div>'}</div>
+    <div class="sec"><h3>🚑 מבחני מגרש (אלטרנתיבי) 2025–2026</h3>${(p.alt||[]).length?p.alt.map(x=>`<div class="kv"><b style="color:${num(x.g)!=null&&num(x.g)<8?'var(--warn)':'var(--ok)'}">${esc(x.g||'—')}</b><span><small class="ro">${esc(x.d)} · ${esc(x.st)} · ${esc(x.ins)}</small><br>${[x.dim&&'ממדי הכלי '+x.dim,x.cau&&'זהירות '+x.cau,x.pro&&'מקצועי '+x.pro].filter(Boolean).map(esc).join(' · ')}${x.rec?`<br>המלצה: ${esc(x.rec)}`:''}${x.note?`<br>${esc(x.note)}`:''}</span></div>`).join(''):'<div class="ro">אין</div>'}</div>
+    <div class="sec"><h3>עבר תאונות</h3>${(p.acc||[]).length?p.acc.map(x=>`<div>${esc(x.d)} · ${esc(x.t||'')}</div>`).join(''):'<div class="ro">נתוני תאונות יתווספו בקרוב</div>'}</div>
+    <div class="sec"><h3>יציאות מגזרה</h3>${H.length?H.map(h=>`<div class="meta">${chip(h.dec==='yes'?'ok':'bad',h.dec==='yes'?'אושר':'לא אושר')}<span>${esc(new Date(h.ts).toLocaleDateString('he-IL'))}</span><span>${esc(h.dest||'')}</span></div>`).join(''):'<div class="ro">אין בקשות קודמות</div>'}</div>
+  </div>`;
+  ov.onclick=e=>{if(e.target===ov||e.target.classList.contains('x'))ov.remove()};document.body.append(ov);
+}
+function exitView(){
+  const app=$('app'),p=st.sel?DATA.people.find(x=>(x.pv||x.n)===st.sel):null,f=st.f||(st.f={});
+  const opts=DATA.people.map(x=>`<option value="${esc(x.pv||x.n)}"${p===x?' selected':''}>${esc(x.n)}${x.pv?' · '+esc(x.pv):''}</option>`).join('');
+  let html=`${ADMIN?adminBar():''}<div class="sec"><h3>בקשת יציאה מהגזרה</h3><div class="form">
+    <label class="full">מתנדב<select id="xp"><option value="">בחר מתנדב</option>${opts}</select></label>
+    <label>יעד<input id="xd" value="${esc(f.dest||'')}" placeholder="לדוגמה: אילת"></label>
+    <label>כלי<select id="xv"><option value="">ללא / רכב פרטי</option>${DATA.veh.map(v=>`<option value="${esc(v.num)}"${f.veh===v.num?' selected':''}>${esc(v.num)} · ${esc(v.type)} · ${esc(v.plate)}</option>`).join('')}</select></label>
+    <label>מתאריך<input id="xf" type="date" value="${esc(f.from||'')}"></label><label>עד תאריך<input id="xt" type="date" value="${esc(f.to||'')}"></label>
+    <label class="full">סיבה / הערות<textarea id="xn" rows="2">${esc(f.note||'')}</textarea></label></div></div>`;
+  if(p){
+    const e=evaluate(p,f),H=hist().filter(h=>h.pv===p.pv),yes=H.filter(h=>h.dec==='yes').length;
+    html+=`<div class="rec ${e.lvl}"><b>${e.lvl==='ok'?'✅':e.lvl==='warn'?'⚠️':'⛔'} ${e.title}</b>
+      ${e.bad.length?`<div><b style="font-size:1rem">סיבות לעצירה:</b><ul>${e.bad.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
+      ${e.warn.length?`<div><b style="font-size:1rem">לשים לב:</b><ul>${e.warn.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
+      ${e.good.length?`<div><b style="font-size:1rem">בסדר:</b><ul>${e.good.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
+      <div style="color:var(--fg)">בקשות קודמות: ${H.length} · יצא בפועל: ${yes}</div></div>
+      <div class="sec"><div class="ro">ההחלטה שלך. ההמלצה היא כלי עזר בלבד.</div><div class="btns"><button class="big yes" id="xyes">מאשר יציאה</button><button class="big no" id="xno">לא מאשר</button><button class="mail sm" id="xcard">כל הפרטים של ${esc(first(p.n))}</button></div><div id="xout"></div></div>`;
+  }
+  const H=hist();
+  html+=`<div class="sec"><h3>היסטוריית יציאות (${H.length})</h3>${H.length?`<div class="tbl-wrap"><table class="hist"><thead><tr><th>תאריך</th><th>מתנדב</th><th>יעד</th><th>המלצה</th><th>החלטה</th></tr></thead><tbody>${H.map(h=>`<tr><td>${esc(new Date(h.ts).toLocaleDateString('he-IL'))}</td><td>${esc(h.n)}</td><td>${esc(h.dest||'')}${h.from?`<br><small>${esc(h.from)}${h.to&&h.to!==h.from?' – '+esc(h.to):''}</small>`:''}</td><td>${chip(h.rec,h.rec==='ok'?'מומלץ':h.rec==='warn'?'לשים לב':'לא מומלץ')}</td><td>${chip(h.dec==='yes'?'ok':'bad',h.dec==='yes'?'אושר':'לא אושר')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="ro">עוד לא נרשמו בקשות.</div>'}<div class="ro">ההיסטוריה נשמרת במכשיר הזה.</div></div>`;
+  app.innerHTML=html;
+  const sync=()=>{f.dest=$('xd').value.trim();f.veh=$('xv').value;f.from=$('xf').value;f.to=$('xt').value||$('xf').value;f.note=$('xn').value.trim()};
+  $('xp').onchange=e=>{st.sel=e.target.value||null;sync();const pp=DATA.people.find(x=>(x.pv||x.n)===st.sel);if(pp&&!f.veh){const v=vehOf(pp)[0];if(v)f.veh=v.num}render()};
+  ['xd','xv','xf','xt','xn'].forEach(id=>$(id).onchange=()=>{sync();if(id!=='xn')render()});
+  if(p){
+    const e=evaluate(p,f);
+    $('xcard').onclick=()=>personSheet(p.pv||p.n);
+    $('xyes').onclick=()=>{sync();addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,dec:'yes',ts:Date.now()});const m=safetyMsg(p,f);
+      render();$('xout').innerHTML=`<div class="rec ok"><b>היציאה נרשמה כמאושרת</b><div style="color:var(--fg)">הודעת הבטיחות מוכנה – רק לשלוח:</div><pre style="white-space:pre-wrap;font:inherit;color:var(--fg);background:var(--surface);padding:10px;border-radius:10px;margin:0">${esc(m.replace(/\*/g,''))}</pre><div class="btns">${p.ph?`<a class="wa sm" href="${waLink(p.ph,m)}" target="_blank" rel="noopener">${WA_ICON}שלח ל${esc(first(p.n))}</a>`:''}<a class="mail sm" href="mailto:${esc(p.em||'')}?subject=${encodeURIComponent('אישור יציאה מהגזרה')}&body=${encodeURIComponent(m.replace(/\*/g,''))}">מייל</a></div></div>`};
+    $('xno').onclick=()=>{sync();addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,dec:'no',ts:Date.now()});render();$('xout').innerHTML='<div class="rec bad"><b>הבקשה נרשמה כלא מאושרת</b></div>'};
+  }
+}
+function adminBar(){return `<div class="controls"><select id="adm">${Object.keys(ADMIN).map(b=>`<option${b===DATA.br?' selected':''}>${esc(b)}</option>`).join('')}</select><span class="ro" style="align-self:center">מצב מנהל · רכז: ${esc(ADMIN[DATA.br].coord||'—')} · סיסמה: <b dir="ltr">${esc(ADMIN[DATA.br].pw)}</b></span></div>`}
+function bind(){
+  document.querySelectorAll('.pcard').forEach(c=>c.onclick=()=>personSheet(c.dataset.p));
+  const q=$('q');if(q)q.oninput=e=>{st.q=e.target.value;const pos=e.target.selectionStart;render();const n=$('q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}};
+  const a=$('adm');if(a)a.onchange=async e=>{const b=e.target.value;$('app').innerHTML='<div class="empty">פותח…</div>';DATA=await dec(await fileOf(ADMIN[b].pw),ADMIN[b].pw);ls('coord_adm_br',b);st.sel=null;st.f={};show()};
+}
+function show(){$('ttl').textContent='בטיחות סניף · '+DATA.br;$('upd').textContent='עודכן: '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=false;render()}
+
+/* ===== כניסה ===== */
+function lockView(err){
+  $('tabs').hidden=true;$('lockB').hidden=true;
+  $('app').innerHTML=`<div class="lockc"><h2>🔐 בטיחות סניף</h2><p style="margin:0;color:var(--muted)">כניסה לרכזי תחבורה. הקלד את הסיסמה של הסניף שלך</p>
+  <input id="pw" type="password" autocomplete="current-password" placeholder="סיסמה" dir="ltr" onkeydown="if(event.key==='Enter')unlock()">
+  <label style="color:var(--muted);font-weight:600"><input type="checkbox" id="rem" checked> לזכור במכשיר הזה</label>
+  <button class="go" id="ub" onclick="unlock()">כניסה</button><div class="err">${esc(err||'')}</div></div>`;
+  setTimeout(()=>{const i=$('pw');if(i)i.focus()},50);
+}
+async function unlock(saved){
+  const pw=saved||($('pw')&&$('pw').value.trim());if(!pw)return;
+  if(!saved){$('ub').disabled=true;$('ub').textContent='פותח…'}else $('app').innerHTML='<div class="empty">פותח…</div>';
+  try{DATA=await dec(await fileOf(pw),pw);if(!saved)ls('coord_pw',$('rem').checked?pw:null);show()}
+  catch(e){if(saved)ls('coord_pw',null);lockView(e.message==='pw'?'סיסמה שגויה':!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
+}
+function relock(){ls('coord_pw',null);DATA=null;ADMIN=null;lockView()}
+(async()=>{
+  /* מנהל (קצב"ת): אם יש במכשיר את סיסמת ניהול קצב"ת – פותח את כל הסניפים */
+  const k=ls('kbt_pw');
+  if(k){try{ADMIN=await dec('coord/index.bin',k);const b=ls('coord_adm_br');const br=ADMIN[b]?b:Object.keys(ADMIN)[0];DATA=await dec(await fileOf(ADMIN[br].pw),ADMIN[br].pw);show();return}catch(e){ADMIN=null}}
+  const p=ls('coord_pw');p?unlock(p):lockView();
+})();
+</script>
+</body>
+</html>
