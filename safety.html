@@ -138,6 +138,8 @@ td.d-bad{color:var(--bad);font-weight:700} td.d-warn{color:var(--warn);font-weig
 td.s{text-align:center;font-weight:700}
 td.s.low{background:var(--bad-bg);color:var(--bad)}td.s.mid{background:var(--warn-bg);color:var(--warn)}td.s.top{background:var(--ok-bg);color:var(--ok)}
 .chart{width:100%;min-width:560px;height:auto;display:block}
+.anal summary{cursor:pointer;font-weight:700;color:var(--accent);padding:4px 0}
+.anal pre{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;margin:6px 0}
 .chart text{fill:var(--muted);font:12px var(--f-body)}
 </style>
 </head>
@@ -192,19 +194,97 @@ const TIPS={
   'עקיפות':'לעקוף רק כשבטוח, בלי האצה חדה.'
 };
 function topEv(v){return v.ev?Object.entries(v.ev).filter(e=>e[1][1]>=10).sort((a,b)=>b[1][1]-a[1][1]).slice(0,3):[]}
+/* ===== ניתוח מלא לפי דוח איתוראן ===== */
+const EVX={
+  'פניות שמאלה':'כניסה לפניות שמאלה במהירות גבוהה, בלי האטה מספקת לפני הצומת',
+  'פניות ימינה':'כניסה מהירה לפניות ימינה',
+  'מעגל תנועה':'כניסה או יציאה מהירה ממעגלי תנועה',
+  'תאוצות':'האצה חזקה מעמידה או ממהירות נמוכה',
+  'בלימות':'בלימות פתע, בדרך כלל בגלל מרחק קצר מהרכב שלפנים',
+  'חריגות מהירות':'נסיעה מעל המהירות המותרת',
+  'מעבר נתיב':'מעבר נתיב או עקומה בתנועת הגה חדה',
+  'עקיפות':'עקיפות עם האצה חדה'
+};
+const PLAN={
+  turns:['*ניהול מהירות לפני פניות:*','• לסיים את כל הבלימה בקו ישר, לפני שמתחילים לסובב את ההגה.','• להיכנס לצומת ולפנייה במהירות מתונה, ולחזור לגז בהדרגה רק כשהרכב מתיישר.'],
+  brake:['*נהיגה מונעת ושמירת מרחק:*','• לשמור לפחות 3 שניות מרחק מהרכב שלפנים, כדי לזהות האטות מוקדם.','• לשחרר את הגז מוקדם לקראת רמזורים, צמתים ופקקים, במקום להגיע בגז ולבלום חזק.'],
+  accel:['*האצה מתונה ומבוקרת:*','• ללחוץ על הגז בהדרגה ביציאה מעמידה ובהשתלבות בנתיב.','• להימנע מלחיצה חזקה ומהורדת הילוכים אגרסיבית כשאין צורך.'],
+  speed:['*שמירה על מהירות:*','• לשמור על המהירות המותרת – גם בנסיעה לאירוע. חריגות מהירות מורידות הכי הרבה נקודות.'],
+  lane:['*מעבר נתיב:*','• לעבור נתיב בהדרגה, עם איתות ובלי תנועות חדות בהגה.'],
+  idle:['*כיבוי מנוע בעצירות:*','• בעצירה של יותר מדקה–שתיים – לכבות את המנוע. זה משפר את ציון הדלק ומונע בלאי.']
+};
+const secs=x=>x?x.split(':').reduce((a,b)=>a*60+(+b),0):0;
+function analysis(v){
+  const r=v.rep;if(!r||!v.ev)return '';
+  const ev=Object.entries(v.ev).sort((a,b)=>b[1][0]-a[1][0]),tot=ev.reduce((a,e)=>a+e[1][0],0),P=k=>v.ev[k]?v.ev[k][1]:0,N=k=>v.ev[k]?v.ev[k][0]:0;
+  const idlePct=r.eng&&r.idle?Math.round(secs(r.idle)/secs(r.eng)*100):null;
+  const rk=r.rank?Math.round((1-r.rank[0]/r.rank[1])*100):null;
+  let t=`*ניתוח ביצועי נהיגה – איתוראן סייפטי*\n${v.n} · פרייבט ${v.pv} · ${v.br}${r.to?` · עד ${r.to}`:''}\n\n`;
+  t+=`*נתוני פעילות*\n`;
+  if(r.km!=null&&r.trips)t+=`• ${r.km.toLocaleString('he-IL')} ק"מ ב־${r.trips} נסיעות (ממוצע ${(r.km/r.trips).toFixed(1)} ק"מ לנסיעה)\n`;
+  if(r.eng)t+=`• זמן מנוע: ${r.eng}${r.idle?` · עמידה בסרק: ${r.idle}${idlePct!=null?` (${idlePct}% מזמן המנוע)`:''}`:''}\n`;
+  t+=`\n*ציונים*\n• ציון בטיחות: *${r.score??v.s[v.s.length-1]}*${r.comp?` (ממוצע איחוד הצלה ${r.comp}${r.itu?`, כלל לקוחות איתוראן ${r.itu}`:''})`:''}\n`;
+  if(r.fuel!=null)t+=`• ציון דלק: ${r.fuel}\n`;
+  if(r.rank)t+=`• דירוג: ${r.rank[0].toLocaleString('he-IL')} מתוך ${r.rank[1].toLocaleString('he-IL')}${rk!=null?(rk<50?` (בין ה־${Math.max(1,rk)}% התחתונים)`:` (בין ה־${100-rk}% העליונים)`):''}\n`;
+  t+=`\n*התפלגות אירועי הבטיחות* (${tot} אירועים)\n${ev.filter(e=>e[1][0]>0).map(([c,[n,pc]])=>`• ${c}: ${n} (${Math.round(pc)}%)${pc>=10?` – ${EVX[c]||''}`:''}`).join('\n')}\n`;
+  const risks=[],plan=[];
+  const turns=P('פניות שמאלה')+P('פניות ימינה')+P('מעגל תנועה');
+  if(turns>=35){risks.push(`• *צמתים ופניות* – ${Math.round(turns)}% מהאירועים: כניסה לפניות בלי האטה מספקת, והאצה תוך כדי סיבוב ההגה.`);plan.push(...PLAN.turns)}
+  if(P('תאוצות')>=12&&P('בלימות')>=12){risks.push(`• *נהיגת "גז-ברקס"* – ${N('תאוצות')} תאוצות ו־${N('בלימות')} בלימות: האצה למהירות לא מותאמת ואז בלימת פתע.`)}
+  if(P('בלימות')>=12)plan.push(...PLAN.brake);
+  if(P('תאוצות')>=12)plan.push(...PLAN.accel);
+  if(P('חריגות מהירות')>=10){risks.push(`• *חריגות מהירות* – ${N('חריגות מהירות')} אירועים.`);plan.push(...PLAN.speed)}
+  if(P('מעבר נתיב')>=10)plan.push(...PLAN.lane);
+  if(idlePct!=null&&idlePct>=20){risks.push(`• *עמידה בסרק* – כ־${idlePct}% מזמן המנוע. פוגע בציון הדלק ובבלאי הרכב.`);plan.push(...PLAN.idle)}
+  if(risks.length)t+=`\n*מוקדי הסיכון*\n${risks.join('\n')}\n`;
+  if(plan.length)t+=`\n*תוכנית לשיפור*\n${plan.join('\n')}\n`;
+  return t.trim();
+}
 function howto(v){
+  const A=analysis(v);if(A)return A;
   const t=topEv(v);
   if(t.length)return `*לפי דוח הסייפטי שלך, רוב הנקודות ירדו על:*\n${t.map(([c,[n,pc]])=>`• ${c} – ${n} אירועים (${Math.round(pc)}%)`).join('\n')}\n\n*איך מתקנים:*\n${t.map(([c])=>'• '+TIPS[c]).join('\n')}\n• לא להשתמש בטלפון בזמן נסיעה.`;
   return `*איך מעלים את הציון:*\n• לשמור על המהירות המותרת – גם בנסיעה לאירוע.\n• לנסוע בצורה רגועה: בלי בלימות חדות, בלי האצות חזקות ובלי פניות חדות.\n• לא להשתמש בטלפון בזמן נסיעה.\n• לשמור מרחק מהרכב שלפניך, כדי שלא תצטרך לבלום בבת אחת.\n• להיכנס לדוח הסייפטי באפליקציה ולראות בדיוק על מה ירדו לך הנקודות החודש.`;
 }
+/* ===== הודעות בגוף ראשון, כמו קצין בטיחות שמדבר עם המתנדב ===== */
+const ME='דני בן דוד\nקצב"ת ירושלים';
+const TIP={
+  turns:'לסיים לבלום *לפני* שמתחילים לסובב את ההגה, ולהיכנס לפנייה לאט. את הגז מחזירים רק כשהרכב כבר ישר.',
+  dist:'לשמור מרחק של 3 שניות מהרכב שלפניך. ככה רואים מוקדם מה קורה, לא צריך לבלום חזק – וגם לא להאיץ חזק אחר כך.',
+  accel:'לצאת מעמידה בעדינות – ללחוץ על הגז בהדרגה, גם כשממהרים.',
+  speed:'לשמור על המהירות המותרת, גם בנסיעה לאירוע. זה הדבר שהכי מוריד ציון.',
+  lane:'לעבור נתיב בהדרגה, עם איתות ובלי תנועה חדה בהגה.',
+  round:'להיכנס למעגל תנועה לאט ולצאת ממנו בלי לתת גז חזק.'
+};
+function insight(v){
+  if(!v.ev)return null;
+  const P=k=>v.ev[k]?v.ev[k][1]:0,N=k=>v.ev[k]?v.ev[k][0]:0,r=v.rep||{};
+  const L=P('פניות שמאלה'),R=P('פניות ימינה'),turns=L+R+P('מעגל תנועה');
+  const lines=[],tips=[];
+  if(turns>=35){lines.push(`רוב האירועים שלך (בערך ${Math.round(turns)}%) הם בפניות${L>R*1.5?' – בעיקר שמאלה':R>L*1.5?' – בעיקר ימינה':''}. זה בדרך כלל אומר שנכנסים לצומת קצת מהר מדי.`);tips.push(TIP.turns)}
+  if(P('תאוצות')>=12&&P('בלימות')>=12){lines.push(`ראיתי גם לא מעט תאוצות ובלימות חדות (${N('תאוצות')} ו־${N('בלימות')}) – זה נראה כמו נהיגה של "גז-ברקס".`);tips.push(TIP.dist)}
+  else if(P('בלימות')>=15){lines.push(`הרבה מהאירועים שלך (${N('בלימות')}) הם בלימות חדות – בדרך כלל זה בגלל מרחק קצר מהרכב שלפנים.`);tips.push(TIP.dist)}
+  else if(P('תאוצות')>=15){lines.push(`הרבה מהאירועים שלך (${N('תאוצות')}) הם תאוצות חזקות.`);tips.push(TIP.accel)}
+  if(P('חריגות מהירות')>=10){lines.push(`ויש גם ${N('חריגות מהירות')} חריגות מהירות.`);tips.unshift(TIP.speed)}
+  if(!tips.length){if(P('מעבר נתיב')>=10)tips.push(TIP.lane);if(P('מעגל תנועה')>=10)tips.push(TIP.round)}
+  const idle=r.eng&&r.idle?Math.round(secs(r.idle)/secs(r.eng)*100):0;
+  return {lines,tips:tips.slice(0,2),idle,comp:r.comp};
+}
+function talk(v,ins){
+  if(!ins||(!ins.lines.length&&!ins.tips.length))return `אפשר לראות בדוח הסייפטי באפליקציה על מה בדיוק ירדו הנקודות. בדרך כלל אלה בלימות חדות, תאוצות חזקות, כניסה מהירה לפניות וחריגות מהירות.\n\nשני דברים קטנים שעושים את רוב העבודה:\n1. ${TIP.dist}\n2. ${TIP.turns}`;
+  let t=`כשהסתכלתי על הפירוט שלך: ${ins.lines.join(' ')}`;
+  if(ins.tips.length)t+=`\n\n${ins.tips.length>1?'שני דברים קטנים שיעשו את רוב העבודה':'דבר אחד קטן שיעשה את רוב העבודה'}:\n${ins.tips.map((x,i)=>ins.tips.length>1?`${i+1}. ${x}`:x).join('\n')}`;
+  if(ins.idle>=20)t+=`\n\nועוד טיפ קטן: ראיתי שהרכב עמד מונע בערך ${ins.idle>=24&&ins.idle<=27?'רבע':ins.idle+'%'} מהזמן. בעצירה של יותר מדקה–שתיים כדאי לכבות.`;
+  return t;
+}
 const MSG={
-  low:(v,x,M)=>`מה קורה ${first(v.n)},\nעברתי על דוח הסייפטי לחודש ${M}, וציון הבטיחות שלך החודש הוא *${x}* – מתחת לרף המינימלי (25).\n\nאני בטוח שזה משהו שאפשר לתקן, ובשביל זה אני פונה אליך כבר עכשיו.\n\n${howto(v)}\n\nאם יש שאלה או שמשהו לא ברור בדוח, תכתוב לי ואעזור.\nבהצלחה,\n${SIGN.replace('בברכה,\n','')}`,
-  warn:(v,x,M,k,prev)=>`מה קורה ${first(v.n)},\nציון הבטיחות שלך בדוח הסייפטי לחודש ${M} הוא *${x}*, וזה *החודש השני ברציפות* מתחת ל־25 (בחודש הקודם: ${prev}).\n\nחשוב לי שתדע: *אם גם בחודש הבא הציון יהיה מתחת ל־25, תועבר לחניכות.* אני מאמין שאפשר להימנע מזה, ואשמח לעזור.\n\n${howto(v)}\n\nאם תרצה, נדבר ונעבור יחד על הדוח.\n${SIGN}`,
-  demote:(v,x,M,k)=>`שלום ${first(v.n)},\nציון הבטיחות שלך בדוח הסייפטי היה מתחת ל־25 *${k} חודשים ברציפות* (בחודש ${M}: ${x}).\n\nבהתאם לנוהל, *אתה מועבר למסלול חניכות.* המטרה של החניכות היא לעזור לך לחזור לנהוג בצורה בטוחה, ולא להעניש.\nאצור איתך קשר בימים הקרובים כדי לתאם את המשך התהליך.\n\nאם יש שאלות, אני זמין.\n${SIGN}`,
-  b25:(v,x,M)=>`מה קורה ${first(v.n)},\nציון הבטיחות שלך בדוח הסייפטי לחודש ${M} הוא *${x}*. עבודה יפה – אתה מעל הרף, ואפשר להגיע עוד יותר גבוה 💪\n\n*כדי לעלות רמה:*\n${topEv(v).length?topEv(v).map(([c])=>'• '+TIPS[c]).join('\n'):'• לשמור על המהירות המותרת גם בנסיעה לאירוע.\n• לנסוע רגוע – בלי בלימות והאצות חדות.\n• להציץ בדוח הסייפטי באפליקציה ולראות על מה ירדו הנקודות.'}\n\nממשיכים ככה!\n${SIGN}`,
-  b35:(v,x,M)=>`מה קורה ${first(v.n)},\nציון הבטיחות שלך בדוח הסייפטי לחודש ${M} הוא *${x}* – עבודה יפה! 👏\nהמשך כך, הנהיגה הבטוחה שלך שומרת עליך ועל כולנו.\n\n${SIGN}`,
-  b50:(v,x,M)=>`שלום ${first(v.n)},\nרציתי לומר לך כל הכבוד על ציון הבטיחות שלך בדוח הסייפטי לחודש ${M}: *${x}* 🏅\nזה ציון גבוה שמעיד על נהיגה אחראית ומקצועית. תודה שאתה מהווה דוגמה.\n\n${SIGN}`,
-  b70:(v,x,M)=>`שלום ${first(v.n)},\nכל הכבוד! ציון הבטיחות שלך בדוח הסייפטי לחודש ${M} הוא *${x}* – מהציונים הגבוהים במרחב 🏆\nנהיגה ברמה כזאת היא בדיוק מה שאנחנו רוצים לראות. תודה ענקית, והמשך כך.\n\n${SIGN}`
+  low:(v,x,M)=>{const ins=insight(v);return `מה קורה ${first(v.n)},\nכאן דני מקצב"ת. ישבתי על דוח הסייפטי של ${M} ורציתי לדבר איתך עליו.\n\nהציון שלך יצא *${x}* – מתחת לרף של 25.${ins&&ins.comp?` ממוצע הנהגים באיחוד הצלה הוא ${ins.comp}, כך שיש פה מקום לשפר`:' יש פה מקום לשפר'}, ואני בטוח שזה בהישג יד.\n\n${talk(v,ins)}\n\nאני כאן אם תרצה שנעבור על הדוח יחד. בטוח שבחודש הבא נראה שיפור 💪\n${ME}`},
+  warn:(v,x,M,k,prev)=>{const ins=insight(v);return `מה קורה ${first(v.n)},\nדני מקצב"ת. רציתי לדבר איתך שוב על דוח הסייפטי.\n\nהציון שלך ב${M} יצא *${x}*, ובחודש הקודם ${prev} – כלומר חודשיים ברצף מתחת ל־25.\nאני חייב להגיד לך בכנות: *אם גם בחודש הבא הציון יהיה מתחת ל־25, לפי הנוהל תצטרך לעבור חניכות.* אני ממש רוצה שנימנע מזה, ואני בטוח שזה אפשרי.\n\n${talk(v,ins)}\n\nאם תרצה, בוא נדבר בטלפון ונעבור על זה יחד – זה לוקח עשר דקות.\n${ME}`},
+  demote:(v,x,M,k)=>`שלום ${first(v.n)},\nכאן דני מקצב"ת.\n\nאני פונה אליך לגבי דוח הסייפטי: כבר ${k} חודשים ברצף הציון שלך מתחת ל־25 (ב${M}: ${x}).\nלפי הנוהל, *אתה עובר למסלול חניכות.*\n\nחשוב לי שתדע שזה לא עונש. החניכות נועדה לעזור לך לחזור לנהוג בביטחון, ואני אלווה אותך בתהליך.\nאתקשר אליך בימים הקרובים כדי שנתאם איך ממשיכים. אם יש לך שאלות עד אז – אני זמין.\n${ME}`,
+  b25:(v,x,M)=>{const ins=insight(v),tip=ins&&ins.tips[0];return `מה קורה ${first(v.n)},\nעברתי על דוח הסייפטי של ${M} – הציון שלך *${x}*. אתה מעל הרף, יפה מאוד 👍\n\nאם בא לך לעלות עוד שלב, ${tip?`הדבר הכי משמעותי אצלך: ${tip}`:'הכי משתלם לעבוד על בלימות ופניות – להאט מוקדם ולהיכנס לפניות לאט.'}\n\nממשיכים ככה!\n${ME}`},
+  b35:(v,x,M)=>`מה קורה ${first(v.n)},\nראיתי את דוח הסייפטי של ${M} – הציון שלך *${x}*. עבודה יפה! 👏\nתמשיך ככה, הנהיגה שלך שומרת עליך ועל מי שנוסע איתך.\n${ME}`,
+  b50:(v,x,M)=>`שלום ${first(v.n)},\nרציתי להגיד לך כל הכבוד על דוח הסייפטי של ${M} – *${x}* 🏅\nזה ציון גבוה ורואים שאתה נוהג באחריות. תודה שאתה דוגמה לאחרים.\n${ME}`,
+  b70:(v,x,M)=>`שלום ${first(v.n)},\nכל הכבוד! הציון שלך בדוח הסייפטי של ${M} הוא *${x}* – מהגבוהים במרחב 🏆\nזאת בדיוק הנהיגה שאנחנו רוצים לראות. תודה ענקית, ותמשיך ככה.\n${ME}`
 };
 const SUBJ={low:'ציון בטיחות מתחת לרף',warn:'ציון בטיחות – חודש שני ברציפות',demote:'מעבר למסלול חניכות',b25:'ציון בטיחות – עבודה יפה',b35:'ציון בטיחות – עבודה יפה',b50:'כל הכבוד על ציון הבטיחות',b70:'כל הכבוד על ציון הבטיחות'};
 
@@ -241,14 +321,14 @@ function controls(){
 }
 function card(v,m){
   const c=catOf(v,m),x=v.s[m],st=statsOf(v,m),M=DATA.months[m],k=streakAt(v,m);
-  const text=MSG[c](v,x,M,k,st.prev);
+  const text=MSG[c](v,x,M.split(' ')[0],k,st.prev);
   const sk='sf:'+v.pv+':'+m+':'+c,sent=ls(sk);
   const wa=v.ph?`<a class="wa sm${sent?' done':''}" href="${waLink(v.ph,text)}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}${sent?'נשלח':'וואטסאפ'}</a>`:'';
   const ml=`<a class="mail sm" href="mailto:${esc(v.em||'')}?subject=${encodeURIComponent(SUBJ[c]+' – '+M)}&body=${encodeURIComponent(text.replace(/\*/g,''))}" data-sent="${esc(sk)}">מייל</a>`;
   const cp=`<button class="mail sm" type="button" data-copy="${esc(text)}">העתק</button>`;
   return `<div class="card"><div class="who"><div class="name">${esc(v.n)}</div><div class="meta"><span>פרייבט ${esc(v.pv)}</span><span>${esc(v.br)}</span>${k>=2?`<span class="streak">${k} חודשים ברצף מתחת ל־25</span>`:''}</div>${spark(v,m)}${v.ev?`<div class="meta">${Object.entries(v.ev).sort((x,y)=>y[1][1]-x[1][1]).slice(0,4).map(([c,[n,pc]])=>`<span class="chip ${pc>=25?'bad':pc>=10?'warn':'miss'}">${esc(c)} ${Math.round(pc)}%</span>`).join('')}</div>`:''}<div class="meta">${trendTxt(st)}${st.fromPeak!=null&&st.fromPeak<0?`<span>${-st.fromPeak} מתחת לשיא (${st.peak})</span>`:''}${st.avg!=null?`<span>ממוצע ${st.avg}</span>`:''}</div></div>
     <div class="score ${scCls(x)}">${x}</div>
-    <div class="issues"><div class="irow"><span class="tel">${v.ph?fmtPhone(v.ph):'אין טלפון'}${v.em?` · <span class="em">${esc(v.em)}</span>`:''}</span><span class="btns">${wa}${ml}${cp}</span></div></div></div>`;
+    <div class="issues"><div class="irow"><span class="tel">${v.ph?fmtPhone(v.ph):'אין טלפון'}${v.em?` · <span class="em">${esc(v.em)}</span>`:''}</span><span class="btns">${wa}${ml}${cp}</span></div>${v.rep?`<details class="anal"><summary>📄 ניתוח מלא מהדוח</summary><pre>${esc(analysis(v).replace(/\*/g,''))}</pre><div class="btns">${v.ph?`<a class="wa sm" href="${waLink(v.ph,`מה קורה ${first(v.n)},\nשלחתי לך גם את הפירוט המלא מהדוח, אם תרצה לראות בעצמך:\n\n${analysis(v)}\n\nאם משהו לא ברור – תכתוב לי.\n${ME}`)}" target="_blank" rel="noopener">${WA_ICON}שלח ניתוח</a>`:''}<button class="mail sm" type="button" data-copy="${esc(analysis(v))}">העתק ניתוח</button></div></details>`:''}</div></div>`;
 }
 function render(){
   if(!DATA)return;
@@ -310,12 +390,12 @@ function regionAvg(m){const a=DATA.v.map(v=>v.s[m]).filter(x=>x!=null);return a.
 function brMsg(br,m,b){
   const h=DATA.heads[br]||{},M=DATA.months[m],R=regionAvg(m);
   const lvl=v=>{const k=streakAt(v,m);return k>=3?` – ${k} חודשים ברצף (חניכות)`:k===2?' – חודש שני ברצף':''};
-  let t=`שלום ${first(h.n)},\nמצרף סיכום של דוח הסייפטי של סניף *${br}* לחודש ${M}:\n\n`;
+  let t=`שלום ${first(h.n)},\nכאן דני מקצב"ת. רציתי לשתף אותך בדוח הסייפטי של סניף *${br}* לחודש ${M.split(' ')[0]}:\n\n`;
   t+=`• מתנדבים עם ציון החודש: ${b.act.length}\n• ציון ממוצע בסניף: *${b.cur}*${b.prev!=null?` (בחודש הקודם: ${b.prev})`:''}\n• ממוצע המרחב: ${R}\n• מתחת ל־25: *${b.low.length}*\n`;
   if(b.low.length)t+=`\n*מתנדבים שמתחת ל־25:*\n${b.low.map(v=>`• ${v.n} (${v.pv}) – ${v.s[m]}${lvl(v)}`).join('\n')}\n`;
   if(b.drops.length)t+=`\n*ירידות חדות מהחודש הקודם:*\n${b.drops.map(o=>`• ${o.v.n} – מ־${o.st.prev} ל־${o.st.x}`).join('\n')}\n`;
   if(b.top.length)t+=`\n*הכי בטוחים בסניף החודש* 🏅\n${b.top.map(v=>`• ${v.n} – ${v.s[m]}`).join('\n')}\n`;
-  t+=`\n${b.low.length?'אודה לך אם תדבר עם המתנדבים שמתחת ל־25 ותחזק אותם. אני פונה אליהם גם ישירות עם הסבר מה לשפר.\n':'כל הכבוד לסניף – אין אף מתנדב מתחת ל־25 החודש!\n'}\nתודה על שיתוף הפעולה,\n${SIGN.replace('בברכה,\n','')}`;
+  t+=`\n${b.low.length?'אודה לך אם תדבר עם המתנדבים שמתחת ל־25 ותחזק אותם. אני פונה אליהם גם ישירות עם הסבר מה לשפר.\n':'כל הכבוד לסניף – אין אף מתנדב מתחת ל־25 החודש!\n'}\nתודה רבה,\n${ME}`;
   return t;
 }
 function renderBranches(){
