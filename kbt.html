@@ -174,11 +174,12 @@ const VEH_ITEMS=[
 const DRV_ITEMS=[
   {k:'lic',label:'רישיון נהיגה',due:d=>pd(d.lic),word:'בתוקף עד'},
   {k:'health',label:'הצהרת בריאות',due:d=>pd(d.health),word:'בתוקף עד'},
-  {k:'traffic',label:'מידע תעבורתי',due:d=>pd(d.traffic),word:'בתוקף עד'}
+  {k:'traffic',label:'מידע תעבורתי',due:d=>pd(d.traffic),word:'בתוקף עד',skip:d=>d.pp}
 ];
 function evalItems(rec,items,win){
   const out=[];
   for(const it of items){
+    if(it.skip&&it.skip(rec))continue; // בעלי דרכון: אין בדיקת מידע תעבורתי
     const due=it.due(rec);
     if(!due){out.push({k:it.k,label:it.label,lvl:'miss',chip:`${it.label}: חסר תאריך`});continue}
     const n=diff(due);
@@ -319,7 +320,7 @@ function render(){
                   :['שם','פרייבט','סניף','רכב','רישיון נהיגה','הצהרת בריאות','מידע תעבורתי','הדרכה שנתית','טלפון'];
     const body=list.map(o=>isV
       ?`<tr><td><span class="plate">${esc(o.plate)}</span></td><td>${esc(o.num)}</td><td>${esc(o.type)}</td><td>${esc(o.name)}</td><td>${esc(o.branch)}</td>${cell(pd(o.test))}${cell(pd(o.service)?addYear(pd(o.service)):null,pd(o.service))}${cell(pd(o.check))}${cell(pd(o.ins))}<td dir="ltr">${fmtPhone(o.phone)}</td></tr>`
-      :`<tr><td>${esc(o.name)}</td><td>${esc(o.priv)}</td><td>${esc(o.branch)}</td><td>${esc(o.car)}</td>${cell(pd(o.lic))}${cell(pd(o.health))}${cell(pd(o.traffic))}${cell(pd(o.train))}<td dir="ltr">${fmtPhone(o.phone)||'—'}</td></tr>`).join('');
+      :`<tr><td>${esc(o.name)}</td><td>${esc(o.priv)}</td><td>${esc(o.branch)}</td><td>${esc(o.car)}</td>${cell(pd(o.lic))}${cell(pd(o.health))}${o.pp?'<td>דרכון</td>':cell(pd(o.traffic))}${cell(pd(o.train))}<td dir="ltr">${fmtPhone(o.phone)||'—'}</td></tr>`).join('');
     app.innerHTML=`${controls(false)}<div class="legend">${list.length} רשומות · <span style="color:var(--bad)">אדום</span> = פג, <span style="color:var(--warn)">כתום</span> = יפוג בקרוב</div><div class="tbl-wrap"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
   }
   bind();
