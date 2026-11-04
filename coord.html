@@ -203,7 +203,7 @@ th{color:var(--muted);font-weight:700;font-size:.78rem;background:var(--soft);bo
 /* הגנה: סימן מים, בלי בחירת טקסט, טשטוש כשהאפליקציה ברקע */
 body.secure{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 body.secure input,body.secure textarea{-webkit-user-select:text;user-select:text}
-#wm{position:fixed;inset:0;z-index:40;pointer-events:none;background-repeat:repeat;opacity:.11}
+#wm{position:fixed;inset:0;z-index:40;pointer-events:none;background-repeat:no-repeat;background-position:center 30%,center 75%;background-size:min(420px,90vw) auto;opacity:.12}
 body.hide-all main,body.hide-all .ov{filter:blur(18px)}
 @media print{body{display:none!important}}
 .del{border:0;background:none;cursor:pointer;font-size:1.05rem;padding:2px 6px;border-radius:8px}
@@ -301,9 +301,19 @@ function safetyMsg(p,f){
   return `🏍️ *אישור יציאה מהגזרה*\n\nמה קורה ${first(p.n)},\nהיציאה שלך${f.dest?` ל*${f.dest}*`:' מהגזרה'}${when} אושרה ✅\n\n*לפני שיוצאים – בדיקה קצרה:*\n🛢️ שמן ומים\n🛞 לחץ אוויר בצמיגים, ואין בהם נזק\n💧 אין נזילות מתחת לכלי\n🔧 אין נזילות בבולם הקדמי\n💡 תאורה ואיתותים עובדים\n\n*בדרך:*\n🪖 קסדה, מעיל וכפפות – *חובה*\n🚦 נוסעים לפי החוק ושומרים על המהירות המותרת\n\nנסיעה בטוחה, ותעדכן אותי כשחזרת 🙏\n_${DATA.coord||'רכז התחבורה'} · רכז תחבורה – ${DATA.br}_`;
 }
 /* היסטוריית יציאות – נשמרת במכשיר של הרכז */
+/* מסונכרנת לגיליון גוגל אחד (כשהכתובת מוגדרת); עותק נשמר גם במכשיר למקרה שאין קליטה */
+const SYNC_URL='';
+let CUR_PW='',REMOTE=null;
 const HK=()=>'exit:'+DATA.br;
-function hist(){try{return JSON.parse(ls(HK())||'[]')}catch(e){return[]}}
-function addHist(h){const H=hist();H.unshift(h);ls(HK(),JSON.stringify(H.slice(0,500)))}
+function localHist(){try{return JSON.parse(ls(HK())||'[]').map(h=>(h.id=h.id||String(h.ts),h))}catch(e){return[]}}
+function hist(){const L=localHist();if(!REMOTE)return L;const ids=new Set(REMOTE.map(r=>r.id));return [...REMOTE,...L.filter(h=>!ids.has(h.id))].sort((a,b)=>b.ts-a.ts)}
+async function api(o){if(!SYNC_URL||!CUR_PW)return null;try{const t=(await sha('dbd-coord-api:'+CUR_PW)).slice(0,32);const r=await fetch(SYNC_URL,{method:'POST',body:JSON.stringify({...o,t,br:DATA.br})}).then(r=>r.json());return r&&r.ok?r:null}catch(e){return null}}
+async function syncHist(){const br=DATA.br,r=await api({action:'list'});if(!r||DATA.br!==br)return;REMOTE=r.rows;const ids=new Set(REMOTE.map(x=>x.id));
+  for(const h of localHist())if(!ids.has(h.id)&&await api({action:'add',r:h}))REMOTE.push(h);
+  render()}
+function addHist(h){h.id=Date.now()+'-'+Math.random().toString(36).slice(2,7);h.coord=ADMIN?'מנהל':(DATA.coord||'');const H=localHist();H.unshift(h);ls(HK(),JSON.stringify(H.slice(0,500)));
+  if(REMOTE)REMOTE.unshift(h);api({action:'add',r:h})}
+function delHist(id){ls(HK(),JSON.stringify(localHist().filter(h=>h.id!==id)));if(REMOTE)REMOTE=REMOTE.filter(h=>h.id!==id);api({action:'del',id})}
 
 
 /* ===== תצוגה ===== */
@@ -436,18 +446,18 @@ function exitView(){
   }
   h+='</div>';
   const H=hist();
-  h+=`<section class="panel"><header><h2>היסטוריית יציאות</h2><span class="count">${H.length}</span></header>${H.length?`<div class="tw"><table><thead><tr><th>תאריך</th><th>מתנדב</th><th>יעד</th><th>המלצה</th><th>החלטה</th>${ADMIN?'<th></th>':''}</tr></thead><tbody>${H.map(x=>`<tr><td>${esc(new Date(x.ts).toLocaleDateString('he-IL'))}</td><td>${esc(x.n)}</td><td>${esc(x.dest||'—')}${x.from?`<br><small>${esc(x.from)}${x.to&&x.to!==x.from?' – '+esc(x.to):''}</small>`:''}</td><td>${pill(x.rec,x.rec==='ok'?'מומלץ':x.rec==='warn'?'לשים לב':'לא מומלץ')}</td><td>${pill(x.dec==='yes'?'ok':'bad',x.dec==='yes'?'אושר':'לא אושר')}</td>${ADMIN?`<td><button class="del" type="button" data-del="${x.ts}" aria-label="מחיקה" title="מחיקת הרשומה">🗑️</button></td>`:''}</tr>`).join('')}</tbody></table></div>`:'<div class="empty">עוד לא נרשמו בקשות</div>'}<p class="hint">ההיסטוריה נשמרת במכשיר הזה.</p></section>`;
+  h+=`<section class="panel"><header><h2>היסטוריית יציאות</h2><span class="count">${H.length}</span></header>${H.length?`<div class="tw"><table><thead><tr><th>תאריך</th><th>מתנדב</th><th>יעד</th><th>המלצה</th><th>החלטה</th>${ADMIN?'<th></th>':''}</tr></thead><tbody>${H.map(x=>`<tr><td>${esc(new Date(x.ts).toLocaleDateString('he-IL'))}</td><td>${esc(x.n)}</td><td>${esc(x.dest||'—')}${x.from?`<br><small>${esc(x.from)}${x.to&&x.to!==x.from?' – '+esc(x.to):''}</small>`:''}</td><td>${pill(x.rec,x.rec==='ok'?'מומלץ':x.rec==='warn'?'לשים לב':'לא מומלץ')}</td><td>${pill(x.dec==='yes'?'ok':'bad',x.dec==='yes'?'אושר':'לא אושר')}</td>${ADMIN?`<td><button class="del" type="button" data-del="${esc(x.id)}" aria-label="מחיקה" title="מחיקת הרשומה">🗑️</button></td>`:''}</tr>`).join('')}</tbody></table></div>`:'<div class="empty">עוד לא נרשמו בקשות</div>'}<p class="hint">${SYNC_URL?(REMOTE?'מסונכרן עם משרד הקצב"ת ✓':'מסנכרן…'):'ההיסטוריה נשמרת במכשיר הזה.'}</p></section>`;
   app.insertAdjacentHTML('beforeend',h);
-  app.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const x=hist().find(h=>String(h.ts)===b.dataset.del);if(!x||!confirm(`למחוק את הרשומה של ${x.n}${x.dest?' ל'+x.dest:''}?`))return;ls(HK(),JSON.stringify(hist().filter(h=>String(h.ts)!==b.dataset.del)));render()});
+  app.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const x=hist().find(h=>h.id===b.dataset.del);if(!x||!confirm(`למחוק את הרשומה של ${x.n}${x.dest?' ל'+x.dest:''}?`))return;delHist(x.id);render()});
   const sync=()=>{f.dest=$('xd').value.trim();f.veh=$('xv').value;f.from=$('xf').value;f.to=f.from;f.note=$('xn').value.trim()};
   $('xp').onchange=e=>{st.sel=e.target.value||null;sync();const pp=DATA.people.find(x=>(x.pv||x.n)===st.sel);if(pp&&!f.veh){const v=vehOf(pp)[0];if(v)f.veh=v.num}render()};
   ['xd','xv','xf','xn'].forEach(id=>$(id).onchange=()=>{sync();if(id!=='xn')render()});
   if(p){
     const e=evaluate(p,f);
     $('xcard').onclick=()=>personSheet(p.pv||p.n);
-    $('xyes').onclick=()=>{sync();addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,dec:'yes',ts:Date.now()});const m=safetyMsg(p,f);
+    $('xyes').onclick=()=>{sync();addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'yes',ts:Date.now()});const m=safetyMsg(p,f);
       render();$('xout').innerHTML=`<div class="done ok"><b>${IC.check}היציאה נרשמה כמאושרת</b><p>הודעת הבטיחות מוכנה – רק לשלוח:</p><pre>${esc(m.replace(/\*/g,''))}</pre><div class="acts">${p.ph?`<a class="btn wa" href="${waLink(p.ph,m)}" target="_blank" rel="noopener">${WA_ICON}שליחה ל${esc(first(p.n))}</a>`:''}<a class="btn ghost" href="mailto:${esc(p.em||'')}?subject=${encodeURIComponent('אישור יציאה מהגזרה')}&body=${encodeURIComponent(m.replace(/\*/g,''))}">מייל</a></div></div>`};
-    $('xno').onclick=()=>{sync();addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,dec:'no',ts:Date.now()});render();$('xout').innerHTML=`<div class="done bad"><b>${IC.x}הבקשה נרשמה כלא מאושרת</b></div>`};
+    $('xno').onclick=()=>{sync();addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'no',ts:Date.now()});render();$('xout').innerHTML=`<div class="done bad"><b>${IC.x}הבקשה נרשמה כלא מאושרת</b></div>`};
   }
 }
 
@@ -509,15 +519,15 @@ function bind(){
 function watermark(){
   let w=$('wm');if(!w){w=document.createElement('div');w.id='wm';document.body.append(w)}
   const t=`${DATA.br} · ${ADMIN?'מנהל':(DATA.coord||'רכז')} · ${new Date().toLocaleDateString('he-IL')}`;
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><text x="160" y="95" font-family="Arial" font-size="15" font-weight="700" fill="#0f2a4a" text-anchor="middle" transform="rotate(-24 160 90)" direction="rtl">${t.replace(/[<&>"]/g,'')}</text></svg>`;
-  w.style.backgroundImage=`url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="420" height="200"><text x="210" y="105" font-family="Arial" font-size="20" font-weight="700" fill="#0f2a4a" text-anchor="middle" transform="rotate(-20 210 100)" direction="rtl">${t.replace(/[<&>"]/g,'')}</text></svg>`,u=`url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
+  w.style.backgroundImage=u+','+u;
   document.body.classList.add('secure');
 }
 document.addEventListener('visibilitychange',()=>document.body.classList.toggle('hide-all',document.hidden));
 window.addEventListener('blur',()=>document.body.classList.add('hide-all'));window.addEventListener('focus',()=>document.body.classList.remove('hide-all'));
 document.addEventListener('copy',e=>{if(document.body.classList.contains('secure')&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||''))e.preventDefault()});
 document.addEventListener('contextmenu',e=>{if(document.body.classList.contains('secure'))e.preventDefault()});
-function show(){watermark();$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
+function show(){watermark();REMOTE=null;setTimeout(syncHist,0);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
 
 /* ===== כניסה ===== */
 function lockView(err){
@@ -531,14 +541,14 @@ function lockView(err){
 async function unlock(saved){
   const pw=saved||($('pw')&&$('pw').value.trim());if(!pw)return;
   if(!saved){$('ub').disabled=true;$('ub').textContent='פותח…'}else $('app').innerHTML='<div class="empty">פותח…</div>';
-  try{DATA=await dec(await fileOf(pw),pw);if(!saved)ls('coord_pw',$('rem').checked?pw:null);show()}
+  try{DATA=await dec(await fileOf(pw),pw);CUR_PW=pw;if(!saved)ls('coord_pw',$('rem').checked?pw:null);show()}
   catch(e){if(saved)ls('coord_pw',null);lockView(e.message==='pw'?'סיסמה שגויה':!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
 }
 function relock(){ls('coord_pw',null);DATA=null;ADMIN=null;lockView()}
 (async()=>{
   /* מנהל (קצב"ת): אם יש במכשיר את סיסמת ניהול קצב"ת – פותח את כל הסניפים */
   const k=ls('kbt_pw');
-  if(k){try{ADMIN=await dec('coord/index.bin',k);const b=ls('coord_adm_br');const br=ADMIN[b]?b:Object.keys(ADMIN)[0];DATA=await dec(await fileOf(ADMIN[br].pw),ADMIN[br].pw);show();return}catch(e){ADMIN=null}}
+  if(k){try{ADMIN=await dec('coord/index.bin',k);CUR_PW=k;const b=ls('coord_adm_br');const br=ADMIN[b]?b:Object.keys(ADMIN)[0];DATA=await dec(await fileOf(ADMIN[br].pw),ADMIN[br].pw);show();return}catch(e){ADMIN=null}}
   const p=ls('coord_pw');p?unlock(p):lockView();
 })();
 </script>
