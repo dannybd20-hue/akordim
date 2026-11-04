@@ -278,7 +278,7 @@ function vehIssues(v){const r=[];const t=pd(v.test);if(t&&days(t)<0)r.push({lvl:
 /* ===== המלצה ליציאה מגזרה ===== */
 function evaluate(p,f){
   const bad=[],warn=[],good=[];
-  docStatus(p).forEach(d=>{if(d.lvl==='bad')bad.push(`${d.l}: ${d.t}`);else if(d.lvl==='miss')warn.push(`${d.l}: אין תאריך במערכת`);else if(f.to&&d.n!=null&&d.n<days(f.to))warn.push(`${d.l} פג לפני סוף היציאה (${d.t.replace('בתוקף עד ','')})`)});
+  docStatus(p).forEach(d=>{if(d.lvl==='bad')bad.push(`${d.l}: ${d.t}`);else if(d.lvl==='miss')warn.push(`${d.l}: אין תאריך במערכת`);else if(f.from&&d.n!=null&&d.n<days(new Date(f.from+'T00:00')))warn.push(`${d.l} פג לפני תאריך היציאה (${d.t.replace('בתוקף עד ','')})`)});
   const sn=safetyNow(p);
   if(sn){const M=DATA.months[sn.m];if(sn.x<25&&sn.streak>=2)bad.push(`ציון סייפטי ${sn.x} ב${M} – ${sn.streak} חודשים ברצף מתחת ל־25`);else if(sn.x<25)warn.push(`ציון סייפטי ${sn.x} ב${M} – מתחת לרף`);else if(sn.prev!=null&&sn.prev-sn.x>=20)warn.push(`ציון סייפטי ירד מ־${sn.prev} ל־${sn.x}`);else if(sn.x>=50)good.push(`ציון סייפטי טוב: ${sn.x}`);else good.push(`ציון סייפטי ${sn.x}`)}
   else warn.push('אין ציון סייפטי במערכת');
@@ -295,9 +295,8 @@ function evaluate(p,f){
   return {lvl,bad,warn,good,title:lvl==='bad'?'לא מומלץ לאשר':lvl==='warn'?'אפשר לאשר – לשים לב':'מומלץ לאשר'};
 }
 function safetyMsg(p,f){
-  const moto=isMoto(p)||(f.veh&&/אופנוע|אופניים/.test((DATA.veh.find(x=>x.num===f.veh)||{}).type||''));
-  const when=f.from?(f.to&&f.to!==f.from?` בין ${fmt(new Date(f.from))} ל־${fmt(new Date(f.to))}`:` ב־${fmt(new Date(f.from))}`):'';
-  return `מה קורה ${first(p.n)},\nהיציאה שלך מהגזרה${f.dest?` ל${f.dest}`:''}${when} *אושרה* ✅\n\nלפני שיוצאים, כמה דברים שחשוב לי שתעשה:\n• לנסוע לפי החוק ולשמור על המהירות המותרת\n• לבדוק שמן ומים\n• למלא אוויר בצמיגים ולבדוק שאין בהם נזק\n• לבדוק שאין נזילות מתחת לכלי\n• לוודא שהתאורה והאיתותים עובדים\n• לקחת רישיון רכב וביטוח${moto?'\n• קסדה וביגוד מגן – חובה':''}\n\nנסיעה בטוחה, ותעדכן אותי כשחזרת.\n${DATA.coord||'רכז התחבורה'}\nרכז תחבורה – ${DATA.br}`;
+  const when=f.from?` ב־${fmt(new Date(f.from))}`:'';
+  return `מה קורה ${first(p.n)},\nהיציאה שלך מהגזרה${f.dest?` ל${f.dest}`:''}${when} *אושרה* ✅\n\nלפני שיוצאים, כמה דברים שחשוב לי שתעשה:\n• לנסוע לפי החוק ולשמור על המהירות המותרת\n• לבדוק שמן ומים\n• למלא אוויר בצמיגים ולבדוק שאין בהם נזק\n• לבדוק שאין נזילות מתחת לכלי\n• לבדוק שאין נזילות בבולם הקדמי\n• לוודא שהתאורה והאיתותים עובדים\n• קסדה, מעיל וכפפות – *חובה*\n\nנסיעה בטוחה, ותעדכן אותי כשחזרת.\n${DATA.coord||'רכז התחבורה'}\nרכז תחבורה – ${DATA.br}`;
 }
 /* היסטוריית יציאות – נשמרת במכשיר של הרכז */
 const HK=()=>'exit:'+DATA.br;
@@ -423,7 +422,7 @@ function exitView(){
     <label class="full">אופנוען<select id="xp"><option value="">בחר אופנוען…</option>${opts}</select></label>
     <label>יעד<input id="xd" value="${esc(f.dest||'')}" placeholder="לדוגמה: אילת"></label>
     <label>אופנוע<select id="xv"><option value="">ללא אופנוע ארגוני</option>${DATA.veh.filter(v=>/אופנוע/.test(v.type||'')).map(v=>`<option value="${esc(v.num)}"${f.veh===v.num?' selected':''}>${esc(v.num)} · ${esc(v.type)} · ${esc(v.plate)}</option>`).join('')}</select></label>
-    <label>מתאריך<input id="xf" type="date" value="${esc(f.from||'')}"></label><label>עד תאריך<input id="xt" type="date" value="${esc(f.to||'')}"></label>
+    <label class="full">תאריך היציאה<input id="xf" type="date" value="${esc(f.from||'')}"></label>
     <label class="full">סיבה / הערות<textarea id="xn" rows="2">${esc(f.note||'')}</textarea></label></div></section>`;
   if(p){
     const e=evaluate(p,f),H=hist().filter(x=>x.pv===p.pv),yes=H.filter(x=>x.dec==='yes').length;
@@ -437,9 +436,9 @@ function exitView(){
   const H=hist();
   h+=`<section class="panel"><header><h2>היסטוריית יציאות</h2><span class="count">${H.length}</span></header>${H.length?`<div class="tw"><table><thead><tr><th>תאריך</th><th>מתנדב</th><th>יעד</th><th>המלצה</th><th>החלטה</th></tr></thead><tbody>${H.map(x=>`<tr><td>${esc(new Date(x.ts).toLocaleDateString('he-IL'))}</td><td>${esc(x.n)}</td><td>${esc(x.dest||'—')}${x.from?`<br><small>${esc(x.from)}${x.to&&x.to!==x.from?' – '+esc(x.to):''}</small>`:''}</td><td>${pill(x.rec,x.rec==='ok'?'מומלץ':x.rec==='warn'?'לשים לב':'לא מומלץ')}</td><td>${pill(x.dec==='yes'?'ok':'bad',x.dec==='yes'?'אושר':'לא אושר')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">עוד לא נרשמו בקשות</div>'}<p class="hint">ההיסטוריה נשמרת במכשיר הזה.</p></section>`;
   app.insertAdjacentHTML('beforeend',h);
-  const sync=()=>{f.dest=$('xd').value.trim();f.veh=$('xv').value;f.from=$('xf').value;f.to=$('xt').value||$('xf').value;f.note=$('xn').value.trim()};
+  const sync=()=>{f.dest=$('xd').value.trim();f.veh=$('xv').value;f.from=$('xf').value;f.to=f.from;f.note=$('xn').value.trim()};
   $('xp').onchange=e=>{st.sel=e.target.value||null;sync();const pp=DATA.people.find(x=>(x.pv||x.n)===st.sel);if(pp&&!f.veh){const v=vehOf(pp)[0];if(v)f.veh=v.num}render()};
-  ['xd','xv','xf','xt','xn'].forEach(id=>$(id).onchange=()=>{sync();if(id!=='xn')render()});
+  ['xd','xv','xf','xn'].forEach(id=>$(id).onchange=()=>{sync();if(id!=='xn')render()});
   if(p){
     const e=evaluate(p,f);
     $('xcard').onclick=()=>personSheet(p.pv||p.n);
