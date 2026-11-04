@@ -260,7 +260,7 @@ async function rideBox(o){
   const L=(RIDES.r||{})[String(o.pv)];if(!L||!L.length){b.hidden=true;return}
   const nums=L.map(x=>rideSc(x.sc)).filter(x=>x!=null),avg=nums.length?(nums.reduce((a,c)=>a+c,0)/nums.length).toFixed(1):'—';
   b.hidden=false;
-  b.innerHTML=`<h3>🏍️ ציוני רכיבה 2025–2026</h3><div class="it"><span class="k">📊</span><span class="v"><small>${L.length} מבחנים · ממוצע</small><span>${avg}</span></span></div>`+
+  b.innerHTML=`<h3>🏍️ הדרכות רכיבה (חיים בדרכים) 2025–2026</h3><div class="it"><span class="k">📊</span><span class="v"><small>${L.length} הדרכות · ציון ממוצע</small><span>${avg}</span></span></div>`+
     L.map(x=>{const n=rideSc(x.sc),c=n==null?'#78716c':n<6.5?'#dc2626':n<7.5?'#d97706':'#16a34a';
       return `<div class="it" style="align-items:flex-start"><span class="k" style="color:${c};font-weight:900;min-width:2.4em;text-align:center">${esc(x.sc||'—')}</span><span class="v"><small>${esc(x.d)}${x.ins?' · מדריך: '+esc(x.ins):''}${x.urg?' · 🚨 דחופה':''}</small><span>${esc([x.op,x.note,x.gen].filter(Boolean).join(' · ')||'—')}${x.pas?`<br><small>הרכבת רוכב נוסף: ${esc(x.pas)}</small>`:''}</span></span></div>`}).join('');
 }

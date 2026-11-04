@@ -276,9 +276,9 @@ function evaluate(p,f){
   if(sn){const M=DATA.months[sn.m];if(sn.x<25&&sn.streak>=2)bad.push(`ציון סייפטי ${sn.x} ב${M} – ${sn.streak} חודשים ברצף מתחת ל־25`);else if(sn.x<25)warn.push(`ציון סייפטי ${sn.x} ב${M} – מתחת לרף`);else if(sn.prev!=null&&sn.prev-sn.x>=20)warn.push(`ציון סייפטי ירד מ־${sn.prev} ל־${sn.x}`);else if(sn.x>=50)good.push(`ציון סייפטי טוב: ${sn.x}`);else good.push(`ציון סייפטי ${sn.x}`)}
   else warn.push('אין ציון סייפטי במערכת');
   const r=lastRide(p),rs=r&&num(r.sc);
-  if(isMoto(p)||r){if(!r)warn.push('אין מבחן רכיבה ב־2025–2026');else if(/לא עבר/.test(r.sc))bad.push(`מבחן רכיבה אחרון (${r.d}): לא עבר`);else if(rs!=null&&rs<6.5)bad.push(`ציון רכיבה נמוך: ${rs} (${r.d})`);else if(rs!=null&&rs<7)warn.push(`ציון רכיבה ${rs} (${r.d})`);else if(rs!=null)good.push(`ציון רכיבה ${rs} (${r.d})`)}
+  if(isMoto(p)||r){if(!r)warn.push('אין הדרכת רכיבה ב־2025–2026');else if(/לא עבר/.test(r.sc))bad.push(`הדרכת רכיבה אחרונה (${r.d}): לא עבר`);else if(rs!=null&&rs<6.5)bad.push(`ציון נמוך בהדרכת רכיבה: ${rs} (${r.d})`);else if(rs!=null&&rs<7)warn.push(`ציון הדרכת רכיבה ${rs} (${r.d})`);else if(rs!=null)good.push(`ציון הדרכת רכיבה ${rs} (${r.d})`)}
   const a=lastAlt(p),as=a&&num(a.g);
-  if(a){if(as!=null&&as<7)bad.push(`ציון מגרש (אלטרנתיבי) נמוך: ${as} (${a.d})`);else if(as!=null&&as<8)warn.push(`ציון מגרש ${as} (${a.d})`);else if(as!=null)good.push(`ציון מגרש ${as} (${a.d})`)}
+  if(a){if(as!=null&&as<7)bad.push(`ציון נמוך בהדרכת נהיגה (אלטרנתיבי): ${as} (${a.d})`);else if(as!=null&&as<8)warn.push(`ציון הדרכת נהיגה (אלטרנתיבי) ${as} (${a.d})`);else if(as!=null)good.push(`ציון הדרכת נהיגה (אלטרנתיבי) ${as} (${a.d})`)}
   if((p.acc||[]).length>=2)warn.push(`${p.acc.length} תאונות בעבר`);
   const v=f.veh?DATA.veh.find(x=>x.num===f.veh):null;
   if(v)vehIssues(v).forEach(i=>(i.lvl==='bad'?bad:warn).push(`כלי ${v.num}: ${i.t}`));
@@ -334,7 +334,7 @@ function pRow(p){
   return `<div class="prow${m.attn?' attn':''}" role="button" tabindex="0" data-p="${esc(p.pv||p.n)}">
     <span class="av" style="background:${colorOf(p.n)}">${esc(ini(p.n))}</span>
     <span class="pid"><b>${esc(p.n)}</b><small>${[p.pv&&'פרייבט '+p.pv,car&&`כלי ${car.num}${car.type?' '+car.type:''}`,p.city].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</small>
-      <span class="minis">${m.sn?mini('סייפטי',m.sn.x,lvlSafety(m.sn.x)):''}${m.r?mini('רכיבה',m.rs===0?'נכשל':(m.r.sc||'—'),lvlRide(m.rs)):''}${m.a?mini('מגרש',m.a.g||'—',lvlAlt(m.as)):''}${m.bad?mini('מסמכים',m.bad+' פגים','bad'):m.warn?mini('מסמכים','פג בקרוב','warn'):''}</span></span>
+      <span class="minis">${m.sn?mini('סייפטי',m.sn.x,lvlSafety(m.sn.x)):''}${m.r?mini('הדרכת רכיבה',m.rs===0?'נכשל':(m.r.sc||'—'),lvlRide(m.rs)):''}${m.a?mini('הדרכת נהיגה',m.a.g||'—',lvlAlt(m.as)):''}${m.bad?mini('מסמכים',m.bad+' פגים','bad'):m.warn?mini('מסמכים','פג בקרוב','warn'):''}</span></span>
     ${tel?`<a class="cb call" href="tel:${esc(tel)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(tel,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}
   </div>`;
 }
@@ -356,7 +356,7 @@ function render(){
       ${kpi(IC.out,'יציאות מגזרה',yes,H.length?`${H.length} בקשות`:'אין בקשות','','exit')}
     </section>
     <section class="panel"><header><h2>דורשים תשומת לב</h2><span class="count">${att.length}</span></header>
-      <p class="hint">סייפטי מתחת ל־25, מסמך שפג, או ציון מבחן נמוך.</p>
+      <p class="hint">סייפטי מתחת ל־25, מסמך שפג, או ציון הדרכה נמוך.</p>
       <div class="plist">${att.map(o=>pRow(o.p)).join('')||'<div class="empty">אין נהגים שדורשים טיפול 👍</div>'}</div></section>
     ${vi.length?`<section class="panel"><header><h2>כלים עם חריגה</h2><span class="count">${vi.length}</span></header><div class="vlist">${vi.map(vRow).join('')}</div></section>`:''}`;
   } else if(st.view==='ppl'){
@@ -396,14 +396,14 @@ function personSheet(key){
   const tl=(L,fn)=>L.length?`<ol class="tl">${L.map(fn).join('')}</ol>`:'<p class="muted">אין רשומות</p>';
   const ov=document.createElement('div');ov.className='ov';ov.innerHTML=`<aside class="drawer" role="dialog" aria-label="${esc(p.n)}">
     <header class="dh"><button class="x" aria-label="סגירה">${IC.x}</button><span class="av lg">${esc(ini(p.n))}</span><div><h2>${esc(p.n)}</h2><p>${p.pv?'פרייבט '+esc(p.pv)+' · ':''}${esc(DATA.br)}</p></div></header>
-    <div class="mets big">${mcell('סייפטי',m.sn?m.sn.x:'—',lvlSafety(m.sn&&m.sn.x))}${mcell('רכיבה אחרונה',m.r?(m.r.sc||'—'):'—',m.r?lvlRide(m.rs):'na')}${mcell('מגרש אחרון',m.a?(m.a.g||'—'):'—',m.a?lvlAlt(m.as):'na')}${isMoto(p)?mcell('יציאות מגזרה',H.filter(x=>x.dec==='yes').length,'na'):mcell('כלים',V.length,'na')}</div>
+    <div class="mets big">${mcell('סייפטי',m.sn?m.sn.x:'—',lvlSafety(m.sn&&m.sn.x))}${mcell('הדרכת רכיבה',m.r?(m.r.sc||'—'):'—',m.r?lvlRide(m.rs):'na')}${mcell('הדרכת נהיגה',m.a?(m.a.g||'—'):'—',m.a?lvlAlt(m.as):'na')}${isMoto(p)?mcell('יציאות מגזרה',H.filter(x=>x.dec==='yes').length,'na'):mcell('כלים',V.length,'na')}</div>
     <div class="dgrid">
       <section class="card"><h3>פרטי קשר</h3><dl><dt>טלפון</dt><dd>${p.ph?`<a href="tel:${esc(p.ph)}">${fmtPhone(p.ph)}</a>`:'—'}</dd><dt>מייל</dt><dd class="ltr">${esc(p.em||'—')}</dd><dt>כתובת</dt><dd>${esc([p.st,p.city].filter(Boolean).join(', ')||'—')}</dd><dt>תאריך לידה</dt><dd>${esc(p.bd||'—')}</dd><dt>הרשאות</dt><dd>${(p.perm||'').split(/;\s*/).filter(Boolean).map(x=>pill('na',x)).join(' ')||'—'}</dd></dl>${p.ph?`<div class="acts"><a class="btn wa" href="${waLink(p.ph,'')}" target="_blank" rel="noopener">${WA_ICON}וואטסאפ</a><a class="btn ghost" href="tel:${esc(p.ph)}">${IC.phone}חיוג</a></div>`:''}</section>
       <section class="card"><h3>מסמכים</h3><ul class="checks">${ds.map(d=>`<li class="${d.lvl==='miss'?'na':d.lvl}"><span>${d.l}</span><b>${esc(d.t)}</b></li>`).join('')}${p.pp?'<li class="na"><span>מידע תעבורתי</span><b>בעל דרכון – לא נדרש</b></li>':''}</ul></section>
       <section class="card"><h3>כלים</h3>${V.length?V.map(v=>{const is=vehIssues(v);return `<div class="vmini"><span class="plate">${esc(v.plate)}</span><span>כלי ${esc(v.num)} · ${esc(v.type)}</span>${is.map(i=>pill(i.lvl,i.t)).join('')||pill('ok','תקין')}</div>`}).join(''):'<p class="muted">אין כלי צמוד</p>'}</section>
       <section class="card wide"><h3>ציוני סייפטי לפי חודש</h3>${scores}</section>
-      <section class="card"><h3>מבחני רכיבה · 2025–2026</h3>${tl(p.ride||[],x=>{const n=/לא עבר/.test(x.sc)?0:num(x.sc);return `<li><span class="tb ${lvlRide(n)}">${esc(x.sc||'—')}</span><div><small>${esc(x.d)} · ${esc(x.ins)}${x.urg?' · דחופה':''}</small><p>${esc([x.op,x.note,x.gen].filter(Boolean).join(' · ')||'—')}</p>${x.pas?`<small>הרכבת רוכב נוסף: ${esc(x.pas)}</small>`:''}</div></li>`})}</section>
-      <section class="card"><h3>מבחני מגרש (אלטרנתיבי) · 2025–2026</h3>${tl(p.alt||[],x=>`<li><span class="tb ${lvlAlt(num(x.g))}">${esc(x.g||'—')}</span><div><small>${esc(x.d)} · ${esc(x.st)} · ${esc(x.ins)}</small><p>${[x.dim&&'ממדי הכלי '+x.dim,x.cau&&'זהירות '+x.cau,x.pro&&'מקצועי '+x.pro].filter(Boolean).map(esc).join(' · ')||'—'}</p>${x.rec?`<small>המלצה: ${esc(x.rec)}</small>`:''}${x.note?`<p>${esc(x.note)}</p>`:''}</div></li>`)}</section>
+      <section class="card"><h3>🏍️ הדרכות רכיבה (חיים בדרכים) · 2025–2026</h3>${tl(p.ride||[],x=>{const n=/לא עבר/.test(x.sc)?0:num(x.sc);return `<li><span class="tb ${lvlRide(n)}">${esc(x.sc||'—')}</span><div><small>${esc(x.d)} · ${esc(x.ins)}${x.urg?' · דחופה':''}</small><p>${esc([x.op,x.note,x.gen].filter(Boolean).join(' · ')||'—')}</p>${x.pas?`<small>הרכבת רוכב נוסף: ${esc(x.pas)}</small>`:''}</div></li>`})}</section>
+      <section class="card"><h3>🚑 הדרכות נהיגה (אלטרנתיבי) · 2025–2026</h3>${tl(p.alt||[],x=>`<li><span class="tb ${lvlAlt(num(x.g))}">${esc(x.g||'—')}</span><div><small>${esc(x.d)} · ${esc(x.st)} · ${esc(x.ins)}</small><p>${[x.dim&&'ממדי הכלי '+x.dim,x.cau&&'זהירות '+x.cau,x.pro&&'מקצועי '+x.pro].filter(Boolean).map(esc).join(' · ')||'—'}</p>${x.rec?`<small>המלצה: ${esc(x.rec)}</small>`:''}${x.note?`<p>${esc(x.note)}</p>`:''}</div></li>`)}</section>
       <section class="card"><h3>עבר תאונות</h3>${(p.acc||[]).length?tl(p.acc,x=>`<li><span class="tb bad">!</span><div><small>${esc(x.d)}</small><p>${esc(x.t||'')}</p></div></li>`):'<p class="muted">נתוני תאונות יתווספו בקרוב</p>'}</section>
       ${isMoto(p)?'':'<!--'}<section class="card"><h3>יציאות מגזרה</h3>${tl(H,x=>`<li><span class="tb ${x.dec==='yes'?'ok':'bad'}">${x.dec==='yes'?'✓':'✕'}</span><div><small>${esc(new Date(x.ts).toLocaleDateString('he-IL'))}</small><p>${esc(x.dest||'—')}${x.from?` · ${esc(x.from)}${x.to&&x.to!==x.from?'–'+esc(x.to):''}`:''}</p></div></li>`)}</section>${isMoto(p)?'':'-->'}
     </div></aside>`;
@@ -484,7 +484,7 @@ function contactSheet(key){
   ov.onclick=e=>{if(e.target===ov||e.target.closest('.x'))return ov.remove();if(e.target.closest('#toSafety')){ov.remove();personSheet(key)}};document.body.append(ov);
 }
 
-function coordMsg(b){const c=ADMIN[b];return `שלום ${first(c.coord)||''},\n\nפתחתי לך מערכת חדשה לניהול הבטיחות של סניף *${b}* 🚑\n\nבמערכת תוכל לראות:\n• את כל הנהגים בסניף – פרטים, מסמכים ותוקף רישיונות\n• ציוני סייפטי לכל חודש\n• מבחני רכיבה ומבחני מגרש (אלטרנתיבי)\n• את כל הכלים של הסניף ומצב הטסטים, הטיפולים והבדיקות\n• *טופס יציאה מגזרה* – בוחרים מתנדב, המערכת בודקת את כל הנתונים שלו ונותנת המלצה, ואם מאשרים – יש הודעת בטיחות מוכנה לשליחה\n\nכניסה:\n🔗 https://dannybd20-hue.github.io/akordim/coord.html\n🔑 סיסמה: *${c.pw}*\n\nהמערכת לצפייה בלבד, ורואים בה רק את הסניף שלך. כדאי להוסיף את הקישור למסך הבית בטלפון.\nהסיסמה אישית לך – לא להעביר הלאה.\n\nאם יש שאלה, אני זמין.\nדני בן דוד\nקצב"ת ירושלים`}
+function coordMsg(b){const c=ADMIN[b];return `שלום ${first(c.coord)||''},\n\nפתחתי לך מערכת חדשה לניהול הבטיחות של סניף *${b}* 🚑\n\nבמערכת תוכל לראות:\n• את כל הנהגים בסניף – פרטים, מסמכים ותוקף רישיונות\n• ציוני סייפטי לכל חודש\n• ציוני הדרכות רכיבה (חיים בדרכים) והדרכות נהיגה (אלטרנתיבי)\n• את כל הכלים של הסניף ומצב הטסטים, הטיפולים והבדיקות\n• *טופס יציאה מגזרה* – בוחרים מתנדב, המערכת בודקת את כל הנתונים שלו ונותנת המלצה, ואם מאשרים – יש הודעת בטיחות מוכנה לשליחה\n\nכניסה:\n🔗 https://dannybd20-hue.github.io/akordim/coord.html\n🔑 סיסמה: *${c.pw}*\n\nהמערכת לצפייה בלבד, ורואים בה רק את הסניף שלך. כדאי להוסיף את הקישור למסך הבית בטלפון.\nהסיסמה אישית לך – לא להעביר הלאה.\n\nאם יש שאלה, אני זמין.\nדני בן דוד\nקצב"ת ירושלים`}
 
 function adminBar(){const c=ADMIN[DATA.br],m=coordMsg(DATA.br);return `<div class="admin"><select id="adm" aria-label="סניף">${Object.keys(ADMIN).map(b=>`<option${b===DATA.br?' selected':''}>${esc(b)}</option>`).join('')}</select><span class="info">מצב מנהל · רכז: <b>${esc(c.coord||'—')}</b>${c.cph?' · '+fmtPhone(c.cph):''} · סיסמה: <b>${esc(c.pw)}</b></span><span class="acts">${c.cph?`<a class="btn wa" href="${waLink(c.cph,m)}" target="_blank" rel="noopener">${WA_ICON}שליחת סיסמה לרכז</a>`:''}<button class="btn ghost" type="button" id="cpm">העתקת ההודעה</button></span></div>`}
 document.querySelectorAll('.tab[data-v]').forEach(b=>b.onclick=()=>{st.view=b.dataset.v;document.querySelectorAll('.tab[data-v]').forEach(x=>x.setAttribute('aria-selected',x===b));render()});
