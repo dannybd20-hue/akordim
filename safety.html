@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<script>try{if(sessionStorage.getItem('gate_safety')!=='1'){document.documentElement.style.display='none';location.replace('./?open=safety')}}catch(e){location.replace('./')}
+function goHome(){try{sessionStorage.removeItem('gate_safety')}catch(e){}location.href='./'}</script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<link rel="icon" href="icons/apps-192.png">
+<meta name="theme-color" content="#1f4f8f">
+<title>דוח סייפטי</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Secular+One&display=swap">
+<style>
+/* Layout: sticky header with tabs, single column of person/vehicle cards grouped by severity */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --fg:#17202b; --muted:#5d6876; --line:#dde2e9;
+  --accent:#1f4f8f; --accent-fg:#ffffff;
+  --bad:#c62f2f; --bad-bg:#fbe9e9; --warn:#a96200; --warn-bg:#fdf1dd; --ok:#1d7a46; --ok-bg:#e3f4ea;
+  --today:#7a2bb8; --today-bg:#f1e7fb;
+  --plate:#f6c800; --plate-fg:#111;
+  --wa:#1b9e52;
+  --f-display:"Secular One","Assistant",system-ui,sans-serif;
+  --f-body:"Assistant",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141b; --surface:#18202a; --fg:#e7ecf2; --muted:#9aa6b4; --line:#2a3542;
+  --accent:#6fa3e8; --accent-fg:#0b1220;
+  --bad:#ff7b7b; --bad-bg:#3a1c1f; --warn:#f0b257; --warn-bg:#352813; --ok:#6fd49a; --ok-bg:#16301f;
+  --today:#c99bf3; --today-bg:#2c1d3c; --plate:#e8bd00; --plate-fg:#111; --wa:#3ccf7c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141b; --surface:#18202a; --fg:#e7ecf2; --muted:#9aa6b4; --line:#2a3542;
+  --accent:#6fa3e8; --accent-fg:#0b1220;
+  --bad:#ff7b7b; --bad-bg:#3a1c1f; --warn:#f0b257; --warn-bg:#352813; --ok:#6fd49a; --ok-bg:#16301f;
+  --today:#c99bf3; --today-bg:#2c1d3c; --plate:#e8bd00; --plate-fg:#111; --wa:#3ccf7c; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.45;direction:rtl}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--accent)}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--accent);color:var(--accent-fg)}
+header .wrap{padding-block:14px 0}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{background:#fff;border-radius:10px;padding:5px 8px;flex:none}
+.logo img{display:block;width:84px;height:auto}
+.hbs{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hb{border:0;background:#ffffff26;color:inherit;border-radius:10px;padding:7px 11px;font:700 .9rem var(--f-body);cursor:pointer;white-space:nowrap}
+.lockc{max-width:380px;margin:30px auto;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:12px;text-align:center}
+.lockc h2{margin:0;font-family:var(--f-display);font-weight:400}
+.lockc input[type=password],.lockc input[type=text]{font:inherit;padding:12px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg);text-align:center;direction:ltr;width:100%}
+.lockc .go{border:0;border-radius:12px;padding:13px;font:700 1.05rem var(--f-body);background:var(--accent);color:var(--accent-fg);cursor:pointer}
+.lockc .err{color:var(--bad);font-weight:700;min-height:1.2em}
+h1{font-family:var(--f-display);font-weight:400;font-size:1.6rem;margin:0;letter-spacing:.01em}
+.upd{font-size:.85rem;opacity:.85}
+.tabs{display:flex;gap:4px;margin-top:10px;overflow-x:auto}
+.tab{appearance:none;border:0;background:transparent;color:inherit;font:600 1rem var(--f-body);padding:10px 14px;border-radius:10px 10px 0 0;opacity:.8;cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{background:var(--bg);color:var(--fg);opacity:1}
+.tab .n{display:inline-block;min-width:1.6em;padding:0 .4em;margin-inline-start:6px;border-radius:99px;background:var(--bad);color:#fff;font-size:.8rem;text-align:center}
+main .wrap{padding-block:16px 48px;display:flex;flex-direction:column;gap:16px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.stat b{display:block;font-family:var(--f-display);font-weight:400;font-size:1.7rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{font-size:.85rem;color:var(--muted)}
+.stat.today b{color:var(--today)} .stat.bad b{color:var(--bad)} .stat.warn b{color:var(--warn)}
+.controls{display:flex;gap:8px;flex-wrap:wrap}
+.controls input,.controls select{font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);min-width:0}
+.controls input{flex:1 1 200px}
+.cats{display:flex;gap:6px;flex-wrap:wrap}
+.cats button{appearance:none;flex:none;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);font:600 .95rem var(--f-body);padding:8px 12px;border-radius:99px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.cats button span{font-size:.78rem;font-weight:700;background:var(--bg);color:var(--muted);border-radius:99px;padding:0 7px;font-variant-numeric:tabular-nums}
+.cats button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.cats button[aria-pressed="true"] span{background:#ffffff33;color:inherit}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{appearance:none;border:0;background:transparent;color:var(--fg);font:600 .95rem var(--f-body);padding:9px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+h2{font-family:var(--f-display);font-weight:400;font-size:1.15rem;margin:8px 0 0;display:flex;align-items:center;gap:8px}
+h2 .cnt{font-family:var(--f-body);font-weight:700;font-size:.85rem;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.list{display:flex;flex-direction:column;gap:8px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:start}
+.card .who{min-width:0}
+.name{font-weight:700;font-size:1.05rem}
+.meta{color:var(--muted);font-size:.88rem;display:flex;gap:4px 10px;flex-wrap:wrap;align-items:center}
+.plate{display:inline-block;background:var(--plate);color:var(--plate-fg);border:1.5px solid #111;border-radius:4px;padding:0 6px;font:700 .85rem/1.5 ui-monospace,Menlo,Consolas,monospace;direction:ltr;letter-spacing:.04em}
+.veh{margin-top:6px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.veh.none{color:var(--muted);font-weight:600;font-size:.88rem}
+.issues{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:8px}
+.irow.dovi{background:var(--bg);border-radius:10px;padding:6px 8px}
+.irow.dovi .dl{font-size:.86rem;font-weight:700;color:var(--muted)}
+.routebar{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.go-maps{display:block;text-align:center;text-decoration:none;background:var(--accent);color:var(--accent-fg);font-weight:700;padding:11px;border-radius:10px}
+.stopn{display:inline-grid;place-items:center;min-width:1.7em;height:1.7em;border-radius:50%;background:var(--accent);color:var(--accent-fg);font-size:.85rem;margin-inline-end:8px}
+.card.off{opacity:.55}
+.addr{display:flex;gap:6px;margin-top:8px;align-items:center}
+.addr input{flex:1;min-width:0;font:inherit;font-size:.92rem;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+.inc{display:inline-flex;align-items:center;gap:4px;font-size:.88rem;font-weight:600;color:var(--muted)}
+.irow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+.sm{padding:6px 10px!important;font-size:.88rem;border-radius:8px}
+.mail{display:inline-flex;align-items:center;text-decoration:none;background:transparent;color:var(--accent);border:1.5px solid var(--accent);font:700 .88rem var(--f-body);cursor:pointer}
+.em{direction:ltr;unicode-bidi:isolate;word-break:break-all}
+.chip{font-size:.86rem;font-weight:600;padding:3px 9px;border-radius:99px;font-variant-numeric:tabular-nums}
+.chip.bad{background:var(--bad-bg);color:var(--bad)} .chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.today{background:var(--today-bg);color:var(--today)} .chip.ok{background:var(--ok-bg);color:var(--ok)}
+.chip.miss{background:var(--bg);color:var(--muted);border:1px dashed var(--line)}
+.acts{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.wa{display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;background:var(--wa);color:#fff;font-weight:700;padding:8px 12px;border-radius:10px;white-space:nowrap}
+.wa svg{width:18px;height:18px}
+.wa.done{background:transparent;color:var(--wa);border:1.5px solid var(--wa)}
+.nophone{font-size:.82rem;color:var(--muted);text-align:center}
+.tel{font-size:.85rem;color:var(--muted);direction:ltr;text-align:center;user-select:all;font-variant-numeric:tabular-nums}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:20px;text-align:center;color:var(--muted)}
+.tbl-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:start;white-space:nowrap}
+th{position:sticky;top:0;background:var(--surface);color:var(--muted);font-weight:700;font-size:.8rem}
+td.d-bad{color:var(--bad);font-weight:700} td.d-warn{color:var(--warn);font-weight:700} td.d-today{color:var(--today);font-weight:700}
+.more{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 .95rem var(--f-body);padding:10px;border-radius:10px;cursor:pointer}
+.legend{font-size:.85rem;color:var(--muted)}
+@media (max-width:520px){.card{grid-template-columns:1fr}.acts{flex-direction:row;flex-wrap:wrap}.wa{flex:1}}
+</style>
+<style>
+.cats button.c-demote[aria-pressed="true"]{background:var(--bad);border-color:var(--bad)}
+.score{font-family:var(--f-display);font-size:1.6rem;line-height:1;font-variant-numeric:tabular-nums;min-width:2.4ch;text-align:center}
+.sc-low{color:var(--bad)}.sc-mid{color:var(--warn)}.sc-good{color:var(--accent)}.sc-top{color:var(--ok)}
+.spark{display:block;width:100%;max-width:240px;height:34px}
+.trend{font-size:.85rem;font-weight:700}
+.trend.dn{color:var(--bad)}.trend.up{color:var(--ok)}.trend.eq{color:var(--muted)}
+.streak{font-size:.82rem;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--bad-bg);color:var(--bad)}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bar{display:grid;grid-template-columns:7.5em 1fr 3em;gap:8px;align-items:center;font-size:.9rem}
+.bar i{display:block;height:14px;border-radius:4px;background:var(--accent)}
+.bar b{font-variant-numeric:tabular-nums;text-align:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.panel h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:1.05rem}
+td.s{text-align:center;font-weight:700}
+td.s.low{background:var(--bad-bg);color:var(--bad)}td.s.mid{background:var(--warn-bg);color:var(--warn)}td.s.top{background:var(--ok-bg);color:var(--ok)}
+.chart{width:100%;min-width:560px;height:auto;display:block}
+.chart text{fill:var(--muted);font:12px var(--f-body)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top"><div class="brand"><span class="logo"><img src="brand/uh-logo.png" alt="איחוד הצלה" width="440" height="273"></span><h1>דוח סייפטי</h1></div><span class="hbs"><span class="upd" id="upd"></span><button class="hb" id="lockB" hidden onclick="relock()" title="נעילה ושכחת הסיסמה במכשיר">🔒</button><button class="hb" onclick="goHome()">→ אפליקציות</button></span></div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-v="msg">הודעות<span class="n" id="n-msg"></span></button>
+      <button class="tab" role="tab" aria-selected="false" data-v="vol">מתנדבים</button>
+      <button class="tab" role="tab" aria-selected="false" data-v="stat">סטטיסטיקה</button>
+    </div>
+  </div>
+</header>
+<main><div class="wrap" id="app"><div class="empty">טוען…</div></div></main>
+
+<script>
+const WA_ICON='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5 0a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.7-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-1 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7a2.8 2.8 0 0 0 1.8-1.3 2.3 2.3 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3Z"/></svg>';
+const $=id=>document.getElementById(id);
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+function first(n){return (n||'').split(' ')[0]}
+function waLink(p,t){p=(p||'').replace(/\D/g,'');if(p.startsWith('0'))p='972'+p.slice(1);return `https://wa.me/${p}?text=${encodeURIComponent(t)}`}
+function fmtPhone(p){p=(p||'').replace(/\D/g,'');return p.length===10?p.slice(0,3)+'-'+p.slice(3):p}
+const TODAY_KEY=new Date().toISOString().slice(0,10);
+const SIGN='בברכה,\nדני בן דוד\nקצין בטיחות בתעבורה\nמרחב ירושלים';
+
+/* ===== קבוצות לפי ציון ===== */
+const CATS=[
+  ['demote','הורדה לחניכות','var(--bad)'],
+  ['warn','אזהרה · חודש שני','var(--bad)'],
+  ['low','מתחת ל־25 · חודש ראשון','var(--bad)'],
+  ['b25','25–35','var(--warn)'],
+  ['b35','35–50','var(--accent)'],
+  ['b50','50–70','var(--ok)'],
+  ['b70','70 ומעלה','var(--ok)']
+];
+function streakAt(v,m){let k=0;for(let j=m;j>=0;j--){const x=v.s[j];if(x==null||x>=25)break;k++}return k}
+function catOf(v,m){const x=v.s[m];if(x==null)return null;if(x<25){const k=streakAt(v,m);return k>=3?'demote':k===2?'warn':'low'}return x<35?'b25':x<50?'b35':x<70?'b50':'b70'}
+function scCls(x){return x==null?'':x<25?'sc-low':x<35?'sc-mid':x<70?'sc-good':'sc-top'}
+
+/* ===== הודעות ===== */
+const TIPS={
+  'חריגות מהירות':'לשמור על המהירות המותרת – גם בנסיעה לאירוע.',
+  'בלימות':'לשמור מרחק מהרכב שלפניך ולהאט מוקדם, כדי לבלום בהדרגה ולא בבת אחת.',
+  'תאוצות':'להאיץ בהדרגה – בלי ללחוץ חזק על הגז ביציאה מעצירה או מרמזור.',
+  'פניות שמאלה':'להאט לפני הפנייה שמאלה ולהיכנס אליה במהירות נמוכה.',
+  'פניות ימינה':'להאט לפני הפנייה ימינה ולהיכנס אליה במהירות נמוכה.',
+  'מעגל תנועה':'להיכנס למעגל תנועה לאט ולצאת ממנו בלי להאיץ חזק.',
+  'מעבר נתיב':'לעבור נתיב בהדרגה, עם איתות ובלי תנועות חדות בהגה.',
+  'עקיפות':'לעקוף רק כשבטוח, בלי האצה חדה.'
+};
+function topEv(v){return v.ev?Object.entries(v.ev).filter(e=>e[1][1]>=10).sort((a,b)=>b[1][1]-a[1][1]).slice(0,3):[]}
+function howto(v){
+  const t=topEv(v);
+  if(t.length)return `*לפי דוח הסייפטי שלך, רוב הנקודות ירדו על:*\n${t.map(([c,[n,pc]])=>`• ${c} – ${n} אירועים (${Math.round(pc)}%)`).join('\n')}\n\n*איך מתקנים:*\n${t.map(([c])=>'• '+TIPS[c]).join('\n')}\n• לא להשתמש בטלפון בזמן נסיעה.`;
+  return `*איך מעלים את הציון:*\n• לשמור על המהירות המותרת – גם בנסיעה לאירוע.\n• לנסוע בצורה רגועה: בלי בלימות חדות, בלי האצות חזקות ובלי פניות חדות.\n• לא להשתמש בטלפון בזמן נסיעה.\n• לשמור מרחק מהרכב שלפניך, כדי שלא תצטרך לבלום בבת אחת.\n• להיכנס לדוח הסייפטי באפליקציה ולראות בדיוק על מה ירדו לך הנקודות החודש.`;
+}
+const MSG={
+  low:(v,x,M)=>`מה קורה ${first(v.n)},\nעברתי על דוח הסייפטי לחודש ${M}, וציון הבטיחות שלך החודש הוא *${x}* – מתחת לרף המינימלי (25).\n\nאני בטוח שזה משהו שאפשר לתקן, ובשביל זה אני פונה אליך כבר עכשיו.\n\n${howto(v)}\n\nאם יש שאלה או שמשהו לא ברור בדוח, תכתוב לי ואעזור.\nבהצלחה,\n${SIGN.replace('בברכה,\n','')}`,
+  warn:(v,x,M,k,prev)=>`מה קורה ${first(v.n)},\nציון הבטיחות שלך בדוח הסייפטי לחודש ${M} הוא *${x}*, וזה *החודש השני ברציפות* מתחת ל־25 (בחודש הקודם: ${prev}).\n\nחשוב לי שתדע: *אם גם בחודש הבא הציון יהיה מתחת ל־25, תועבר לחניכות.* אני מאמין שאפשר להימנע מזה, ואשמח לעזור.\n\n${howto(v)}\n\nאם תרצה, נדבר ונעבור יחד על הדוח.\n${SIGN}`,
+  demote:(v,x,M,k)=>`שלום ${first(v.n)},\nציון הבטיחות שלך בדוח הסייפטי היה מתחת ל־25 *${k} חודשים ברציפות* (בחודש ${M}: ${x}).\n\nבהתאם לנוהל, *אתה מועבר למסלול חניכות.* המטרה של החניכות היא לעזור לך לחזור לנהוג בצורה בטוחה, ולא להעניש.\nאצור איתך קשר בימים הקרובים כדי לתאם את המשך התהליך.\n\nאם יש שאלות, אני זמין.\n${SIGN}`,
+  b25:(v,x,M)=>`מה קורה ${first(v.n)},\nציון הבטיחות שלך בדוח הסייפטי לחודש ${M} הוא *${x}*. עבודה יפה – אתה מעל הרף, ואפשר להגיע עוד יותר גבוה 💪\n\n*כדי לעלות רמה:*\n${topEv(v).length?topEv(v).map(([c])=>'• '+TIPS[c]).join('\n'):'• לשמור על המהירות המותרת גם בנסיעה לאירוע.\n• לנסוע רגוע – בלי בלימות והאצות חדות.\n• להציץ בדוח הסייפטי באפליקציה ולראות על מה ירדו הנקודות.'}\n\nממשיכים ככה!\n${SIGN}`,
+  b35:(v,x,M)=>`מה קורה ${first(v.n)},\nציון הבטיחות שלך בדוח הסייפטי לחודש ${M} הוא *${x}* – עבודה יפה! 👏\nהמשך כך, הנהיגה הבטוחה שלך שומרת עליך ועל כולנו.\n\n${SIGN}`,
+  b50:(v,x,M)=>`שלום ${first(v.n)},\nרציתי לומר לך כל הכבוד על ציון הבטיחות שלך בדוח הסייפטי לחודש ${M}: *${x}* 🏅\nזה ציון גבוה שמעיד על נהיגה אחראית ומקצועית. תודה שאתה מהווה דוגמה.\n\n${SIGN}`,
+  b70:(v,x,M)=>`שלום ${first(v.n)},\nכל הכבוד! ציון הבטיחות שלך בדוח הסייפטי לחודש ${M} הוא *${x}* – מהציונים הגבוהים במרחב 🏆\nנהיגה ברמה כזאת היא בדיוק מה שאנחנו רוצים לראות. תודה ענקית, והמשך כך.\n\n${SIGN}`
+};
+const SUBJ={low:'ציון בטיחות מתחת לרף',warn:'ציון בטיחות – חודש שני ברציפות',demote:'מעבר למסלול חניכות',b25:'ציון בטיחות – עבודה יפה',b35:'ציון בטיחות – עבודה יפה',b50:'כל הכבוד על ציון הבטיחות',b70:'כל הכבוד על ציון הבטיחות'};
+
+/* ===== סטטיסטיקה לכל מתנדב ===== */
+function statsOf(v,m){
+  const pts=[];for(let j=0;j<=m;j++)if(v.s[j]!=null)pts.push([j,v.s[j]]);
+  const x=v.s[m];let prev=null;for(let j=m-1;j>=0;j--)if(v.s[j]!=null){prev=v.s[j];break}
+  const peak=pts.length?Math.max(...pts.map(p=>p[1])):null;
+  let slope=0;if(pts.length>=3){const n=pts.length,mx=pts.reduce((a,p)=>a+p[0],0)/n,my=pts.reduce((a,p)=>a+p[1],0)/n;let a=0,b=0;pts.forEach(([i,y])=>{a+=(i-mx)*(y-my);b+=(i-mx)**2});slope=b?a/b:0}
+  const avg=pts.length?Math.round(pts.reduce((a,p)=>a+p[1],0)/pts.length):null;
+  let fall=0;{let last=null,k=0;for(let j=m;j>=0&&k<3;j--)if(v.s[j]!=null){if(last!=null&&v.s[j]>last)fall++;else if(last!=null)break;last=v.s[j];k++}}
+  return {x,prev,chg:x!=null&&prev!=null?x-prev:null,peak,fromPeak:x!=null&&peak!=null?x-peak:null,slope,avg,n:pts.length,fall};
+}
+function spark(v,m){
+  const W=240,H=34,P=3,xs=v.s.slice(0,m+1),n=xs.length;const X=i=>P+i*(W-2*P)/Math.max(1,n-1),Y=y=>H-P-(Math.min(100,y)/100)*(H-2*P);
+  let d='',open=false;xs.forEach((y,i)=>{if(y==null){open=false;return}d+=(open?'L':'M')+X(i).toFixed(1)+' '+Y(y).toFixed(1);open=true});
+  const dots=xs.map((y,i)=>y==null?'':`<circle cx="${X(i).toFixed(1)}" cy="${Y(y).toFixed(1)}" r="${i===n-1?3.2:1.8}" fill="${y<25?'var(--bad)':'var(--accent)'}"/>`).join('');
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" role="img" aria-label="ציונים לאורך החודשים"><line x1="0" x2="${W}" y1="${Y(25)}" y2="${Y(25)}" stroke="var(--bad)" stroke-dasharray="3 3" stroke-width="1" opacity=".5"/><path d="${d}" fill="none" stroke="var(--accent)" stroke-width="1.6"/>${dots}</svg>`;
+}
+function trendTxt(st){if(st.chg==null)return '<span class="trend eq">חודש ראשון עם ציון</span>';const c=st.chg;return c<0?`<span class="trend dn">▼ ${-c} מהחודש הקודם</span>`:c>0?`<span class="trend up">▲ ${c} מהחודש הקודם</span>`:'<span class="trend eq">ללא שינוי</span>'}
+
+/* ===== מצב ===== */
+let DATA=null;
+const state={view:'msg',m:null,cat:ls('sf_cat')||'low',q:'',br:''};
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{state.view=b.dataset.v;document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===b));render()});
+function filt(v){if(state.br&&v.br!==state.br)return false;const q=state.q.trim();return !q||[v.n,v.pv,v.br,v.ph].some(x=>(x||'').includes(q))}
+function controls(){
+  const brs=[...new Set(DATA.v.map(v=>v.br).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'he'));
+  return `<div class="controls">
+    <select id="mon" aria-label="חודש">${DATA.months.map((x,i)=>`<option value="${i}"${i===state.m?' selected':''}>${esc(x)}</option>`).join('')}</select>
+    <select id="br"><option value="">כל הסניפים</option>${brs.map(b=>`<option${b===state.br?' selected':''}>${esc(b)}</option>`).join('')}</select>
+    <input id="q" type="search" placeholder="חיפוש שם, פרייבט, טלפון…" value="${esc(state.q)}">
+  </div>`;
+}
+function card(v,m){
+  const c=catOf(v,m),x=v.s[m],st=statsOf(v,m),M=DATA.months[m],k=streakAt(v,m);
+  const text=MSG[c](v,x,M,k,st.prev);
+  const sk='sf:'+v.pv+':'+m+':'+c,sent=ls(sk);
+  const wa=v.ph?`<a class="wa sm${sent?' done':''}" href="${waLink(v.ph,text)}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}${sent?'נשלח':'וואטסאפ'}</a>`:'';
+  const ml=`<a class="mail sm" href="mailto:${esc(v.em||'')}?subject=${encodeURIComponent(SUBJ[c]+' – '+M)}&body=${encodeURIComponent(text.replace(/\*/g,''))}" data-sent="${esc(sk)}">מייל</a>`;
+  const cp=`<button class="mail sm" type="button" data-copy="${esc(text)}">העתק</button>`;
+  return `<div class="card"><div class="who"><div class="name">${esc(v.n)}</div><div class="meta"><span>פרייבט ${esc(v.pv)}</span><span>${esc(v.br)}</span>${k>=2?`<span class="streak">${k} חודשים ברצף מתחת ל־25</span>`:''}</div>${spark(v,m)}${v.ev?`<div class="meta">${Object.entries(v.ev).sort((x,y)=>y[1][1]-x[1][1]).slice(0,4).map(([c,[n,pc]])=>`<span class="chip ${pc>=25?'bad':pc>=10?'warn':'miss'}">${esc(c)} ${Math.round(pc)}%</span>`).join('')}</div>`:''}<div class="meta">${trendTxt(st)}${st.fromPeak!=null&&st.fromPeak<0?`<span>${-st.fromPeak} מתחת לשיא (${st.peak})</span>`:''}${st.avg!=null?`<span>ממוצע ${st.avg}</span>`:''}</div></div>
+    <div class="score ${scCls(x)}">${x}</div>
+    <div class="issues"><div class="irow"><span class="tel">${v.ph?fmtPhone(v.ph):'אין טלפון'}${v.em?` · <span class="em">${esc(v.em)}</span>`:''}</span><span class="btns">${wa}${ml}${cp}</span></div></div></div>`;
+}
+function render(){
+  if(!DATA)return;const app=$('app'),m=state.m,M=DATA.months[m];
+  const act=DATA.v.filter(v=>v.s[m]!=null);
+  const cnt={};act.forEach(v=>{const c=catOf(v,m);cnt[c]=(cnt[c]||0)+1});
+  $('n-msg').textContent=(cnt.low||0)+(cnt.warn||0)+(cnt.demote||0)||'';
+  if(state.view==='msg'){
+    const L=act.filter(v=>catOf(v,m)===state.cat&&filt(v)).sort((a,b)=>a.s[m]-b.s[m]);
+    app.innerHTML=`${controls()}
+    <div class="cats" role="group" aria-label="קבוצה">${CATS.map(([k,l])=>`<button class="c-${k}" data-cat="${k}" aria-pressed="${state.cat===k}">${l}<span>${cnt[k]||0}</span></button>`).join('')}</div>
+    <div class="legend">ההודעה נבחרת לפי הציון בחודש ${esc(M)} ולפי כמה חודשים ברצף הציון מתחת ל־25. מתנדב בלי ציון בחודש הזה לא מופיע.</div>
+    <div class="list">${L.map(v=>card(v,m)).join('')||'<div class="empty">אין מתנדבים בקבוצה הזאת.</div>'}</div>`;
+  } else if(state.view==='vol'){
+    const L=DATA.v.filter(filt).sort((a,b)=>(a.s[m]??999)-(b.s[m]??999));
+    const cell=x=>`<td class="s ${x==null?'':x<25?'low':x<35?'mid':x>=70?'top':''}">${x??'—'}</td>`;
+    app.innerHTML=`${controls()}<div class="legend">${L.length} מתנדבים · <span style="color:var(--bad)">אדום</span> מתחת ל־25 · ממוין לפי הציון בחודש ${esc(M)}</div>
+    <div class="tbl-wrap"><table><thead><tr><th>שם</th><th>פרייבט</th><th>סניף</th>${DATA.months.map(x=>`<th>${esc(x)}</th>`).join('')}<th>שינוי</th><th>מגמה</th></tr></thead><tbody>${L.map(v=>{const st=statsOf(v,m);return `<tr><td>${esc(v.n)}</td><td>${esc(v.pv)}</td><td>${esc(v.br)}</td>${v.s.map(cell).join('')}<td>${st.chg==null?'—':(st.chg>0?'+':'')+st.chg}</td><td>${st.n<3?'—':st.slope<-1.5?'<span class="trend dn">יורדת</span>':st.slope>1.5?'<span class="trend up">עולה</span>':'<span class="trend eq">יציבה</span>'}</td></tr>`}).join('')}</tbody></table></div>`;
+  } else {
+    const avgs=DATA.months.map((_,i)=>{const a=DATA.v.map(v=>v.s[i]).filter(x=>x!=null);return a.length?a.reduce((p,c)=>p+c,0)/a.length:null});
+    const lows=DATA.months.map((_,i)=>DATA.v.filter(v=>v.s[i]!=null&&v.s[i]<25).length);
+    const W=640,H=200,P=28,n=avgs.length,bw=(W-2*P)/n;
+    const chart=`<svg class="chart" viewBox="0 0 ${W} ${H+40}" role="img" aria-label="ציון ממוצע לפי חודש">${[0,25,50,75,100].map(y=>`<line x1="${P}" x2="${W-P}" y1="${H-y/100*(H-P)}" y2="${H-y/100*(H-P)}" stroke="var(--line)"/><text x="${P-6}" y="${H-y/100*(H-P)+4}" text-anchor="end">${y}</text>`).join('')}
+      ${avgs.map((a,i)=>a==null?'':`<rect x="${P+i*bw+bw*.18}" y="${H-a/100*(H-P)}" width="${bw*.64}" height="${a/100*(H-P)}" rx="3" fill="${i===m?'var(--accent)':'var(--na-bg,var(--line))'}"/><text x="${P+i*bw+bw/2}" y="${H-a/100*(H-P)-5}" text-anchor="middle" style="fill:var(--fg);font-weight:700">${Math.round(a)}</text><text x="${P+i*bw+bw/2}" y="${H+16}" text-anchor="middle">${esc(DATA.months[i].split(' ')[0].slice(0,3))}</text><text x="${P+i*bw+bw/2}" y="${H+32}" text-anchor="middle" style="fill:var(--bad)">${lows[i]}</text>`).join('')}</svg>`;
+    const withSt=act.filter(filt).map(v=>({v,st:statsOf(v,m)}));
+    const drops=withSt.filter(o=>o.st.chg!=null&&o.st.chg<0).sort((a,b)=>a.st.chg-b.st.chg).slice(0,15);
+    const peakDrops=withSt.filter(o=>o.st.fromPeak!=null&&o.st.fromPeak<=-20).sort((a,b)=>a.st.fromPeak-b.st.fromPeak).slice(0,15);
+    const down=withSt.filter(o=>o.st.n>=4&&o.st.slope<-2).sort((a,b)=>a.st.slope-b.st.slope).slice(0,15);
+    const tot=act.length,dist=CATS.map(([k,l,c])=>({k,l,c,n:cnt[k]||0})),mx=Math.max(1,...dist.map(d=>d.n));
+    const row=(o,val)=>`<tr><td>${esc(o.v.n)}</td><td>${esc(o.v.br)}</td><td class="s ${o.st.x<25?'low':''}">${o.st.x}</td><td>${val}</td></tr>`;
+    app.innerHTML=`${controls()}
+    <div class="summary">
+      <div class="stat"><b>${tot}</b><span>מתנדבים עם ציון ב${esc(M)}</span></div>
+      <div class="stat"><b>${avgs[m]==null?'—':Math.round(avgs[m])}</b><span>ציון ממוצע</span></div>
+      <div class="stat bad"><b>${(cnt.low||0)+(cnt.warn||0)+(cnt.demote||0)}</b><span>מתחת ל־25</span></div>
+      <div class="stat bad"><b>${(cnt.warn||0)+(cnt.demote||0)}</b><span>חודשיים ומעלה ברצף מתחת ל־25</span></div>
+    </div>
+    <div class="panel"><h3>חלוקה לפי קבוצות · ${esc(M)}</h3><div class="bars">${dist.map(d=>`<div class="bar"><span>${d.l}</span><i style="width:${d.n/mx*100}%;background:${d.c}"></i><b>${d.n}</b></div>`).join('')}</div></div>
+    <div class="panel"><h3>ציון ממוצע לפי חודש</h3><div style="overflow-x:auto">${chart}</div><div class="legend">המספר האדום מתחת לכל חודש: כמה מתנדבים היו מתחת ל־25.</div></div>
+    <div class="panel"><h3>הירידות הגדולות מהחודש הקודם</h3><div class="tbl-wrap"><table><thead><tr><th>שם</th><th>סניף</th><th>ציון</th><th>שינוי</th></tr></thead><tbody>${drops.map(o=>row(o,`<span class="trend dn">▼ ${-o.st.chg} (היה ${o.st.prev})</span>`)).join('')||'<tr><td colspan="4">אין</td></tr>'}</tbody></table></div></div>
+    <div class="panel"><h3>ירדו 20 נקודות ומעלה מהשיא שלהם</h3><div class="tbl-wrap"><table><thead><tr><th>שם</th><th>סניף</th><th>ציון</th><th>מהשיא</th></tr></thead><tbody>${peakDrops.map(o=>row(o,`<span class="trend dn">▼ ${-o.st.fromPeak} (שיא ${o.st.peak})</span>`)).join('')||'<tr><td colspan="4">אין</td></tr>'}</tbody></table></div></div>
+    <div class="panel"><h3>מגמת ירידה לאורך זמן (4 חודשים עם ציון ומעלה)</h3><div class="tbl-wrap"><table><thead><tr><th>שם</th><th>סניף</th><th>ציון</th><th>קצב</th></tr></thead><tbody>${down.map(o=>row(o,`<span class="trend dn">▼ ${Math.abs(o.st.slope).toFixed(1)} נק' בחודש בממוצע</span>`)).join('')||'<tr><td colspan="4">אין</td></tr>'}</tbody></table></div></div>`;
+  }
+  bind();
+}
+function bind(){
+  const mon=$('mon');if(mon)mon.onchange=e=>{state.m=+e.target.value;render()};
+  const br=$('br');if(br)br.onchange=e=>{state.br=e.target.value;render()};
+  const q=$('q');if(q)q.oninput=e=>{state.q=e.target.value;const pos=e.target.selectionStart;render();const n=$('q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}};
+  document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{state.cat=b.dataset.cat;ls('sf_cat',state.cat);render()});
+  document.querySelectorAll('a[data-sent]').forEach(a=>a.addEventListener('click',()=>{ls(a.dataset.sent,TODAY_KEY);setTimeout(render,300)}));
+  document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.copy);b.textContent='הועתק'}catch(e){b.textContent='לא הועתק'}});
+}
+
+/* ===== נתונים מוצפנים (אותה סיסמה כמו ניהול קצב"ת) ===== */
+async function decrypt(pw){
+  const buf=new Uint8Array(await (await fetch('safety/safety.bin',{cache:'no-cache'})).arrayBuffer());
+  if(String.fromCharCode(buf[0],buf[1],buf[2])!=='KB1')throw new Error('file');
+  const salt=buf.slice(3,19),iv=buf.slice(19,31),ct=buf.slice(31);
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:600000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+  let gz;try{gz=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct)}catch(e){throw new Error('pw')}
+  return JSON.parse(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
+}
+function lockView(err){
+  $('lockB').hidden=true;
+  $('app').innerHTML=`<div class="lockc"><h2>🔐 דוח סייפטי</h2><p style="margin:0;color:var(--muted)">הנתונים מוצפנים. הקלד את הסיסמה של ניהול קצב"ת</p>
+  <input id="pw" type="password" autocomplete="current-password" placeholder="סיסמה" onkeydown="if(event.key==='Enter')unlock()">
+  <label style="color:var(--muted);font-weight:600"><input type="checkbox" id="rem" checked> לזכור במכשיר הזה</label>
+  <button class="go" id="ub" onclick="unlock()">פתיחה 🔓</button><div class="err">${esc(err||'')}</div></div>`;
+  setTimeout(()=>{const i=$('pw');if(i)i.focus()},50);
+}
+async function unlock(saved){
+  const pw=saved||($('pw')&&$('pw').value.trim());if(!pw)return;
+  if(!saved){$('ub').disabled=true;$('ub').textContent='פותח… (כמה שניות)'}else $('app').innerHTML='<div class="empty">פותח את הנתונים…</div>';
+  try{DATA=await decrypt(pw);if(!saved)ls('kbt_pw',$('rem').checked?pw:'');$('lockB').hidden=false;$('upd').textContent='עודכן: '+DATA.updated;
+    state.m=DATA.months.length-1;render()}
+  catch(e){if(saved&&e.message==='pw')ls('kbt_pw','');lockView(e.message==='pw'?'סיסמה שגויה':!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
+}
+function relock(){if(!confirm('לנעול ולשכוח את הסיסמה במכשיר הזה?'))return;ls('kbt_pw','');DATA=null;lockView()}
+{const p=ls('kbt_pw');p?unlock(p):lockView()}
+</script>
+</body>
+</html>

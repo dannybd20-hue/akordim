@@ -44,6 +44,7 @@ body::after{width:380px;height:380px;bottom:-160px;left:-120px;background:radial
 .ic.fm{background:linear-gradient(135deg,#2dd4bf,#0891b2)}
 .ic.ms{background:linear-gradient(135deg,#4ade80,#15803d)}
 .ic.pb{background:linear-gradient(135deg,#fb923c,#c2410c)}
+.ic.sf{background:linear-gradient(135deg,#34d399,#047857)}
 .ic.kb{background:linear-gradient(135deg,#3b82c4,#1f4f8f)}
 .ic.md{background:linear-gradient(135deg,#2dd4bf,#0f766e)}
 .app b{display:block;font:800 18px Rubik,Heebo,sans-serif;margin-bottom:4px}
@@ -144,6 +145,7 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
   <button class="app" data-app="meds" onclick="enter('meds')"><i class="go" aria-hidden="true">←</i><div class="ic md">💊</div><b>תרופות בבית</b><span>מלאי, מקומות ותוקף עם התראות</span></button>
   <button class="app" data-app="phonebook" onclick="enter('phonebook')"><i class="go" aria-hidden="true">←</i><div class="ic pb">📇</div><b>ספר טלפונים</b><span>מתנדבי איחוד הצלה · חיפוש וחיוג</span></button>
   <button class="app" data-app="kbt" onclick="enter('kbt')"><i class="go" aria-hidden="true">←</i><div class="ic kb">🚑</div><b>ניהול קצב"ת י"ם</b><span>טסטים, טיפולים, רישיונות וחריגות יומיות</span></button>
+  <button class="app" data-app="safety" onclick="enter('safety')"><i class="go" aria-hidden="true">←</i><div class="ic sf">🛡️</div><b>דוח סייפטי</b><span>ציוני בטיחות, מגמות והודעות למתנדבים</span></button>
 </div>
 <label class="nm">📛 השם שלך: <input id="devName" maxlength="30" placeholder="לדוגמה: הטלפון של דני" onchange="setDevName(this.value)"></label>
 <button class="link bioset" id="bioSet" hidden onclick="bioToggle()"></button>
@@ -154,7 +156,7 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
 <script>
 /* כניסה אחת לאתר: הסיסמה שמוקלדת קובעת לאילו אפליקציות יש גישה. נשמרים כאן רק הגיבובים.
    הגישה נשמרת ב-sessionStorage עד סגירת הדפדפן, וכל אפליקציה בודקת את הסימון gate_<שם> שלה. */
-const PAGES={chords:'chords.html',maaser:'maaser.html',tromot:'tromot.html',shopping:'shopping.html',forms:'forms.html',game:'host.html',meds:'meds.html',phonebook:'phonebook.html',kbt:'kbt.html'};
+const PAGES={chords:'chords.html',maaser:'maaser.html',tromot:'tromot.html',shopping:'shopping.html',forms:'forms.html',game:'host.html',meds:'meds.html',phonebook:'phonebook.html',kbt:'kbt.html',safety:'safety.html'};
 const ACCESS={
   'dc953dd72494b2201ec33d2bf0c0078e2b4d4fc7cbd747580535dfc54234b0d7':['forms'],    // 1221
   'f88d20e9aaa147427706f242d11b143befcf2038efdd026d1e890fea9ce1535c':['tromot'],   // 1234
