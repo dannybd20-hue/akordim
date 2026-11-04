@@ -165,7 +165,7 @@ function addYear(d){const x=new Date(d);x.setFullYear(x.getFullYear()+1);return 
 function diff(d){return Math.round((d-T0)/DAY)}
 
 const VEH_ITEMS=[
-  {k:'test',label:'טסט (רישיון רכב)',due:v=>pd(v.test),word:'בתוקף עד'},
+  {k:'test',label:'טסט (רישיון רכב)',due:v=>pd(v.test),word:'בתוקף עד',minWin:7},
   {k:'service',label:'טיפול שנתי',due:v=>{const d=pd(v.service);return d?addYear(d):null},word:'טיפול אחרון',src:v=>pd(v.service)},
   {k:'check',label:'בדיקת תקינות',due:v=>pd(v.check),word:'מועד הבדיקה'}
 ];
@@ -184,7 +184,7 @@ function evalItems(rec,items,win){
     const base={k:it.k,label:it.label,n,dateStr:fmt(due),srcStr:it.src?fmt(it.src(rec)):fmt(due)};
     if(n===0) out.push({...base,lvl:'today',chip:`${it.label} · פג היום`});
     else if(n<0) out.push({...base,lvl:'bad',chip:`${it.label} · באיחור ${-n} ימים`});
-    else if(n<=win) out.push({...base,lvl:'warn',chip:`${it.label} · עוד ${n} ימים`});
+    else if(n<=Math.max(win,it.minWin||0)) out.push({...base,lvl:'warn',chip:`${it.label} · עוד ${n} ימים`});
   }
   return out;
 }
@@ -301,7 +301,7 @@ function render(){
     </div>${controls(true)}
     ${catBar(every)}
     <label class="legend"><input type="checkbox" id="miss"${state.showMiss?' checked':''}> הצג גם רשומות בלי תאריך</label>
-    <div class="legend">טיפול שנתי נחשב בחריגה כשעברה שנה מהטיפול האחרון.</div>`;
+    <div class="legend">טיפול שנתי נחשב בחריגה כשעברה שנה מהטיפול האחרון. טסט מופיע תמיד שבוע לפני.</div>`;
     let shown=0;
     for(const [l,t,col] of groups){
       const g=rows.filter(r=>r.lvl===l).sort((a,b)=>(a.is[0].n??0)-(b.is[0].n??0));
