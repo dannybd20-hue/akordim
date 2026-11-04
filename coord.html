@@ -5,162 +5,198 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <link rel="icon" href="icons/apps-192.png">
-<meta name="theme-color" content="#1f4f8f">
+<meta name="theme-color" content="#0f2a4a">
 <title>בטיחות סניף</title>
 <meta property="og:title" content="בטיחות סניף – רכזי תחבורה">
 <meta property="og:description" content="איחוד הצלה · קצב&quot;ת ירושלים">
 <meta property="og:image" content="https://dannybd20-hue.github.io/akordim/brand/uh-og.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Secular+One&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap">
 <style>
-/* Layout: sticky header with tabs, single column of person/vehicle cards grouped by severity */
+/* Layout: navy app bar + underline tabs; content in panels with fixed metric columns so rows scan like a table */
 :root{
-  --bg:#f3f5f8; --surface:#ffffff; --fg:#17202b; --muted:#5d6876; --line:#dde2e9;
-  --accent:#1f4f8f; --accent-fg:#ffffff;
-  --bad:#c62f2f; --bad-bg:#fbe9e9; --warn:#a96200; --warn-bg:#fdf1dd; --ok:#1d7a46; --ok-bg:#e3f4ea;
-  --today:#7a2bb8; --today-bg:#f1e7fb;
-  --plate:#f6c800; --plate-fg:#111;
-  --wa:#1b9e52;
-  --f-display:"Secular One","Assistant",system-ui,sans-serif;
-  --f-body:"Assistant",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --bg:#f3f5f9;--surface:#fff;--fg:#14202e;--muted:#5f6b7a;--line:#e1e6ee;--soft:#f7f9fc;
+  --bar:#0f2a4a;--bar2:#163a63;--accent:#1f5fae;--accent-fg:#fff;
+  --ok:#147a43;--ok-bg:#e4f4ea;--warn:#9a5b00;--warn-bg:#fdf0d9;--bad:#c22b2b;--bad-bg:#fbe7e7;--mid:#1f5fae;--mid-bg:#e6effa;--na:#6b7684;--na-bg:#eef1f5;
+  --wa:#1b9e52;--plate:#f6c800;
+  --f:"Heebo","Assistant",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --r:14px;--sh:0 1px 2px #0f2a4a0f,0 4px 16px #0f2a4a0d;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0f141b; --surface:#18202a; --fg:#e7ecf2; --muted:#9aa6b4; --line:#2a3542;
-  --accent:#6fa3e8; --accent-fg:#0b1220;
-  --bad:#ff7b7b; --bad-bg:#3a1c1f; --warn:#f0b257; --warn-bg:#352813; --ok:#6fd49a; --ok-bg:#16301f;
-  --today:#c99bf3; --today-bg:#2c1d3c; --plate:#e8bd00; --plate-fg:#111; --wa:#3ccf7c; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0f141b; --surface:#18202a; --fg:#e7ecf2; --muted:#9aa6b4; --line:#2a3542;
-  --accent:#6fa3e8; --accent-fg:#0b1220;
-  --bad:#ff7b7b; --bad-bg:#3a1c1f; --warn:#f0b257; --warn-bg:#352813; --ok:#6fd49a; --ok-bg:#16301f;
-  --today:#c99bf3; --today-bg:#2c1d3c; --plate:#e8bd00; --plate-fg:#111; --wa:#3ccf7c; color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d141d;--surface:#152030;--fg:#e8eef5;--muted:#9aa8b8;--line:#243346;--soft:#111b28;--bar:#0a1e36;--bar2:#11294a;--accent:#6aa5ec;--accent-fg:#0b1626;--ok:#6fd49a;--ok-bg:#15301f;--warn:#f0b257;--warn-bg:#352813;--bad:#ff8080;--bad-bg:#3a1c1f;--mid:#8db9f0;--mid-bg:#182b44;--na:#93a0af;--na-bg:#1c2836;--wa:#3ccf7c;--sh:none;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d141d;--surface:#152030;--fg:#e8eef5;--muted:#9aa8b8;--line:#243346;--soft:#111b28;--bar:#0a1e36;--bar2:#11294a;--accent:#6aa5ec;--accent-fg:#0b1626;--ok:#6fd49a;--ok-bg:#15301f;--warn:#f0b257;--warn-bg:#352813;--bad:#ff8080;--bad-bg:#3a1c1f;--mid:#8db9f0;--mid-bg:#182b44;--na:#93a0af;--na-bg:#1c2836;--wa:#3ccf7c;--sh:none;color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0}
 [hidden]{display:none!important}
-body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.45;direction:rtl}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--accent)}
-.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--accent);color:var(--accent-fg)}
-header .wrap{padding-block:14px 0}
-.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:12px}
-.logo{background:#fff;border-radius:10px;padding:5px 8px;flex:none}
-.logo img{display:block;width:84px;height:auto}
-.hbs{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.hb{border:0;background:#ffffff26;color:inherit;border-radius:10px;padding:7px 11px;font:700 .9rem var(--f-body);cursor:pointer;white-space:nowrap}
-.lockc{max-width:380px;margin:30px auto;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:12px;text-align:center}
-.lockc h2{margin:0;font-family:var(--f-display);font-weight:400}
-.lockc input[type=password],.lockc input[type=text]{font:inherit;padding:12px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg);text-align:center;direction:ltr;width:100%}
-.lockc .go{border:0;border-radius:12px;padding:13px;font:700 1.05rem var(--f-body);background:var(--accent);color:var(--accent-fg);cursor:pointer}
-.lockc .err{color:var(--bad);font-weight:700;min-height:1.2em}
-h1{font-family:var(--f-display);font-weight:400;font-size:1.6rem;margin:0;letter-spacing:.01em}
-.upd{font-size:.85rem;opacity:.85}
-.tabs{display:flex;gap:4px;margin-top:10px;overflow-x:auto}
-.tab{appearance:none;border:0;background:transparent;color:inherit;font:600 1rem var(--f-body);padding:10px 14px;border-radius:10px 10px 0 0;opacity:.8;cursor:pointer;white-space:nowrap}
-.tab[aria-selected="true"]{background:var(--bg);color:var(--fg);opacity:1}
-.tab .n{display:inline-block;min-width:1.6em;padding:0 .4em;margin-inline-start:6px;border-radius:99px;background:var(--bad);color:#fff;font-size:.8rem;text-align:center}
-main .wrap{padding-block:16px 48px;display:flex;flex-direction:column;gap:16px}
-.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
-.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
-.stat b{display:block;font-family:var(--f-display);font-weight:400;font-size:1.7rem;line-height:1.1;font-variant-numeric:tabular-nums}
-.stat span{font-size:.85rem;color:var(--muted)}
-.stat.today b{color:var(--today)} .stat.bad b{color:var(--bad)} .stat.warn b{color:var(--warn)}
-.controls{display:flex;gap:8px;flex-wrap:wrap}
-.controls input,.controls select{font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);min-width:0}
-.controls input{flex:1 1 200px}
-.cats{display:flex;gap:6px;flex-wrap:wrap}
-.cats button{appearance:none;flex:none;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);font:600 .95rem var(--f-body);padding:8px 12px;border-radius:99px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.cats button span{font-size:.78rem;font-weight:700;background:var(--bg);color:var(--muted);border-radius:99px;padding:0 7px;font-variant-numeric:tabular-nums}
-.cats button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
-.cats button[aria-pressed="true"] span{background:#ffffff33;color:inherit}
-.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
-.seg button{appearance:none;border:0;background:transparent;color:var(--fg);font:600 .95rem var(--f-body);padding:9px 12px;cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 var(--f);direction:rtl}
+svg{width:18px;height:18px;fill:currentColor;flex:none}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bar)}
+.appbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:linear-gradient(180deg,var(--bar),var(--bar2));color:#fff;box-shadow:0 2px 12px #0003}
+.appbar .wrap{padding-block:12px 0;display:flex;flex-direction:column;gap:10px}
+.top{display:flex;align-items:center;gap:12px}
+.logo{background:#fff;border-radius:10px;padding:4px 7px;flex:none}.logo img{display:block;width:62px;height:auto}
+.ttl{flex:1;min-width:0}.ttl h1{margin:0;font-size:1.15rem;font-weight:800;letter-spacing:.01em}.ttl p{margin:0;font-size:.85rem;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb{display:inline-flex;align-items:center;gap:6px;border:1px solid #ffffff33;background:#ffffff14;color:#fff;border-radius:10px;padding:7px 11px;font:600 .85rem var(--f);cursor:pointer;text-decoration:none;white-space:nowrap}
+.hb:hover{background:#ffffff26}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tab{appearance:none;border:0;background:none;color:#ffffffb3;font:600 .95rem var(--f);padding:10px 14px 12px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.tab[aria-selected="true"]{color:#fff;border-bottom-color:#fff}
+main .wrap{padding-block:18px 40px;display:flex;flex-direction:column;gap:16px}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-h2{font-family:var(--f-display);font-weight:400;font-size:1.15rem;margin:8px 0 0;display:flex;align-items:center;gap:8px}
-h2 .cnt{font-family:var(--f-body);font-weight:700;font-size:.85rem;color:var(--muted)}
-.dot{width:10px;height:10px;border-radius:50%;flex:none}
-.list{display:flex;flex-direction:column;gap:8px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:start}
-.card .who{min-width:0}
-.name{font-weight:700;font-size:1.05rem}
-.meta{color:var(--muted);font-size:.88rem;display:flex;gap:4px 10px;flex-wrap:wrap;align-items:center}
-.plate{display:inline-block;background:var(--plate);color:var(--plate-fg);border:1.5px solid #111;border-radius:4px;padding:0 6px;font:700 .85rem/1.5 ui-monospace,Menlo,Consolas,monospace;direction:ltr;letter-spacing:.04em}
-.veh{margin-top:6px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.veh.none{color:var(--muted);font-weight:600;font-size:.88rem}
-.issues{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:8px}
-.irow.dovi{background:var(--bg);border-radius:10px;padding:6px 8px}
-.irow.dovi .dl{font-size:.86rem;font-weight:700;color:var(--muted)}
-.routebar{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
-.go-maps{display:block;text-align:center;text-decoration:none;background:var(--accent);color:var(--accent-fg);font-weight:700;padding:11px;border-radius:10px}
-.stopn{display:inline-grid;place-items:center;min-width:1.7em;height:1.7em;border-radius:50%;background:var(--accent);color:var(--accent-fg);font-size:.85rem;margin-inline-end:8px}
-.card.off{opacity:.55}
-.addr{display:flex;gap:6px;margin-top:8px;align-items:center}
-.addr input{flex:1;min-width:0;font:inherit;font-size:.92rem;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
-.inc{display:inline-flex;align-items:center;gap:4px;font-size:.88rem;font-weight:600;color:var(--muted)}
-.irow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.btns{display:flex;gap:6px;flex-wrap:wrap}
-.sm{padding:6px 10px!important;font-size:.88rem;border-radius:8px}
-.mail{display:inline-flex;align-items:center;text-decoration:none;background:transparent;color:var(--accent);border:1.5px solid var(--accent);font:700 .88rem var(--f-body);cursor:pointer}
-.em{direction:ltr;unicode-bidi:isolate;word-break:break-all}
-.chip{font-size:.86rem;font-weight:600;padding:3px 9px;border-radius:99px;font-variant-numeric:tabular-nums}
-.chip.bad{background:var(--bad-bg);color:var(--bad)} .chip.warn{background:var(--warn-bg);color:var(--warn)}
-.chip.today{background:var(--today-bg);color:var(--today)} .chip.ok{background:var(--ok-bg);color:var(--ok)}
-.chip.miss{background:var(--bg);color:var(--muted);border:1px dashed var(--line)}
-.acts{display:flex;flex-direction:column;gap:6px;align-items:stretch}
-.wa{display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;background:var(--wa);color:#fff;font-weight:700;padding:8px 12px;border-radius:10px;white-space:nowrap}
-.wa svg{width:18px;height:18px}
-.wa.done{background:transparent;color:var(--wa);border:1.5px solid var(--wa)}
-.nophone{font-size:.82rem;color:var(--muted);text-align:center}
-.tel{font-size:.85rem;color:var(--muted);direction:ltr;text-align:center;user-select:all;font-variant-numeric:tabular-nums}
-.empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:20px;text-align:center;color:var(--muted)}
-.tbl-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
-table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
-th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:start;white-space:nowrap}
-th{position:sticky;top:0;background:var(--surface);color:var(--muted);font-weight:700;font-size:.8rem}
-td.d-bad{color:var(--bad);font-weight:700} td.d-warn{color:var(--warn);font-weight:700} td.d-today{color:var(--today);font-weight:700}
-.more{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 .95rem var(--f-body);padding:10px;border-radius:10px;cursor:pointer}
-.legend{font-size:.85rem;color:var(--muted)}
-@media (max-width:520px){.card{grid-template-columns:1fr}.acts{flex-direction:row;flex-wrap:wrap}.wa{flex:1}}
-</style>
-<style>
-.pcard{cursor:pointer}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.92rem}
-.kv b{color:var(--muted);font-weight:600}
-.sec{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
-.sec h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:1.05rem}
-.rec{border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
-.rec.ok{background:var(--ok-bg);color:var(--ok)}.rec.warn{background:var(--warn-bg);color:var(--warn)}.rec.bad{background:var(--bad-bg);color:var(--bad)}
-.rec b{font-size:1.15rem}
-.rec ul{margin:0;padding-inline-start:18px;color:var(--fg)}
-.form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.form label{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:.92rem}
-.form input,.form select,.form textarea{font:inherit;font-weight:400;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);min-width:0}
+/* KPIs */
+button.kpi{appearance:none;font:inherit;color:inherit;text-align:start;cursor:pointer;width:100%;position:relative}
+button.kpi:hover{border-color:var(--accent)}
+.kgo{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);opacity:.6}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:720px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;gap:12px;align-items:flex-start;box-shadow:var(--sh)}
+.kpi .ki{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--mid-bg);color:var(--mid);flex:none}
+.kpi.ok .ki{background:var(--ok-bg);color:var(--ok)}.kpi.warn .ki{background:var(--warn-bg);color:var(--warn)}.kpi.bad .ki{background:var(--bad-bg);color:var(--bad)}
+.kpi small{display:block;color:var(--muted);font-size:.8rem;font-weight:600}
+.kpi b{display:block;font-size:1.75rem;font-weight:800;line-height:1.15;font-variant-numeric:tabular-nums}
+.kpi.bad b{color:var(--bad)}.kpi.warn b{color:var(--warn)}
+.kpi em{display:block;font-style:normal;color:var(--muted);font-size:.78rem}
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+.panel>header{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.panel h2{margin:0;font-size:1.02rem;font-weight:800}
+.count{background:var(--na-bg);color:var(--na);font-weight:700;font-size:.78rem;border-radius:99px;padding:1px 9px;font-variant-numeric:tabular-nums}
+.hint{margin:0;padding:8px 16px;color:var(--muted);font-size:.84rem}
+.empty{padding:22px;text-align:center;color:var(--muted)}
+.foot{text-align:center;color:var(--muted);font-size:.8rem;margin:0}
+.muted{color:var(--muted);margin:0;font-size:.9rem}
+/* rows – בסגנון ספר הטלפונים */
+.prow .minis{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.mp{font-size:.74rem;font-weight:600;padding:1px 7px;border-radius:99px;background:var(--na-bg);color:var(--na);white-space:nowrap}
+.mp b{font-weight:800}.mp.ok{background:var(--ok-bg);color:var(--ok)}.mp.mid{background:var(--mid-bg);color:var(--mid)}.mp.warn{background:var(--warn-bg);color:var(--warn)}.mp.bad{background:var(--bad-bg);color:var(--bad)}
+.cb{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;color:#fff;flex:none}
+.cb svg{width:20px;height:20px}.cb.call{background:#2563eb}.cb.wa{background:#22c55e}
+.sub{padding:0 16px 10px 70px;display:flex;flex-wrap:wrap;gap:4px}
+/* rows */
+.plist,.vlist{display:flex;flex-direction:column}
+.prow,.vrow{appearance:none;width:100%;text-align:start;border:0;border-top:1px solid var(--line);background:none;color:inherit;font:inherit;display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:11px 16px}
+.plist>.prow:first-child,.vlist>.vrow:first-child{border-top:0}
+.prow{cursor:pointer}.prow:hover{background:var(--soft)}
+.prow.attn,.vrow.attn{box-shadow:inset -3px 0 0 var(--bad)}
+.vrow{grid-template-columns:auto minmax(0,1fr) auto}
+.av{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:800;font-size:1rem}
+.av.lg{width:54px;height:54px;font-size:1.15rem;background:#ffffff1f;color:#fff}
+.pid{min-width:0;display:flex;flex-direction:column}
+.pid b{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pid small{color:var(--muted);font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mets{display:grid;grid-template-columns:repeat(4,78px);gap:6px}
+.m{border-radius:9px;padding:4px 6px;text-align:center;background:var(--na-bg);color:var(--na)}
+.m small{display:block;font-size:.68rem;font-weight:600;opacity:.9}
+.m b{display:block;font-size:.92rem;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m.ok{background:var(--ok-bg);color:var(--ok)}.m.warn{background:var(--warn-bg);color:var(--warn)}.m.bad{background:var(--bad-bg);color:var(--bad)}.m.mid{background:var(--mid-bg);color:var(--mid)}
+.go{color:var(--muted)}
+@media (max-width:640px){
+  .vrow{grid-template-columns:auto minmax(0,1fr)}.vrow .mets{grid-column:1/-1}
+  .mets{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+.plate{display:inline-block;background:var(--plate);color:#111;border:1.5px solid #111;border-radius:4px;padding:0 6px;font:700 .82rem/1.5 ui-monospace,Menlo,Consolas,monospace;direction:ltr;white-space:nowrap}
+.pill{display:inline-block;font-size:.8rem;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--na-bg);color:var(--na)}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.bad{background:var(--bad-bg);color:var(--bad)}
+/* toolbar */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap}
+.search{flex:1 1 260px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 12px;color:var(--muted)}
+.search input{flex:1;border:0;background:none;font:inherit;color:var(--fg);padding:10px 0;min-width:0;outline:none}
+.seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px;overflow-x:auto}
+.seg button{appearance:none;border:0;background:none;color:var(--muted);font:600 .86rem var(--f);padding:7px 11px;border-radius:9px;cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:0;border-radius:10px;padding:10px 14px;font:700 .92rem var(--f);cursor:pointer;text-decoration:none;color:#fff;background:var(--accent)}
+.btn.wa{background:var(--wa)}.btn.ok{background:var(--ok)}.btn.bad{background:var(--bad)}
+.btn.ghost{background:var(--surface);color:var(--fg);border:1px solid var(--line)}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+/* admin */
+.admin{background:var(--surface);border:1px dashed var(--accent);border-radius:var(--r);padding:12px 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.admin select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg)}
+.admin .info{flex:1 1 220px;font-size:.85rem;color:var(--muted)}
+.admin .info b{color:var(--fg);direction:ltr;unicode-bidi:isolate}
+/* drawer */
+.ov{position:fixed;inset:0;background:#0b1626a6;z-index:30;display:flex;justify-content:flex-start}
+.drawer{background:var(--bg);width:min(760px,100%);height:100%;overflow:auto;display:flex;flex-direction:column;gap:14px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));box-shadow:-8px 0 30px #0004}
+.dh{background:linear-gradient(180deg,var(--bar),var(--bar2));color:#fff;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:1}
+.dh h2{margin:0;font-size:1.2rem;font-weight:800}.dh p{margin:0;opacity:.8;font-size:.86rem}
+.dh .x{order:3;margin-inline-start:auto;border:0;background:#ffffff1f;color:#fff;border-radius:50%;width:36px;height:36px;display:grid;place-items:center;cursor:pointer}
+.mets.big{grid-template-columns:repeat(4,minmax(0,1fr));padding:0 16px}.mets.big .m{padding:8px}.mets.big .m b{font-size:1.2rem}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px}
+@media (max-width:640px){.dgrid{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card.wide{grid-column:1/-1}
+.card h3{margin:0;font-size:.95rem;font-weight:800}
+dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:.9rem}dt{color:var(--muted);font-weight:600}dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.ltr{direction:ltr;text-align:right}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.checks li{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:9px;background:var(--na-bg);font-size:.88rem}
+.checks li b{font-weight:700}.checks li.ok{background:var(--ok-bg)}.checks li.ok b{color:var(--ok)}.checks li.warn{background:var(--warn-bg)}.checks li.warn b{color:var(--warn)}.checks li.bad{background:var(--bad-bg)}.checks li.bad b{color:var(--bad)}
+.vmini{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.88rem}
+.strip{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px}
+@media (max-width:640px){.strip{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.sc{border-radius:8px;text-align:center;padding:4px 0;background:var(--na-bg);color:var(--na)}
+.sc small{display:block;font-size:.66rem}.sc b{font-size:.95rem;font-weight:800;font-variant-numeric:tabular-nums}
+.sc.ok{background:var(--ok-bg);color:var(--ok)}.sc.mid{background:var(--mid-bg);color:var(--mid)}.sc.warn{background:var(--warn-bg);color:var(--warn)}.sc.bad{background:var(--bad-bg);color:var(--bad)}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.tl li{display:grid;grid-template-columns:44px 1fr;gap:10px;align-items:start}
+.tl small{color:var(--muted);font-size:.78rem}.tl p{margin:2px 0 0;font-size:.88rem}
+.tb{border-radius:9px;text-align:center;font-weight:800;padding:6px 0;background:var(--na-bg);color:var(--na);font-size:.9rem}
+.tb.ok{background:var(--ok-bg);color:var(--ok)}.tb.warn{background:var(--warn-bg);color:var(--warn)}.tb.bad{background:var(--bad-bg);color:var(--bad)}
+/* exit */
+.exit{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+@media (max-width:820px){.exit{grid-template-columns:1fr}}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px}
+.form label{display:flex;flex-direction:column;gap:5px;font-weight:700;font-size:.86rem;color:var(--muted)}
+.form input,.form select,.form textarea{font:inherit;font-weight:400;color:var(--fg);padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--soft);min-width:0}
 .form .full{grid-column:1/-1}
 @media (max-width:520px){.form{grid-template-columns:1fr}}
-.big{font:700 1rem var(--f-body);padding:11px 14px;border-radius:10px;border:0;cursor:pointer}
-.big.yes{background:var(--ok);color:#fff}.big.no{background:var(--bad);color:#fff}
-.hist td,.hist th{white-space:normal}
-.ov{position:fixed;inset:0;background:#0007;z-index:30;display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--bg);width:100%;max-width:760px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px max(16px,env(safe-area-inset-left,0px)) calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
-.sheet .x{align-self:flex-start;border:0;background:var(--surface);border-radius:50%;width:36px;height:36px;font-size:1.1rem;cursor:pointer;color:var(--fg)}
-.ro{font-size:.82rem;color:var(--muted)}
+.verdict{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:16px;display:flex;flex-direction:column;gap:12px;border-top:5px solid var(--na)}
+.verdict.ok{border-top-color:var(--ok)}.verdict.warn{border-top-color:var(--warn)}.verdict.bad{border-top-color:var(--bad)}
+.vh{display:flex;gap:12px;align-items:center}
+.vi{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;flex:none}
+.vi svg{width:26px;height:26px}
+.verdict.ok .vi{background:var(--ok-bg);color:var(--ok)}.verdict.warn .vi{background:var(--warn-bg);color:var(--warn)}.verdict.bad .vi{background:var(--bad-bg);color:var(--bad)}
+.vh small{color:var(--muted);font-weight:600;font-size:.78rem}.vh h2{margin:0;font-size:1.25rem;font-weight:800}.vh p{margin:0;color:var(--muted);font-size:.85rem}
+.verdict.ok h2{color:var(--ok)}.verdict.warn h2{color:var(--warn)}.verdict.bad h2{color:var(--bad)}
+.vlist2{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.vlist2 li{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;padding:7px 10px;border-radius:9px}
+.vlist2 li span{display:grid;place-items:center;margin-top:1px}
+.vlist2 li.ok{background:var(--ok-bg)}.vlist2 li.ok span{color:var(--ok)}.vlist2 li.warn{background:var(--warn-bg)}.vlist2 li.warn span{color:var(--warn)}.vlist2 li.bad{background:var(--bad-bg)}.vlist2 li.bad span{color:var(--bad)}
+.verdict .hint{padding:0}
+.done{border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.done.ok{background:var(--ok-bg)}.done.bad{background:var(--bad-bg)}
+.done b{display:flex;gap:6px;align-items:center}.done.ok b{color:var(--ok)}.done.bad b{color:var(--bad)}.done p{margin:0}
+.done pre{white-space:pre-wrap;font:inherit;font-size:.88rem;background:var(--surface);border-radius:10px;padding:10px;margin:0}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{padding:9px 12px;border-top:1px solid var(--line);text-align:start;vertical-align:top}
+th{color:var(--muted);font-weight:700;font-size:.78rem;background:var(--soft);border-top:0}
+/* lock */
+.lockc{max-width:380px;margin:40px auto;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:26px;display:flex;flex-direction:column;gap:12px;text-align:center;box-shadow:var(--sh)}
+.lockc h2{margin:0;font-weight:800}
+.lockc input[type=password]{font:inherit;font-size:1.1rem;letter-spacing:.08em;padding:12px;border:1.5px solid var(--line);border-radius:12px;background:var(--soft);color:var(--fg);text-align:center;direction:ltr}
+.lockc .go{border:0;border-radius:12px;padding:13px;font:800 1rem var(--f);background:var(--accent);color:var(--accent-fg);cursor:pointer}
+.lockc .err{color:var(--bad);font-weight:700;min-height:1.2em}
 </style>
+
+
 </head>
 <body>
-<header>
-  <div class="wrap">
-    <div class="top"><div class="brand"><span class="logo"><img src="brand/uh-logo.png" alt="איחוד הצלה" width="440" height="273"></span><h1 id="ttl">בטיחות סניף</h1></div><span class="hbs"><span class="upd" id="upd"></span><button class="hb" id="lockB" hidden onclick="relock()" title="יציאה">🔒 יציאה</button></span></div>
-    <div class="tabs" role="tablist" id="tabs" hidden>
-      <button class="tab" role="tab" aria-selected="true" data-v="sum">סיכום</button>
-      <button class="tab" role="tab" aria-selected="false" data-v="ppl">נהגים</button>
-      <button class="tab" role="tab" aria-selected="false" data-v="veh">רכבים</button>
-      <button class="tab" role="tab" aria-selected="false" data-v="exit">יציאה מגזרה</button>
-    </div>
+<header class="appbar"><div class="wrap">
+  <div class="top"><span class="logo"><img src="brand/uh-logo.png" alt="איחוד הצלה" width="440" height="273"></span>
+    <div class="ttl"><h1>בטיחות סניף</h1><p id="sub">קצב"ת ירושלים</p></div>
+    <a class="hb" id="homeB" href="./" hidden><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8Z"/></svg>אפליקציות</a>
+    <button class="hb" id="lockB" hidden onclick="relock()">יציאה</button></div>
+  <div class="tabs" role="tablist" id="tabs" hidden>
+    <button class="tab" role="tab" aria-selected="true" data-v="sum">סיכום</button>
+    <button class="tab" role="tab" aria-selected="false" data-v="ppl">נהגים</button>
+    <button class="tab" role="tab" aria-selected="false" data-v="veh">רכבים</button>
+    <button class="tab" role="tab" aria-selected="false" data-v="exit">יציאה מגזרה</button>
+    <span class="tab" style="margin-inline-start:auto;cursor:default;font-weight:400;font-size:.8rem" id="upd"></span>
   </div>
-</header>
+</div></header>
 <main><div class="wrap" id="app"><div class="empty">טוען…</div></div></main>
-
 <script>
+
 const WA_ICON='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5 0a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.7-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-1 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7a2.8 2.8 0 0 0 1.8-1.3 2.3 2.3 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3Z"/></svg>';
 const $=id=>document.getElementById(id);
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
@@ -231,75 +267,127 @@ const HK=()=>'exit:'+DATA.br;
 function hist(){try{return JSON.parse(ls(HK())||'[]')}catch(e){return[]}}
 function addHist(h){const H=hist();H.unshift(h);ls(HK(),JSON.stringify(H.slice(0,500)))}
 
+
 /* ===== תצוגה ===== */
-let DATA=null,ADMIN=null;const st={view:'sum',q:'',sel:null};
-document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{st.view=b.dataset.v;document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===b));render()});
-const chip=(lvl,t)=>`<span class="chip ${lvl}">${esc(t)}</span>`;
-function pRow(p){
-  const sn=safetyNow(p),ds=docStatus(p),r=lastRide(p),a=lastAlt(p),bad=ds.filter(d=>d.lvl==='bad').length;
-  return `<div class="card pcard" data-p="${esc(p.pv||p.n)}"><div class="who"><div class="name">${esc(p.n)}</div><div class="meta"><span>פרייבט ${esc(p.pv||'—')}</span>${(p.cars||[]).map(c=>`<span>🚑 ${esc(c.num)}${c.type?' '+esc(c.type):''}</span>`).join('')}</div>
-    <div class="meta">${sn?chip(sn.x<25?'bad':sn.x<35?'warn':'ok','סייפטי '+sn.x):''}${r?chip(num(r.sc)!=null&&num(r.sc)<7?'warn':'ok','רכיבה '+(r.sc||'—')):''}${a?chip(num(a.g)!=null&&num(a.g)<8?'warn':'ok','מגרש '+(a.g||'—')):''}${bad?chip('bad',bad+' מסמכים פגים'):''}</div></div>
-    <div class="tel">${fmtPhone(p.ph)}</div></div>`;
+let DATA=null,ADMIN=null;const st={view:'sum',q:'',flt:'all',sel:null,f:{}};
+const IC={
+  users:'<svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-8 1a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm8 1c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4ZM8 14c-.3 0-.7 0-1.1.1A4.7 4.7 0 0 1 9 17v2H1v-2c0-2 4-3 7-3Z"/></svg>',
+  car:'<svg viewBox="0 0 24 24"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11v7a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H8v1a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1Zm2.3-1h9.4l-1-3H8.3ZM7.5 15A1.5 1.5 0 1 0 6 13.5 1.5 1.5 0 0 0 7.5 15Zm9 0a1.5 1.5 0 1 0-1.5-1.5 1.5 1.5 0 0 0 1.5 1.5Z"/></svg>',
+  gauge:'<svg viewBox="0 0 24 24"><path d="M12 4a10 10 0 0 0-10 10 9.9 9.9 0 0 0 1.3 5h17.4A9.9 9.9 0 0 0 22 14 10 10 0 0 0 12 4Zm1 10.7A1.9 1.9 0 0 1 12 15a2 2 0 0 1-.9-3.8l5.4-3.2Z"/></svg>',
+  alert:'<svg viewBox="0 0 24 24"><path d="M12 2 1 21h22Zm1 15h-2v-2h2Zm0-4h-2V9h2Z"/></svg>',
+  doc:'<svg viewBox="0 0 24 24"><path d="M6 2h8l6 6v14H6Zm7 1.5V9h5.5ZM8 13h8v-2H8Zm0 4h8v-2H8Z"/></svg>',
+  wrench:'<svg viewBox="0 0 24 24"><path d="M22.7 19 13.6 9.9a6 6 0 0 0-7.9-7.4l3.9 3.9-2.8 2.8-4-3.9a6 6 0 0 0 7.5 7.9l9.1 9.1a1 1 0 0 0 1.4 0l1.9-1.9a1 1 0 0 0 0-1.4Z"/></svg>',
+  out:'<svg viewBox="0 0 24 24"><path d="M10 17l1.4-1.4L8.8 13H20v-2H8.8l2.6-2.6L10 7l-5 5Zm-6 4h8v-2H4V5h8V3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2Z"/></svg>',
+  phone:'<svg viewBox="0 0 24 24"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.2 11.4 11.4 0 0 0 3.6.6 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .6 3.6 1 1 0 0 1-.3 1Z"/></svg>',
+  chev:'<svg viewBox="0 0 24 24"><path d="M15.4 7.4 14 6l-6 6 6 6 1.4-1.4L10.8 12Z"/></svg>',
+  check:'<svg viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4Z"/></svg>',
+  x:'<svg viewBox="0 0 24 24"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12Z"/></svg>',
+  warn:'<svg viewBox="0 0 24 24"><path d="M11 7h2v6h-2Zm0 8h2v2h-2Zm1-13a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z"/></svg>'
+};
+const ini=n=>{const p=String(n||'').trim().split(/\s+/);return (p[0]||'').charAt(0)+(p.length>1?p[p.length-1].charAt(0):'')};
+const pill=(lvl,t)=>`<span class="pill ${lvl}">${esc(t)}</span>`;
+const lvlSafety=x=>x==null?'na':x<25?'bad':x<35?'warn':x<50?'mid':'ok';
+const lvlRide=x=>x==null?'na':x<6.5?'bad':x<7.5?'warn':'ok';
+const lvlAlt=x=>x==null?'na':x<7?'bad':x<8?'warn':'ok';
+function metrics(p){
+  const sn=safetyNow(p),r=lastRide(p),a=lastAlt(p),ds=docStatus(p);
+  const rs=r?(/לא עבר/.test(r.sc)?0:num(r.sc)):null,as=a?num(a.g):null,bad=ds.filter(d=>d.lvl==='bad').length,warn=ds.filter(d=>d.lvl==='warn').length;
+  return {sn,r,a,rs,as,bad,warn,
+    attn:(sn&&sn.x<25)||bad>0||(rs!=null&&rs<6.5)||(as!=null&&as<7)};
 }
+function mcell(label,val,lvl){return `<div class="m ${lvl}"><small>${label}</small><b>${val}</b></div>`}
+const COLORS=['#ea580c','#dc2626','#db2777','#9333ea','#4f46e5','#2563eb','#0891b2','#0d9488','#16a34a','#65a30d','#ca8a04','#78716c'];
+const colorOf=n=>{let h=0;for(const ch of String(n))h=(h*31+ch.charCodeAt(0))|0;return COLORS[Math.abs(h)%COLORS.length]};
+function mini(label,val,lvl){return `<span class="mp ${lvl}">${label} <b>${val}</b></span>`}
+function pRow(p){
+  const m=metrics(p),car=(p.cars||[])[0],tel=(p.ph||'').replace(/\D/g,'');
+  return `<div class="prow${m.attn?' attn':''}" role="button" tabindex="0" data-p="${esc(p.pv||p.n)}">
+    <span class="av" style="background:${colorOf(p.n)}">${esc(ini(p.n))}</span>
+    <span class="pid"><b>${esc(p.n)}</b><small>${[p.pv&&'פרייבט '+p.pv,car&&`כלי ${car.num}${car.type?' '+car.type:''}`,p.city].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</small>
+      <span class="minis">${m.sn?mini('סייפטי',m.sn.x,lvlSafety(m.sn.x)):''}${m.r?mini('רכיבה',m.rs===0?'נכשל':(m.r.sc||'—'),lvlRide(m.rs)):''}${m.a?mini('מגרש',m.a.g||'—',lvlAlt(m.as)):''}${m.bad?mini('מסמכים',m.bad+' פגים','bad'):m.warn?mini('מסמכים','פג בקרוב','warn'):''}</span></span>
+    ${tel?`<a class="cb call" href="tel:${esc(tel)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(tel,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}
+  </div>`;
+}
+function kpi(icon,label,val,sub,lvl,k){return `<button type="button" class="kpi ${lvl||''}" data-k="${k||''}"><span class="ki">${icon}</span><div><small>${label}</small><b>${val}</b>${sub?`<em>${sub}</em>`:''}</div><span class="kgo">${IC.chev}</span></button>`}
 function render(){
   const app=$('app');if(!DATA)return;
+  const P=DATA.people,M=DATA.months[DATA.months.length-1];
+  let h=ADMIN?adminBar():'';
   if(st.view==='sum'){
-    const P=DATA.people,low=P.filter(p=>{const s=safetyNow(p);return s&&s.x<25}),docs=P.filter(p=>docStatus(p).some(d=>d.lvl==='bad')),vi=DATA.veh.filter(v=>vehIssues(v).length);
-    const H=hist(),yes=H.filter(h=>h.dec==='yes').length;
-    const sc=P.map(safetyNow).filter(Boolean),avg=sc.length?Math.round(sc.reduce((a,c)=>a+c.x,0)/sc.length):'—';
-    app.innerHTML=`${ADMIN?adminBar():''}<div class="summary">
-      <div class="stat"><b>${P.length}</b><span>נהגים בסניף</span></div><div class="stat"><b>${DATA.veh.length}</b><span>כלים בסניף</span></div>
-      <div class="stat"><b>${avg}</b><span>ממוצע סייפטי · ${esc(DATA.months[DATA.months.length-1])}</span></div><div class="stat bad"><b>${low.length}</b><span>מתחת ל־25 בסייפטי</span></div>
-      <div class="stat bad"><b>${docs.length}</b><span>נהגים עם מסמך פג</span></div><div class="stat warn"><b>${vi.length}</b><span>כלים עם חריגה</span></div>
-      <div class="stat"><b>${yes}</b><span>יציאות מגזרה שאושרו</span></div></div>
-      <div class="sec"><h3>נהגים שדורשים תשומת לב</h3><div class="list">${[...new Set([...low,...docs])].map(pRow).join('')||'<div class="empty">אין</div>'}</div></div>
-      <p class="ro">צפייה בלבד. הנתונים מתעדכנים ממשרד הקצב"ת · עודכן ${esc(DATA.upd)}</p>`;
+    const ms=P.map(p=>({p,m:metrics(p)})),low=ms.filter(o=>o.m.sn&&o.m.sn.x<25),docs=ms.filter(o=>o.m.bad),vi=DATA.veh.filter(v=>vehIssues(v).length);
+    const sc=ms.map(o=>o.m.sn).filter(Boolean),avg=sc.length?Math.round(sc.reduce((a,c)=>a+c.x,0)/sc.length):'—';
+    const H=hist(),yes=H.filter(x=>x.dec==='yes').length,att=ms.filter(o=>o.m.attn);
+    h+=`<section class="kpis">
+      ${kpi(IC.users,'נהגים בסניף',P.length,'בעלי הרשאת נהיגה','','all')}
+      ${kpi(IC.car,'כלים בסניף',DATA.veh.length,vi.length?vi.length+' עם חריגה':'כולם תקינים',vi.length?'warn':'ok','veh')}
+      ${kpi(IC.gauge,'ממוצע סייפטי',avg,M,typeof avg==='number'&&avg<35?'warn':'','avg')}
+      ${kpi(IC.alert,'מתחת ל־25 בסייפטי',low.length,low.length?'דורשים שיחה':'אין',low.length?'bad':'ok','low')}
+      ${kpi(IC.doc,'מסמכים שפגו',docs.length,'רישיון / תיק נהג / מידע תעבורתי',docs.length?'bad':'ok','docs')}
+      ${kpi(IC.out,'יציאות מגזרה',yes,H.length?`${H.length} בקשות`:'אין בקשות','','exit')}
+    </section>
+    <section class="panel"><header><h2>דורשים תשומת לב</h2><span class="count">${att.length}</span></header>
+      <p class="hint">סייפטי מתחת ל־25, מסמך שפג, או ציון מבחן נמוך.</p>
+      <div class="plist">${att.map(o=>pRow(o.p)).join('')||'<div class="empty">אין נהגים שדורשים טיפול 👍</div>'}</div></section>
+    ${vi.length?`<section class="panel"><header><h2>כלים עם חריגה</h2><span class="count">${vi.length}</span></header><div class="vlist">${vi.map(vRow).join('')}</div></section>`:''}`;
   } else if(st.view==='ppl'){
-    const q=st.q.trim(),L=DATA.people.filter(p=>!q||[p.n,p.pv,p.ph,p.city].some(x=>(x||'').includes(q)));
-    app.innerHTML=`${ADMIN?adminBar():''}<div class="controls"><input id="q" type="search" placeholder="חיפוש שם, פרייבט, טלפון…" value="${esc(st.q)}"></div><div class="legend">${L.length} נהגים עם הרשאת נהיגה בסניף · לחיצה פותחת את כל הפרטים</div><div class="list">${L.map(pRow).join('')}</div>`;
+    const q=st.q.trim(),F={all:()=>true,attn:p=>metrics(p).attn,moto:p=>isMoto(p),amb:p=>/אמבולנס/.test(p.perm||'')||(p.cars||[]).some(c=>/אמבולנס/.test(c.type||''))};
+    const L=P.filter(p=>F[st.flt](p)&&(!q||[p.n,p.pv,p.ph,p.city].some(x=>(x||'').includes(q))));
+    h+=`<div class="toolbar"><div class="search">${IC.users}<input id="q" type="search" placeholder="חיפוש לפי שם, פרייבט או טלפון" value="${esc(st.q)}"></div>
+      <div class="seg">${[['all','הכל'],['attn','דורשים תשומת לב'],['moto','אופנוענים'],['amb','נהגי אמבולנס']].map(([k,l])=>`<button data-f="${k}" aria-pressed="${st.flt===k}">${l}</button>`).join('')}</div></div>
+      <section class="panel"><header><h2>נהגים</h2><span class="count">${L.length}</span></header><div class="plist">${L.map(pRow).join('')||'<div class="empty">לא נמצאו נהגים</div>'}</div></section>`;
   } else if(st.view==='veh'){
-    app.innerHTML=`${ADMIN?adminBar():''}<div class="tbl-wrap"><table><thead><tr><th>רישוי</th><th>מס'</th><th>סוג</th><th>נהג</th><th>טסט עד</th><th>טיפול אחרון</th><th>בדיקת קצב"ת</th><th>ביטוח עד</th><th>חריגות</th></tr></thead><tbody>${DATA.veh.map(v=>{const is=vehIssues(v);return `<tr><td><span class="plate">${esc(v.plate)}</span></td><td>${esc(v.num)}</td><td>${esc(v.type)}</td><td>${esc(v.name)}</td><td>${esc(v.test||'—')}</td><td>${esc(v.service||'—')}</td><td>${esc(v.check||'—')}</td><td>${esc(v.ins||'—')}</td><td>${is.map(i=>chip(i.lvl,i.t)).join(' ')||chip('ok','תקין')}</td></tr>`}).join('')}</tbody></table></div>`;
-  } else exitView();
-  bind();
+    h+=`<section class="panel"><header><h2>כלים בסניף</h2><span class="count">${DATA.veh.length}</span></header><div class="vlist">${DATA.veh.map(vRow).join('')}</div></section>`;
+  } else {app.innerHTML=h;exitView();bind();return}
+  app.innerHTML=h+`<p class="foot">צפייה בלבד · עודכן ${esc(DATA.upd)} · קצב"ת ירושלים</p>`;bind();
+}
+function dcell(label,s,lvl){return `<div class="m ${lvl}"><small>${label}</small><b>${esc(s||'—')}</b></div>`}
+function vRow(v){
+  const is=vehIssues(v),t=pd(v.test),c=pd(v.check),i=pd(v.ins),sv=pd(v.service);let svDue=null;if(sv){svDue=new Date(sv);svDue.setFullYear(svDue.getFullYear()+1)}
+  const L=d=>!d?'na':days(d)<0?'bad':days(d)<=14?'warn':'ok';
+  return `<div class="vrow${is.length?' attn':''}"><span class="plate">${esc(v.plate)}</span><span class="pid"><b>כלי ${esc(v.num)} · ${esc(v.type)}</b><small>${esc(v.name||'—')}${v.phone?' · '+fmtPhone(v.phone):''}</small></span>
+    <span class="mets">${dcell('טסט',v.test,L(t))}${dcell('טיפול אחרון',v.service,svDue?L(svDue):'na')}${dcell('בדיקת קצב"ת',v.check,L(c))}${dcell('ביטוח',v.ins,L(i))}</span></div>`;
 }
 function personSheet(key){
   const p=DATA.people.find(x=>(x.pv||x.n)===key);if(!p)return;
-  const ds=docStatus(p),V=vehOf(p),H=hist().filter(h=>h.pv===p.pv);
-  const sc=p.s?`<div class="tbl-wrap"><table><thead><tr>${DATA.months.map(m=>`<th>${esc(m)}</th>`).join('')}</tr></thead><tbody><tr>${p.s.map(x=>`<td class="s ${x==null?'':x<25?'d-bad':x<35?'d-warn':''}" style="text-align:center">${x??'—'}</td>`).join('')}</tr></tbody></table></div>${p.ev?`<div class="meta">${Object.entries(p.ev).sort((a,b)=>b[1][1]-a[1][1]).slice(0,4).map(([c,[n,pc]])=>chip(pc>=25?'bad':pc>=10?'warn':'miss',`${c} ${Math.round(pc)}%`)).join('')}</div>`:''}`:'<div class="ro">אין ציוני סייפטי</div>';
-  const ov=document.createElement('div');ov.className='ov';ov.innerHTML=`<div class="sheet"><button class="x" aria-label="סגירה">✕</button>
-    <div><div class="name" style="font-size:1.3rem">${esc(p.n)}</div><div class="meta"><span>פרייבט ${esc(p.pv||'—')}</span><span>${esc(DATA.br)}</span></div></div>
-    <div class="sec"><h3>פרטי קשר</h3><div class="kv"><b>טלפון</b><span>${p.ph?`<a href="tel:${esc(p.ph)}">${fmtPhone(p.ph)}</a>`:'—'}</span><b>מייל</b><span>${esc(p.em||'—')}</span><b>כתובת</b><span>${esc([p.st,p.city].filter(Boolean).join(', ')||'—')}</span><b>תאריך לידה</b><span>${esc(p.bd||'—')}</span><b>הרשאות נהיגה</b><span>${esc((p.perm||'—').replace(/;\s*/g,', '))}</span></div>${p.ph?`<div class="btns"><a class="wa sm" href="${waLink(p.ph,'')}" target="_blank" rel="noopener">${WA_ICON}וואטסאפ</a></div>`:''}</div>
-    <div class="sec"><h3>מסמכים</h3><div class="meta">${ds.map(d=>chip(d.lvl==='miss'?'miss':d.lvl,`${d.l}: ${d.t}`)).join('')}${p.pp?chip('miss','בעל דרכון – ללא מידע תעבורתי'):''}</div></div>
-    <div class="sec"><h3>כלים</h3>${V.length?V.map(v=>`<div class="meta"><span class="plate">${esc(v.plate)}</span><span>כלי ${esc(v.num)} · ${esc(v.type)}</span>${vehIssues(v).map(i=>chip(i.lvl,i.t)).join('')||chip('ok','תקין')}</div>`).join(''):'<div class="ro">אין כלי צמוד</div>'}</div>
-    <div class="sec"><h3>ציוני סייפטי (חודשי)</h3>${sc}</div>
-    <div class="sec"><h3>🏍️ מבחני רכיבה 2025–2026</h3>${(p.ride||[]).length?p.ride.map(x=>`<div class="kv"><b style="color:${num(x.sc)!=null&&num(x.sc)<7?'var(--bad)':'var(--ok)'}">${esc(x.sc||'—')}</b><span><small class="ro">${esc(x.d)} · ${esc(x.ins)}${x.urg?' · דחופה':''}</small><br>${esc([x.op,x.note,x.gen].filter(Boolean).join(' · ')||'—')}</span></div>`).join(''):'<div class="ro">אין</div>'}</div>
-    <div class="sec"><h3>🚑 מבחני מגרש (אלטרנתיבי) 2025–2026</h3>${(p.alt||[]).length?p.alt.map(x=>`<div class="kv"><b style="color:${num(x.g)!=null&&num(x.g)<8?'var(--warn)':'var(--ok)'}">${esc(x.g||'—')}</b><span><small class="ro">${esc(x.d)} · ${esc(x.st)} · ${esc(x.ins)}</small><br>${[x.dim&&'ממדי הכלי '+x.dim,x.cau&&'זהירות '+x.cau,x.pro&&'מקצועי '+x.pro].filter(Boolean).map(esc).join(' · ')}${x.rec?`<br>המלצה: ${esc(x.rec)}`:''}${x.note?`<br>${esc(x.note)}`:''}</span></div>`).join(''):'<div class="ro">אין</div>'}</div>
-    <div class="sec"><h3>עבר תאונות</h3>${(p.acc||[]).length?p.acc.map(x=>`<div>${esc(x.d)} · ${esc(x.t||'')}</div>`).join(''):'<div class="ro">נתוני תאונות יתווספו בקרוב</div>'}</div>
-    <div class="sec"><h3>יציאות מגזרה</h3>${H.length?H.map(h=>`<div class="meta">${chip(h.dec==='yes'?'ok':'bad',h.dec==='yes'?'אושר':'לא אושר')}<span>${esc(new Date(h.ts).toLocaleDateString('he-IL'))}</span><span>${esc(h.dest||'')}</span></div>`).join(''):'<div class="ro">אין בקשות קודמות</div>'}</div>
-  </div>`;
-  ov.onclick=e=>{if(e.target===ov||e.target.classList.contains('x'))ov.remove()};document.body.append(ov);
+  const m=metrics(p),ds=docStatus(p),V=vehOf(p),H=hist().filter(h=>h.pv===p.pv);
+  const scores=p.s?`<div class="strip">${p.s.map((x,i)=>`<div class="sc ${lvlSafety(x)}"><small>${esc(DATA.months[i].split(' ')[0].slice(0,3))}</small><b>${x??'—'}</b></div>`).join('')}</div>${p.ev?`<div class="tags">${Object.entries(p.ev).sort((a,b)=>b[1][1]-a[1][1]).slice(0,5).map(([c,[n,pc]])=>pill(pc>=25?'bad':pc>=10?'warn':'na',`${c} · ${Math.round(pc)}%`)).join('')}</div>`:''}`:'<p class="muted">אין ציוני סייפטי</p>';
+  const tl=(L,fn)=>L.length?`<ol class="tl">${L.map(fn).join('')}</ol>`:'<p class="muted">אין רשומות</p>';
+  const ov=document.createElement('div');ov.className='ov';ov.innerHTML=`<aside class="drawer" role="dialog" aria-label="${esc(p.n)}">
+    <header class="dh"><button class="x" aria-label="סגירה">${IC.x}</button><span class="av lg">${esc(ini(p.n))}</span><div><h2>${esc(p.n)}</h2><p>${p.pv?'פרייבט '+esc(p.pv)+' · ':''}${esc(DATA.br)}</p></div></header>
+    <div class="mets big">${mcell('סייפטי',m.sn?m.sn.x:'—',lvlSafety(m.sn&&m.sn.x))}${mcell('רכיבה אחרונה',m.r?(m.r.sc||'—'):'—',m.r?lvlRide(m.rs):'na')}${mcell('מגרש אחרון',m.a?(m.a.g||'—'):'—',m.a?lvlAlt(m.as):'na')}${mcell('יציאות מגזרה',H.filter(x=>x.dec==='yes').length,'na')}</div>
+    <div class="dgrid">
+      <section class="card"><h3>פרטי קשר</h3><dl><dt>טלפון</dt><dd>${p.ph?`<a href="tel:${esc(p.ph)}">${fmtPhone(p.ph)}</a>`:'—'}</dd><dt>מייל</dt><dd class="ltr">${esc(p.em||'—')}</dd><dt>כתובת</dt><dd>${esc([p.st,p.city].filter(Boolean).join(', ')||'—')}</dd><dt>תאריך לידה</dt><dd>${esc(p.bd||'—')}</dd><dt>הרשאות</dt><dd>${(p.perm||'').split(/;\s*/).filter(Boolean).map(x=>pill('na',x)).join(' ')||'—'}</dd></dl>${p.ph?`<div class="acts"><a class="btn wa" href="${waLink(p.ph,'')}" target="_blank" rel="noopener">${WA_ICON}וואטסאפ</a><a class="btn ghost" href="tel:${esc(p.ph)}">${IC.phone}חיוג</a></div>`:''}</section>
+      <section class="card"><h3>מסמכים</h3><ul class="checks">${ds.map(d=>`<li class="${d.lvl==='miss'?'na':d.lvl}"><span>${d.l}</span><b>${esc(d.t)}</b></li>`).join('')}${p.pp?'<li class="na"><span>מידע תעבורתי</span><b>בעל דרכון – לא נדרש</b></li>':''}</ul></section>
+      <section class="card"><h3>כלים</h3>${V.length?V.map(v=>{const is=vehIssues(v);return `<div class="vmini"><span class="plate">${esc(v.plate)}</span><span>כלי ${esc(v.num)} · ${esc(v.type)}</span>${is.map(i=>pill(i.lvl,i.t)).join('')||pill('ok','תקין')}</div>`}).join(''):'<p class="muted">אין כלי צמוד</p>'}</section>
+      <section class="card wide"><h3>ציוני סייפטי לפי חודש</h3>${scores}</section>
+      <section class="card"><h3>מבחני רכיבה · 2025–2026</h3>${tl(p.ride||[],x=>{const n=/לא עבר/.test(x.sc)?0:num(x.sc);return `<li><span class="tb ${lvlRide(n)}">${esc(x.sc||'—')}</span><div><small>${esc(x.d)} · ${esc(x.ins)}${x.urg?' · דחופה':''}</small><p>${esc([x.op,x.note,x.gen].filter(Boolean).join(' · ')||'—')}</p>${x.pas?`<small>הרכבת רוכב נוסף: ${esc(x.pas)}</small>`:''}</div></li>`})}</section>
+      <section class="card"><h3>מבחני מגרש (אלטרנתיבי) · 2025–2026</h3>${tl(p.alt||[],x=>`<li><span class="tb ${lvlAlt(num(x.g))}">${esc(x.g||'—')}</span><div><small>${esc(x.d)} · ${esc(x.st)} · ${esc(x.ins)}</small><p>${[x.dim&&'ממדי הכלי '+x.dim,x.cau&&'זהירות '+x.cau,x.pro&&'מקצועי '+x.pro].filter(Boolean).map(esc).join(' · ')||'—'}</p>${x.rec?`<small>המלצה: ${esc(x.rec)}</small>`:''}${x.note?`<p>${esc(x.note)}</p>`:''}</div></li>`)}</section>
+      <section class="card"><h3>עבר תאונות</h3>${(p.acc||[]).length?tl(p.acc,x=>`<li><span class="tb bad">!</span><div><small>${esc(x.d)}</small><p>${esc(x.t||'')}</p></div></li>`):'<p class="muted">נתוני תאונות יתווספו בקרוב</p>'}</section>
+      <section class="card"><h3>יציאות מגזרה</h3>${tl(H,x=>`<li><span class="tb ${x.dec==='yes'?'ok':'bad'}">${x.dec==='yes'?'✓':'✕'}</span><div><small>${esc(new Date(x.ts).toLocaleDateString('he-IL'))}</small><p>${esc(x.dest||'—')}${x.from?` · ${esc(x.from)}${x.to&&x.to!==x.from?'–'+esc(x.to):''}`:''}</p></div></li>`)}</section>
+    </div></aside>`;
+  ov.onclick=e=>{if(e.target===ov||e.target.closest('.x'))ov.remove()};document.body.append(ov);
 }
 function exitView(){
-  const app=$('app'),p=st.sel?DATA.people.find(x=>(x.pv||x.n)===st.sel):null,f=st.f||(st.f={});
+  const app=$('app'),p=st.sel?DATA.people.find(x=>(x.pv||x.n)===st.sel):null,f=st.f;
   const opts=DATA.people.map(x=>`<option value="${esc(x.pv||x.n)}"${p===x?' selected':''}>${esc(x.n)}${x.pv?' · '+esc(x.pv):''}</option>`).join('');
-  let html=`${ADMIN?adminBar():''}<div class="sec"><h3>בקשת יציאה מהגזרה</h3><div class="form">
-    <label class="full">מתנדב<select id="xp"><option value="">בחר מתנדב</option>${opts}</select></label>
+  let h=`<div class="exit"><section class="panel"><header><h2>בקשת יציאה מהגזרה</h2></header><div class="form">
+    <label class="full">מתנדב<select id="xp"><option value="">בחר מתנדב…</option>${opts}</select></label>
     <label>יעד<input id="xd" value="${esc(f.dest||'')}" placeholder="לדוגמה: אילת"></label>
-    <label>כלי<select id="xv"><option value="">ללא / רכב פרטי</option>${DATA.veh.map(v=>`<option value="${esc(v.num)}"${f.veh===v.num?' selected':''}>${esc(v.num)} · ${esc(v.type)} · ${esc(v.plate)}</option>`).join('')}</select></label>
+    <label>כלי<select id="xv"><option value="">ללא כלי ארגוני</option>${DATA.veh.map(v=>`<option value="${esc(v.num)}"${f.veh===v.num?' selected':''}>${esc(v.num)} · ${esc(v.type)} · ${esc(v.plate)}</option>`).join('')}</select></label>
     <label>מתאריך<input id="xf" type="date" value="${esc(f.from||'')}"></label><label>עד תאריך<input id="xt" type="date" value="${esc(f.to||'')}"></label>
-    <label class="full">סיבה / הערות<textarea id="xn" rows="2">${esc(f.note||'')}</textarea></label></div></div>`;
+    <label class="full">סיבה / הערות<textarea id="xn" rows="2">${esc(f.note||'')}</textarea></label></div></section>`;
   if(p){
-    const e=evaluate(p,f),H=hist().filter(h=>h.pv===p.pv),yes=H.filter(h=>h.dec==='yes').length;
-    html+=`<div class="rec ${e.lvl}"><b>${e.lvl==='ok'?'✅':e.lvl==='warn'?'⚠️':'⛔'} ${e.title}</b>
-      ${e.bad.length?`<div><b style="font-size:1rem">סיבות לעצירה:</b><ul>${e.bad.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
-      ${e.warn.length?`<div><b style="font-size:1rem">לשים לב:</b><ul>${e.warn.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
-      ${e.good.length?`<div><b style="font-size:1rem">בסדר:</b><ul>${e.good.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
-      <div style="color:var(--fg)">בקשות קודמות: ${H.length} · יצא בפועל: ${yes}</div></div>
-      <div class="sec"><div class="ro">ההחלטה שלך. ההמלצה היא כלי עזר בלבד.</div><div class="btns"><button class="big yes" id="xyes">מאשר יציאה</button><button class="big no" id="xno">לא מאשר</button><button class="mail sm" id="xcard">כל הפרטים של ${esc(first(p.n))}</button></div><div id="xout"></div></div>`;
+    const e=evaluate(p,f),H=hist().filter(x=>x.pv===p.pv),yes=H.filter(x=>x.dec==='yes').length;
+    const row=(cls,ic,t)=>`<li class="${cls}"><span>${ic}</span>${esc(t)}</li>`;
+    h+=`<section class="verdict ${e.lvl}"><div class="vh"><span class="vi">${e.lvl==='ok'?IC.check:e.lvl==='warn'?IC.warn:IC.x}</span><div><small>המלצת המערכת</small><h2>${e.title}</h2><p>${esc(p.n)} · ${H.length} בקשות קודמות · ${yes} יציאות</p></div></div>
+      <ul class="vlist2">${e.bad.map(t=>row('bad',IC.x,t)).join('')}${e.warn.map(t=>row('warn',IC.warn,t)).join('')}${e.good.map(t=>row('ok',IC.check,t)).join('')}</ul>
+      <p class="hint">ההחלטה שלך. ההמלצה היא כלי עזר בלבד.</p>
+      <div class="acts"><button class="btn ok" id="xyes">${IC.check}מאשר יציאה</button><button class="btn bad" id="xno">${IC.x}לא מאשר</button><button class="btn ghost" id="xcard">תיק המתנדב</button></div><div id="xout"></div></section>`;
   }
+  h+='</div>';
   const H=hist();
-  html+=`<div class="sec"><h3>היסטוריית יציאות (${H.length})</h3>${H.length?`<div class="tbl-wrap"><table class="hist"><thead><tr><th>תאריך</th><th>מתנדב</th><th>יעד</th><th>המלצה</th><th>החלטה</th></tr></thead><tbody>${H.map(h=>`<tr><td>${esc(new Date(h.ts).toLocaleDateString('he-IL'))}</td><td>${esc(h.n)}</td><td>${esc(h.dest||'')}${h.from?`<br><small>${esc(h.from)}${h.to&&h.to!==h.from?' – '+esc(h.to):''}</small>`:''}</td><td>${chip(h.rec,h.rec==='ok'?'מומלץ':h.rec==='warn'?'לשים לב':'לא מומלץ')}</td><td>${chip(h.dec==='yes'?'ok':'bad',h.dec==='yes'?'אושר':'לא אושר')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="ro">עוד לא נרשמו בקשות.</div>'}<div class="ro">ההיסטוריה נשמרת במכשיר הזה.</div></div>`;
-  app.innerHTML=html;
+  h+=`<section class="panel"><header><h2>היסטוריית יציאות</h2><span class="count">${H.length}</span></header>${H.length?`<div class="tw"><table><thead><tr><th>תאריך</th><th>מתנדב</th><th>יעד</th><th>המלצה</th><th>החלטה</th></tr></thead><tbody>${H.map(x=>`<tr><td>${esc(new Date(x.ts).toLocaleDateString('he-IL'))}</td><td>${esc(x.n)}</td><td>${esc(x.dest||'—')}${x.from?`<br><small>${esc(x.from)}${x.to&&x.to!==x.from?' – '+esc(x.to):''}</small>`:''}</td><td>${pill(x.rec,x.rec==='ok'?'מומלץ':x.rec==='warn'?'לשים לב':'לא מומלץ')}</td><td>${pill(x.dec==='yes'?'ok':'bad',x.dec==='yes'?'אושר':'לא אושר')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">עוד לא נרשמו בקשות</div>'}<p class="hint">ההיסטוריה נשמרת במכשיר הזה.</p></section>`;
+  app.insertAdjacentHTML('beforeend',h);
   const sync=()=>{f.dest=$('xd').value.trim();f.veh=$('xv').value;f.from=$('xf').value;f.to=$('xt').value||$('xf').value;f.note=$('xn').value.trim()};
   $('xp').onchange=e=>{st.sel=e.target.value||null;sync();const pp=DATA.people.find(x=>(x.pv||x.n)===st.sel);if(pp&&!f.veh){const v=vehOf(pp)[0];if(v)f.veh=v.num}render()};
   ['xd','xv','xf','xt','xn'].forEach(id=>$(id).onchange=()=>{sync();if(id!=='xn')render()});
@@ -307,24 +395,44 @@ function exitView(){
     const e=evaluate(p,f);
     $('xcard').onclick=()=>personSheet(p.pv||p.n);
     $('xyes').onclick=()=>{sync();addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,dec:'yes',ts:Date.now()});const m=safetyMsg(p,f);
-      render();$('xout').innerHTML=`<div class="rec ok"><b>היציאה נרשמה כמאושרת</b><div style="color:var(--fg)">הודעת הבטיחות מוכנה – רק לשלוח:</div><pre style="white-space:pre-wrap;font:inherit;color:var(--fg);background:var(--surface);padding:10px;border-radius:10px;margin:0">${esc(m.replace(/\*/g,''))}</pre><div class="btns">${p.ph?`<a class="wa sm" href="${waLink(p.ph,m)}" target="_blank" rel="noopener">${WA_ICON}שלח ל${esc(first(p.n))}</a>`:''}<a class="mail sm" href="mailto:${esc(p.em||'')}?subject=${encodeURIComponent('אישור יציאה מהגזרה')}&body=${encodeURIComponent(m.replace(/\*/g,''))}">מייל</a></div></div>`};
-    $('xno').onclick=()=>{sync();addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,dec:'no',ts:Date.now()});render();$('xout').innerHTML='<div class="rec bad"><b>הבקשה נרשמה כלא מאושרת</b></div>'};
+      render();$('xout').innerHTML=`<div class="done ok"><b>${IC.check}היציאה נרשמה כמאושרת</b><p>הודעת הבטיחות מוכנה – רק לשלוח:</p><pre>${esc(m.replace(/\*/g,''))}</pre><div class="acts">${p.ph?`<a class="btn wa" href="${waLink(p.ph,m)}" target="_blank" rel="noopener">${WA_ICON}שליחה ל${esc(first(p.n))}</a>`:''}<a class="btn ghost" href="mailto:${esc(p.em||'')}?subject=${encodeURIComponent('אישור יציאה מהגזרה')}&body=${encodeURIComponent(m.replace(/\*/g,''))}">מייל</a></div></div>`};
+    $('xno').onclick=()=>{sync();addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,dec:'no',ts:Date.now()});render();$('xout').innerHTML=`<div class="done bad"><b>${IC.x}הבקשה נרשמה כלא מאושרת</b></div>`};
   }
 }
+
+/* לחיצה על קוביה: נפתחת הרשימה שמאחורי המספר */
+function drill(k){
+  const P=DATA.people,M=DATA.months[DATA.months.length-1];
+  if(k==='exit'){document.querySelector('.tab[data-v="exit"]').click();return}
+  let title='',body='';
+  if(k==='all'){title='כל הנהגים בסניף';body=P.map(pRow).join('')}
+  else if(k==='veh'){title='כלים בסניף';const V=[...DATA.veh].sort((a,b)=>vehIssues(b).length-vehIssues(a).length);body=`<div class="vlist">${V.map(vRow).join('')}</div>`}
+  else if(k==='avg'){title='ציוני סייפטי · '+M;const L=P.filter(p=>safetyNow(p)).sort((a,b)=>safetyNow(a).x-safetyNow(b).x);body=L.map(pRow).join('')+(P.length>L.length?`<p class="hint">${P.length-L.length} נהגים בלי ציון סייפטי</p>`:'')}
+  else if(k==='low'){title='מתחת ל־25 בסייפטי';body=P.filter(p=>{const s=safetyNow(p);return s&&s.x<25}).sort((a,b)=>safetyNow(a).x-safetyNow(b).x).map(pRow).join('')}
+  else if(k==='docs'){title='נהגים עם מסמך שפג';body=P.filter(p=>docStatus(p).some(d=>d.lvl==='bad')).map(p=>pRow(p)+`<div class="sub">${docStatus(p).filter(d=>d.lvl==='bad').map(d=>pill('bad',d.l+': '+d.t)).join(' ')}</div>`).join('')}
+  const ov=document.createElement('div');ov.className='ov';ov.innerHTML=`<aside class="drawer"><header class="dh"><button class="x" aria-label="סגירה">${IC.x}</button><div><h2>${esc(title)}</h2><p>${esc(DATA.br)}</p></div></header><section class="panel" style="margin:0 16px"><div class="plist">${body||'<div class="empty">אין</div>'}</div></section></aside>`;
+  ov.onclick=e=>{if(e.target===ov||e.target.closest('.x'))return ov.remove();const r=e.target.closest('.prow');if(r&&!e.target.closest('a'))personSheet(r.dataset.p)};
+  document.body.append(ov);
+}
+
 function coordMsg(b){const c=ADMIN[b];return `שלום ${first(c.coord)||''},\n\nפתחתי לך מערכת חדשה לניהול הבטיחות של סניף *${b}* 🚑\n\nבמערכת תוכל לראות:\n• את כל הנהגים בסניף – פרטים, מסמכים ותוקף רישיונות\n• ציוני סייפטי לכל חודש\n• מבחני רכיבה ומבחני מגרש (אלטרנתיבי)\n• את כל הכלים של הסניף ומצב הטסטים, הטיפולים והבדיקות\n• *טופס יציאה מגזרה* – בוחרים מתנדב, המערכת בודקת את כל הנתונים שלו ונותנת המלצה, ואם מאשרים – יש הודעת בטיחות מוכנה לשליחה\n\nכניסה:\n🔗 https://dannybd20-hue.github.io/akordim/coord.html\n🔑 סיסמה: *${c.pw}*\n\nהמערכת לצפייה בלבד, ורואים בה רק את הסניף שלך. כדאי להוסיף את הקישור למסך הבית בטלפון.\nהסיסמה אישית לך – לא להעביר הלאה.\n\nאם יש שאלה, אני זמין.\nדני בן דוד\nקצב"ת ירושלים`}
-function adminBar(){const c=ADMIN[DATA.br],m=coordMsg(DATA.br);return `<div class="sec"><div class="controls"><select id="adm">${Object.keys(ADMIN).map(b=>`<option${b===DATA.br?' selected':''}>${esc(b)}</option>`).join('')}</select></div><span class="ro">מצב מנהל · רכז: ${esc(c.coord||'—')}${c.cph?' · '+fmtPhone(c.cph):''} · סיסמה: <b dir="ltr">${esc(c.pw)}</b></span><div class="btns">${c.cph?`<a class="wa sm" href="${waLink(c.cph,m)}" target="_blank" rel="noopener">${WA_ICON}שלח לרכז את הסיסמה</a>`:'<span class="ro">אין טלפון לרכז – אפשר להעתיק ולשלוח ידנית</span>'}<button class="mail sm" type="button" id="cpm">העתק הודעה</button></div></div>`}
+
+function adminBar(){const c=ADMIN[DATA.br],m=coordMsg(DATA.br);return `<div class="admin"><select id="adm" aria-label="סניף">${Object.keys(ADMIN).map(b=>`<option${b===DATA.br?' selected':''}>${esc(b)}</option>`).join('')}</select><span class="info">מצב מנהל · רכז: <b>${esc(c.coord||'—')}</b>${c.cph?' · '+fmtPhone(c.cph):''} · סיסמה: <b>${esc(c.pw)}</b></span><span class="acts">${c.cph?`<a class="btn wa" href="${waLink(c.cph,m)}" target="_blank" rel="noopener">${WA_ICON}שליחת סיסמה לרכז</a>`:''}<button class="btn ghost" type="button" id="cpm">העתקת ההודעה</button></span></div>`}
+document.querySelectorAll('.tab[data-v]').forEach(b=>b.onclick=()=>{st.view=b.dataset.v;document.querySelectorAll('.tab[data-v]').forEach(x=>x.setAttribute('aria-selected',x===b));render()});
 function bind(){
-  document.querySelectorAll('.pcard').forEach(c=>c.onclick=()=>personSheet(c.dataset.p));
+  document.querySelectorAll('#app .prow').forEach(c=>{c.onclick=e=>{if(!e.target.closest('a'))personSheet(c.dataset.p)};c.onkeydown=e=>{if(e.key==='Enter')personSheet(c.dataset.p)}});
+  document.querySelectorAll('.kpi[data-k]').forEach(b=>b.onclick=()=>drill(b.dataset.k));
+  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{st.flt=b.dataset.f;render()});
   const q=$('q');if(q)q.oninput=e=>{st.q=e.target.value;const pos=e.target.selectionStart;render();const n=$('q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}};
   const cp=$('cpm');if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(coordMsg(DATA.br));cp.textContent='הועתק'}catch(e){cp.textContent='לא הועתק'}};
   const a=$('adm');if(a)a.onchange=async e=>{const b=e.target.value;$('app').innerHTML='<div class="empty">פותח…</div>';DATA=await dec(await fileOf(ADMIN[b].pw),ADMIN[b].pw);ls('coord_adm_br',b);st.sel=null;st.f={};show()};
 }
-function show(){$('ttl').textContent='בטיחות סניף · '+DATA.br;$('upd').textContent='עודכן: '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=false;render()}
+function show(){$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
 
 /* ===== כניסה ===== */
 function lockView(err){
-  $('tabs').hidden=true;$('lockB').hidden=true;
-  $('app').innerHTML=`<div class="lockc"><h2>🔐 בטיחות סניף</h2><p style="margin:0;color:var(--muted)">כניסה לרכזי תחבורה. הקלד את הסיסמה של הסניף שלך</p>
+  $('tabs').hidden=true;$('lockB').hidden=true;$('homeB').hidden=true;$('sub').textContent='קצב"ת ירושלים';
+  $('app').innerHTML=`<div class="lockc"><h2>בטיחות סניף</h2><p style="margin:0;color:var(--muted)">כניסה לרכזי תחבורה. הקלד את הסיסמה של הסניף שלך</p>
   <input id="pw" type="password" autocomplete="current-password" placeholder="סיסמה" dir="ltr" onkeydown="if(event.key==='Enter')unlock()">
   <label style="color:var(--muted);font-weight:600"><input type="checkbox" id="rem" checked> לזכור במכשיר הזה</label>
   <button class="go" id="ub" onclick="unlock()">כניסה</button><div class="err">${esc(err||'')}</div></div>`;
