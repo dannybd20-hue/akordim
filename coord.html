@@ -108,11 +108,12 @@ button.kpi:hover{border-color:var(--accent)}
 .dc.ok{background:var(--ok-bg);color:var(--ok)}.dc.warn{background:var(--warn-bg);color:var(--warn)}.dc.bad{background:var(--bad-bg);color:var(--bad)}
 /* phonebook */
 .lt{position:sticky;top:0;background:var(--soft);color:var(--accent);font-weight:800;padding:4px 16px;border-top:1px solid var(--line);font-size:.9rem}
-.prow.pb{grid-template-columns:auto minmax(0,1fr) auto auto auto}
-.badges{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.prow.pb{grid-template-columns:auto minmax(0,1fr) auto auto}
+.badges{display:flex;gap:4px;flex-wrap:wrap;margin:3px 0 1px}
 .bdg{font-size:.78rem;font-weight:800;padding:3px 9px;border-radius:99px;background:#fde7d6;color:#9a3412;font-variant-numeric:tabular-nums}
-.bdg.car{background:#dbeafe;color:#1e3a8a}
-@media (max-width:520px){.prow.pb .badges{display:none}}
+.bdg.car{background:#dbeafe;color:#1e3a8a;white-space:nowrap}
+.prow.pb{gap:8px}
+@media (max-width:420px){.prow.pb .cb{width:38px;height:38px}.bdg{padding:3px 7px;font-size:.74rem}}
 .qa{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:8px;padding:0 16px}
 .qa a,.qa button{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:14px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;font:700 .82rem var(--f);text-decoration:none;cursor:pointer}
 .qa i{font-style:normal;font-size:1.3rem}
@@ -460,10 +461,10 @@ function drill(k){
 /* ===== ספר טלפונים (בסגנון ספר הטלפונים הראשי) ===== */
 function age(bd){const d=pd(bd);if(!d)return '';let a=T0.getFullYear()-d.getFullYear();if(T0<new Date(T0.getFullYear(),d.getMonth(),d.getDate()))a--;return a>0&&a<120?a:''}
 function hebBd(bd){const d=pd(bd);if(!d)return '';try{return new Intl.DateTimeFormat('he-IL-u-ca-hebrew',{day:'numeric',month:'long'}).format(d)}catch(e){return ''}}
-function pbRow(p){const tel=(p.ph||'').replace(/\D/g,''),car=(p.cars||[])[0];
+function pbRow(p){const tel=(p.ph||'').replace(/\D/g,''),cars=p.cars||[];
+  const vb=cars.map(c=>`<span class="bdg car">${/אופנוע|אופניים/.test(c.type||'')?'🏍️':/רכב|ג'יפ/.test(c.type||'')?'🚗':'🚑'} ${esc(c.num)}</span>`).join('');
   return `<div class="prow pb" role="button" tabindex="0" data-c="${esc(p.pv||p.n)}"><span class="av" style="background:${colorOf(p.n)}">${esc(ini(p.n))}</span>
-    <span class="pid"><b>${esc(p.n)}</b><small>${esc([(p.perm||'').split(/;\s*/)[0],p.city].filter(Boolean).join(' · ')||DATA.br)}</small></span>
-    <span class="badges">${car?`<span class="bdg car">🚑 ${esc(car.num)}</span>`:''}${p.pv?`<span class="bdg">${esc(p.pv)}</span>`:''}</span>
+    <span class="pid"><b>${esc(p.n)}</b><span class="badges">${p.pv?`<span class="bdg">${esc(p.pv)}</span>`:''}${vb}</span><small>${esc([(p.perm||'').split(/;\s*/)[0],p.city].filter(Boolean).join(' · ')||DATA.br)}</small></span>
     ${tel?`<a class="cb call" href="tel:${esc(tel)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(tel,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}</div>`}
 function phonebookView(){
   const q=st.q.trim(),L=DATA.people.filter(p=>!q||[p.n,p.pv,p.ph,p.city,(p.cars||[]).map(c=>c.num).join(' ')].some(x=>(x||'').includes(q)));
