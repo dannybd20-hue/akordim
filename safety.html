@@ -147,6 +147,7 @@ td.s.low{background:var(--bad-bg);color:var(--bad)}td.s.mid{background:var(--war
     <div class="top"><div class="brand"><span class="logo"><img src="brand/uh-logo.png" alt="איחוד הצלה" width="440" height="273"></span><h1>דוח סייפטי</h1></div><span class="hbs"><span class="upd" id="upd"></span><button class="hb" id="lockB" hidden onclick="relock()" title="נעילה ושכחת הסיסמה במכשיר">🔒</button><button class="hb" onclick="goHome()">→ אפליקציות</button></span></div>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" aria-selected="true" data-v="msg">הודעות<span class="n" id="n-msg"></span></button>
+      <button class="tab" role="tab" aria-selected="false" data-v="br">סניפים</button>
       <button class="tab" role="tab" aria-selected="false" data-v="vol">מתנדבים</button>
       <button class="tab" role="tab" aria-selected="false" data-v="stat">סטטיסטיקה</button>
     </div>
@@ -250,7 +251,8 @@ function card(v,m){
     <div class="issues"><div class="irow"><span class="tel">${v.ph?fmtPhone(v.ph):'אין טלפון'}${v.em?` · <span class="em">${esc(v.em)}</span>`:''}</span><span class="btns">${wa}${ml}${cp}</span></div></div></div>`;
 }
 function render(){
-  if(!DATA)return;const app=$('app'),m=state.m,M=DATA.months[m];
+  if(!DATA)return;
+  if(state.view==='br'){renderBranches();return}const app=$('app'),m=state.m,M=DATA.months[m];
   const act=DATA.v.filter(v=>v.s[m]!=null);
   const cnt={};act.forEach(v=>{const c=catOf(v,m);cnt[c]=(cnt[c]||0)+1});
   $('n-msg').textContent=(cnt.low||0)+(cnt.warn||0)+(cnt.demote||0)||'';
@@ -290,6 +292,42 @@ function render(){
     <div class="panel"><h3>ירדו 20 נקודות ומעלה מהשיא שלהם</h3><div class="tbl-wrap"><table><thead><tr><th>שם</th><th>סניף</th><th>ציון</th><th>מהשיא</th></tr></thead><tbody>${peakDrops.map(o=>row(o,`<span class="trend dn">▼ ${-o.st.fromPeak} (שיא ${o.st.peak})</span>`)).join('')||'<tr><td colspan="4">אין</td></tr>'}</tbody></table></div></div>
     <div class="panel"><h3>מגמת ירידה לאורך זמן (4 חודשים עם ציון ומעלה)</h3><div class="tbl-wrap"><table><thead><tr><th>שם</th><th>סניף</th><th>ציון</th><th>קצב</th></tr></thead><tbody>${down.map(o=>row(o,`<span class="trend dn">▼ ${Math.abs(o.st.slope).toFixed(1)} נק' בחודש בממוצע</span>`)).join('')||'<tr><td colspan="4">אין</td></tr>'}</tbody></table></div></div>`;
   }
+  bind();
+}
+/* ===== דוח סניף ===== */
+function brStats(br,m){
+  const all=DATA.v.filter(v=>v.br===br),act=all.filter(v=>v.s[m]!=null);
+  const avg=a=>a.length?Math.round(a.reduce((p,c)=>p+c,0)/a.length):null;
+  let pm=-1;for(let j=m-1;j>=0;j--){if(all.some(v=>v.s[j]!=null)){pm=j;break}}
+  const cur=avg(act.map(v=>v.s[m])),prev=pm<0?null:avg(all.filter(v=>v.s[pm]!=null).map(v=>v.s[pm]));
+  const low=act.filter(v=>v.s[m]<25).sort((a,b)=>a.s[m]-b.s[m]);
+  const st=act.map(v=>({v,st:statsOf(v,m)}));
+  const drops=st.filter(o=>o.st.chg!=null&&o.st.chg<=-15).sort((a,b)=>a.st.chg-b.st.chg).slice(0,5);
+  const top=[...act].sort((a,b)=>b.s[m]-a.s[m]).slice(0,3);
+  return {all,act,cur,prev,low,drops,top};
+}
+function regionAvg(m){const a=DATA.v.map(v=>v.s[m]).filter(x=>x!=null);return a.length?Math.round(a.reduce((p,c)=>p+c,0)/a.length):null}
+function brMsg(br,m,b){
+  const h=DATA.heads[br]||{},M=DATA.months[m],R=regionAvg(m);
+  const lvl=v=>{const k=streakAt(v,m);return k>=3?` – ${k} חודשים ברצף (חניכות)`:k===2?' – חודש שני ברצף':''};
+  let t=`שלום ${first(h.n)},\nמצרף סיכום של דוח הסייפטי של סניף *${br}* לחודש ${M}:\n\n`;
+  t+=`• מתנדבים עם ציון החודש: ${b.act.length}\n• ציון ממוצע בסניף: *${b.cur}*${b.prev!=null?` (בחודש הקודם: ${b.prev})`:''}\n• ממוצע המרחב: ${R}\n• מתחת ל־25: *${b.low.length}*\n`;
+  if(b.low.length)t+=`\n*מתנדבים שמתחת ל־25:*\n${b.low.map(v=>`• ${v.n} (${v.pv}) – ${v.s[m]}${lvl(v)}`).join('\n')}\n`;
+  if(b.drops.length)t+=`\n*ירידות חדות מהחודש הקודם:*\n${b.drops.map(o=>`• ${o.v.n} – מ־${o.st.prev} ל־${o.st.x}`).join('\n')}\n`;
+  if(b.top.length)t+=`\n*הכי בטוחים בסניף החודש* 🏅\n${b.top.map(v=>`• ${v.n} – ${v.s[m]}`).join('\n')}\n`;
+  t+=`\n${b.low.length?'אודה לך אם תדבר עם המתנדבים שמתחת ל־25 ותחזק אותם. אני פונה אליהם גם ישירות עם הסבר מה לשפר.\n':'כל הכבוד לסניף – אין אף מתנדב מתחת ל־25 החודש!\n'}\nתודה על שיתוף הפעולה,\n${SIGN.replace('בברכה,\n','')}`;
+  return t;
+}
+function renderBranches(){
+  const m=state.m,M=DATA.months[m],R=regionAvg(m);
+  const brs=Object.keys(DATA.heads).filter(b=>!state.br||b===state.br).map(br=>({br,b:brStats(br,m)})).filter(o=>o.b.act.length).sort((a,b)=>b.b.low.length-a.b.low.length||a.b.cur-b.b.cur);
+  $('app').innerHTML=`${controls()}<div class="legend">ממוצע המרחב ב${esc(M)}: <b>${R}</b>. הסניפים ממוינים לפי מספר המתנדבים שמתחת ל־25.</div>
+  <div class="list">${brs.map(({br,b})=>{const h=DATA.heads[br]||{},text=brMsg(br,m,b),sk='sfb:'+br+':'+m,sent=ls(sk),d=b.prev!=null?b.cur-b.prev:null;
+    return `<div class="card"><div class="who"><div class="name">${esc(br)}</div><div class="meta"><span>ראש סניף: ${esc(h.n||'—')}</span><span>${b.act.length} מתנדבים עם ציון</span></div>
+      <div class="meta">${d==null?'':d<0?`<span class="trend dn">▼ ${-d} מהחודש הקודם</span>`:d>0?`<span class="trend up">▲ ${d} מהחודש הקודם</span>`:'<span class="trend eq">ללא שינוי</span>'}<span>${b.cur>=R?'מעל ממוצע המרחב':'מתחת לממוצע המרחב'}</span>${b.low.length?`<span class="streak">${b.low.length} מתחת ל־25</span>`:''}</div>
+      ${b.low.length?`<div class="meta">${b.low.map(v=>`<span class="chip bad">${esc(v.n)} ${v.s[m]}</span>`).join('')}</div>`:''}</div>
+      <div class="score ${scCls(b.cur)}">${b.cur}</div>
+      <div class="issues"><div class="irow"><span class="tel">${h.ph?fmtPhone(h.ph):'אין טלפון'}${h.em?` · <span class="em">${esc(h.em)}</span>`:''}</span><span class="btns">${h.ph?`<a class="wa sm${sent?' done':''}" href="${waLink(h.ph,text)}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}${sent?'נשלח':'לראש הסניף'}</a>`:''}<a class="mail sm" href="mailto:${esc(h.em||'')}?subject=${encodeURIComponent('דוח סייפטי – סניף '+br+' – '+M)}&body=${encodeURIComponent(text.replace(/\*/g,''))}" data-sent="${esc(sk)}">מייל</a><button class="mail sm" type="button" data-copy="${esc(text)}">העתק</button></span></div></div></div>`}).join('')}</div>`;
   bind();
 }
 function bind(){
