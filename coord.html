@@ -32,6 +32,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .appbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:linear-gradient(180deg,var(--bar),var(--bar2));color:#fff;box-shadow:0 2px 12px #0003}
 .appbar .wrap{padding-block:12px 0;display:flex;flex-direction:column;gap:10px}
 .top{display:flex;align-items:center;gap:12px}
+.brandc{display:flex;flex-direction:column;align-items:center;gap:4px;flex:none}
+.contact{color:#fff;opacity:.85;font-size:.68rem;font-weight:600;line-height:1.25;text-align:center;text-decoration:none;white-space:nowrap}
+.contact:hover{opacity:1;text-decoration:underline}
 .logo{background:#fff;border-radius:10px;padding:4px 7px;flex:none}.logo img{display:block;width:62px;height:auto}
 .ttl{flex:1;min-width:0}.ttl h1{margin:0;font-size:1.15rem;font-weight:800;letter-spacing:.01em}.ttl p{margin:0;font-size:.85rem;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hb{display:inline-flex;align-items:center;gap:6px;border:1px solid #ffffff33;background:#ffffff14;color:#fff;border-radius:10px;padding:7px 11px;font:600 .85rem var(--f);cursor:pointer;text-decoration:none;white-space:nowrap}
@@ -220,7 +223,7 @@ body.hide-all main,body.hide-all .ov{filter:blur(18px)}
 </head>
 <body>
 <header class="appbar"><div class="wrap">
-  <div class="top"><span class="logo"><img src="brand/uh-logo.png" alt="איחוד הצלה" width="440" height="273"></span>
+  <div class="top"><span class="brandc"><span class="logo"><img src="brand/uh-logo.png" alt="איחוד הצלה" width="440" height="273"></span><a class="contact" href="https://wa.me/972508820408" target="_blank" rel="noopener">קצב"ת דני בן דוד<br>זמין לכל שאלה</a></span>
     <div class="ttl"><h1>בטיחות סניף</h1><p id="sub">קצב"ת ירושלים</p></div>
     <a class="hb" id="homeB" href="./" hidden><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8Z"/></svg>אפליקציות</a>
     <button class="hb" id="lockB" hidden onclick="relock()">יציאה</button></div>
