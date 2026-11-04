@@ -272,7 +272,7 @@ const isMoto=p=>/אופנוע/.test(p.perm||'')||(p.cars||[]).some(c=>/אופנ�
 function vehOf(p){return DATA.veh.filter(v=>(p.cars||[]).some(c=>c.num===v.num)||(p.ph&&v.phone===p.ph))}
 function vehIssues(v){const r=[];const t=pd(v.test);if(t&&days(t)<0)r.push({lvl:'bad',t:`טסט פג ב־${fmt(t)}`});else if(t&&days(t)<=14)r.push({lvl:'warn',t:`טסט פג בעוד ${days(t)} ימים`});
   const s=pd(v.service);if(s){const due=new Date(s);due.setFullYear(due.getFullYear()+1);if(days(due)<0)r.push({lvl:'warn',t:`טיפול אחרון ${fmt(s)} – עברה שנה`})}
-  const c=pd(v.check);if(c&&days(c)<0)r.push({lvl:'warn',t:`בדיקת קצב"ת באיחור של ${-days(c)} ימים`});
+  /* בדיקת קצב"ת באיחור לא נחשבת חריגה – רק מסומנת באדום בתאריך */
   const i=pd(v.ins);if(i&&days(i)<0)r.push({lvl:'bad',t:`ביטוח פג ב־${fmt(i)}`});return r}
 
 /* ===== המלצה ליציאה מגזרה ===== */
