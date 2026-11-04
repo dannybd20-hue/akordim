@@ -273,7 +273,7 @@ function card(r){
     const sk='sent:'+r.key+':'+i.k+':'+TODAY_KEY;const sent=ls(sk);
     const subj=`${SUBJ[i.k]}${isV?` – כלי ${o.num}`:''} – קצב"ת ירושלים`;
     const wa=o.phone?`<a class="wa sm${sent?' done':''}" href="${waLink(o.phone,text)}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}${sent?'נפתח היום':'וואטסאפ'}</a>`:'';
-    const ml=o.email?`<a class="mail sm" href="mailto:${esc(o.email)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(text.replace(/\*/g,''))}" data-sent="${esc(sk)}">מייל</a>`:'';
+    const ml=`<a class="mail sm" href="mailto:${esc(o.email||'')}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(text.replace(/\*/g,''))}" data-sent="${esc(sk)}">מייל</a>`;
     const cp=`<button class="mail sm" type="button" data-copy="${esc(text)}">העתק</button>`;
     let dov='';
     if(i.k==='traffic'&&(i.lvl==='bad'||i.lvl==='today')){
@@ -405,7 +405,7 @@ function stopCard(x,k,off){
     <div class="tel">${fmtPhone(v.phone)}</div>
     <div class="issues"><div class="irow"><span class="chip ${i.lvl}">${esc(i.chip)}</span>
       <span class="btns"><label class="inc"><input type="checkbox" data-inc="${esc(v.num)}"${inc?' checked':''}> במסלול</label><button class="mail sm" data-mv="${esc(v.num)}|-1" aria-label="הזז למעלה">▲</button><button class="mail sm" data-mv="${esc(v.num)}|1" aria-label="הזז למטה">▼</button></span></div>
-      <div class="irow"><span class="btns">${v.phone?`<a class="wa sm${sent?' done':''}" href="${waLink(v.phone,visitMsg(v))}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}${sent?'עודכן היום':'עדכון לנהג'}</a>`:''}<button class="wa sm" style="background:var(--ok)" data-done="${esc(v.num)}">✓ נבדק</button></span></div>
+      <div class="irow"><span class="btns">${v.phone?`<a class="wa sm${sent?' done':''}" href="${waLink(v.phone,visitMsg(v))}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}${sent?'עודכן היום':'עדכון לנהג'}</a>`:''}<a class="mail sm" href="mailto:${esc(v.email||'')}?subject=${encodeURIComponent('בדיקת קצב"ת לכלי '+v.num)}&body=${encodeURIComponent(visitMsg(v).replace(/\*/g,''))}" data-sent="${esc(sk)}">מייל</a><button class="wa sm" style="background:var(--ok)" data-done="${esc(v.num)}">✓ נבדק</button></span></div>
     </div></div>`;
 }
 function bind(){
