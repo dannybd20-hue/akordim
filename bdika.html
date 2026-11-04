@@ -74,6 +74,13 @@ label.f.missing{color:var(--bad)}
 .sub{font-weight:700;color:var(--accent);border-top:2px solid var(--line);padding-top:12px;margin-top:4px}
 .photo{display:flex;flex-direction:column;gap:4px;background:var(--bg);border:1px dashed var(--line);border-radius:10px;padding:12px;font-size:.95rem}
 .photo span{color:var(--muted)}
+.pick{margin-top:6px;cursor:pointer}
+.thumbs{display:flex;flex-wrap:wrap;gap:8px}
+.th{position:relative}
+.th img{width:76px;height:76px;object-fit:cover;border-radius:10px;display:block}
+.th button{position:absolute;top:-6px;left:-6px;width:24px;height:24px;border-radius:50%;border:0;background:var(--bad);color:#fff;font-weight:700;cursor:pointer}
+.btn.wa.alt{background:transparent;color:var(--wa);border:1.5px solid var(--wa)}
+#shareBtn{grid-column:1/-1}
 .item .why{display:none}
 .item.is-bad .why{display:block}
 .item.missing .q{color:var(--bad)}
@@ -135,10 +142,12 @@ pre.preview{white-space:pre-wrap;background:var(--bg);border:1px solid var(--lin
         <label><input type="radio" name="stop" value="ok"><span>לא, הכלי בטוח</span></label>
       </div>
     </div>
-    <label class="f" id="generalL">תקלה כללית שיש<textarea id="general" placeholder="כל תקלה או דבר שנראה לך לא תקין. אם אין, כתוב &quot;אין&quot;"></textarea></label>
+    <label class="f" id="generalL">תקלה כללית שיש (לא חובה)<textarea id="general" placeholder="כל תקלה או דבר שנראה לך לא תקין"></textarea></label>
     <div class="photo">
       <b>📷 צילום של התקלה או מה שלא תקין</b>
-      <span>אם זה צמיג, ברקסים, מכות וכו'. אחרי שליחת הטופס, צרף את התמונות באותו צ'אט בוואטסאפ או כקובץ מצורף במייל.</span>
+      <span>אם זה צמיג, ברקסים, מכות וכו'. התמונות יישלחו יחד עם הבדיקה בוואטסאפ.</span>
+      <label class="btn mail pick"><input id="pics" type="file" accept="image/*" multiple hidden>📷 צילום / הוספת תמונות</label>
+      <div class="thumbs" id="thumbs"></div>
     </div>
   </section>
 
@@ -151,12 +160,14 @@ pre.preview{white-space:pre-wrap;background:var(--bg);border:1px solid var(--lin
   <h2>שליחת הבדיקה</h2>
   <p class="hint">בחר איך לשלוח. הבדיקה מגיעה אליי רק אחרי שתלחץ "שלח" בוואטסאפ או במייל.</p>
   <div class="send">
+    <button class="btn wa" id="shareBtn" type="button" hidden>שליחה בוואטסאפ עם התמונות</button>
     <a class="btn wa" id="waBtn" target="_blank" rel="noopener">שליחה בוואטסאפ</a>
     <a class="btn mail" id="mailBtn">שליחה במייל</a>
   </div>
   <button class="btn ghost" id="copyBtn" type="button">העתק את הטקסט</button>
   <p class="hint" id="mailHint"></p>
-  <p class="hint"><b>אל תשכח לצרף תמונות</b> של מה שלא תקין.</p>
+  <p class="hint" id="shareHint" hidden>בחלון שנפתח בחר <b>וואטסאפ</b>, ואז את <b>דני בן דוד</b>. הבדיקה והתמונות יישלחו יחד.</p>
+  <p class="hint" id="picHint" hidden><b>הטלפון הזה לא תומך בשליחת תמונות מהטופס.</b> אחרי שליחת הטקסט, צרף את התמונות באותו צ'אט.</p>
   <pre class="preview" id="preview"></pre>
   <button class="btn ghost" id="back" type="button">חזרה לעריכה</button>
 </section>
@@ -234,7 +245,7 @@ $('f').addEventListener('submit',e=>{
   if(otherEmpty.length)errs.push('בסעיף שסימנת "אחר" צריך לפרט.');
   const stop=document.querySelector('input[name=stop]:checked');
   if(curType&&!stop)errs.push('נא לענות אם יש תקלה שמונעת נסיעה.');
-  if(curType&&!$('general').value.trim()){errs.push('נא למלא "תקלה כללית שיש" (אם אין, כתוב "אין").');$('generalL').classList.add('missing')}else $('generalL').classList.remove('missing');
+
   if(errs.length){$('err').hidden=false;$('err').textContent=errs[0];return}
   $('err').hidden=true;
   const bad=ks.filter(k=>val(k)==='bad'), oth=ks.filter(k=>val(k)==='other');
@@ -246,13 +257,32 @@ $('f').addEventListener('submit',e=>{
   t+=`\nתקין: ${ks.length-bad.length-oth.length} מתוך ${ks.length}\n`;
   if(bad.length)t+=`\n*לא תקין:*\n`+bad.map(k=>`❌ ${Q[k][0]}${$('why_'+k).value.trim()?' – '+$('why_'+k).value.trim():''}`).join('\n')+'\n';
   if(oth.length)t+=`\n*אחר:*\n`+oth.map(k=>`⚠️ ${Q[k][0]} – ${$('why_'+k).value.trim()}`).join('\n')+'\n';
-  t+=`\n*תקלה כללית:* ${$('general').value.trim()}\n`;
+  if($('general').value.trim())t+=`\n*תקלה כללית:* ${$('general').value.trim()}\n`;
+  if(PICS.length)t+=`\n📷 מצורפות ${PICS.length} תמונות\n`;
   $('preview').textContent=t;
   $('waBtn').href=`https://wa.me/${CONTACT.phone}?text=${encodeURIComponent(t)}`;
   $('mailBtn').href=`mailto:${CONTACT.email}?subject=${encodeURIComponent(`בדיקת תקינות כלי ${$('num').value} – ${$('name').value.trim()}`)}&body=${encodeURIComponent(t.replace(/\*/g,''))}`;
   $('mailHint').textContent=`אם המייל לא נפתח: העתק את הטקסט ושלח לכתובת ${CONTACT.email}`;
+  const canFiles=PICS.length&&navigator.canShare&&navigator.canShare({files:PICS});
+  $('shareBtn').hidden=!canFiles;$('shareHint').hidden=!canFiles;$('picHint').hidden=!(PICS.length&&!canFiles);
+  $('waBtn').textContent=canFiles?'שליחה בוואטסאפ בלי תמונות':'שליחה בוואטסאפ';$('waBtn').classList.toggle('alt',!!canFiles);
   $('f').hidden=true;$('out').hidden=false;window.scrollTo(0,0);
 });
+/* תמונות: מוקטנות בטלפון ונשלחות יחד עם הטקסט דרך חלון השיתוף */
+let PICS=[];
+async function shrink(file){
+  try{const bmp=await createImageBitmap(file);const s=Math.min(1,1600/Math.max(bmp.width,bmp.height));
+    const c=document.createElement('canvas');c.width=Math.round(bmp.width*s);c.height=Math.round(bmp.height*s);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
+    const b=await new Promise(r=>c.toBlob(r,'image/jpeg',.82));return b?new File([b],(file.name||'photo').replace(/\.\w+$/,'')+'.jpg',{type:'image/jpeg'}):file}
+  catch(e){return file}
+}
+function drawThumbs(){$('thumbs').innerHTML=PICS.map((f,k)=>`<span class="th"><img src="${URL.createObjectURL(f)}" alt=""><button type="button" data-rm="${k}" aria-label="הסר תמונה">✕</button></span>`).join('');
+  $('thumbs').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{PICS.splice(+b.dataset.rm,1);drawThumbs()})}
+$('pics').onchange=async e=>{for(const f of e.target.files)PICS.push(await shrink(f));e.target.value='';drawThumbs()};
+$('shareBtn').onclick=async()=>{
+  try{await navigator.share({files:PICS,text:$('preview').textContent})}
+  catch(e){if(e.name!=='AbortError'){$('picHint').hidden=false}}
+};
 $('back').onclick=()=>{$('out').hidden=true;$('f').hidden=false};
 $('copyBtn').onclick=async()=>{
   try{await navigator.clipboard.writeText($('preview').textContent);$('copyBtn').textContent='הועתק'}
