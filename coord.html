@@ -44,6 +44,11 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .tab[aria-selected="true"]{color:#fff;border-bottom-color:#fff}
 main .wrap{padding-block:18px 40px;display:flex;flex-direction:column;gap:16px}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+/* חיפוש כללי */
+.gsearch{display:flex;align-items:center;gap:8px;background:#fff;border-radius:12px;padding:0 12px;color:#5f6b7a;box-shadow:0 2px 10px #0003}
+.gsearch input{flex:1;border:0;outline:none;background:none;font:inherit;font-size:1rem;color:#14202e;padding:11px 0;min-width:0}
+.gres{position:sticky;z-index:4;top:calc(env(safe-area-inset-top,0px) + var(--hh,150px));padding-top:8px}
+.gres .panel{max-height:70vh;overflow:auto;box-shadow:0 10px 30px #0f2a4a33}
 /* KPIs */
 button.kpi{appearance:none;font:inherit;color:inherit;text-align:start;cursor:pointer;width:100%;position:relative}
 button.kpi:hover{border-color:var(--accent)}
@@ -232,6 +237,7 @@ body.hide-all main,body.hide-all .ov{filter:blur(18px)}
     <div class="ttl"><h1>בטיחות סניף</h1><p id="sub">קצב"ת ירושלים</p></div>
     <a class="hb" id="homeB" href="./" hidden><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8Z"/></svg>אפליקציות</a>
     <button class="hb" id="lockB" hidden onclick="relock()">יציאה</button></div>
+  <div class="gsearch" id="gsw" hidden><svg viewBox="0 0 24 24"><path d="M15.5 14h-.8l-.3-.3A6.5 6.5 0 1 0 14 15.5l.3.3v.8l5 5 1.5-1.5Zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14Z"/></svg><input id="gs" type="search" placeholder="חיפוש כללי: שם, טלפון, פרייבט, מס׳ רכב או רישוי" autocomplete="off"></div>
   <div class="tabs" role="tablist" id="tabs" hidden>
     <button class="tab" role="tab" aria-selected="true" data-v="sum">דף הבית</button>
     <button class="tab" role="tab" aria-selected="false" data-v="pb">ספר טלפונים</button>
@@ -241,6 +247,7 @@ body.hide-all main,body.hide-all .ov{filter:blur(18px)}
     <span class="tab" style="margin-inline-start:auto;cursor:default;font-weight:400;font-size:.8rem" id="upd"></span>
   </div>
 </div></header>
+<div class="wrap gres" id="gres" hidden></div>
 <main><div class="wrap" id="app"><div class="empty">טוען…</div></div></main>
 <script>
 
@@ -517,6 +524,19 @@ function contactSheet(key){
   ov.onclick=e=>{if(e.target===ov||e.target.closest('.x'))return ov.remove();if(e.target.closest('#toSafety')){ov.remove();personSheet(key)}};document.body.append(ov);
 }
 
+/* ===== חיפוש כללי: אנשים ורכבים ===== */
+function gsearch(q){
+  const box=$('gres');q=q.trim();if(!q){box.hidden=true;box.innerHTML='';return}
+  const d=q.replace(/\D/g,''),qq=q.replace(/-/g,'');
+  const P=DATA.people.filter(p=>p.n.includes(q)||(d.length>=3&&((p.ph||'').includes(d)||(p.pv||'')===d||(p.pv||'').startsWith(d)))||(p.cars||[]).some(c=>c.num===d||(c.plate||'').replace(/-/g,'').includes(qq))).slice(0,30);
+  const V=DATA.veh.filter(v=>(d&&(v.num===d||v.num.startsWith(d)||v.plate.replace(/-/g,'').includes(d)||(v.phone||'').includes(d)))||(v.name||'').includes(q)).slice(0,20);
+  box.hidden=false;
+  box.innerHTML=`<section class="panel"><header><h2>תוצאות חיפוש</h2><span class="count">${P.length+V.length}</span><button class="btn ghost" id="gsx" style="margin-inline-start:auto;padding:6px 10px">סגירה</button></header>
+    ${P.length?`<div class="lt">אנשים</div>${P.map(pbRow).join('')}`:''}${V.length?`<div class="lt">רכבים</div><div class="vlist">${V.map(vRow).join('')}</div>`:''}${P.length||V.length?'':'<div class="empty">לא נמצא</div>'}</section>`;
+  box.querySelectorAll('.prow.pb').forEach(c=>c.onclick=e=>{if(!e.target.closest('a'))contactSheet(c.dataset.c)});
+  $('gsx').onclick=()=>{$('gs').value='';gsearch('')};
+}
+
 function coordMsg(b){const c=ADMIN[b];return `שלום ${first(c.coord)||''},\n\nפתחתי לך מערכת חדשה לניהול הבטיחות של סניף *${b}* 🚑\n\nבמערכת תוכל לראות:\n• את כל הנהגים בסניף – פרטים, מסמכים ותוקף רישיונות\n• ציוני סייפטי לכל חודש\n• ציוני הדרכות רכיבה (חיים בדרכים) והדרכות נהיגה (אלטרנתיבי)\n• את כל הכלים של הסניף ומצב הטסטים, הטיפולים והבדיקות\n• *טופס יציאה מגזרה* – בוחרים מתנדב, המערכת בודקת את כל הנתונים שלו ונותנת המלצה, ואם מאשרים – יש הודעת בטיחות מוכנה לשליחה\n\nכניסה:\n🔗 https://dannybd20-hue.github.io/akordim/coord.html\n🔑 סיסמה: *${c.pw}*\n\nהמערכת לצפייה בלבד, ורואים בה רק את הסניף שלך. כדאי להוסיף את הקישור למסך הבית בטלפון.\nהסיסמה אישית לך – לא להעביר הלאה.\n\nאם יש שאלה, אני זמין.\nדני בן דוד\nקצב"ת ירושלים`}
 
 function onlineBox(){if(!SYNC_URL)return '<div id="onl"></div>';const L=ONLINE||[];const ago=t=>{const m=Math.max(0,Math.round((Date.now()-t)/60000));return m<1?'עכשיו':m<60?m+' דק׳':Math.floor(m/60)+' שע׳'};
@@ -543,11 +563,11 @@ document.addEventListener('visibilitychange',()=>document.body.classList.toggle(
 window.addEventListener('blur',()=>document.body.classList.add('hide-all'));window.addEventListener('focus',()=>document.body.classList.remove('hide-all'));
 document.addEventListener('copy',e=>{if(document.body.classList.contains('secure')&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||''))e.preventDefault()});
 document.addEventListener('contextmenu',e=>{if(document.body.classList.contains('secure'))e.preventDefault()});
-function show(){watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
+function show(){$('gsw').hidden=false;const gi=$('gs');gi.oninput=()=>gsearch(gi.value);document.documentElement.style.setProperty('--hh',document.querySelector('.appbar').offsetHeight+'px');watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
 
 /* ===== כניסה ===== */
 function lockView(err){
-  $('tabs').hidden=true;$('lockB').hidden=true;$('homeB').hidden=true;$('sub').textContent='קצב"ת ירושלים';
+  $('tabs').hidden=true;$('lockB').hidden=true;$('homeB').hidden=true;$('gsw').hidden=true;$('gres').hidden=true;$('sub').textContent='קצב"ת ירושלים';
   $('app').innerHTML=`<div class="lockc"><h2>בטיחות סניף</h2><p style="margin:0;color:var(--muted)">כניסה לרכזי תחבורה. הקלד את הסיסמה של הסניף שלך</p>
   <input id="pw" type="password" autocomplete="current-password" placeholder="סיסמה" dir="ltr" onkeydown="if(event.key==='Enter')unlock()">
   <label style="color:var(--muted);font-weight:600"><input type="checkbox" id="rem" checked> לזכור במכשיר הזה</label>
