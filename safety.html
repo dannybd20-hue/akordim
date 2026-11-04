@@ -9,6 +9,7 @@ function goHome(){try{sessionStorage.removeItem('gate_safety')}catch(e){}locatio
 <link rel="icon" href="icons/apps-192.png">
 <meta name="theme-color" content="#1f4f8f">
 <title>דוח סייפטי</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Secular+One&display=swap">
 <style>
 /* Layout: sticky header with tabs, single column of person/vehicle cards grouped by severity */
@@ -140,6 +141,7 @@ td.s.low{background:var(--bad-bg);color:var(--bad)}td.s.mid{background:var(--war
 .chart{width:100%;min-width:560px;height:auto;display:block}
 .anal summary{cursor:pointer;font-weight:700;color:var(--accent);padding:4px 0}
 .anal pre{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;margin:6px 0}
+.exp{display:flex;gap:8px;flex-wrap:wrap}
 .chart text{fill:var(--muted);font:12px var(--f-body)}
 </style>
 </head>
@@ -217,7 +219,7 @@ const secs=x=>x?x.split(':').reduce((a,b)=>a*60+(+b),0):0;
 function analysis(v){
   const r=v.rep;if(!r||!v.ev)return '';
   const ev=Object.entries(v.ev).sort((a,b)=>b[1][0]-a[1][0]),tot=ev.reduce((a,e)=>a+e[1][0],0),P=k=>v.ev[k]?v.ev[k][1]:0,N=k=>v.ev[k]?v.ev[k][0]:0;
-  const idlePct=r.eng&&r.idle?Math.round(secs(r.idle)/secs(r.eng)*100):null;
+  const idleRaw=r.eng&&r.idle?secs(r.idle)/secs(r.eng)*100:null,idlePct=idleRaw==null?null:Math.round(idleRaw);
   const rk=r.rank?Math.round((1-r.rank[0]/r.rank[1])*100):null;
   let t=`*ניתוח ביצועי נהיגה – איתוראן סייפטי*\n${v.n} · פרייבט ${v.pv} · ${v.br}${r.to?` · עד ${r.to}`:''}\n\n`;
   t+=`*נתוני פעילות*\n`;
@@ -235,7 +237,7 @@ function analysis(v){
   if(P('תאוצות')>=12)plan.push(...PLAN.accel);
   if(P('חריגות מהירות')>=10){risks.push(`• *חריגות מהירות* – ${N('חריגות מהירות')} אירועים.`);plan.push(...PLAN.speed)}
   if(P('מעבר נתיב')>=10)plan.push(...PLAN.lane);
-  if(idlePct!=null&&idlePct>=40){risks.push(`• *עמידה בסרק* – כ־${idlePct}% מזמן המנוע. פוגע בציון הדלק ובבלאי הרכב.`);plan.push(...PLAN.idle)}
+  if(idleRaw!=null&&idleRaw>25){risks.push(`• *עמידה בסרק* – כ־${idlePct}% מזמן המנוע. פוגע בציון הדלק ובבלאי הרכב.`);plan.push(...PLAN.idle)}
   if(risks.length)t+=`\n*מוקדי הסיכון*\n${risks.join('\n')}\n`;
   if(plan.length)t+=`\n*תוכנית לשיפור*\n${plan.join('\n')}\n`;
   return t.trim();
@@ -267,14 +269,14 @@ function insight(v){
   else if(P('תאוצות')>=15){lines.push(`הרבה מהאירועים שלך (${N('תאוצות')}) הם תאוצות חזקות.`);tips.push(TIP.accel)}
   if(P('חריגות מהירות')>=10){lines.push(`ויש גם ${N('חריגות מהירות')} חריגות מהירות.`);tips.unshift(TIP.speed)}
   if(!tips.length){if(P('מעבר נתיב')>=10)tips.push(TIP.lane);if(P('מעגל תנועה')>=10)tips.push(TIP.round)}
-  const idle=r.eng&&r.idle?Math.round(secs(r.idle)/secs(r.eng)*100):0;
+  const idle=r.eng&&r.idle?secs(r.idle)/secs(r.eng)*100:0;
   return {lines,tips:tips.slice(0,2),idle,comp:r.comp};
 }
 function talk(v,ins){
   if(!ins||(!ins.lines.length&&!ins.tips.length))return `אפשר לראות בדוח הסייפטי באפליקציה על מה בדיוק ירדו הנקודות. בדרך כלל אלה בלימות חדות, תאוצות חזקות, כניסה מהירה לפניות וחריגות מהירות.\n\nשני דברים קטנים שעושים את רוב העבודה:\n1. ${TIP.dist}\n2. ${TIP.turns}`;
   let t=`כשהסתכלתי על הפירוט שלך: ${ins.lines.join(' ')}`;
   if(ins.tips.length)t+=`\n\n${ins.tips.length>1?'שני דברים קטנים שיעשו את רוב העבודה':'דבר אחד קטן שיעשה את רוב העבודה'}:\n${ins.tips.map((x,i)=>ins.tips.length>1?`${i+1}. ${x}`:x).join('\n')}`;
-  if(ins.idle>=40)t+=`\n\nועוד טיפ קטן: ראיתי שהרכב עמד מונע בערך ${ins.idle>=24&&ins.idle<=27?'רבע':ins.idle+'%'} מהזמן. בעצירה של יותר מדקה–שתיים כדאי לכבות.`;
+  if(ins.idle>25)t+=`\n\nועוד טיפ קטן: ראיתי שהרכב עמד מונע בערך ${ins.idle<=28?'רבע':Math.round(ins.idle)+'%'} מהזמן – במשמרת של 8 שעות זה יותר משעתיים. בעצירה של יותר מדקה–שתיים כדאי לכבות.`;
   return t;
 }
 const MSG={
@@ -340,6 +342,7 @@ function render(){
     const L=act.filter(v=>catOf(v,m)===state.cat&&filt(v)).sort((a,b)=>a.s[m]-b.s[m]);
     app.innerHTML=`${controls()}
     <div class="cats" role="group" aria-label="קבוצה">${CATS.map(([k,l])=>`<button class="c-${k}" data-cat="${k}" aria-pressed="${state.cat===k}">${l}<span>${cnt[k]||0}</span></button>`).join('')}</div>
+    <div class="exp"><button class="mail sm" id="expOne" type="button">📤 קובץ מיילים לקבוצה הזאת (${L.filter(v=>v.em).length})</button><button class="mail sm" id="expAll" type="button">📤 קובץ מיילים לכולם (${act.filter(v=>v.em).length})</button></div>
     <div class="legend">ההודעה נבחרת לפי הציון בחודש ${esc(M)} ולפי כמה חודשים ברצף הציון מתחת ל־25. מתנדב בלי ציון בחודש הזה לא מופיע.</div>
     <div class="list">${L.map(v=>card(v,m)).join('')||'<div class="empty">אין מתנדבים בקבוצה הזאת.</div>'}</div>`;
   } else if(state.view==='vol'){
@@ -410,7 +413,19 @@ function renderBranches(){
       <div class="issues"><div class="irow"><span class="tel">${h.ph?fmtPhone(h.ph):'אין טלפון'}${h.em?` · <span class="em">${esc(h.em)}</span>`:''}</span><span class="btns">${h.ph?`<a class="wa sm${sent?' done':''}" href="${waLink(h.ph,text)}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}${sent?'נשלח':'לראש הסניף'}</a>`:''}<a class="mail sm" href="mailto:${esc(h.em||'')}?subject=${encodeURIComponent('דוח סייפטי – סניף '+br+' – '+M)}&body=${encodeURIComponent(text.replace(/\*/g,''))}" data-sent="${esc(sk)}">מייל</a><button class="mail sm" type="button" data-copy="${esc(text)}">העתק</button></span></div></div></div>`}).join('')}</div>`;
   bind();
 }
+/* קובץ אקסל למיזוג דואר ב-Word: שליחה מרוכזת דרך אאוטלוק */
+function exportMails(list){
+  const m=state.m,M=DATA.months[m];
+  const rows=list.filter(v=>v.em).map(v=>{const c=catOf(v,m),x=v.s[m];return {'שם':v.n,'פרייבט':v.pv,'סניף':v.br,'ציון':x,'קבוצה':(CATS.find(z=>z[0]===c)||[])[1]||'','מייל':v.em,'נושא':SUBJ[c]+' – '+M,'הודעה':MSG[c](v,x,M.split(' ')[0],streakAt(v,m),statsOf(v,m).prev).replace(/\*/g,'')}});
+  if(!rows.length){alert('אין כתובות מייל בקבוצה הזאת');return}
+  if(!window.XLSX){alert('הקובץ לא נטען, בדוק חיבור לאינטרנט ונסה שוב');return}
+  const ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=[{wch:18},{wch:8},{wch:16},{wch:6},{wch:18},{wch:28},{wch:34},{wch:90}];
+  const wb=XLSX.utils.book_new();wb.Workbook={Views:[{RTL:true}]};XLSX.utils.book_append_sheet(wb,ws,'מיילים');
+  XLSX.writeFile(wb,`מיילים_סייפטי_${M.replace(/\s+/g,'_')}.xlsx`);
+}
 function bind(){
+  const e1=$('expOne');if(e1)e1.onclick=()=>exportMails(DATA.v.filter(v=>v.s[state.m]!=null&&catOf(v,state.m)===state.cat&&filt(v)));
+  const e2=$('expAll');if(e2)e2.onclick=()=>exportMails(DATA.v.filter(v=>v.s[state.m]!=null&&filt(v)));
   const mon=$('mon');if(mon)mon.onchange=e=>{state.m=+e.target.value;render()};
   const br=$('br');if(br)br.onchange=e=>{state.br=e.target.value;render()};
   const q=$('q');if(q)q.oninput=e=>{state.q=e.target.value;const pos=e.target.selectionStart;render();const n=$('q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}};
