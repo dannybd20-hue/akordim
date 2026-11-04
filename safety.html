@@ -131,6 +131,8 @@ td.d-bad{color:var(--bad);font-weight:700} td.d-warn{color:var(--warn);font-weig
 .trend.dn{color:var(--bad)}.trend.up{color:var(--ok)}.trend.eq{color:var(--muted)}
 .streak{font-size:.82rem;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--bad-bg);color:var(--bad)}
 .bars{display:flex;flex-direction:column;gap:6px}
+.stat{appearance:none;font:inherit;color:inherit;text-align:start;cursor:pointer}
+.stat:hover{border-color:var(--accent)}
 .bar{display:grid;grid-template-columns:7.5em 1fr 3em;gap:8px;align-items:center;font-size:.9rem}
 .bar i{display:block;height:14px;border-radius:4px;background:var(--accent)}
 .bar b{font-variant-numeric:tabular-nums;text-align:start}
@@ -366,10 +368,10 @@ function render(){
     const row=(o,val)=>`<tr><td>${esc(o.v.n)}</td><td>${esc(o.v.br)}</td><td class="s ${o.st.x<25?'low':''}">${o.st.x}</td><td>${val}</td></tr>`;
     app.innerHTML=`${controls()}
     <div class="summary">
-      <div class="stat"><b>${tot}</b><span>מתנדבים עם ציון ב${esc(M)}</span></div>
-      <div class="stat"><b>${avgs[m]==null?'—':Math.round(avgs[m])}</b><span>ציון ממוצע</span></div>
-      <div class="stat bad"><b>${(cnt.low||0)+(cnt.drop||0)+(cnt.warn||0)+(cnt.demote||0)}</b><span>מתחת ל־25</span></div>
-      <div class="stat bad"><b>${(cnt.warn||0)+(cnt.demote||0)}</b><span>חודשיים ומעלה ברצף מתחת ל־25</span></div>
+      <button class="stat" data-go="vol"><b>${tot}</b><span>מתנדבים עם ציון ב${esc(M)}</span></button>
+      <button class="stat" data-go="vol"><b>${avgs[m]==null?'—':Math.round(avgs[m])}</b><span>ציון ממוצע</span></button>
+      <button class="stat bad" data-go="msg" data-gocat="low"><b>${(cnt.low||0)+(cnt.drop||0)+(cnt.warn||0)+(cnt.demote||0)}</b><span>מתחת ל־25</span></button>
+      <button class="stat bad" data-go="msg" data-gocat="warn"><b>${(cnt.warn||0)+(cnt.demote||0)}</b><span>חודשיים ומעלה ברצף מתחת ל־25</span></button>
     </div>
     <div class="panel"><h3>חלוקה לפי קבוצות · ${esc(M)}</h3><div class="bars">${dist.map(d=>`<div class="bar"><span>${d.l}</span><i style="width:${d.n/mx*100}%;background:${d.c}"></i><b>${d.n}</b></div>`).join('')}</div></div>
     <div class="panel"><h3>ציון ממוצע לפי חודש</h3><div style="overflow-x:auto">${chart}</div><div class="legend">המספר האדום מתחת לכל חודש: כמה מתנדבים היו מתחת ל־25.</div></div>
@@ -431,6 +433,7 @@ function bind(){
   const mon=$('mon');if(mon)mon.onchange=e=>{state.m=+e.target.value;render()};
   const br=$('br');if(br)br.onchange=e=>{state.br=e.target.value;render()};
   const q=$('q');if(q)q.oninput=e=>{state.q=e.target.value;const pos=e.target.selectionStart;render();const n=$('q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}};
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{if(b.dataset.gocat){state.cat=b.dataset.gocat;ls('sf_cat',state.cat)}document.querySelector(`.tab[data-v="${b.dataset.go}"]`).click()});
   document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{state.cat=b.dataset.cat;ls('sf_cat',state.cat);render()});
   document.querySelectorAll('a[data-sent]').forEach(a=>a.addEventListener('click',()=>{ls(a.dataset.sent,TODAY_KEY);setTimeout(render,300)}));
   document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.copy);b.textContent='הועתק'}catch(e){b.textContent='לא הועתק'}});

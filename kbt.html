@@ -61,6 +61,9 @@ h1{font-family:var(--f-display);font-weight:400;font-size:1.6rem;margin:0;letter
 main .wrap{padding-block:16px 48px;display:flex;flex-direction:column;gap:16px}
 .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.stat{appearance:none;font:inherit;color:inherit;text-align:start;cursor:pointer}
+.stat:hover{border-color:var(--accent)}
+.stat.on{outline:3px solid var(--accent);outline-offset:-1px}
 .stat b{display:block;font-family:var(--f-display);font-weight:400;font-size:1.7rem;line-height:1.1;font-variant-numeric:tabular-nums}
 .stat span{font-size:.85rem;color:var(--muted)}
 .stat.today b{color:var(--today)} .stat.bad b{color:var(--bad)} .stat.warn b{color:var(--warn)}
@@ -205,7 +208,7 @@ const RANK={today:0,bad:1,warn:2,miss:3};
 
 /* ===== אחסון מקומי ===== */
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
-const state={view:'alerts',cat:ls('cat')||'',kind:ls('kind')||'all',win:+(ls('win3')||3),q:'',branch:'',showMiss:ls('miss')==='1',limit:60};
+const state={only:null,view:'alerts',cat:ls('cat')||'',kind:ls('kind')||'all',win:+(ls('win3')||3),q:'',branch:'',showMiss:ls('miss')==='1',limit:60};
 
 function waLink(phone,text){let p=(phone||'').replace(/\D/g,'');if(p.startsWith('0'))p='972'+p.slice(1);return `https://wa.me/${p}?text=${encodeURIComponent(text)}`}
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
@@ -327,16 +330,17 @@ function render(){
   document.getElementById('n-alerts').textContent=every.filter(r=>r.lvl==='today'||r.lvl==='bad').length||'';
   if(state.view==='route'){renderRoute();return}
   if(state.view==='alerts'){
-    const rows=all.filter(r=>(state.kind==='all'||r.type===state.kind)&&matches(r));
+    const rows=all.filter(r=>(state.kind==='all'||r.type===state.kind)&&matches(r)&&(!state.only||r.lvl===state.only));
     const c=l=>rows.filter(r=>r.lvl===l).length;
     const groups=[['today','נכנסו לחריגה היום','var(--today)'],['bad','בחריגה','var(--bad)'],['warn',`יפוג ב־${state.win} הימים הקרובים`,'var(--warn)'],['miss','חסר תאריך במערכת','var(--muted)']];
     let html=`<div class="summary">
-      <div class="stat today"><b>${c('today')}</b><span>חריגות חדשות היום</span></div>
-      <div class="stat bad"><b>${c('bad')}</b><span>בחריגה</span></div>
-      <div class="stat warn"><b>${c('warn')}</b><span>מתקרבים לפקיעה</span></div>
-      <div class="stat"><b>${DATA.vehicles.length} / ${DATA.drivers.length}</b><span>רכבים / נהגים במעקב</span></div>
+      <button class="stat today${state.only==='today'?' on':''}" data-only="today"><b>${c('today')}</b><span>חריגות חדשות היום</span></button>
+      <button class="stat bad${state.only==='bad'?' on':''}" data-only="bad"><b>${c('bad')}</b><span>בחריגה</span></button>
+      <button class="stat warn${state.only==='warn'?' on':''}" data-only="warn"><b>${c('warn')}</b><span>מתקרבים לפקיעה</span></button>
+      <button class="stat" data-goto="veh"><b>${DATA.vehicles.length} / ${DATA.drivers.length}</b><span>רכבים / נהגים במעקב</span></button>
     </div>${controls(true)}
     ${catBar(every)}
+    ${state.only?`<div class="legend">מוצג רק: <b>${{today:'חריגות חדשות היום',bad:'בחריגה',warn:'מתקרבים לפקיעה'}[state.only]}</b> · <a href="#" data-only="${state.only}">הצג הכל</a></div>`:''}
     <label class="legend"><input type="checkbox" id="miss"${state.showMiss?' checked':''}> הצג גם רשומות בלי תאריך</label>
     <div class="legend">טיפול שנתי נחשב בחריגה כשעברה שנה מהטיפול האחרון. טסט מופיע תמיד שבוע לפני.</div>`;
     let shown=0;
@@ -437,6 +441,8 @@ function bind(){
   document.querySelectorAll('[data-kind]').forEach(x=>x.onclick=()=>{state.kind=x.dataset.kind;ls('kind',state.kind);const vk=['test','service','check'];if(state.cat&&state.kind!=='all'&&(state.kind==='vehicle')!==vk.includes(state.cat)){state.cat='';ls('cat','')}render()});
   document.querySelectorAll('[data-cat]').forEach(x=>x.onclick=()=>{state.cat=x.dataset.cat;ls('cat',state.cat);state.limit=60;render()});
   document.querySelectorAll('a[data-sent]').forEach(a=>a.addEventListener('click',()=>{ls(a.dataset.sent,'1');if(a.dataset.first){const f=firstRec(a.dataset.first);if(!f||f.due!==a.dataset.due)ls('first:'+a.dataset.first,JSON.stringify({d:TODAY_KEY,due:a.dataset.due}))}setTimeout(render,300)}));
+  document.querySelectorAll('[data-only]').forEach(b=>b.onclick=()=>{state.only=state.only===b.dataset.only?null:b.dataset.only;state.limit=60;render()});
+  document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>document.querySelector(`.tab[data-v="${b.dataset.goto}"]`).click());
   document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.copy);b.textContent='הועתק'}catch(e){b.textContent='לא הועתק'}});
 }
 </script>

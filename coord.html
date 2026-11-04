@@ -95,6 +95,34 @@ button.kpi:hover{border-color:var(--accent)}
 .plate{display:inline-block;background:var(--plate);color:#111;border:1.5px solid #111;border-radius:4px;padding:0 6px;font:700 .82rem/1.5 ui-monospace,Menlo,Consolas,monospace;direction:ltr;white-space:nowrap}
 .pill{display:inline-block;font-size:.8rem;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--na-bg);color:var(--na)}
 .pill.ok{background:var(--ok-bg);color:var(--ok)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.bad{background:var(--bad-bg);color:var(--bad)}
+/* vehicles */
+.vcard{border-top:1px solid var(--line);padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.vlist>.vcard:first-child{border-top:0}
+.vcard.bad{box-shadow:inset -4px 0 0 var(--bad)}.vcard.warn{box-shadow:inset -4px 0 0 var(--warn)}
+.vh2{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center}
+.vstat{display:flex;flex-wrap:wrap;gap:6px}
+.dgrid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+@media (max-width:640px){.dgrid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dc{border-radius:10px;padding:6px 8px;background:var(--na-bg);color:var(--na)}
+.dc small{display:block;font-size:.72rem;font-weight:700;opacity:.85}.dc b{display:block;font-size:.95rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--fg)}.dc em{display:block;font-style:normal;font-size:.76rem;font-weight:700}
+.dc.ok{background:var(--ok-bg);color:var(--ok)}.dc.warn{background:var(--warn-bg);color:var(--warn)}.dc.bad{background:var(--bad-bg);color:var(--bad)}
+/* phonebook */
+.lt{position:sticky;top:0;background:var(--soft);color:var(--accent);font-weight:800;padding:4px 16px;border-top:1px solid var(--line);font-size:.9rem}
+.prow.pb{grid-template-columns:auto minmax(0,1fr) auto auto auto}
+.badges{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.bdg{font-size:.78rem;font-weight:800;padding:3px 9px;border-radius:99px;background:#fde7d6;color:#9a3412;font-variant-numeric:tabular-nums}
+.bdg.car{background:#dbeafe;color:#1e3a8a}
+@media (max-width:520px){.prow.pb .badges{display:none}}
+.qa{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:8px;padding:0 16px}
+.qa a,.qa button{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:14px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;font:700 .82rem var(--f);text-decoration:none;cursor:pointer}
+.qa i{font-style:normal;font-size:1.3rem}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);margin:0 16px;overflow:hidden}
+.box h3{margin:0;padding:12px 16px 4px;color:var(--muted);font-size:.9rem;font-weight:800}
+.it{display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--line);text-decoration:none;color:inherit}
+.box h3+.it{border-top:0}
+.it .k{font-size:1.3rem;width:30px;text-align:center}.it .v{display:flex;flex-direction:column;min-width:0}.it .v small{font-weight:800;color:var(--fg);font-size:.86rem}.it .v span{font-size:1rem;overflow-wrap:anywhere}
+a.it .v span{color:#c2410c}
+.tag{display:inline-block;background:#fde7d6;color:#9a3412;border-radius:99px;padding:1px 10px;font-weight:700;font-size:.82rem;margin:2px 0 2px 4px}
 /* toolbar */
 .toolbar{display:flex;gap:10px;flex-wrap:wrap}
 .search{flex:1 1 260px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 12px;color:var(--muted)}
@@ -114,6 +142,7 @@ button.kpi:hover{border-color:var(--accent)}
 .admin .info b{color:var(--fg);direction:ltr;unicode-bidi:isolate}
 /* drawer */
 .ov{position:fixed;inset:0;background:#0b1626a6;z-index:30;display:flex;justify-content:flex-start}
+.drawer>*{flex-shrink:0}
 .drawer{background:var(--bg);width:min(760px,100%);height:100%;overflow:auto;display:flex;flex-direction:column;gap:14px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));box-shadow:-8px 0 30px #0004}
 .dh{background:linear-gradient(180deg,var(--bar),var(--bar2));color:#fff;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:1}
 .dh h2{margin:0;font-size:1.2rem;font-weight:800}.dh p{margin:0;opacity:.8;font-size:.86rem}
@@ -188,7 +217,8 @@ th{color:var(--muted);font-weight:700;font-size:.78rem;background:var(--soft);bo
     <button class="hb" id="lockB" hidden onclick="relock()">יציאה</button></div>
   <div class="tabs" role="tablist" id="tabs" hidden>
     <button class="tab" role="tab" aria-selected="true" data-v="sum">סיכום</button>
-    <button class="tab" role="tab" aria-selected="false" data-v="ppl">נהגים</button>
+    <button class="tab" role="tab" aria-selected="false" data-v="pb">ספר טלפונים</button>
+    <button class="tab" role="tab" aria-selected="false" data-v="ppl">בטיחות נהגים</button>
     <button class="tab" role="tab" aria-selected="false" data-v="veh">רכבים</button>
     <button class="tab" role="tab" aria-selected="false" data-v="exit">יציאה מגזרה</button>
     <span class="tab" style="margin-inline-start:auto;cursor:default;font-weight:400;font-size:.8rem" id="upd"></span>
@@ -235,7 +265,7 @@ const isMoto=p=>/אופנוע/.test(p.perm||'')||(p.cars||[]).some(c=>/אופנ�
 function vehOf(p){return DATA.veh.filter(v=>(p.cars||[]).some(c=>c.num===v.num)||(p.ph&&v.phone===p.ph))}
 function vehIssues(v){const r=[];const t=pd(v.test);if(t&&days(t)<0)r.push({lvl:'bad',t:`טסט פג ב־${fmt(t)}`});else if(t&&days(t)<=14)r.push({lvl:'warn',t:`טסט פג בעוד ${days(t)} ימים`});
   const s=pd(v.service);if(s){const due=new Date(s);due.setFullYear(due.getFullYear()+1);if(days(due)<0)r.push({lvl:'warn',t:`טיפול אחרון ${fmt(s)} – עברה שנה`})}
-  const c=pd(v.check);if(c&&days(c)<0)r.push({lvl:'warn',t:`בדיקת קצב"ת באיחור (${fmt(c)})`});
+  const c=pd(v.check);if(c&&days(c)<0)r.push({lvl:'warn',t:`בדיקת קצב"ת באיחור של ${-days(c)} ימים`});
   const i=pd(v.ins);if(i&&days(i)<0)r.push({lvl:'bad',t:`ביטוח פג ב־${fmt(i)}`});return r}
 
 /* ===== המלצה ליציאה מגזרה ===== */
@@ -335,17 +365,29 @@ function render(){
     h+=`<div class="toolbar"><div class="search">${IC.users}<input id="q" type="search" placeholder="חיפוש לפי שם, פרייבט או טלפון" value="${esc(st.q)}"></div>
       <div class="seg">${[['all','הכל'],['attn','דורשים תשומת לב'],['moto','אופנוענים'],['amb','נהגי אמבולנס']].map(([k,l])=>`<button data-f="${k}" aria-pressed="${st.flt===k}">${l}</button>`).join('')}</div></div>
       <section class="panel"><header><h2>נהגים</h2><span class="count">${L.length}</span></header><div class="plist">${L.map(pRow).join('')||'<div class="empty">לא נמצאו נהגים</div>'}</div></section>`;
+  } else if(st.view==='pb'){
+    h+=phonebookView();
   } else if(st.view==='veh'){
     h+=`<section class="panel"><header><h2>כלים בסניף</h2><span class="count">${DATA.veh.length}</span></header><div class="vlist">${DATA.veh.map(vRow).join('')}</div></section>`;
   } else {app.innerHTML=h;exitView();bind();return}
   app.innerHTML=h+`<p class="foot">צפייה בלבד · עודכן ${esc(DATA.upd)} · קצב"ת ירושלים</p>`;bind();
 }
-function dcell(label,s,lvl){return `<div class="m ${lvl}"><small>${label}</small><b>${esc(s||'—')}</b></div>`}
+function dstate(label,dateStr,due,kind){
+  if(!dateStr)return `<div class="dc na"><small>${label}</small><b>—</b><em>אין תאריך</em></div>`;
+  const n=days(due);let lvl,t;
+  if(kind==='service'){lvl=n<0?'warn':'ok';t=n<0?`עברה שנה (לפני ${-n} ימים)`:`הבא עד ${fmt(due)}`}
+  else if(kind==='check'){lvl=n<0?'bad':n<=14?'warn':'ok';t=n<0?`באיחור של ${-n} ימים`:n<=14?`בעוד ${n} ימים`:'בזמן'}
+  else{lvl=n<0?'bad':n<=14?'warn':'ok';t=n<0?`פג לפני ${-n} ימים`:n<=14?`פג בעוד ${n} ימים`:'בתוקף'}
+  return `<div class="dc ${lvl}"><small>${label}</small><b>${esc(dateStr)}</b><em>${t}</em></div>`;
+}
 function vRow(v){
-  const is=vehIssues(v),t=pd(v.test),c=pd(v.check),i=pd(v.ins),sv=pd(v.service);let svDue=null;if(sv){svDue=new Date(sv);svDue.setFullYear(svDue.getFullYear()+1)}
-  const L=d=>!d?'na':days(d)<0?'bad':days(d)<=14?'warn':'ok';
-  return `<div class="vrow${is.length?' attn':''}"><span class="plate">${esc(v.plate)}</span><span class="pid"><b>כלי ${esc(v.num)} · ${esc(v.type)}</b><small>${esc(v.name||'—')}${v.phone?' · '+fmtPhone(v.phone):''}</small></span>
-    <span class="mets">${dcell('טסט',v.test,L(t))}${dcell('טיפול אחרון',v.service,svDue?L(svDue):'na')}${dcell('בדיקת קצב"ת',v.check,L(c))}${dcell('ביטוח',v.ins,L(i))}</span></div>`;
+  const t=pd(v.test),c=pd(v.check),i=pd(v.ins),sv=pd(v.service);let svDue=null;if(sv){svDue=new Date(sv);svDue.setFullYear(svDue.getFullYear()+1)}
+  const is=vehIssues(v);
+  return `<div class="vcard${is.some(x=>x.lvl==='bad')?' bad':is.length?' warn':''}">
+    <div class="vh2"><span class="plate">${esc(v.plate)}</span><span class="pid"><b>כלי ${esc(v.num)} · ${esc(v.type)}</b><small>נהג: ${esc(v.name||'—')}${v.phone?' · '+fmtPhone(v.phone):''}</small></span>${v.phone?`<a class="cb call" href="tel:${esc(v.phone)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(v.phone,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}</div>
+    <div class="vstat">${is.length?is.map(x=>`<span class="pill ${x.lvl}">${x.lvl==='bad'?'⛔':'⚠️'} ${esc(x.t)}</span>`).join(''):'<span class="pill ok">✓ הכלי תקין – אין חריגות</span>'}</div>
+    <div class="dgrid4">${dstate('טסט (רישיון רכב)',v.test,t,'test')}${dstate('טיפול אחרון',v.service,svDue,'service')}${dstate('בדיקת קצב"ת',v.check,c,'check')}${dstate('ביטוח',v.ins,i,'ins')}</div>
+  </div>`;
 }
 function personSheet(key){
   const p=DATA.people.find(x=>(x.pv||x.n)===key);if(!p)return;
@@ -354,7 +396,7 @@ function personSheet(key){
   const tl=(L,fn)=>L.length?`<ol class="tl">${L.map(fn).join('')}</ol>`:'<p class="muted">אין רשומות</p>';
   const ov=document.createElement('div');ov.className='ov';ov.innerHTML=`<aside class="drawer" role="dialog" aria-label="${esc(p.n)}">
     <header class="dh"><button class="x" aria-label="סגירה">${IC.x}</button><span class="av lg">${esc(ini(p.n))}</span><div><h2>${esc(p.n)}</h2><p>${p.pv?'פרייבט '+esc(p.pv)+' · ':''}${esc(DATA.br)}</p></div></header>
-    <div class="mets big">${mcell('סייפטי',m.sn?m.sn.x:'—',lvlSafety(m.sn&&m.sn.x))}${mcell('רכיבה אחרונה',m.r?(m.r.sc||'—'):'—',m.r?lvlRide(m.rs):'na')}${mcell('מגרש אחרון',m.a?(m.a.g||'—'):'—',m.a?lvlAlt(m.as):'na')}${mcell('יציאות מגזרה',H.filter(x=>x.dec==='yes').length,'na')}</div>
+    <div class="mets big">${mcell('סייפטי',m.sn?m.sn.x:'—',lvlSafety(m.sn&&m.sn.x))}${mcell('רכיבה אחרונה',m.r?(m.r.sc||'—'):'—',m.r?lvlRide(m.rs):'na')}${mcell('מגרש אחרון',m.a?(m.a.g||'—'):'—',m.a?lvlAlt(m.as):'na')}${isMoto(p)?mcell('יציאות מגזרה',H.filter(x=>x.dec==='yes').length,'na'):mcell('כלים',V.length,'na')}</div>
     <div class="dgrid">
       <section class="card"><h3>פרטי קשר</h3><dl><dt>טלפון</dt><dd>${p.ph?`<a href="tel:${esc(p.ph)}">${fmtPhone(p.ph)}</a>`:'—'}</dd><dt>מייל</dt><dd class="ltr">${esc(p.em||'—')}</dd><dt>כתובת</dt><dd>${esc([p.st,p.city].filter(Boolean).join(', ')||'—')}</dd><dt>תאריך לידה</dt><dd>${esc(p.bd||'—')}</dd><dt>הרשאות</dt><dd>${(p.perm||'').split(/;\s*/).filter(Boolean).map(x=>pill('na',x)).join(' ')||'—'}</dd></dl>${p.ph?`<div class="acts"><a class="btn wa" href="${waLink(p.ph,'')}" target="_blank" rel="noopener">${WA_ICON}וואטסאפ</a><a class="btn ghost" href="tel:${esc(p.ph)}">${IC.phone}חיוג</a></div>`:''}</section>
       <section class="card"><h3>מסמכים</h3><ul class="checks">${ds.map(d=>`<li class="${d.lvl==='miss'?'na':d.lvl}"><span>${d.l}</span><b>${esc(d.t)}</b></li>`).join('')}${p.pp?'<li class="na"><span>מידע תעבורתי</span><b>בעל דרכון – לא נדרש</b></li>':''}</ul></section>
@@ -363,17 +405,17 @@ function personSheet(key){
       <section class="card"><h3>מבחני רכיבה · 2025–2026</h3>${tl(p.ride||[],x=>{const n=/לא עבר/.test(x.sc)?0:num(x.sc);return `<li><span class="tb ${lvlRide(n)}">${esc(x.sc||'—')}</span><div><small>${esc(x.d)} · ${esc(x.ins)}${x.urg?' · דחופה':''}</small><p>${esc([x.op,x.note,x.gen].filter(Boolean).join(' · ')||'—')}</p>${x.pas?`<small>הרכבת רוכב נוסף: ${esc(x.pas)}</small>`:''}</div></li>`})}</section>
       <section class="card"><h3>מבחני מגרש (אלטרנתיבי) · 2025–2026</h3>${tl(p.alt||[],x=>`<li><span class="tb ${lvlAlt(num(x.g))}">${esc(x.g||'—')}</span><div><small>${esc(x.d)} · ${esc(x.st)} · ${esc(x.ins)}</small><p>${[x.dim&&'ממדי הכלי '+x.dim,x.cau&&'זהירות '+x.cau,x.pro&&'מקצועי '+x.pro].filter(Boolean).map(esc).join(' · ')||'—'}</p>${x.rec?`<small>המלצה: ${esc(x.rec)}</small>`:''}${x.note?`<p>${esc(x.note)}</p>`:''}</div></li>`)}</section>
       <section class="card"><h3>עבר תאונות</h3>${(p.acc||[]).length?tl(p.acc,x=>`<li><span class="tb bad">!</span><div><small>${esc(x.d)}</small><p>${esc(x.t||'')}</p></div></li>`):'<p class="muted">נתוני תאונות יתווספו בקרוב</p>'}</section>
-      <section class="card"><h3>יציאות מגזרה</h3>${tl(H,x=>`<li><span class="tb ${x.dec==='yes'?'ok':'bad'}">${x.dec==='yes'?'✓':'✕'}</span><div><small>${esc(new Date(x.ts).toLocaleDateString('he-IL'))}</small><p>${esc(x.dest||'—')}${x.from?` · ${esc(x.from)}${x.to&&x.to!==x.from?'–'+esc(x.to):''}`:''}</p></div></li>`)}</section>
+      ${isMoto(p)?'':'<!--'}<section class="card"><h3>יציאות מגזרה</h3>${tl(H,x=>`<li><span class="tb ${x.dec==='yes'?'ok':'bad'}">${x.dec==='yes'?'✓':'✕'}</span><div><small>${esc(new Date(x.ts).toLocaleDateString('he-IL'))}</small><p>${esc(x.dest||'—')}${x.from?` · ${esc(x.from)}${x.to&&x.to!==x.from?'–'+esc(x.to):''}`:''}</p></div></li>`)}</section>${isMoto(p)?'':'-->'}
     </div></aside>`;
   ov.onclick=e=>{if(e.target===ov||e.target.closest('.x'))ov.remove()};document.body.append(ov);
 }
 function exitView(){
   const app=$('app'),p=st.sel?DATA.people.find(x=>(x.pv||x.n)===st.sel):null,f=st.f;
-  const opts=DATA.people.map(x=>`<option value="${esc(x.pv||x.n)}"${p===x?' selected':''}>${esc(x.n)}${x.pv?' · '+esc(x.pv):''}</option>`).join('');
-  let h=`<div class="exit"><section class="panel"><header><h2>בקשת יציאה מהגזרה</h2></header><div class="form">
-    <label class="full">מתנדב<select id="xp"><option value="">בחר מתנדב…</option>${opts}</select></label>
+  const riders=DATA.people.filter(isMoto),opts=riders.map(x=>`<option value="${esc(x.pv||x.n)}"${p===x?' selected':''}>${esc(x.n)}${x.pv?' · '+esc(x.pv):''}</option>`).join('');
+  let h=`<div class="exit"><section class="panel"><header><h2>בקשת יציאה מהגזרה</h2><span class="count">${riders.length} אופנוענים</span></header><p class="hint">יציאה מהגזרה רלוונטית רק לאופנוענים.</p><div class="form">
+    <label class="full">אופנוען<select id="xp"><option value="">בחר אופנוען…</option>${opts}</select></label>
     <label>יעד<input id="xd" value="${esc(f.dest||'')}" placeholder="לדוגמה: אילת"></label>
-    <label>כלי<select id="xv"><option value="">ללא כלי ארגוני</option>${DATA.veh.map(v=>`<option value="${esc(v.num)}"${f.veh===v.num?' selected':''}>${esc(v.num)} · ${esc(v.type)} · ${esc(v.plate)}</option>`).join('')}</select></label>
+    <label>אופנוע<select id="xv"><option value="">ללא אופנוע ארגוני</option>${DATA.veh.filter(v=>/אופנוע/.test(v.type||'')).map(v=>`<option value="${esc(v.num)}"${f.veh===v.num?' selected':''}>${esc(v.num)} · ${esc(v.type)} · ${esc(v.plate)}</option>`).join('')}</select></label>
     <label>מתאריך<input id="xf" type="date" value="${esc(f.from||'')}"></label><label>עד תאריך<input id="xt" type="date" value="${esc(f.to||'')}"></label>
     <label class="full">סיבה / הערות<textarea id="xn" rows="2">${esc(f.note||'')}</textarea></label></div></section>`;
   if(p){
@@ -415,12 +457,40 @@ function drill(k){
   document.body.append(ov);
 }
 
+/* ===== ספר טלפונים (בסגנון ספר הטלפונים הראשי) ===== */
+function age(bd){const d=pd(bd);if(!d)return '';let a=T0.getFullYear()-d.getFullYear();if(T0<new Date(T0.getFullYear(),d.getMonth(),d.getDate()))a--;return a>0&&a<120?a:''}
+function hebBd(bd){const d=pd(bd);if(!d)return '';try{return new Intl.DateTimeFormat('he-IL-u-ca-hebrew',{day:'numeric',month:'long'}).format(d)}catch(e){return ''}}
+function pbRow(p){const tel=(p.ph||'').replace(/\D/g,''),car=(p.cars||[])[0];
+  return `<div class="prow pb" role="button" tabindex="0" data-c="${esc(p.pv||p.n)}"><span class="av" style="background:${colorOf(p.n)}">${esc(ini(p.n))}</span>
+    <span class="pid"><b>${esc(p.n)}</b><small>${esc([(p.perm||'').split(/;\s*/)[0],p.city].filter(Boolean).join(' · ')||DATA.br)}</small></span>
+    <span class="badges">${car?`<span class="bdg car">🚑 ${esc(car.num)}</span>`:''}${p.pv?`<span class="bdg">${esc(p.pv)}</span>`:''}</span>
+    ${tel?`<a class="cb call" href="tel:${esc(tel)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(tel,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}</div>`}
+function phonebookView(){
+  const q=st.q.trim(),L=DATA.people.filter(p=>!q||[p.n,p.pv,p.ph,p.city,(p.cars||[]).map(c=>c.num).join(' ')].some(x=>(x||'').includes(q)));
+  const col=new Intl.Collator('he');L.sort((a,b)=>col.compare(a.n,b.n));
+  let h=`<div class="toolbar"><div class="search">${IC.users}<input id="q" type="search" placeholder="חיפוש: שם, טלפון, פרייבט, מס׳ רכב, יישוב…" value="${esc(st.q)}"></div></div><section class="panel">`,last='';
+  L.forEach(p=>{const l=(p.n||'#').charAt(0);if(l!==last){h+=`<div class="lt">${esc(l)}</div>`;last=l}h+=pbRow(p)});
+  return h+(L.length?'':'<div class="empty">לא נמצאו אנשי קשר</div>')+`</section><p class="foot">${L.length} אנשי קשר עם הרשאת נהיגה · ${esc(DATA.br)}</p>`;
+}
+function contactSheet(key){
+  const p=DATA.people.find(x=>(x.pv||x.n)===key);if(!p)return;const o=DATA.org||{},tel=(p.ph||'').replace(/\D/g,''),addr=[p.st,p.city].filter(Boolean).join(', '),a=age(p.bd),hb=hebBd(p.bd);
+  const it=(ic,l,val,href)=>val?`<${href?`a href="${esc(href)}"${href.startsWith('http')?' target="_blank" rel="noopener"':''}`:'div'} class="it"><span class="k">${ic}</span><span class="v"><small>${l}</small><span>${val}</span></span></${href?'a':'div'}>`:'';
+  const ov=document.createElement('div');ov.className='ov';ov.innerHTML=`<aside class="drawer pbs"><header class="dh"><button class="x" aria-label="סגירה">${IC.x}</button><span class="av lg" style="background:${colorOf(p.n)}">${esc(ini(p.n))}</span><div><h2>${esc(p.n)}</h2><p>${esc([p.pv&&'פרייבט '+p.pv,DATA.br].filter(Boolean).join(' · '))}</p></div></header>
+    <div class="qa">${tel?`<a href="tel:${esc(tel)}"><i>📞</i>חיוג</a><a href="${waLink(tel,'')}" target="_blank" rel="noopener"><i>💬</i>וואטסאפ</a><a href="sms:${esc(tel)}"><i>✉️</i>הודעה</a>`:''}${p.em?`<a href="mailto:${esc(p.em)}"><i>📧</i>מייל</a>`:''}<button type="button" id="toSafety"><i>🛡️</i>תיק בטיחות</button></div>
+    <section class="box"><h3>פרטי קשר</h3>${it('📱','טלפון נייד',esc(fmtPhone(p.ph)),tel?'tel:'+tel:'')}${it('📧','מייל',esc(p.em),p.em?'mailto:'+p.em:'')}${it('🏠','כתובת',esc(addr),addr?'https://waze.com/ul?q='+encodeURIComponent(addr)+'&navigate=yes':'')}</section>
+    <section class="box"><h3>ארגון</h3>${it('🏷️','פרייבט',esc(p.pv))}${it('🚦','הרשאות נהיגה',(p.perm||'').split(/;\s*/).filter(Boolean).map(x=>`<span class="tag">${esc(x)}</span>`).join(''))}${it('🏢','סניף',esc(DATA.br))}${it('🗺️','מחוז',esc(o.dist))}${it('👤','ראש סניף / מנהל אגף',esc(o.head))}${it('👥','סגן ראש סניף',esc(o.dep))}${it('🚗','רכז תחבורה סניפי',esc(DATA.coord))}${it('🦺','קצין בטיחות מחוזי',esc(o.officer))}</section>
+    ${p.bd||(p.cars||[]).length?`<section class="box"><h3>פרטים נוספים</h3>${it('🎂','תאריך לידה',esc(p.bd+(a?` (גיל ${a})`:'')))}${it('✡️','יום הולדת עברי',esc(hb))}${(p.cars||[]).map(c=>it('🚑','כלי ארגוני',esc(`כלי ${c.num}${c.type?' · '+c.type:''}${c.plate?' · '+c.plate:''}`))).join('')}</section>`:''}
+  </aside>`;
+  ov.onclick=e=>{if(e.target===ov||e.target.closest('.x'))return ov.remove();if(e.target.closest('#toSafety')){ov.remove();personSheet(key)}};document.body.append(ov);
+}
+
 function coordMsg(b){const c=ADMIN[b];return `שלום ${first(c.coord)||''},\n\nפתחתי לך מערכת חדשה לניהול הבטיחות של סניף *${b}* 🚑\n\nבמערכת תוכל לראות:\n• את כל הנהגים בסניף – פרטים, מסמכים ותוקף רישיונות\n• ציוני סייפטי לכל חודש\n• מבחני רכיבה ומבחני מגרש (אלטרנתיבי)\n• את כל הכלים של הסניף ומצב הטסטים, הטיפולים והבדיקות\n• *טופס יציאה מגזרה* – בוחרים מתנדב, המערכת בודקת את כל הנתונים שלו ונותנת המלצה, ואם מאשרים – יש הודעת בטיחות מוכנה לשליחה\n\nכניסה:\n🔗 https://dannybd20-hue.github.io/akordim/coord.html\n🔑 סיסמה: *${c.pw}*\n\nהמערכת לצפייה בלבד, ורואים בה רק את הסניף שלך. כדאי להוסיף את הקישור למסך הבית בטלפון.\nהסיסמה אישית לך – לא להעביר הלאה.\n\nאם יש שאלה, אני זמין.\nדני בן דוד\nקצב"ת ירושלים`}
 
 function adminBar(){const c=ADMIN[DATA.br],m=coordMsg(DATA.br);return `<div class="admin"><select id="adm" aria-label="סניף">${Object.keys(ADMIN).map(b=>`<option${b===DATA.br?' selected':''}>${esc(b)}</option>`).join('')}</select><span class="info">מצב מנהל · רכז: <b>${esc(c.coord||'—')}</b>${c.cph?' · '+fmtPhone(c.cph):''} · סיסמה: <b>${esc(c.pw)}</b></span><span class="acts">${c.cph?`<a class="btn wa" href="${waLink(c.cph,m)}" target="_blank" rel="noopener">${WA_ICON}שליחת סיסמה לרכז</a>`:''}<button class="btn ghost" type="button" id="cpm">העתקת ההודעה</button></span></div>`}
 document.querySelectorAll('.tab[data-v]').forEach(b=>b.onclick=()=>{st.view=b.dataset.v;document.querySelectorAll('.tab[data-v]').forEach(x=>x.setAttribute('aria-selected',x===b));render()});
 function bind(){
-  document.querySelectorAll('#app .prow').forEach(c=>{c.onclick=e=>{if(!e.target.closest('a'))personSheet(c.dataset.p)};c.onkeydown=e=>{if(e.key==='Enter')personSheet(c.dataset.p)}});
+  document.querySelectorAll('#app .prow:not(.pb)').forEach(c=>{c.onclick=e=>{if(!e.target.closest('a'))personSheet(c.dataset.p)};c.onkeydown=e=>{if(e.key==='Enter')personSheet(c.dataset.p)}});
+  document.querySelectorAll('#app .prow.pb').forEach(c=>{c.onclick=e=>{if(!e.target.closest('a'))contactSheet(c.dataset.c)};c.onkeydown=e=>{if(e.key==='Enter')contactSheet(c.dataset.c)}});
   document.querySelectorAll('.kpi[data-k]').forEach(b=>b.onclick=()=>drill(b.dataset.k));
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{st.flt=b.dataset.f;render()});
   const q=$('q');if(q)q.oninput=e=>{st.q=e.target.value;const pos=e.target.selectionStart;render();const n=$('q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}};
