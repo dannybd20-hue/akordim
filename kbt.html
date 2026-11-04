@@ -140,7 +140,7 @@ function first(n){return (n||'').split(' ')[0]}
 function carTxt(c){return `כלי מס' ${c.num}`}
 function carLine(d){return d.cars&&d.cars.length?`\n(${d.cars.map(carTxt).join(', ')})`:''}
 const DOVI={wa:'972502073341',mail:'doviD@1221.org.il',cc:'yehudalv@1221.org.il'};
-function doviMsg(d,i){return `שלום דובי,\n\nלנהג שפרטיו מופיעים מטה פג תוקף בדיקת המידע התעבורתי (עבר תעבורתי) בתאריך ${i.dateStr}.\nאודה לך אם תוציא עבורו בדיקה חדשה, ותעדכן אותי ברגע שהבדיקה בוצעה.\n\n*פרטי הנהג:*\nשם: ${d.name}\nת.ז.: ${d.idn||'________'}\nמס' רישיון נהיגה: ________\nפרייבט: ${d.priv||'—'}\nסניף: ${d.branch||'—'}\n\nתודה רבה,\n${SIGN.replace('בברכה,\n','')}`}
+function doviMsg(d,i){return `שלום דובי,\n\nלנהג שפרטיו מופיעים מטה פג תוקף בדיקת המידע התעבורתי (עבר תעבורתי) בתאריך ${i.dateStr}.\nאודה לך אם תוציא עבורו בדיקה חדשה, ותעדכן אותי ברגע שהבדיקה בוצעה.\n\n*פרטי הנהג:*\nשם: ${d.name}\nת.ז.: ${(d.idn||'').replace(/-/g,'')||'________'}\nמס' רישיון נהיגה: ________\nפרייבט: ${d.priv||'—'}\nסניף: ${d.branch||'—'}\n\nתודה רבה,\n${SIGN.replace('בברכה,\n','')}`}
 // i = {k, lvl, n, dateStr, srcStr}
 function soonTxt(i,f){return i.n===1?(f?'*תפוג מחר*':'*יפוג מחר*'):`*${f?'תפוג':'יפוג'} בעוד ${i.n} ימים*`}
 const MSG={
