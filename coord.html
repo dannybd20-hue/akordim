@@ -402,7 +402,7 @@ function vRow(v){
   const t=pd(v.test),c=pd(v.check),i=pd(v.ins),sv=pd(v.service);let svDue=null;if(sv){svDue=new Date(sv);svDue.setFullYear(svDue.getFullYear()+1)}
   const is=vehIssues(v);
   return `<div class="vcard${is.some(x=>x.lvl==='bad')?' bad':is.length?' warn':''}">
-    <div class="vh2"><span class="plate">${esc(v.plate)}</span><span class="pid"><b>כלי ${esc(v.num)} · ${esc(v.type)}</b><small>נהג: ${esc(v.name||'—')}${v.phone?' · '+fmtPhone(v.phone):''}</small></span>${v.phone?`<a class="cb call" href="tel:${esc(v.phone)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(v.phone,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}</div>
+    <div class="vh2"><span class="plate">${esc(v.plate)}</span><span class="pid"><b>כלי ${esc(v.num)} · ${esc(v.type)}</b><small>נהג: ${esc(v.name||'—')}${(()=>{const d=DATA.people.find(p=>(v.phone&&p.ph===v.phone)||p.n===v.name);return d&&d.pv?' · פרייבט '+esc(d.pv):''})()}</small></span>${v.phone?`<a class="cb call" href="tel:${esc(v.phone)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(v.phone,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}</div>
     <div class="vstat">${is.length?is.map(x=>`<span class="pill ${x.lvl}">${x.lvl==='bad'?'⛔':'⚠️'} ${esc(x.t)}</span>`).join(''):'<span class="pill ok">✓ הכלי תקין – אין חריגות</span>'}</div>
     <div class="dgrid4">${dstate('טסט (רישיון רכב)',v.test,t,'test')}${dstate('טיפול אחרון',v.service,svDue,'service')}${dstate('בדיקת קצב"ת',v.check,c,'check')}${dstate('ביטוח',v.ins,i,'ins')}</div>
   </div>`;
