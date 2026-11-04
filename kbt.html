@@ -90,6 +90,13 @@ h2 .cnt{font-family:var(--f-body);font-weight:700;font-size:.85rem;color:var(--m
 .issues{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:8px}
 .irow.dovi{background:var(--bg);border-radius:10px;padding:6px 8px}
 .irow.dovi .dl{font-size:.86rem;font-weight:700;color:var(--muted)}
+.routebar{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.go-maps{display:block;text-align:center;text-decoration:none;background:var(--accent);color:var(--accent-fg);font-weight:700;padding:11px;border-radius:10px}
+.stopn{display:inline-grid;place-items:center;min-width:1.7em;height:1.7em;border-radius:50%;background:var(--accent);color:var(--accent-fg);font-size:.85rem;margin-inline-end:8px}
+.card.off{opacity:.55}
+.addr{display:flex;gap:6px;margin-top:8px;align-items:center}
+.addr input{flex:1;min-width:0;font:inherit;font-size:.92rem;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+.inc{display:inline-flex;align-items:center;gap:4px;font-size:.88rem;font-weight:600;color:var(--muted)}
 .irow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .btns{display:flex;gap:6px;flex-wrap:wrap}
 .sm{padding:6px 10px!important;font-size:.88rem;border-radius:8px}
@@ -124,6 +131,7 @@ td.d-bad{color:var(--bad);font-weight:700} td.d-warn{color:var(--warn);font-weig
       <button class="tab" role="tab" id="t-alerts" aria-selected="true" data-v="alerts">חריגות<span class="n" id="n-alerts"></span></button>
       <button class="tab" role="tab" id="t-veh" aria-selected="false" data-v="veh">רכבים</button>
       <button class="tab" role="tab" id="t-drv" aria-selected="false" data-v="drv">נהגים</button>
+      <button class="tab" role="tab" id="t-route" aria-selected="false" data-v="route">מסלול בדיקות</button>
     </div>
   </div>
 </header>
@@ -140,7 +148,7 @@ function first(n){return (n||'').split(' ')[0]}
 function carTxt(c){return `כלי מס' ${c.num}`}
 function carLine(d){return d.cars&&d.cars.length?`\n(${d.cars.map(carTxt).join(', ')})`:''}
 const DOVI={wa:'972502073341',mail:'doviD@1221.org.il',cc:'yehudalv@1221.org.il'};
-function doviMsg(d,i){return `שלום דובי,\n\nלנהג שפרטיו מופיעים מטה פג תוקף בדיקת המידע התעבורתי (עבר תעבורתי) בתאריך ${i.dateStr}.\nאודה לך אם תוציא עבורו בדיקה חדשה, ותעדכן אותי ברגע שהבדיקה בוצעה.\n\n*פרטי הנהג:*\nשם: ${d.name}\nת.ז.: ${(d.idn||'').replace(/-/g,'')||'________'}\nמס' רישיון נהיגה: ________\nפרייבט: ${d.priv||'—'}\nסניף: ${d.branch||'—'}\n\nתודה רבה,\n${SIGN.replace('בברכה,\n','')}`}
+function doviMsg(d,i){return `שלום דובי,\n\nלנהג שפרטיו מופיעים מטה פג תוקף בדיקת המידע התעבורתי (עבר תעבורתי) בתאריך ${i.dateStr}.\nאודה לך אם תוציא עבורו בדיקה חדשה, ותעדכן אותי ברגע שהבדיקה בוצעה.\n\n*פרטי הנהג:*\nשם: ${d.name}\nת.ז.: ${(d.idn||'').replace(/-/g,'')||'________'}\nמס' רישיון נהיגה: ${d.licn||'________'}\nפרייבט: ${d.priv||'—'}\nסניף: ${d.branch||'—'}\n\nתודה רבה,\n${SIGN.replace('בברכה,\n','')}`}
 // i = {k, lvl, n, dateStr, srcStr}
 function soonTxt(i,f){return i.n===1?(f?'*תפוג מחר*':'*יפוג מחר*'):`*${f?'תפוג':'יפוג'} בעוד ${i.n} ימים*`}
 const MSG={
@@ -171,7 +179,7 @@ function diff(d){return Math.round((d-T0)/DAY)}
 const VEH_ITEMS=[
   {k:'test',label:'טסט (רישיון רכב)',due:v=>pd(v.test),word:'בתוקף עד',minWin:7},
   {k:'service',label:'טיפול שנתי',due:v=>{const d=pd(v.service);return d?addYear(d):null},word:'טיפול אחרון',src:v=>pd(v.service)},
-  {k:'check',label:'בדיקת תקינות',due:v=>pd(v.check),word:'מועד הבדיקה'}
+  {k:'check',label:'בדיקת תקינות',due:v=>pd(v.check),word:'מועד הבדיקה',skip:v=>isDone(v)}
 ];
 const DRV_ITEMS=[
   {k:'lic',label:'רישיון נהיגה',due:d=>pd(d.lic),word:'בתוקף עד'},
@@ -298,6 +306,7 @@ function render(){
   const app=document.getElementById('app');
   const all=buildAlerts(),every=buildAlerts(true);
   document.getElementById('n-alerts').textContent=every.filter(r=>r.lvl==='today'||r.lvl==='bad').length||'';
+  if(state.view==='route'){renderRoute();return}
   if(state.view==='alerts'){
     const rows=all.filter(r=>(state.kind==='all'||r.type===state.kind)&&matches(r));
     const c=l=>rows.filter(r=>r.lvl===l).length;
@@ -333,6 +342,71 @@ function render(){
     app.innerHTML=`${controls(false)}<div class="legend">${list.length} רשומות · <span style="color:var(--bad)">אדום</span> = פג, <span style="color:var(--warn)">כתום</span> = יפוג בקרוב</div><div class="tbl-wrap"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
   }
   bind();
+}
+/* ===== מסלול בדיקות קצב"ת ===== */
+const RT={day:ls('rt_day')||'מחר',hrs:ls('rt_hrs')||'17:00–20:00',seq:{},off:{}};
+const CHK={...VEH_ITEMS[2],skip:null};
+function isDone(v){const d=ls('done:'+v.num);if(!d)return false;const due=pd(v.check);return !due||new Date(d)>=due}
+function addrOf(v){const s=ls('addr:'+v.num);if(s)return s;const a=v.addr||{};return [a.st,a.city].filter(Boolean).join(', ')}
+function routeAll(){
+  return DATA.vehicles.map(v=>{const is=evalItems(v,[CHK],state.win).filter(i=>i.lvl!=='miss');return is.length?{v,i:is[0]}:null}).filter(Boolean);
+}
+function routeList(){
+  const col=new Intl.Collator('he');
+  let L=routeAll().filter(x=>!state.branch||x.v.branch===state.branch);
+  L.sort((a,b)=>col.compare((a.v.addr||{}).city||'',(b.v.addr||{}).city||'')||col.compare(addrOf(a.v),addrOf(b.v)));
+  const key=state.branch||'*',seq=RT.seq[key];
+  if(seq)L.sort((a,b)=>{const x=seq.indexOf(a.v.num),y=seq.indexOf(b.v.num);return (x<0?1e9:x)-(y<0?1e9:y)});
+  return L;
+}
+function visitMsg(v){
+  return `מה נשמע ${first(v.name)},\n\nאני מתכנן לעבור ${RT.day} בין ${RT.hrs} לבצע בדיקת קצב"ת לכלי מס' *${v.num}* (${v.type}, רישוי ${v.plate}).\nהכתובת שמופיעה אצלי: ${addrOf(v)||'לא ידועה'}.\n\nאם הכלי יהיה במקום אחר (למשל בעבודה) – תשלח לי בבקשה כתובת מדויקת, ואם השעה לא מתאימה תעדכן אותי.\n\nתודה רבה,\nדני בן דוד\nקצב"ת ירושלים`;
+}
+function mapsDir(addrs){return 'https://www.google.com/maps/dir//'+addrs.map(a=>encodeURIComponent(a)).join('/')}
+function renderRoute(){
+  const app=document.getElementById('app');
+  const all=routeAll(),cnt={};all.forEach(x=>{if(!isDone(x.v))cnt[x.v.branch]=(cnt[x.v.branch]||0)+1});
+  const brs=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]);
+  const L=routeList(),todo=L.filter(x=>!isDone(x.v)),done=L.filter(x=>isDone(x.v));
+  const key=state.branch||'*',off=RT.off[key]||(RT.off[key]={});
+  const sel=todo.filter(x=>!off[x.v.num]&&addrOf(x.v));
+  const chunks=[];for(let k=0;k<sel.length;k+=9)chunks.push(sel.slice(k,k+9));
+  let html=`<div class="controls">
+    <select id="rbranch"><option value="">בחר אזור / סניף (${Object.values(cnt).reduce((a,b)=>a+b,0)})</option>${brs.map(b=>`<option value="${esc(b)}"${b===state.branch?' selected':''}>${esc(b)} (${cnt[b]})</option>`).join('')}</select>
+    <input id="rday" type="text" value="${esc(RT.day)}" aria-label="יום הביקור" style="flex:1 1 110px">
+    <input id="rhrs" type="text" value="${esc(RT.hrs)}" aria-label="שעות" style="flex:1 1 120px;direction:ltr;text-align:right">
+  </div>
+  <div class="legend">כלים שבדיקת הקצב"ת שלהם עברה${state.win?` או תגיע ב־${state.win} הימים הקרובים`:''}. יום ושעות נכנסים להודעה לנהג. הכתובת היא הכתובת של הנהג מספר הטלפונים, ואפשר לשנות אותה.</div>`;
+  if(!state.branch){html+=`<div class="empty">בחר אזור כדי לבנות מסלול.</div>`}
+  else{
+    html+=`<div class="routebar"><b>${sel.length} תחנות במסלול</b>${chunks.map((c,n)=>`<a class="go-maps" href="${mapsDir(c.map(x=>addrOf(x.v)))}" target="_blank" rel="noopener">🗺️ פתח בגוגל מפות${chunks.length>1?` · חלק ${n+1} (תחנות ${n*9+1}–${n*9+c.length})`:''}</a>`).join('')}${sel.length?'':'<span class="legend">אין תחנות מסומנות עם כתובת.</span>'}</div>`;
+    html+=`<div class="list">${todo.map((x,k)=>stopCard(x,k,off)).join('')||'<div class="empty">כל הכלים באזור הזה נבדקו.</div>'}</div>`;
+    if(done.length)html+=`<h2><span class="dot" style="background:var(--ok)"></span>נבדקו<span class="cnt">${done.length}</span></h2><div class="list">${done.map(x=>`<div class="card"><div class="who"><div class="name">${esc(x.v.name)}</div><div class="meta"><span class="plate">${esc(x.v.plate)}</span><span>כלי ${esc(x.v.num)}</span><span>נבדק ${fmt(new Date(ls('done:'+x.v.num)))}</span></div></div><div class="acts"><button class="mail sm" data-undo="${esc(x.v.num)}">ביטול</button></div></div>`).join('')}</div>`;
+  }
+  app.innerHTML=html;
+  const q=id=>document.getElementById(id);
+  q('rbranch').onchange=e=>{state.branch=e.target.value;renderRoute()};
+  q('rday').onchange=e=>{RT.day=e.target.value.trim()||'מחר';ls('rt_day',RT.day);renderRoute()};
+  q('rhrs').onchange=e=>{RT.hrs=e.target.value.trim()||'17:00–20:00';ls('rt_hrs',RT.hrs);renderRoute()};
+  app.querySelectorAll('[data-addr]').forEach(i=>i.onchange=()=>{ls('addr:'+i.dataset.addr,i.value.trim());renderRoute()});
+  app.querySelectorAll('[data-inc]').forEach(c=>c.onchange=()=>{if(c.checked)delete off[c.dataset.inc];else off[c.dataset.inc]=1;renderRoute()});
+  app.querySelectorAll('[data-mv]').forEach(b=>b.onclick=()=>{const [num,d]=b.dataset.mv.split('|');const s=todo.map(x=>x.v.num);const k=s.indexOf(num),j=k+(+d);if(j<0||j>=s.length)return;[s[k],s[j]]=[s[j],s[k]];RT.seq[key]=s.concat(done.map(x=>x.v.num));renderRoute()});
+  app.querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>{ls('done:'+b.dataset.done,new Date().toISOString());renderRoute()});
+  app.querySelectorAll('[data-undo]').forEach(b=>b.onclick=()=>{ls('done:'+b.dataset.undo,'');renderRoute()});
+  app.querySelectorAll('a[data-sent]').forEach(a=>a.addEventListener('click',()=>{ls(a.dataset.sent,'1');setTimeout(renderRoute,300)}));
+}
+function stopCard(x,k,off){
+  const v=x.v,i=x.i,a=addrOf(v),sk='sent:visit:'+v.num+':'+TODAY_KEY,sent=ls(sk),inc=!off[v.num];
+  return `<div class="card stop${inc?'':' off'}">
+    <div class="who"><div class="name"><span class="stopn">${k+1}</span>${esc(v.name)}</div>
+      <div class="meta"><span class="plate">${esc(v.plate)}</span><span>כלי ${esc(v.num)} · ${esc(v.type)}</span><span>${esc(v.branch)}</span></div>
+      <div class="addr"><input data-addr="${esc(v.num)}" value="${esc(a)}" placeholder="כתובת (רחוב, מספר, עיר)" aria-label="כתובת">${a?`<a class="mail sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a)}" target="_blank" rel="noopener">מפה</a>`:''}</div>
+    </div>
+    <div class="tel">${fmtPhone(v.phone)}</div>
+    <div class="issues"><div class="irow"><span class="chip ${i.lvl}">${esc(i.chip)}</span>
+      <span class="btns"><label class="inc"><input type="checkbox" data-inc="${esc(v.num)}"${inc?' checked':''}> במסלול</label><button class="mail sm" data-mv="${esc(v.num)}|-1" aria-label="הזז למעלה">▲</button><button class="mail sm" data-mv="${esc(v.num)}|1" aria-label="הזז למטה">▼</button></span></div>
+      <div class="irow"><span class="btns">${v.phone?`<a class="wa sm${sent?' done':''}" href="${waLink(v.phone,visitMsg(v))}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}${sent?'עודכן היום':'עדכון לנהג'}</a>`:''}<button class="wa sm" style="background:var(--ok)" data-done="${esc(v.num)}">✓ נבדק</button></span></div>
+    </div></div>`;
 }
 function bind(){
   const q=document.getElementById('q');
