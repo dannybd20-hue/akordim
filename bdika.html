@@ -101,6 +101,7 @@ pre.preview{white-space:pre-wrap;background:var(--bg);border:1px solid var(--lin
 .sign{display:block;margin-top:10px;color:var(--fg);font-weight:700;font-size:1rem;line-height:1.35}
 .logo{background:#fff;border-radius:12px;padding:10px 14px;width:fit-content;max-width:100%;margin-bottom:12px}
 .logo img{display:block;width:170px;height:auto}
+.bybanner{display:flex;flex-direction:column;gap:2px;background:#e6effa;border:1.5px solid #1f5fae;color:#1f5fae;border-radius:12px;padding:10px 12px;margin-bottom:12px}.bybanner span{color:inherit;font-size:.9rem}
 </style>
 </head>
 <body>
@@ -240,7 +241,10 @@ function buildItems(){
 }
 function val(k){const r=document.querySelector(`input[name="c_${k}"]:checked`);return r?r.value:''}
 
-const m=/^#v(\d+)$/.exec(location.hash);if(m)$('num').value=m[1];
+const m=/^#v(\d+)/.exec(location.hash);if(m)$('num').value=m[1];
+/* בדיקה שרכז התחבורה ממלא בעצמו (מאפליקציית בטיחות סניף): על שמו, ומגיעה לקצין הבטיחות לאישור */
+const BY=(()=>{const q=new URLSearchParams(location.hash.replace(/^#v\d+&?/,''));return {c:q.get('c')||'',cp:q.get('cp')||'',br:q.get('br')||'',d:q.get('d')||''}})();
+if(BY.c){$('name').value=BY.c;if(BY.cp)$('priv').value=BY.cp;const bn=document.createElement('div');bn.className='bybanner';bn.innerHTML='<b>בדיקה ע"י רכז תחבורה</b><span></span>';bn.querySelector('span').textContent=BY.c+(BY.br?' · '+BY.br:'')+(BY.d?' · נהג הכלי: '+BY.d:'')+' · הבדיקה תגיע לקצין הבטיחות לאישור';$('f').prepend(bn)}
 
 $('f').addEventListener('submit',async e=>{
   e.preventDefault();
@@ -261,6 +265,7 @@ $('f').addEventListener('submit',async e=>{
   const bad=ks.filter(k=>val(k)==='bad'), oth=ks.filter(k=>val(k)==='other');
   const today=new Date().toLocaleDateString('he-IL');
   let t=`*בדיקת תקינות כלי – ${today}*\n`;
+  if(BY.c)t+=`*בוצעה ע"י רכז תחבורה:* ${BY.c}${BY.br?' – '+BY.br:''}${BY.d?'\n*נהג הכלי:* '+BY.d:''}\n*ממתינה לאישור קצין הבטיחות*\n`;
   t+=`שם: ${$('name').value.trim()}${$('priv').value?` (פרייבט ${$('priv').value})`:''}\n`;
   t+=`כלי מס' ${$('num').value} · ${curType}${$('km').value?` · ${$('km').value} ק"מ`:''}\n`;
   t+=`\n${stop.value==='bad'?'🔴 *יש תקלה שמונעת נסיעה בטוחה*':'🟢 הכלי בטוח לנסיעה לדעת הנהג'}\n`;
@@ -277,7 +282,7 @@ $('f').addEventListener('submit',async e=>{
   await SHEET_CHECK;
   if(SHEET_URL){
     const sb=$('f').querySelector('button[type=submit]');sb.disabled=true;sb.textContent='שולח…';
-    const rec={name:$('name').value.trim(),priv:$('priv').value,num:$('num').value,type:curType,km:$('km').value,stop:stop.value==='bad',
+    const rec={name:$('name').value.trim()+(BY.c?' (רכז תחבורה – ממתין לאישור)':''),priv:$('priv').value,num:$('num').value,type:curType,km:$('km').value,stop:stop.value==='bad',
       ok:ks.length-bad.length-oth.length,bad:bad.map(k=>Q[k][0]+($('why_'+k).value.trim()?' – '+$('why_'+k).value.trim():'')).join('; '),
       other:oth.map(k=>Q[k][0]+' – '+$('why_'+k).value.trim()).join('; '),general:$('general').value.trim(),text:t.replace(/\*/g,'')};
     try{
