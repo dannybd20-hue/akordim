@@ -352,12 +352,14 @@ function safetyMsg(p,f){
 }
 /* היסטוריית יציאות – נשמרת במכשיר של הרכז */
 /* מסונכרנת לגיליון גוגל אחד (כשהכתובת מוגדרת); עותק נשמר גם במכשיר למקרה שאין קליטה */
-const SYNC_URL='';
+let SYNC_URL='https://script.google.com/macros/s/AKfycbw03x21xEa5N4bP6REQthkOJWN85UUsVX3sBgSUvgyhl3fMKdhydg3rLcSvHsj-ke2q2A/exec';
+/* בדיקה שהכתובת היא באמת הסקריפט של הרכזים (ולא של טופס הבדיקה) – אחרת עובדים בלי סנכרון */
+const SYNC_CHECK=fetch(SYNC_URL).then(r=>r.json()).then(j=>{if(!j||j.app!=='coord')SYNC_URL=''}).catch(()=>{SYNC_URL=''});
 let CUR_PW='',REMOTE=null;
 const HK=()=>'exit:'+DATA.br;
 function localHist(){try{return JSON.parse(ls(HK())||'[]').map(h=>(h.id=h.id||String(h.ts),h))}catch(e){return[]}}
 function hist(){const L=localHist();if(!REMOTE)return L;const ids=new Set(REMOTE.map(r=>r.id));return [...REMOTE,...L.filter(h=>!ids.has(h.id))].sort((a,b)=>b.ts-a.ts)}
-async function api(o){if(!SYNC_URL||!CUR_PW)return null;try{const t=(await sha('dbd-coord-api:'+CUR_PW)).slice(0,32);const r=await fetch(SYNC_URL,{method:'POST',body:JSON.stringify({...o,t,br:DATA.br})}).then(r=>r.json());return r&&r.ok?r:null}catch(e){return null}}
+async function api(o){await SYNC_CHECK;if(!SYNC_URL||!CUR_PW)return null;try{const t=(await sha('dbd-coord-api:'+CUR_PW)).slice(0,32);const r=await fetch(SYNC_URL,{method:'POST',body:JSON.stringify({...o,t,br:DATA.br})}).then(r=>r.json());return r&&r.ok?r:null}catch(e){return null}}
 async function syncHist(){const br=DATA.br,r=await api({action:'list'});if(!r||DATA.br!==br)return;REMOTE=r.rows;const ids=new Set(REMOTE.map(x=>x.id));
   for(const h of localHist())if(!ids.has(h.id)&&await api({action:'add',r:h}))REMOTE.push(h);
   render();setTimeout(offDecAlerts,900)}
