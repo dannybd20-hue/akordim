@@ -347,7 +347,8 @@ function card(v,m){
   const sk='sf:'+v.pv+':'+m+':'+c,sent=ls(sk);
   const cm=`data-cpv="${esc(v.pv)}" data-cbr="${esc(v.br)}" data-cn="${esc(v.n)}" data-cm="${esc(M)}" data-ck="${esc(c)}" data-ct="${esc(text)}"`;
   const wa=v.ph?`<a class="wa sm${sent?' done':''}" href="${waLink(v.ph,text)}" target="_blank" rel="noopener" data-sent="${esc(sk)}" ${cm}>${WA_ICON}${sent?'נשלח':'וואטסאפ'}</a>`:'';
-  const ml=`<a class="mail sm" href="mailto:${esc(v.em||'')}?subject=${encodeURIComponent(SUBJ[c]+' – '+M)}&body=${encodeURIComponent(text.replace(/\*/g,''))}" data-sent="${esc(sk)}" ${cm}>מייל</a>`;
+  const cc=CIDX&&CIDX[v.br]&&CIDX[v.br].cem;
+  const ml=`<a class="mail sm" href="mailto:${esc(v.em||'')}?${cc?'cc='+encodeURIComponent(cc)+'&':''}subject=${encodeURIComponent(SUBJ[c]+' – '+M)}&body=${encodeURIComponent(text.replace(/\*/g,''))}" data-sent="${esc(sk)}" ${cm}>מייל</a>`;
   const cp=`<button class="mail sm" type="button" data-copy="${esc(text)}">העתק</button>`;
   return `<div class="card"><div class="who"><div class="name">${esc(v.n)}</div><div class="meta"><span>פרייבט ${esc(v.pv)}</span><span>${esc(v.br)}</span>${k>=2?`<span class="streak">${k} חודשים ברצף מתחת ל־25</span>`:''}</div>${spark(v,m)}${sinceRow(v,m)}${monRow(v,m)}${v.ev?`<div class="meta">${Object.entries(v.ev).sort((x,y)=>y[1][1]-x[1][1]).slice(0,4).map(([c,[n,pc]])=>`<span class="chip ${pc>=25?'bad':pc>=10?'warn':'miss'}">${esc(c)} ${Math.round(pc)}%</span>`).join('')}</div>`:''}<div class="meta">${trendTxt(st)}${st.fromPeak!=null&&st.fromPeak<0?`<span>${-st.fromPeak} מתחת לשיא (${st.peak})</span>`:''}${st.avg!=null?`<span>ממוצע ${st.avg}</span>`:''}</div></div>
     <div class="score ${scCls(x)}">${x}</div>
@@ -457,6 +458,11 @@ function bind(){
 }
 
 /* ===== נתונים מוצפנים (אותה סיסמה כמו ניהול קצב"ת) ===== */
+/* רכזי התחבורה לפי סניף (מאפליקציית הרכזים) – לעותק במייל */
+let CIDX=null;
+async function loadCidx(pw){try{const buf=new Uint8Array(await (await fetch('coord/index.bin',{cache:'no-cache'})).arrayBuffer()),salt=buf.slice(3,19),iv=buf.slice(19,31),ct=buf.slice(31);
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']),key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:600000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+  const gz=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);CIDX=JSON.parse(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'))).text());render()}catch(e){}}
 async function decrypt(pw){
   const buf=new Uint8Array(await (await fetch('safety/safety.bin',{cache:'no-cache'})).arrayBuffer());
   if(String.fromCharCode(buf[0],buf[1],buf[2])!=='KB1')throw new Error('file');
@@ -477,7 +483,7 @@ function lockView(err){
 async function unlock(saved){
   const pw=saved||($('pw')&&(s=>s.replace(/[א-ת]/g,c=>({'ק':'e','ר':'r','א':'t','ט':'y','ו':'u','ן':'i','ם':'o','פ':'p','ש':'a','ד':'s','ג':'d','כ':'f','ע':'g','י':'h','ח':'j','ל':'k','ך':'l','ז':'z','ס':'x','ב':'c','ה':'v','נ':'b','מ':'n','צ':'m'})[c]||c))($('pw').value.trim().toLowerCase()).replace(/\.$/,''));if(!pw)return;
   if(!saved){$('ub').disabled=true;$('ub').textContent='פותח… (כמה שניות)'}else $('app').innerHTML='<div class="empty">פותח את הנתונים…</div>';
-  try{DATA=await decrypt(pw);SPW=pw;if(!saved)ls('kbt_pw',$('rem').checked?pw:'');$('lockB').hidden=false;$('upd').textContent='עודכן: '+DATA.updated;
+  try{DATA=await decrypt(pw);SPW=pw;loadCidx(pw);if(!saved)ls('kbt_pw',$('rem').checked?pw:'');$('lockB').hidden=false;$('upd').textContent='עודכן: '+DATA.updated;
     state.m=DATA.months.length-1;render()}
   catch(e){if(saved&&e.message==='pw')ls('kbt_pw','');lockView(e.message==='pw'?'סיסמה שגויה':!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
 }
