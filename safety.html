@@ -316,7 +316,7 @@ function statsOf(v,m){
   return {x,prev,chg:x!=null&&prev!=null?x-prev:null,peak,fromPeak:x!=null&&peak!=null?x-peak:null,slope,avg,n:pts.length,fall};
 }
 /* כל החודשים של המתנדב – ציון לכל חודש, החודש הנבחר מודגש */
-/* ותק נהיגה בארגון – מהתאריך המוקדם הידוע (השתלמות רכיבה / טסט פנימי / טסט מנהלה) */
+/* ותק נהיגה ברכב/אמבולנס בארגון – לפי טסט מנהלה */
 function sinceRow(v){if(!v.since)return '';const [d,src]=v.since,m=/(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(d);if(!m)return '';const y=(Date.now()-new Date(+m[3],m[2]-1,+m[1]))/(365.25*864e5);
   const mo=Math.max(1,Math.round(y*12)),t=y<1?(mo===1?'חודש אחד':mo+' חודשים'):(Math.floor(y*10)/10+' שנים');return `<div class="meta" style="margin-top:4px"><span class="chip ${y<1?'warn':'ok'}">🚗 נוהג אצלנו ${t}</span><span>מ־${esc(d)} · לפי ${esc(src)}</span></div>`}
 function monRow(v,m){return `<div class="mrow">${DATA.months.map((M,i)=>{const x=v.s[i];return `<span class="mc ${x==null?'':scCls(x)}${i===m?' cur':''}" title="${esc(M)}"><small>${esc(M.split(' ')[0].slice(0,3))}</small><b>${x??'—'}</b></span>`}).join('')}</div>`}
