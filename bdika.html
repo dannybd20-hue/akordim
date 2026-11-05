@@ -183,7 +183,7 @@ pre.preview{white-space:pre-wrap;background:var(--bg);border:1px solid var(--lin
 
 <script>
 /* כתובת סקריפט הגוגל שמכניס כל בדיקה לגיליון. ריק = שליחה בוואטסאפ/מייל בלבד */
-let SHEET_URL='https://script.google.com/macros/s/AKfycbw03x21xEa5N4bP6REQthkOJWN85UUsVX3sBgSUvgyhl3fMKdhydg3rLcSvHsj-ke2q2A/exec';
+let SHEET_URL='https://script.google.com/macros/s/AKfycbwlLtTCFpaHQcLjVGowpD4jZllbxuu_mQzWRxxlwQVzP7ygFQOcdviTHPGTlU3urn50ew/exec';
 /* בדיקה שהכתובת היא באמת הסקריפט של טופס הבדיקה – אחרת שולחים בוואטסאפ/מייל כמו קודם */
 const SHEET_CHECK=fetch(SHEET_URL).then(r=>r.json()).then(j=>{if(!j||j.app!=='bdika')SHEET_URL='';else document.querySelector('#f button[type=submit]').textContent='סיימתי, שלח'}).catch(()=>{SHEET_URL=''});
 const CONTACT={phone:'972508820408', email:'danny.b.d.20@gmail.com'};
