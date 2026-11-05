@@ -900,7 +900,7 @@ function lockView(err){
   $('app').innerHTML=`<div class="lockc"><h2>בטיחות סניף</h2><p style="margin:0;color:var(--muted)">כניסה לרכזי תחבורה. הקלד את הסיסמה של הסניף שלך</p>
   <input id="pw" type="password" autocomplete="current-password" placeholder="סיסמה" dir="ltr" onkeydown="if(event.key==='Enter')unlock()">
   <label style="color:var(--muted);font-weight:600"><input type="checkbox" id="rem" checked> לזכור במכשיר הזה</label>
-  <button class="go" id="ub" onclick="unlock()">כניסה</button><div class="err">${esc(err||'')}</div></div>`;
+  <button class="go" id="ub" onclick="unlock()">כניסה</button><div class="err">${esc(err||'')}</div><small style="color:var(--muted);opacity:.7">גרסה 188 · רכז: סיסמת הסניף · מנהל: סיסמת הקצב"ת</small></div>`;
   setTimeout(()=>{const i=$('pw');if(i)i.focus()},50);
 }
 async function unlock(saved){
