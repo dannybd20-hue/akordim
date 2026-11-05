@@ -96,8 +96,11 @@ function waChat_(c) {
 /* הודעות הוואטסאפ של הקניות (נוסף לרשימה, נקנה, תזכורת שבועית, סיכום שבועי): false = מושבתות.
    הודעות התרופות לא מושפעות. כדי להחזיר: true, שמירה ופריסה חדשה */
 const SHOP_WA = false;
+/* כל הודעות הוואטסאפ מהסקריפט הזה (קניות, תרופות וכל השאר): false = לא נשלחת שום הודעה */
+const WA_ALL = false;
 function waOn_() { return !!waCfg_(); }
 function waSend_(text, to) {
+  if (!WA_ALL) return false;
   const c = waCfg_(); if (!c) return false;
   const chat = to || waChat_(c); if (!chat) return false;
   const res = UrlFetchApp.fetch(c.url + '/waInstance' + c.id + '/sendMessage/' + c.token, {
