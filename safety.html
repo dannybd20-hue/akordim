@@ -365,15 +365,18 @@ function render(){
   if(!DATA)return;
   if(state.view==='br'){renderBranches();return}const app=$('app'),m=state.m,M=DATA.months[m];
   const act=DATA.v.filter(v=>v.s[m]!=null);
-  const cnt={};act.forEach(v=>{const c=catOf(v,m);cnt[c]=(cnt[c]||0)+1});
+  const cnt={};act.forEach(v=>{const c=catOf(v,m);if(!ls('sf:'+v.pv+':'+m+':'+c))cnt[c]=(cnt[c]||0)+1});
   $('n-msg').textContent=(cnt.low||0)+(cnt.drop||0)+(cnt.warn||0)+(cnt.demote||0)||'';
   if(state.view==='msg'){
-    const L=act.filter(v=>catOf(v,m)===state.cat&&filt(v)).sort((a,b)=>a.s[m]-b.s[m]);
+    const L0=act.filter(v=>catOf(v,m)===state.cat&&filt(v)).sort((a,b)=>a.s[m]-b.s[m]);
+    /* מי שכבר נשלחה לו הודעה החודש יורד מהרשימה (חיפוש לפי שם מציג גם אותו) */
+    const wasSent=v=>!!ls('sf:'+v.pv+':'+m+':'+catOf(v,m)),hid=state.q.trim()?[]:L0.filter(wasSent),L=state.q.trim()?L0:L0.filter(v=>!wasSent(v));
     app.innerHTML=`${controls()}
     <div class="cats" role="group" aria-label="קבוצה">${CATS.map(([k,l])=>`<button class="c-${k}" data-cat="${k}" aria-pressed="${state.cat===k}">${l}<span>${cnt[k]||0}</span></button>`).join('')}</div>
     <div class="exp"><button class="mail sm" id="expOne" type="button">📤 קובץ מיילים לקבוצה הזאת (${L.filter(v=>v.em).length})</button><button class="mail sm" id="expAll" type="button">📤 קובץ מיילים לכולם (${act.filter(v=>v.em).length})</button></div>
     <div class="legend">ההודעה נבחרת לפי הציון בחודש ${esc(M)} ולפי כמה חודשים ברצף הציון מתחת ל־25. מתנדב בלי ציון בחודש הזה לא מופיע.</div>
-    <div class="list">${L.map(v=>card(v,m)).join('')||'<div class="empty">אין מתנדבים בקבוצה הזאת.</div>'}</div>`;
+    <div class="list">${L.map(v=>card(v,m)).join('')||`<div class="empty">${hid.length?'כל ההודעות בקבוצה הזאת נשלחו 👍':'אין מתנדבים בקבוצה הזאת.'}</div>`}</div>
+    ${hid.length?`<p class="legend">✓ ${hid.length} מתנדבים שכבר נשלחה להם הודעה הוסתרו מהרשימה (${hid.map(v=>esc(v.n)).join(', ')}). לצפייה – חיפוש לפי השם.</p>`:''}`;
   } else if(state.view==='vol'){
     const L=DATA.v.filter(filt).sort((a,b)=>(a.s[m]??999)-(b.s[m]??999));
     const cell=x=>`<td class="s ${x==null?'':x<25?'low':x<35?'mid':x>=70?'top':''}">${x??'—'}</td>`;
