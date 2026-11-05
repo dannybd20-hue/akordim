@@ -352,8 +352,8 @@ function annual(p){
   if(rd)return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'הדרכת רכיבה – חיים בדרכים ('+rd.d+')'};
   if(ad&&need!=='אופנוע')return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'הדרכת אלטרנתיבי ('+ad.d+')'};
   const r1=pd((p.ext||{}).r1),dr1=!!r1&&r1.getFullYear()===ANN_Y;
-  /* קורס השנה – כביש או מגרש */
-  const cf=w=>(C.split(';').map(x=>x.trim()).find(x=>new RegExp('^'+w+'\\s+(כביש|מגרש)\\s+'+ANN_Y).test(x))||'');
+  /* כל קורס של אותו סוג כלי בשנה הזו (כביש, מגרש, עירוני וכו') */
+  const cf=w=>(C.split(';').map(x=>x.trim()).find(x=>new RegExp('^'+w+'(\\s|$)').test(x)&&x.includes(String(ANN_Y)))||'');
   const cm=cf('אופנוע(ים)?'),ca=cf('אמבולנס'),cc=cf('רכב');
   const dm=dr1||!!cm,da=!!ca,dc=!!cc;
   const done=need==='אופנוע'?dm:need==='אמבולנס'?dm||da:dm||da||dc;
