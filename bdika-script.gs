@@ -4,7 +4,7 @@
  *
  * התקנה (פעם אחת, עדיף מהמחשב):
  *  1. https://script.google.com ← "פרויקט חדש". מחק הכול והדבק את הקוד הזה.
- *  2. מלא למטה את ADMIN_PASSWORD (הסיסמה לקריאת הבדיקות מאפליקציית הניהול).
+ *  2. ADMIN_TOKEN – מפתח הגישה של אפליקציית הקצב"ת (קריאה ואישור בדיקות). לא לשתף את הקובץ.
  *  3. "פריסה" ← "פריסה חדשה" ← סוג: "אפליקציית אינטרנט". "הפעלה בתור": אני. "למי יש גישה": כל אחד.
  *     "פריסה" ואישור ההרשאות.
  *  4. שלח את כתובת האפליקציה (https://script.google.com/macros/s/.../exec) כדי לחבר אותה לטופס.
@@ -12,7 +12,7 @@
  * עדכון קוד: "פריסה" ← "ניהול פריסות" ← ✏️ ← "גרסה חדשה" ← "פריסה".
  */
 
-const ADMIN_PASSWORD = 'כתוב-כאן-סיסמה';
+const ADMIN_TOKEN = '__ADMIN_TOKEN__';
 const SHEET_NAME = 'בדיקות תקינות כלים';
 const HEAD = ['תאריך ושעה', 'שם', 'פרייבט', 'מספר כלי', 'סוג כלי', 'קילומטראז\'', 'תקלה שמונעת נסיעה', 'תקין', 'לא תקין', 'אחר', 'תקלה כללית', 'פירוט מלא'];
 
@@ -40,10 +40,20 @@ function doPost(e) {
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
     const sh = sheet_();
-    if (d.action === 'list') {
-      if (ADMIN_PASSWORD.indexOf('כתוב-כאן') === 0 || d.password !== ADMIN_PASSWORD) return out_({ ok: false, error: 'pw' });
+    /* אפליקציית הקצב"ת: רשימת הבדיקות ואישור/החזרה */
+    if (d.action === 'list' || d.action === 'decide') {
+      if (!ADMIN_TOKEN || ADMIN_TOKEN.indexOf('__') === 0 || d.t !== ADMIN_TOKEN) return out_({ ok: false, error: 'auth' });
+      if (sh.getLastColumn() < 15) sh.getRange(1, 13, 1, 3).setValues([['סטטוס', 'הערת קצין בטיחות', 'עודכן']]).setFontWeight('bold').setBackground('#1f4f8f').setFontColor('#ffffff');
+      if (d.action === 'decide') {
+        const row = Number(d.row);
+        if (!(row >= 2 && row <= sh.getLastRow())) return out_({ ok: false, error: 'row' });
+        sh.getRange(row, 13, 1, 3).setValues([[d.yes ? 'אושר' : 'הוחזר לרכז', clip_(d.note), new Date()]]);
+        sh.getRange(row, 1, 1, 15).setBackground(d.yes ? '#e6f4ea' : '#fff4d6');
+        return out_({ ok: true });
+      }
       const v = sh.getDataRange().getDisplayValues();
-      return out_({ ok: true, head: v[0], rows: v.slice(1).slice(-500) });
+      const rows = v.slice(1).map((r, i) => ({ row: i + 2, ts: r[0], name: r[1], priv: r[2], num: r[3], type: r[4], km: r[5], stop: r[6], ok: r[7], bad: r[8], other: r[9], general: r[10], text: r[11], st: r[12] || '', note: r[13] || '', upd: r[14] || '' }));
+      return out_({ ok: true, rows: rows.slice(-500) });
     }
     const r = d.r || {};
     if (!r.num || !r.name) return out_({ ok: false, error: 'missing' });

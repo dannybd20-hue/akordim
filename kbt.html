@@ -145,6 +145,7 @@ details.accq summary{cursor:pointer;color:var(--accent)}details.accq .pre{margin
       <button class="tab" role="tab" id="t-veh" aria-selected="false" data-v="veh">רכבים</button>
       <button class="tab" role="tab" id="t-drv" aria-selected="false" data-v="drv">נהגים</button>
       <button class="tab" role="tab" id="t-route" aria-selected="false" data-v="route">מסלול בדיקות</button>
+      <button class="tab" role="tab" id="t-insp" aria-selected="false" data-v="insp">בדיקות<span class="n" id="n-insp"></span></button>
       <button class="tab" role="tab" id="t-acc" aria-selected="false" data-v="acc">תאונות<span class="n" id="n-acc"></span></button>
     </div>
   </div>
@@ -255,7 +256,7 @@ async function unlock(saved){
   const pw=saved||(document.getElementById('pw')&&document.getElementById('pw').value.trim());if(!pw)return;
   if(!saved){const b=document.getElementById('ub');b.disabled=true;b.textContent='פותח… (כמה שניות)'}
   else document.getElementById('app').innerHTML='<div class="empty">פותח את הנתונים…</div>';
-  try{DATA=await decrypt(pw);KPW=pw;setTimeout(loadAcc,300);if(!saved)ls('kbt_pw',document.getElementById('rem').checked?pw:'');document.getElementById('lockB').hidden=false;document.getElementById('upd').textContent='עודכן: '+DATA.updated;render()}
+  try{DATA=await decrypt(pw);KPW=pw;setTimeout(loadAcc,300);setTimeout(()=>loadBd(true),900);if(!window._bdT)window._bdT=setInterval(()=>loadBd(true),180000);if(!saved)ls('kbt_pw',document.getElementById('rem').checked?pw:'');document.getElementById('lockB').hidden=false;document.getElementById('upd').textContent='עודכן: '+DATA.updated;render()}
   catch(e){if(saved&&e.message==='pw')ls('kbt_pw','');lockView(e.message==='pw'?'סיסמה שגויה':!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
 }
 function relock(){if(!confirm('לנעול ולשכוח את הסיסמה במכשיר הזה?'))return;ls('kbt_pw','');DATA=null;lockView()}
@@ -346,6 +347,7 @@ function render(){
   document.getElementById('n-alerts').textContent=every.filter(r=>r.lvl==='today'||r.lvl==='bad').length||'';
   if(state.view==='route'){renderRoute();return}
   if(state.view==='acc'){renderAcc();return}
+  if(state.view==='insp'){renderInsp();return}
   if(state.view==='alerts'){
     const rows=all.filter(r=>(state.kind==='all'||r.type===state.kind)&&matches(r)&&(!state.only||r.lvl===state.only));
     const c=l=>rows.filter(r=>r.lvl===l).length;
@@ -594,6 +596,58 @@ function invOpen(id){
   ov.querySelector('#invr').onclick=()=>{if(t.value!==accDraft(a)&&!confirm('להחליף את מה שכתבת בטיוטה חדשה מהנתונים?'))return;t.value=accDraft(a);upd()};
 }
 /*ACC-END*/
+/*INSP-START*/
+/* ===== בדיקות תקינות שהתקבלו (מהגיליון של טופס הבדיקה) – לאישור קצין הבטיחות ===== */
+const BD_URL='https://script.google.com/macros/s/AKfycbwlLtTCFpaHQcLjVGowpD4jZllbxuu_mQzWRxxlwQVzP7ygFQOcdviTHPGTlU3urn50ew/exec';
+let BDR=null,CIDX=null;const IST={f:'pend'};
+async function bdTok(){const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('dbd-coord-api:'+KPW));return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32)}
+async function bdApi(o){try{const r=await fetch(BD_URL,{method:'POST',body:JSON.stringify({...o,t:await bdTok()})}).then(r=>r.json());return r&&r.ok?r:null}catch(e){return null}}
+const bdPend=r=>!r.st;
+async function loadBd(alert){const r=await bdApi({action:'list'});if(!r){BDR=BDR||'err';if(state.view==='insp')render();return}
+  BDR=r.rows.reverse();const n=BDR.filter(bdPend).length,b=document.getElementById('n-insp');if(b)b.textContent=n||'';
+  if(!CIDX)try{CIDX=await decFile('coord/index.bin',KPW)}catch(e){CIDX={}}
+  if(state.view==='insp')render();if(alert)bdAlert()}
+function bdVeh(r){return (DATA.vehicles||[]).find(v=>v.num===String(r.num))||null}
+function bdCoordOf(r){const v=bdVeh(r),c=v&&CIDX&&CIDX[v.branch];return c||null}
+/* הודעה קופצת: מולא טופס חדש */
+function bdAlert(){if(!Array.isArray(BDR))return;const seen=(()=>{try{return JSON.parse(localStorage.getItem('bd_seen')||'[]')}catch(e){return[]}})();
+  const N=BDR.filter(r=>bdPend(r)&&!seen.includes(r.row+'|'+r.ts));if(!N.length||document.querySelector('.invov'))return;
+  const ov=document.createElement('div');ov.className='invov';
+  ov.innerHTML=`<div class="invbox" role="alertdialog" style="max-width:520px"><div class="invh"><div><small>טפסי בדיקה</small><h2 style="margin:0">📋 שים לב – מולא טופס בדיקה${N.length>1?` (${N.length})`:''}</h2></div><button class="hb x" aria-label="סגירה">✕</button></div>
+    <div class="list">${N.slice(0,5).map(r=>{const v=bdVeh(r);return `<div class="card" style="grid-template-columns:1fr"><div><b>כלי ${esc(r.num)} · ${esc(r.type)}</b>${v?` <span class="meta" style="display:inline">· ${esc(v.branch)}</span>`:''}<div class="meta">${esc(r.name)} · ${esc(r.ts)}</div>${r.stop==='כן'?'<span class="chip bad">⛔ תקלה שמונעת נסיעה</span>':''}${r.bad?`<span class="chip warn">לא תקין: ${esc(r.bad)}</span>`:''}</div></div>`}).join('')}${N.length>5?`<p class="legend">ועוד ${N.length-5}…</p>`:''}</div>
+    <div class="btns"><button class="wa" id="bdgo" style="border:0;cursor:pointer;font:inherit;font-weight:700;background:var(--accent)">לבדיקות</button><button class="more" id="bdlater">אחר כך</button></div></div>`;
+  document.body.append(ov);const mark=()=>{try{localStorage.setItem('bd_seen',JSON.stringify([...seen,...N.map(r=>r.row+'|'+r.ts)].slice(-800)))}catch(e){}ov.remove()};
+  ov.querySelector('#bdgo').onclick=()=>{mark();document.querySelector('.tab[data-v="insp"]').click()};ov.querySelector('#bdlater').onclick=mark;ov.querySelector('.x').onclick=mark;
+}
+function renderInsp(){
+  const app=document.getElementById('app');
+  if(BDR===null){app.innerHTML='<div class="empty">טוען בדיקות מהגיליון…</div>';loadBd();return}
+  if(BDR==='err'){app.innerHTML='<div class="empty">לא הצלחתי לקרוא את הגיליון. צריך לעדכן את הסקריפט של טופס הבדיקה (גרסה עם מפתח הגישה).<br><button class="more" id="bdre" style="margin-top:10px">נסה שוב</button></div>';document.getElementById('bdre').onclick=()=>{BDR=null;render()};return}
+  const L=BDR.filter(r=>IST.f==='pend'?bdPend(r):IST.f==='done'?!bdPend(r):true);
+  app.innerHTML=`<div class="summary">
+    <button class="stat bad${IST.f==='pend'?' on':''}" data-if="pend"><b>${BDR.filter(bdPend).length}</b><span>ממתינות לאישור</span></button>
+    <button class="stat${IST.f==='done'?' on':''}" data-if="done"><b>${BDR.filter(r=>!bdPend(r)).length}</b><span>טופלו</span></button>
+    <button class="stat${IST.f==='all'?' on':''}" data-if="all"><b>${BDR.length}</b><span>כל הבדיקות</span></button></div>
+  <h2>${IST.f==='pend'?'ממתינות לאישור':IST.f==='done'?'טופלו':'כל הבדיקות'} <span class="cnt">${L.length}</span> <button class="more" id="bdre" style="margin-inline-start:auto;padding:6px 10px">רענון</button></h2>
+  <div class="list">${L.map(r=>{const v=bdVeh(r),c=bdCoordOf(r),byC=/רכז תחבורה/.test(r.name);
+    return `<div class="card${r.stop==='כן'?' acck pend':''}"><div class="who">
+      <div class="name">כלי ${esc(r.num)} · ${esc(r.type)} ${v?`<span class="plate">${esc(v.plate)}</span>`:''}</div>
+      <div class="meta"><span>${esc(r.ts)}</span><span>${esc(r.name.replace(/\s*\(.*\)$/,''))}${byC?' · רכז תחבורה':''}</span>${v?`<span>${esc(v.branch)}</span><span>נהג: ${esc(v.name)}</span>`:''}${r.km?`<span>${esc(r.km)} ק"מ</span>`:''}</div>
+      <div class="meta" style="margin-top:4px">${r.stop==='כן'?'<span class="chip bad">⛔ תקלה שמונעת נסיעה</span>':'<span class="chip ok">בטוח לנסיעה</span>'}<span class="chip ok">תקין ${esc(r.ok||0)}</span>${r.bad?`<span class="chip bad">לא תקין: ${esc(r.bad)}</span>`:''}${r.other?`<span class="chip warn">אחר: ${esc(r.other)}</span>`:''}${r.st?`<span class="chip ${r.st==='אושר'?'ok':'warn'}">${esc(r.st)}${r.note?' – '+esc(r.note):''}</span>`:''}</div>
+      ${r.general?`<p class="accq"><b>תקלה כללית:</b> ${esc(r.general)}</p>`:''}
+      <details class="accq"><summary><b>הטופס המלא</b></summary><div class="pre">${esc(r.text)}</div></details>
+    </div><div class="acts">${bdPend(r)?`<button class="wa sm" style="background:var(--ok);border:0;cursor:pointer;font:inherit;font-weight:700" data-bdok="${r.row}">✓ אישור</button><button class="wa sm" style="background:var(--warn);border:0;cursor:pointer;font:inherit;font-weight:700" data-bdno="${r.row}">החזרה לרכז</button>`:''}${c&&c.cph?`<a class="wa sm" target="_blank" rel="noopener" href="https://wa.me/972${esc(c.cph.replace(/^0/,''))}">${WA_ICON}לרכז</a>`:''}</div></div>`}).join('')||'<div class="empty">אין בדיקות כאן</div>'}</div>
+  <p class="legend">מקור: הגיליון "בדיקות תקינות כלים". אחרי אישור – לעדכן את תאריך בדיקת הקצב"ת במערכת.</p>`;
+  app.querySelectorAll('[data-if]').forEach(b=>b.onclick=()=>{IST.f=b.dataset.if;render()});
+  document.getElementById('bdre').onclick=()=>{BDR=null;render()};
+  app.querySelectorAll('[data-bdok],[data-bdno]').forEach(b=>b.onclick=async()=>{const yes=!!b.dataset.bdok,row=+(b.dataset.bdok||b.dataset.bdno),r=BDR.find(x=>x.row===row);
+    let note='';if(!yes){note=prompt('מה להחזיר לרכז? (יישלח גם בוואטסאפ)')||'';if(!note)return}
+    b.disabled=true;b.textContent='שומר…';const ok=await bdApi({action:'decide',row,yes,note});
+    if(!ok){b.disabled=false;b.textContent='לא נשמר – נסה שוב';return}
+    r.st=yes?'אושר':'הוחזר לרכז';r.note=note;loadBd();render();
+    const c=bdCoordOf(r);if(!yes&&c&&c.cph)window.open(`https://wa.me/972${c.cph.replace(/^0/,'')}?text=${encodeURIComponent(`*בדיקת קצב"ת – כלי ${r.num}*\nהבדיקה מ־${r.ts} הוחזרה לתיקון:\n${note}\n\nדני בן דוד · קצין בטיחות`)}`,'_blank')});
+}
+/*INSP-END*/
 </script>
 </body>
 </html>
