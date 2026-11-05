@@ -480,9 +480,14 @@ const INV_URL='https://script.google.com/macros/s/AKfycbw03x21xEa5N4bP6REQthkOJW
 async function kapi(o){try{const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('dbd-coord-api:'+KPW));const tk=[...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
   const r=await fetch(INV_URL,{method:'POST',body:JSON.stringify({...o,t:tk})}).then(r=>r.json());return r&&r.ok?r:null}catch(e){return null}}
 const accDoneK=a=>!!(a.off||INVK[a.id]);
+/* תאונה חדשה (דיווח מוקד / 14 יום אחרונים) – מייל לרכז הסניף, פעם אחת (הסקריפט מונע כפילויות) */
+async function accMails(){const now=new Date();for(const a of ACCD.acc){const id=a.mid||a.id,d=pdh(a.d);if(!a.br||!(a.mid||(d&&(now-d)/864e5<=14)))continue;
+  let s='';try{s=localStorage.getItem('accmail:'+id)}catch(e){}if(s)continue;
+  const txt=[`שים לב – המתנדב ${a.n}${a.pv?' ('+a.pv+')':''} מהסניף שלך היה מעורב בתאונה.`,'',`תאריך: ${a.d}${a.time?' · שעה: '+a.time:''}`,a.place&&`מיקום: ${a.place}`,(a.vt||a.num)&&`כלי: ${[a.vt,a.num].filter(Boolean).join(' ')}`,a.kind&&`סוג: ${a.kind}`,(a.inj||a.injb)&&`נפגעים: ${a.inj||a.injb}`,a.ev&&`בדרך לאירוע: ${a.ev}`,'',a.text||a.drv||''].filter(x=>x!==false&&x!==undefined).join('\n');
+  const r=await kapi({action:'acc_mail',id,abr:a.br,n:a.n,d:a.d,text:txt});if(r){try{localStorage.setItem('accmail:'+id,'1')}catch(e){}}}}
 async function loadInvK(){const r=await kapi({action:'invs'});if(!r)return;INVK={};r.rows.forEach(x=>INVK[x.id]=x);accBadge();if(state.view==='acc')render()}
 function accBadge(){const b=document.getElementById('n-acc');if(b&&ACCD)b.textContent=ACCD.acc.filter(a=>!accDoneK(a)).length||''}
-function loadAcc(){if(!ACCL)ACCL=decFile('kbt/acc.bin',KPW).then(d=>{ACCD=d;loadInvK();const n=d.acc.filter(a=>!accDoneK(a)).length;const b=document.getElementById('n-acc');if(b)b.textContent=n||'';if(state.view==='acc')render()}).catch(()=>{ACCL=null});return ACCL}
+function loadAcc(){if(!ACCL)ACCL=decFile('kbt/acc.bin',KPW).then(d=>{ACCD=d;loadInvK();setTimeout(accMails,2000);const n=d.acc.filter(a=>!accDoneK(a)).length;const b=document.getElementById('n-acc');if(b)b.textContent=n||'';if(state.view==='acc')render()}).catch(()=>{ACCL=null});return ACCL}
 const pdh=x=>{const m=String(x||'').match(/(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})/);if(!m)return null;let y=+m[3];if(y<100)y+=2000;return new Date(y,m[2]-1,+m[1])};
 const isMotoV=t=>/אופנוע|קטנוע/.test(t||''),isCarV=t=>/אמבולנס|רכב|מינילנס|ג'יפ|משאית|טרקטור/.test(t||'');
 function accPrior(a){const t=pdh(a.d);return ACCD.acc.filter(x=>a.pv&&x.pv===a.pv&&x.id!==a.id&&pdh(x.d)<=t).sort((x,y)=>pdh(y.d)-pdh(x.d))}
