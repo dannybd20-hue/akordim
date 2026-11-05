@@ -184,7 +184,7 @@ const SIGN='בברכה,\nדני בן דוד\nקצין בטיחות בתעבור�
 const CATS=[
   ['demote','הורדה לחניכות','var(--bad)'],
   ['warn','אזהרה · חודש שני','var(--bad)'],
-  ['drop','ירידה חדה מציון גבוה','var(--bad)'],
+  ['drop','ירידה חדה מהחודש הקודם','var(--bad)'],
   ['low','מתחת ל־25 · חודש ראשון','var(--bad)'],
   ['up','השתפרו – עלו מעל 25','var(--ok)'],
   ['b25','25–35','var(--warn)'],
@@ -193,7 +193,7 @@ const CATS=[
   ['b70','70 ומעלה','var(--ok)']
 ];
 function streakAt(v,m){let k=0;for(let j=m;j>=0;j--){const x=v.s[j];if(x==null||x>=25)break;k++}return k}
-function catOf(v,m){const x=v.s[m];if(x==null)return null;if(x<25){const k=streakAt(v,m);if(k>=3)return 'demote';if(k===2)return 'warn';let pv=null;for(let j=m-1;j>=0;j--)if(v.s[j]!=null){pv=v.s[j];break}return pv!=null&&pv>=50?'drop':'low'}if(m>0&&v.s[m-1]!=null&&v.s[m-1]<25)return 'up';return x<35?'b25':x<50?'b35':x<70?'b50':'b70'}
+function catOf(v,m){const x=v.s[m];if(x==null)return null;if(x<25){const k=streakAt(v,m);if(k>=3)return 'demote';if(k===2)return 'warn';let pv=null;for(let j=m-1;j>=0;j--)if(v.s[j]!=null){pv=v.s[j];break}/* ירידה: בחודש הקודם היה ציון טוב (35+) או שהציון צנח ב־20+ נקודות */return pv!=null&&(pv>=35||pv-x>=20)?'drop':'low'}if(m>0&&v.s[m-1]!=null&&v.s[m-1]<25)return 'up';return x<35?'b25':x<50?'b35':x<70?'b50':'b70'}
 function scCls(x){return x==null?'':x<25?'sc-low':x<35?'sc-mid':x<70?'sc-good':'sc-top'}
 
 /* ===== הודעות ===== */
