@@ -459,7 +459,7 @@ function lockView(err){
   setTimeout(()=>{const i=$('pw');if(i)i.focus()},50);
 }
 async function unlock(saved){
-  const pw=saved||($('pw')&&$('pw').value.trim());if(!pw)return;
+  const pw=saved||($('pw')&&$('pw').value.trim().toLowerCase());if(!pw)return;
   if(!saved){$('ub').disabled=true;$('ub').textContent='פותח… (כמה שניות)'}else $('app').innerHTML='<div class="empty">פותח את הנתונים…</div>';
   try{DATA=await decrypt(pw);SPW=pw;if(!saved)ls('kbt_pw',$('rem').checked?pw:'');$('lockB').hidden=false;$('upd').textContent='עודכן: '+DATA.updated;
     state.m=DATA.months.length-1;render()}

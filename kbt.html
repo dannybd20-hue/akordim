@@ -253,7 +253,7 @@ function lockView(err){
   setTimeout(()=>{const i=document.getElementById('pw');if(i)i.focus()},50);
 }
 async function unlock(saved){
-  const pw=saved||(document.getElementById('pw')&&document.getElementById('pw').value.trim());if(!pw)return;
+  const pw=saved||(document.getElementById('pw')&&document.getElementById('pw').value.trim().toLowerCase());if(!pw)return;
   if(!saved){const b=document.getElementById('ub');b.disabled=true;b.textContent='פותח… (כמה שניות)'}
   else document.getElementById('app').innerHTML='<div class="empty">פותח את הנתונים…</div>';
   try{DATA=await decrypt(pw);KPW=pw;setTimeout(loadAcc,300);setTimeout(()=>loadBd(true),900);if(!window._bdT)window._bdT=setInterval(()=>loadBd(true),180000);if(!saved)ls('kbt_pw',document.getElementById('rem').checked?pw:'');document.getElementById('lockB').hidden=false;document.getElementById('upd').textContent='עודכן: '+DATA.updated;render()}

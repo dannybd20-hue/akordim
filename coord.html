@@ -952,7 +952,7 @@ function lockView(err){
   setTimeout(()=>{const i=$('pw');if(i)i.focus()},50);
 }
 async function unlock(saved){
-  let pw=saved||($('pw')&&$('pw').value.trim());if(!pw)return;
+  let pw=saved||($('pw')&&$('pw').value.trim().toLowerCase());if(!pw)return;
   /* סיסמת סניף בלי מקף / עם רווחים / מקף אחר – מתקנים לפורמט 1234-5678 */
   {const d=pw.replace(/[\s\-–—_.]/g,'');if(/^\d{8}$/.test(d))pw=d.slice(0,4)+'-'+d.slice(4)}
   if(!saved){$('ub').disabled=true;$('ub').textContent='פותח…'}else $('app').innerHTML='<div class="empty">פותח…</div>';
