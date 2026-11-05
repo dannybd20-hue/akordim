@@ -344,7 +344,7 @@ function annual(p){
   /* משתלם אמבולנס/רכב (נהג חדש בהכשרה) – פטור מההשתלמות השנתית. באופנוע הפטור נקבע לפי תאריך הקורס */
   {const m=(P.match(/(?:טרום )?משתלם (?:אמבולנס|רכב[^;]*|מינילנס)/)||[])[0];if(need!=='אופנוע'&&m)return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:m.trim()}}
   /* טסט השנה: טסט פנימי אופנוע פוטר רק השתלמות אופנוע; טסט מנהלה (רכב/אמבולנס) פוטר רק אמבולנס/רכב – שני דברים נפרדים */
-  const e=p.ext||{},mt=pd(e.mt),at=admTest(p),atd=at&&/עבר/.test(at.st)?pd(at.date):null;
+  const e=p.ext||{},mt=pd(e.mt),at=admTest(p),atd=at&&at.pass?pd(at.date):null;
   if(need==='אופנוע'&&mt&&mt.getFullYear()===ANN_Y)return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'טסט פנימי אופנוע ('+e.mt+')'};
   if(need!=='אופנוע'&&atd&&atd.getFullYear()===ANN_Y)return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'טסט מנהלה ('+at.date+')'};
   /* הדרכה בפועל השנה: חיים בדרכים (רכיבה) פוטר הכול; אלטרנתיבי פוטר אמבולנס ורכב */
@@ -361,8 +361,11 @@ function annual(p){
 }
 /* ותק רכיבה בארגון: מיום ב׳ של השתלמות הרכיבה (אז מקבלים אופנוע) */
 function rideYears(p){const d=pd((p.ext||{}).r2);if(!d)return null;return Math.max(0,Math.floor((Date.now()-d)/(365.25*864e5)*10)/10)}
-function admTest(p){const s=(p.ext||{}).adm;if(!s)return null;const P=s.split(',').map(x=>x.trim()).filter(Boolean),dt=P.find(x=>/^\d{4}-\d{2}-\d{2}$/.test(x));
-  return {st:P[0]||'',who:P.filter((x,i)=>i&&x!==dt).join(', '),date:dt?dt.split('-').reverse().join('/'):''}}
+function admTest(p){const s=(p.ext||{}).adm;if(!s)return null;
+  /* הסדר בשדה משתנה: "עבר, בוחן, 2025-08-12" או "04/10/2026, בוחן, עבר" */
+  const P=s.split(',').map(x=>x.trim()).filter(Boolean),isD=x=>/^\d{4}-\d{2}-\d{2}$|^\d{1,2}\/\d{1,2}\/\d{4}$/.test(x),isS=x=>/^(לא עבר|עבר|נכשל)/.test(x);
+  const d=P.find(isD)||'',st=P.find(isS)||'';
+  return {st,pass:/^עבר/.test(st),who:P.filter(x=>!isD(x)&&!isS(x)).join(', '),date:/^\d{4}/.test(d)?d.split('-').reverse().join('/'):d}}
 const annMiss=p=>{const a=annual(p);return a&&!a.done?a:null};
 function annMsg(p){const a=annual(p);return `היי ${first(p.n)},\nלפי המערכת עדיין לא ביצעת את ההשתלמות השנתית לשנת ${ANN_Y} (*${a.course}*).\n\n*שים לב – יש להירשם בהקדם להשתלמות.*\n\nתודה,\n${DATA.coord||'רכז התחבורה'} · רכז תחבורה – ${DATA.br}`}
 function vehOf(p){return DATA.veh.filter(v=>(p.cars||[]).some(c=>c.num===v.num)||(p.ph&&v.phone===p.ph))}

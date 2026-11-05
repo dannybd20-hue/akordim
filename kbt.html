@@ -516,7 +516,7 @@ function accDraft(a){
     else L.push('• *דוח סייפטי (איתורן):* לא מופיע בדוח');
     {const e=p.ext||{};if(e.r2){const d=pdh(e.r2),y=Math.max(0,Math.floor((pdh(a.d)-d)/(365.25*864e5)*10)/10);L.push(`• *ותק רכיבה בארגון:* ${y} שנים בזמן התאונה`)}
      if(e.mt)L.push(`• *טסט פנימי אופנוע:* ${e.mt}`);
-     if(e.adm&&isCarV(a.vt)){const P=e.adm.split(',').map(x=>x.trim()),dt=P.find(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)),w=P.filter((x,i)=>i&&x!==dt).join(', ');L.push(`• *טסט מנהלה רכב/אמבולנס:* ${[P[0],dt&&dt.split('-').reverse().join('/'),w&&'בוחן: '+w].filter(Boolean).join(' · ')}`)}}
+     if(e.adm&&isCarV(a.vt)){const P=e.adm.split(',').map(x=>x.trim()).filter(Boolean),isD=x=>/^\d{4}-\d{2}-\d{2}$|^\d{1,2}\/\d{1,2}\/\d{4}$/.test(x),isS=x=>/^(לא עבר|עבר|נכשל)/.test(x),d=P.find(isD)||'',st=P.find(isS)||'',w=P.filter(x=>!isD(x)&&!isS(x)).join(', ');L.push(`• *טסט מנהלה רכב/אמבולנס:* ${[st,/^\d{4}/.test(d)?d.split('-').reverse().join('/'):d,w&&'בוחן: '+w].filter(Boolean).join(' · ')}`)}}
     if(isMotoV(a.vt)||(!isCarV(a.vt)&&/אופנוע/.test(p.perm||''))){
       if(p.ride.length){L.push('• *הדרכות רכיבה (חיים בדרכים):*');p.ride.forEach(r=>L.push(`  - ${r.d}: ציון ${r.sc||'—'}${r.pas?' · עבר: '+r.pas:''}${r.ins?' · מדריך: '+r.ins:''}${r.note?'\n    הערות המדריך: '+r.note:''}`))}
       else L.push('• *הדרכות רכיבה (חיים בדרכים):* אין ב־2025–2026');
