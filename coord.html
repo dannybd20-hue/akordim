@@ -168,6 +168,7 @@ a.it .v span{color:#c2410c}
 .alertbox{background:var(--bg);border-radius:18px;max-width:520px;width:100%;max-height:90vh;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px #0007}
 .ah{display:flex;gap:12px;align-items:center}.ah>span{width:46px;height:46px;border-radius:50%;background:var(--bad-bg);color:var(--bad);display:grid;place-items:center;flex:none}.ah svg{width:24px;height:24px}
 .ah small{color:var(--muted);font-weight:600}.ah h2{margin:0;font-size:1.2rem;color:var(--bad)}
+.ah.ok>span{background:var(--ok-bg,#e6f4ea);color:var(--ok,#15803d)}.ah.ok h2{color:var(--ok,#15803d)}
 /* drawer */
 .ov{position:fixed;inset:0;background:#0b1626a6;z-index:30;display:flex;justify-content:flex-start}
 .drawer>*{flex-shrink:0}
@@ -332,7 +333,9 @@ function evaluate(p,f){
   if(sn){const M=DATA.months[sn.m];if(sn.x<25&&sn.streak>=2)bad.push(`ציון סייפטי ${sn.x} ב${M} – ${sn.streak} חודשים ברצף מתחת ל־25`);else if(sn.x<25)warn.push(`ציון סייפטי ${sn.x} ב${M} – מתחת לרף`);else if(sn.prev!=null&&sn.prev-sn.x>=20)warn.push(`ציון סייפטי ירד מ־${sn.prev} ל־${sn.x}`);else if(sn.x>=50)good.push(`ציון סייפטי טוב: ${sn.x}`);else good.push(`ציון סייפטי ${sn.x}`)}
   else warn.push('אין ציון סייפטי במערכת');
   const r=lastRide(p),rs=r&&num(r.sc);
-  if(isMoto(p)||r){if(!r)warn.push('אין הדרכת רכיבה ב־2025–2026');else if(/לא עבר/.test(r.sc))bad.push(`הדרכת רכיבה אחרונה (${r.d}): לא עבר`);else if(rs!=null&&rs<6.5)bad.push(`ציון נמוך בהדרכת רכיבה: ${rs} (${r.d})`);else if(rs!=null&&rs<7)warn.push(`ציון הדרכת רכיבה ${rs} (${r.d})`);else if(rs!=null)good.push(`ציון הדרכת רכיבה ${rs} (${r.d})`)}
+  /* ציון הדרכת רכיבה מתחת ל־8 (או לא עבר): הרכז לא מאשר לבד – הבקשה עוברת לקצין הבטיחות */
+  const off=!!r&&(/לא עבר/.test(r.sc)||(rs!=null&&rs<8));
+  if(isMoto(p)||r){if(!r)warn.push('אין הדרכת רכיבה ב־2025–2026');else if(/לא עבר/.test(r.sc))bad.push(`הדרכת רכיבה אחרונה (${r.d}): לא עבר`);else if(rs!=null&&rs<8)bad.push(`ציון הדרכת רכיבה ${rs} (${r.d}) – מתחת ל־8`);else if(rs!=null)good.push(`ציון הדרכת רכיבה ${rs} (${r.d})`)}
   /* אלטרנתיבי: כרגע בלי ציונים (יסודר בהמשך) */
   if((p.acc||[]).length>=2)warn.push(`${p.acc.length} תאונות בעבר`);
   const v=f.veh?DATA.veh.find(x=>x.num===f.veh):null;
@@ -340,7 +343,7 @@ function evaluate(p,f){
   const H=hist().filter(h=>h.pv===p.pv&&h.dec==='yes'),recent=H.filter(h=>(Date.now()-h.ts)/864e5<=30);
   if(recent.length>=3)warn.push(`${recent.length} יציאות מהגזרה ב־30 הימים האחרונים`);
   const lvl=bad.length?'bad':warn.length?'warn':'ok';
-  return {lvl,bad,warn,good,title:lvl==='bad'?'לא מומלץ לאשר':lvl==='warn'?'אפשר לאשר – לשים לב':'מומלץ לאשר'};
+  return {lvl,bad,warn,good,off,rs:r?(/לא עבר/.test(r.sc)?'לא עבר':rs):null,title:off?'נדרש אישור קצין בטיחות':lvl==='bad'?'לא מומלץ לאשר':lvl==='warn'?'אפשר לאשר – לשים לב':'מומלץ לאשר'};
 }
 function safetyMsg(p,f){
   /* בלי אימוג'י: בחלק מהטלפונים הם מגיעים כסימני שאלה */
@@ -357,7 +360,7 @@ function hist(){const L=localHist();if(!REMOTE)return L;const ids=new Set(REMOTE
 async function api(o){if(!SYNC_URL||!CUR_PW)return null;try{const t=(await sha('dbd-coord-api:'+CUR_PW)).slice(0,32);const r=await fetch(SYNC_URL,{method:'POST',body:JSON.stringify({...o,t,br:DATA.br})}).then(r=>r.json());return r&&r.ok?r:null}catch(e){return null}}
 async function syncHist(){const br=DATA.br,r=await api({action:'list'});if(!r||DATA.br!==br)return;REMOTE=r.rows;const ids=new Set(REMOTE.map(x=>x.id));
   for(const h of localHist())if(!ids.has(h.id)&&await api({action:'add',r:h}))REMOTE.push(h);
-  render()}
+  render();setTimeout(offDecAlerts,900)}
 function addHist(h){h.id=Date.now()+'-'+Math.random().toString(36).slice(2,7);h.coord=ADMIN?'מנהל':(DATA.coord||'');const H=localHist();H.unshift(h);ls(HK(),JSON.stringify(H.slice(0,500)));
   if(REMOTE)REMOTE.unshift(h);api({action:'add',r:h})}
 /* מי מחובר עכשיו */
@@ -500,12 +503,12 @@ function exitView(){
     const row=(cls,ic,t)=>`<li class="${cls}"><span>${ic}</span>${esc(t)}</li>`;
     h+=`<section class="verdict ${e.lvl}"><div class="vh"><span class="vi">${e.lvl==='ok'?IC.check:e.lvl==='warn'?IC.warn:IC.x}</span><div><small>המלצת המערכת</small><h2>${e.title}</h2><p>${esc(p.n)} · ${H.length} בקשות קודמות · ${yes} יציאות</p></div></div>
       <ul class="vlist2">${e.bad.map(t=>row('bad',IC.x,t)).join('')}${e.warn.map(t=>row('warn',IC.warn,t)).join('')}${e.good.map(t=>row('ok',IC.check,t)).join('')}</ul>
-      <p class="hint">${p===TEST_P?'🧪 מצב בדיקה: ההודעה תישלח לדני בן דוד, ולא תירשם בהיסטוריה.':'ההחלטה שלך. ההמלצה היא כלי עזר בלבד.'}</p>
-      <div class="acts"><button class="btn ok" id="xyes">${IC.check}מאשר יציאה</button><button class="btn bad" id="xno">${IC.x}לא מאשר</button><button class="btn ghost" id="xcard">תיק המתנדב</button></div><div id="xout"></div></section>`;
+      <p class="hint">${p===TEST_P?'🧪 מצב בדיקה: ההודעה תישלח לדני בן דוד, ולא תירשם בהיסטוריה.':e.off&&!ADMIN?'<b>ציון הדרכת הרכיבה מתחת ל־8 – אי אפשר לאשר יציאה ברמת הסניף.</b> הבקשה תעבור לקצין הבטיחות, ותקבל הודעה כשהוא יחליט.':'ההחלטה שלך. ההמלצה היא כלי עזר בלבד.'}</p>
+      <div class="acts">${e.off&&!ADMIN?`<button class="btn" id="xreq">${IC.out}שליחת בקשה לקצין הבטיחות</button>`:`<button class="btn ok" id="xyes">${IC.check}מאשר יציאה</button>`}<button class="btn bad" id="xno">${IC.x}לא מאשר</button><button class="btn ghost" id="xcard">תיק המתנדב</button></div><div id="xout"></div></section>`;
   }
   h+='</div>';
   const H=hist();
-  h+=`<section class="panel"><header><h2>היסטוריית יציאות</h2><span class="count">${H.length}</span></header>${H.length?`<div class="tw"><table><thead><tr><th>תאריך</th><th>מתנדב</th><th>יעד</th><th>המלצה</th><th>החלטה</th>${ADMIN?'<th></th>':''}</tr></thead><tbody>${H.map(x=>`<tr><td>${esc(new Date(x.ts).toLocaleDateString('he-IL'))}</td><td>${esc(x.n)}</td><td>${esc(x.dest||'—')}${x.from?`<br><small>${esc(x.from)}${x.to&&x.to!==x.from?' – '+esc(x.to):''}</small>`:''}</td><td>${pill(x.rec,x.rec==='ok'?'מומלץ':x.rec==='warn'?'לשים לב':'לא מומלץ')}</td><td>${pill(x.dec==='yes'?'ok':'bad',x.dec==='yes'?'אושר':'לא אושר')}</td>${ADMIN?`<td><button class="del" type="button" data-del="${esc(x.id)}" aria-label="מחיקה" title="מחיקת הרשומה">🗑️</button></td>`:''}</tr>`).join('')}</tbody></table></div>`:'<div class="empty">עוד לא נרשמו בקשות</div>'}<p class="hint">${SYNC_URL?(REMOTE?'מסונכרן עם משרד הקצב"ת ✓':'מסנכרן…'):'ההיסטוריה נשמרת במכשיר הזה.'}</p></section>`;
+  h+=`<section class="panel"><header><h2>היסטוריית יציאות</h2><span class="count">${H.length}</span></header>${H.length?`<div class="tw"><table><thead><tr><th>תאריך</th><th>מתנדב</th><th>יעד</th><th>המלצה</th><th>החלטה</th>${ADMIN?'<th></th>':''}</tr></thead><tbody>${H.map(x=>`<tr><td>${esc(new Date(x.ts).toLocaleDateString('he-IL'))}</td><td>${esc(x.n)}</td><td>${esc(x.dest||'—')}${x.from?`<br><small>${esc(x.from)}${x.to&&x.to!==x.from?' – '+esc(x.to):''}</small>`:''}</td><td>${pill(x.rec,x.rec==='ok'?'מומלץ':x.rec==='warn'?'לשים לב':'לא מומלץ')}</td><td>${x.dec==='pending'?pill('warn','ממתין לקצין בטיחות'):pill(x.dec==='yes'?'ok':'bad',(x.dec==='yes'?'אושר':'לא אושר')+(x.off?' ע"י קצין בטיחות':''))}</td>${ADMIN?`<td><button class="del" type="button" data-del="${esc(x.id)}" aria-label="מחיקה" title="מחיקת הרשומה">🗑️</button></td>`:''}</tr>`).join('')}</tbody></table></div>`:'<div class="empty">עוד לא נרשמו בקשות</div>'}<p class="hint">${SYNC_URL?(REMOTE?'מסונכרן עם משרד הקצב"ת ✓':'מסנכרן…'):'ההיסטוריה נשמרת במכשיר הזה.'}</p></section>`;
   app.insertAdjacentHTML('beforeend',h);
   app.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const x=hist().find(h=>h.id===b.dataset.del);if(!x||!confirm(`למחוק את הרשומה של ${x.n}${x.dest?' ל'+x.dest:''}?`))return;delHist(x.id);render()});
   const sync=()=>{f.dest=$('xd').value.trim();f.veh=$('xv').value;f.from=$('xf').value;f.to=f.from;f.note=$('xn').value.trim()};
@@ -514,7 +517,9 @@ function exitView(){
   if(p){
     const e=evaluate(p,f);
     $('xcard').onclick=()=>personSheet(p.pv||p.n);
-    $('xyes').onclick=()=>{sync();if(p!==TEST_P)addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'yes',ts:Date.now()});const m=safetyMsg(p,f);
+    if($('xreq'))$('xreq').onclick=()=>{sync();const h={pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'pending',ts:Date.now()};addHist(h);const m=offReqMsg(h,e);
+      render();$('xout').innerHTML=`<div class="done warn"><b>${IC.out}הבקשה נשלחה לקצין הבטיחות</b><p>${SYNC_URL?'דני יקבל אותה באפליקציה. כשהוא יחליט – תקפוץ לך הודעה, ואז אפשר לשלוח לאופנוען את הודעת הבטיחות.':'כדי שהבקשה תגיע לדני עכשיו – שלח לו אותה בוואטסאפ:'}</p><div class="acts"><a class="btn wa" href="${waLink(OFFICER_PH,m)}" target="_blank" rel="noopener">${WA_ICON}${SYNC_URL?'לזרז בוואטסאפ לדני':'שליחה לדני בן דוד'}</a></div></div>`};
+    if($('xyes'))$('xyes').onclick=()=>{sync();if(p!==TEST_P)addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'yes',ts:Date.now()});const m=safetyMsg(p,f);
       render();$('xout').innerHTML=`<div class="done ok"><b>${IC.check}היציאה נרשמה כמאושרת</b><p>הודעת הבטיחות מוכנה – רק לשלוח:</p><pre>${esc(m.replace(/\*/g,''))}</pre><div class="acts">${p.ph?`<a class="btn wa" href="${waLink(p.ph,m)}" target="_blank" rel="noopener">${WA_ICON}שליחה ל${esc(first(p.n))}</a>`:''}<a class="btn ghost" href="mailto:${esc(p.em||'')}?subject=${encodeURIComponent('אישור יציאה מהגזרה')}&body=${encodeURIComponent(m.replace(/\*/g,''))}">מייל</a></div></div>`};
     $('xno').onclick=()=>{sync();if(p!==TEST_P)addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'no',ts:Date.now()});render();$('xout').innerHTML=`<div class="done bad"><b>${IC.x}הבקשה נרשמה כלא מאושרת</b></div>`};
   }
@@ -604,6 +609,44 @@ function ackLine(a){
   if(ADMIN){const k=(ACKS||[]).find(x=>x.id===a.id&&x.br===DATA.br);
     return k?` · <span class="pill ok">✓ נקרא ע"י ${esc(k.n||'הרכז')} · ${esc(new Date(k.ts).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))}</span>`:SYNC_URL?` · <span class="pill bad">${ACKS?'עוד לא נקרא':'בודק…'}</span>`:' · <span class="pill na">אישורי קריאה יופיעו אחרי חיבור הסנכרון</span>'}
   const s=ls('accseen:'+a.id);return s?` · <span class="pill ok">✓ אישרת קריאה${+s>1?' ב־'+esc(new Date(+s).toLocaleDateString('he-IL')):''}</span>`:' · <span class="pill bad">ממתין לאישור קריאה</span>';
+}
+
+/* ===== בקשות יציאה שמחכות לקצין הבטיחות ===== */
+const OFFICER_PH='0508820408';
+function offReqMsg(h,e){return `*בקשת יציאה מהגזרה – לאישור קצין בטיחות*\n\nסניף: ${DATA.br}\nרכז: ${DATA.coord||'—'}\nאופנוען: ${h.n}${h.pv?' ('+h.pv+')':''}\nיעד: ${h.dest||'—'}\nתאריך: ${h.from?fmt(new Date(h.from)):'—'}\nציון הדרכת רכיבה: ${e.rs??'—'}${h.why?`\n\nלתשומת לב: ${h.why}`:''}${h.note?`\n\nהערות הרכז: ${h.note}`:''}`}
+/* אצל הרכז: קופצת הודעה כשהקצין החליט */
+function offDecAlerts(){
+  if(ADMIN||!REMOTE||document.querySelector('.ov.center'))return;
+  const N=REMOTE.filter(x=>x.off&&x.dec!=='pending'&&!ls('offseen:'+x.id));if(!N.length)return;
+  const x=N[0],yes=x.dec==='yes',p=DATA.people.find(q=>q.pv===x.pv)||{n:x.n,pv:x.pv},m=yes?safetyMsg(p,{dest:x.dest,from:x.from}):'';
+  const ov=document.createElement('div');ov.className='ov center';
+  ov.innerHTML=`<div class="alertbox" role="alertdialog"><div class="ah ${yes?'ok':''}"><span>${yes?IC.check:IC.x}</span><div><small>תשובת קצין הבטיחות${N.length>1?` · 1 מתוך ${N.length}`:''}</small><h2>היציאה של ${esc(x.n)} ${yes?'אושרה':'לא אושרה'}</h2></div></div>
+    <p>${esc(x.dest?'יעד: '+x.dest:'')}${x.from?' · '+esc(fmt(new Date(x.from))):''}</p>${x.off&&x.off!=='1'?`<p class="hint" style="padding:0">הערת קצין הבטיחות: ${esc(x.off)}</p>`:''}
+    ${yes?`<p class="hint" style="padding:0">הודעת הבטיחות מוכנה – רק לשלוח:</p><pre>${esc(m.replace(/\*/g,''))}</pre>`:''}
+    <div class="acts">${yes&&p.ph?`<a class="btn wa" id="dsend" href="${waLink(p.ph,m)}" target="_blank" rel="noopener">${WA_ICON}שליחה ל${esc(first(p.n))}</a>`:''}<button class="btn ${yes?'ghost':''}" id="dok">הבנתי</button></div></div>`;
+  document.body.append(ov);const done=()=>{ls('offseen:'+x.id,'1');ov.remove();setTimeout(offDecAlerts,200)};
+  ov.querySelector('#dok').onclick=done;const s=ov.querySelector('#dsend');if(s)s.addEventListener('click',()=>setTimeout(done,300));
+}
+/* אצל דני: קופצת כל בקשה שממתינה, מכל הסניפים */
+let PENDING=[];
+async function loadPending(){if(!ADMIN)return;const r=await api({action:'pending'});if(!r)return;PENDING=r.rows||[];const b=$('pendB');if(b){b.hidden=!PENDING.length;b.textContent=`🔔 ${PENDING.length} בקשות יציאה ממתינות`}if(PENDING.length)pendingAlert()}
+function pendingAlert(){
+  if(!PENDING.length||document.querySelector('.ov.center'))return;const x=PENDING[0],c=ADMIN[x.br]||{};
+  const ov=document.createElement('div');ov.className='ov center';
+  ov.innerHTML=`<div class="alertbox" role="alertdialog"><div class="ah"><span>${IC.out}</span><div><small>בקשה לאישור קצין בטיחות${PENDING.length>1?` · 1 מתוך ${PENDING.length}`:''}</small><h2>יציאה מהגזרה – ${esc(x.n)}</h2></div></div>
+    <ul class="vlist2"><li><span>${IC.users}</span>${esc(x.br)} · רכז: ${esc(x.coord||c.coord||'—')}</li><li><span>${IC.out}</span>יעד: ${esc(x.dest||'—')}${x.from?' · '+esc(fmt(new Date(x.from))):''}</li>${x.pv?`<li><span>${IC.doc}</span>פרייבט ${esc(x.pv)}</li>`:''}
+    ${String(x.why||'').split('; ').filter(Boolean).map(t=>`<li class="${/רכיבה|לא עבר|פג/.test(t)?'bad':'warn'}"><span>${IC.warn}</span>${esc(t)}</li>`).join('')}${x.note?`<li><span>${IC.doc}</span>הערות הרכז: ${esc(x.note)}</li>`:''}</ul>
+    <label class="full" style="display:flex;flex-direction:column;gap:4px;font-size:.85rem">הערה לרכז (לא חובה)<textarea id="pnote" rows="2"></textarea></label>
+    <div class="acts"><button class="btn ok" id="pyes">${IC.check}מאשר יציאה</button><button class="btn bad" id="pno">${IC.x}לא מאשר</button><button class="btn ghost" id="plater">אחר כך</button></div><div id="pout"></div></div>`;
+  document.body.append(ov);
+  const decide=async yes=>{const note=ov.querySelector('#pnote').value.trim();ov.querySelectorAll('button').forEach(b=>b.disabled=true);
+    const r=await api({action:'decide',id:x.id,yes,note});
+    if(!r){ov.querySelector('#pout').innerHTML='<p class="hint bad">לא נשמר – בדוק חיבור ונסה שוב.</p>';ov.querySelectorAll('button').forEach(b=>b.disabled=false);return}
+    PENDING.shift();const t=`*תשובת קצין הבטיחות – יציאה מהגזרה*\n\nהיציאה של ${x.n}${x.dest?' ל'+x.dest:''}${x.from?' בתאריך '+fmt(new Date(x.from)):''} *${yes?'אושרה':'לא אושרה'}*.${note?'\n'+note:''}${yes?'\n\nאפשר לשלוח לאופנוען את הודעת הבטיחות מהאפליקציה.':''}\n\nדני בן דוד · קצין בטיחות`;
+    ov.querySelector('.acts').innerHTML=`${c.cph?`<a class="btn wa" href="${waLink(c.cph,t)}" target="_blank" rel="noopener">${WA_ICON}עדכון הרכז בוואטסאפ</a>`:''}<button class="btn ghost" id="pnext">${PENDING.length?'לבקשה הבאה':'סגירה'}</button>`;
+    ov.querySelector('#pout').innerHTML=`<p class="hint">${yes?'✓ אושר':'✗ לא אושר'} – לרכז תקפוץ הודעה באפליקציה.</p>`;
+    ov.querySelector('#pnext').onclick=()=>{ov.remove();const b=$('pendB');if(b){b.hidden=!PENDING.length;b.textContent=`🔔 ${PENDING.length} בקשות יציאה ממתינות`}if(REMOTE)syncHist();setTimeout(pendingAlert,150)}};
+  ov.querySelector('#pyes').onclick=()=>decide(true);ov.querySelector('#pno').onclick=()=>decide(false);ov.querySelector('#plater').onclick=()=>ov.remove();
 }
 
 /* ===== מפת מתנדבים – לפי כתובת המגורים ===== */
@@ -697,7 +740,7 @@ function coordMsg(b){const c=ADMIN[b];return `שלום ${first(c.coord)||''},\n\
 
 function onlineBox(){if(!SYNC_URL)return '<div id="onl"></div>';const L=ONLINE||[];const ago=t=>{const m=Math.max(0,Math.round((Date.now()-t)/60000));return m<1?'עכשיו':m<60?m+' דק׳':Math.floor(m/60)+' שע׳'};
   return `<div id="onl" class="online"><b><span class="dot${L.length?' on':''}"></span>${ONLINE==null?'בודק מי מחובר…':L.length?(L.length===1?'רכז אחד מחובר עכשיו':`${L.length} רכזים מחוברים עכשיו`):'אף רכז לא מחובר כרגע'}</b>${L.map(x=>`<span class="who">${esc(x.n||'רכז')} · ${esc(x.br)}<small>${esc(x.dev||'')} · מחובר ${ago(x.s)}</small></span>`).join('')}</div>`}
-function adminBar(){const c=ADMIN[DATA.br],m=coordMsg(DATA.br);const on=new Set((ONLINE||[]).map(x=>x.br));return onlineBox()+`<div class="admin"><select id="adm" aria-label="סניף">${Object.keys(ADMIN).map(b=>`<option value="${esc(b)}"${b===DATA.br?' selected':''}>${on.has(b)?'🟢 ':''}${esc(b)}</option>`).join('')}</select><span class="info">מצב מנהל · רכז: <b>${esc(c.coord||'—')}</b>${c.cph?' · '+fmtPhone(c.cph):''} · סיסמה: <b>${esc(c.pw)}</b></span><span class="acts">${c.cph?`<a class="btn wa" href="${waLink(c.cph,m)}" target="_blank" rel="noopener">${WA_ICON}שליחת סיסמה לרכז</a>`:''}<button class="btn ghost" type="button" id="cpm">העתקת ההודעה</button></span></div>`}
+function adminBar(){const c=ADMIN[DATA.br],m=coordMsg(DATA.br);const on=new Set((ONLINE||[]).map(x=>x.br));return onlineBox()+`<div class="admin"><select id="adm" aria-label="סניף">${Object.keys(ADMIN).map(b=>`<option value="${esc(b)}"${b===DATA.br?' selected':''}>${on.has(b)?'🟢 ':''}${esc(b)}</option>`).join('')}</select><span class="info">מצב מנהל · רכז: <b>${esc(c.coord||'—')}</b>${c.cph?' · '+fmtPhone(c.cph):''} · סיסמה: <b>${esc(c.pw)}</b></span><span class="acts"><button class="btn" type="button" id="pendB"${PENDING.length?'':' hidden'}>🔔 ${PENDING.length} בקשות יציאה ממתינות</button>${c.cph?`<a class="btn wa" href="${waLink(c.cph,m)}" target="_blank" rel="noopener">${WA_ICON}שליחת סיסמה לרכז</a>`:''}<button class="btn ghost" type="button" id="cpm">העתקת ההודעה</button></span></div>`}
 document.querySelectorAll('.tab[data-v]').forEach(b=>b.onclick=()=>{st.view=b.dataset.v;document.querySelectorAll('.tab[data-v]').forEach(x=>x.setAttribute('aria-selected',x===b));render()});
 function bind(){
   document.querySelectorAll('#app .prow:not(.pb)').forEach(c=>{c.onclick=e=>{if(!e.target.closest('a'))personSheet(c.dataset.p)};c.onkeydown=e=>{if(e.key==='Enter')personSheet(c.dataset.p)}});
@@ -705,6 +748,7 @@ function bind(){
   document.querySelectorAll('.kpi[data-k]').forEach(b=>b.onclick=()=>drill(b.dataset.k));
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{st.flt=b.dataset.f;render()});
   const q=$('q');if(q)q.oninput=e=>{st.q=e.target.value;const pos=e.target.selectionStart;render();const n=$('q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}};
+  const pb=$('pendB');if(pb)pb.onclick=pendingAlert;
   const cp=$('cpm');if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(coordMsg(DATA.br));cp.textContent='הועתק'}catch(e){cp.textContent='לא הועתק'}};
   const a=$('adm');if(a)a.onchange=async e=>{const b=e.target.value;$('app').innerHTML='<div class="empty">פותח…</div>';DATA=await dec(await fileOf(ADMIN[b].pw),ADMIN[b].pw);ls('coord_adm_br',b);st.sel=null;st.f={};show()};
 }
@@ -719,7 +763,7 @@ document.addEventListener('visibilitychange',()=>document.body.classList.toggle(
 window.addEventListener('blur',()=>document.body.classList.add('hide-all'));window.addEventListener('focus',()=>document.body.classList.remove('hide-all'));
 document.addEventListener('copy',e=>{if(document.body.classList.contains('secure')&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||''))e.preventDefault()});
 document.addEventListener('contextmenu',e=>{if(document.body.classList.contains('secure'))e.preventDefault()});
-function show(){setTimeout(accAlerts,600);ACKS=null;setTimeout(loadAcks,100);$('gsw').hidden=false;const gi=$('gs');gi.oninput=()=>gsearch(gi.value);document.documentElement.style.setProperty('--hh',document.querySelector('.appbar').offsetHeight+'px');watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
+function show(){setTimeout(accAlerts,600);ACKS=null;setTimeout(loadAcks,100);if(ADMIN){setTimeout(loadPending,300);if(!window._pendT)window._pendT=setInterval(loadPending,120000)}$('gsw').hidden=false;const gi=$('gs');gi.oninput=()=>gsearch(gi.value);document.documentElement.style.setProperty('--hh',document.querySelector('.appbar').offsetHeight+'px');watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
 
 /* ===== כניסה ===== */
 function lockView(err){
