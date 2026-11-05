@@ -258,6 +258,7 @@ body.hide-all main,body.hide-all .ov{filter:blur(18px)}
 .mbar{display:inline-block;vertical-align:middle;width:120px;height:6px;border-radius:3px;background:#e5e7eb;overflow:hidden;margin-inline-start:6px}
 .mbar i{display:block;height:100%;background:#ea580c}
 .leaflet-popup-content{margin:12px 14px}
+.acc details{margin-top:6px}.acc details summary{cursor:pointer;color:var(--mid)}.acc .pendi{color:var(--warn);font-weight:700}
 </style>
 
 
@@ -430,7 +431,7 @@ function render(){
       ${kpi(IC.alert,'מתחת ל־25 בסייפטי',low.length,low.length?'דורשים שיחה':'אין',low.length?'bad':'ok','low')}
       ${kpi(IC.doc,'מסמכים שפגו',docs.length,'רישיון / תיק נהג / מידע תעבורתי',docs.length?'bad':'ok','docs')}
       ${kpi(IC.out,'יציאות מגזרה',yes,H.length?`${H.length} בקשות`:'אין בקשות','','exit')}
-      ${kpi(IC.alert,'תאונות',(DATA.acc||[]).length,(DATA.acc||[]).length?'לחץ לפירוט':'לא דווחו תאונות',(DATA.acc||[]).length?'bad':'ok','acc')}
+      ${kpi(IC.alert,'תאונות 2025–2026',(DATA.acc||[]).length,(DATA.acc||[]).length?'לחץ לפירוט':'לא דווחו תאונות',(DATA.acc||[]).length?'bad':'ok','acc')}
     </section>
     <section class="panel"><header><h2>דורשים תשומת לב</h2><span class="count">${att.length}</span></header>
       <p class="hint">סייפטי מתחת ל־25, מסמך שפג, או ציון הדרכה נמוך.</p>
@@ -587,15 +588,18 @@ function gsearch(q){
 const TEST_P={n:'דני בן דוד (בדיקה)',pv:'',ph:'0508820408',em:'danny.b.d.20@gmail.com',perm:'אופנוע',cars:[],s:null,ride:[],alt:[],acc:[],lic:'31/12/2030',health:'31/12/2030',traffic:'',pp:1};
 
 /* ===== תאונות ===== */
-function accCard(a){return `<article class="acc"><header><span class="pill bad">${esc(a.kind||'תאונה')}</span><b>${esc(a.d)}${a.time?' · '+esc(a.time):''}</b></header>
-  <h4>${esc(a.n)} <small>פרייבט ${esc(a.pv)}</small></h4>
-  <dl><dt>מיקום</dt><dd>${esc(a.place||'—')}</dd><dt>כלי</dt><dd>${esc(a.veh||'—')}</dd><dt>בדרך לאירוע</dt><dd>${esc(a.ev||'—')}</dd><dt>נפגעים</dt><dd>${esc(a.inj||'—')}</dd>${a.other?`<dt>צד נוסף</dt><dd>${esc(a.other)}</dd>`:''}${a.inv?`<dt>מטפל</dt><dd>${esc(a.inv)}</dd>`:''}</dl>
-  <p>${esc(a.text||'').replace(/\n/g,'<br>')}</p><footer>דווח ב־${esc(a.rep||a.d)}${ackLine(a)}</footer></article>`}
-function accView(){const A=[...(DATA.acc||[])].sort((a,b)=>(pd(b.d)||0)-(pd(a.d)||0));
-  return `<section class="panel"><header><h2>תאונות בסניף</h2><span class="count">${A.length}</span></header><div class="accs">${A.map(accCard).join('')||'<div class="empty">לא דווחו תאונות בסניף</div>'}</div><p class="hint">תאונות חדשות מופיעות גם כהודעה קופצת בכניסה לאפליקציה.</p></section>`}
+function accCard(a){const dd=(k,l)=>a[k]?`<dt>${l}</dt><dd>${esc(a[k])}</dd>`:'';
+  return `<article class="acc"><header><span class="pill bad">${esc(a.kind||'תאונה')}</span><b>${esc(a.d)}${a.time?' · '+esc(a.time):''}</b></header>
+  <h4>${esc(a.n)}${a.pv?` <small>פרייבט ${esc(a.pv)}</small>`:''}</h4>
+  <dl>${dd('veh','כלי')}${dd('place','מיקום')}${dd('trip','סוג נסיעה')}${dd('cause','סיבה')}${dd('fault','אשמה')}${dd('ev','בדרך לאירוע')}${dd('inj','נפגעים')}${dd('other','צד נוסף')}</dl>
+  ${a.drv?`<p><b>גרסת הנהג:</b> ${esc(a.drv).replace(/\n/g,'<br>')}</p>`:''}${a.text&&!a.drv?`<p>${esc(a.text).replace(/\n/g,'<br>')}</p>`:''}
+  ${a.off?`<details><summary><b>תחקיר קצין הבטיחות</b></summary><p>${esc(a.off).replace(/\n/g,'<br>')}${a.off.length>=255?' …':''}</p></details>`:'<p class="pendi">⏳ התחקיר בטיפול קצין הבטיחות</p>'}
+  <footer>${a.acc?esc(a.acc)+' · ':''}${a.rep?'דווח ב־'+esc(a.rep):esc(a.d)}${a.al?ackLine(a):''}</footer></article>`}
+function accView(){const A=[...(DATA.acc||[])].sort((a,b)=>(pd(b.d)||0)-(pd(a.d)||0)),pend=A.filter(a=>!a.off).length;
+  return `<section class="panel"><header><h2>תאונות בסניף · 2025–2026</h2><span class="count">${A.length}</span></header>${pend?`<p class="hint">${pend} בתחקיר אצל קצין הבטיחות</p>`:''}<div class="accs">${A.map(accCard).join('')||'<div class="empty">לא דווחו תאונות בסניף</div>'}</div><p class="hint">תאונות חדשות מופיעות גם כהודעה קופצת בכניסה לאפליקציה.</p></section>`}
 /* הודעה קופצת על תאונה חדשה – פעם אחת לכל תאונה, עד שהרכז מאשר שראה */
 function accAlerts(){
-  if(ADMIN)return;const N=(DATA.acc||[]).filter(a=>!ls('accseen:'+a.id));if(!N.length)return;
+  if(ADMIN)return;const N=(DATA.acc||[]).filter(a=>a.al&&!ls('accseen:'+a.id));if(!N.length)return;
   const a=N[0],ov=document.createElement('div');ov.className='ov center';
   ov.innerHTML=`<div class="alertbox" role="alertdialog" aria-label="דיווח על תאונה"><div class="ah"><span>${IC.alert}</span><div><small>הודעה מקצין הבטיחות${N.length>1?` · 1 מתוך ${N.length}`:''}</small><h2>דיווח על תאונה בסניף</h2></div></div>${accCard(a)}
     <p class="hint" style="padding:0">יש לאשר קריאה – האישור נשלח לקצין הבטיחות. לשאלות – דני בן דוד.</p><div class="acts"><button class="btn" id="aok">אישור קריאה</button><button class="btn ghost" id="aopen">לתיק של ${esc(first(a.n))}</button></div></div>`;

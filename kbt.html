@@ -124,6 +124,16 @@ td.d-bad{color:var(--bad);font-weight:700} td.d-warn{color:var(--warn);font-weig
 .more{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 .95rem var(--f-body);padding:10px;border-radius:10px;cursor:pointer}
 .legend{font-size:.85rem;color:var(--muted)}
 @media (max-width:520px){.card{grid-template-columns:1fr}.acts{flex-direction:row;flex-wrap:wrap}.wa{flex:1}}
+/*ACC-CSS*/
+.acck.pend{border-color:var(--bad);box-shadow:inset 4px 0 0 var(--bad)}
+.accq{margin:8px 0 0;font-size:.92rem;white-space:pre-wrap}.pendt{color:var(--bad)}
+details.accq summary{cursor:pointer;color:var(--accent)}details.accq .pre{margin-top:6px;background:var(--bg);border-radius:8px;padding:8px 10px;font-size:.88rem}
+.invov{position:fixed;inset:0;z-index:50;background:#0008;display:flex;align-items:center;justify-content:center;padding:12px}
+.invbox{background:var(--surface);color:var(--fg);border-radius:16px;width:100%;max-width:760px;max-height:94vh;display:flex;flex-direction:column;gap:10px;padding:14px}
+.invh{display:flex;justify-content:space-between;align-items:center;gap:10px}.invh small{color:var(--muted)}
+.invh .x{background:var(--bg);color:var(--fg)}
+#invt{flex:1;min-height:52vh;font:15px/1.5 var(--f-body);direction:rtl;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);color:var(--fg);resize:vertical}
+/*ACC-CSS-END*/
 </style>
 </head>
 <body>
@@ -135,6 +145,7 @@ td.d-bad{color:var(--bad);font-weight:700} td.d-warn{color:var(--warn);font-weig
       <button class="tab" role="tab" id="t-veh" aria-selected="false" data-v="veh">רכבים</button>
       <button class="tab" role="tab" id="t-drv" aria-selected="false" data-v="drv">נהגים</button>
       <button class="tab" role="tab" id="t-route" aria-selected="false" data-v="route">מסלול בדיקות</button>
+      <button class="tab" role="tab" id="t-acc" aria-selected="false" data-v="acc">תאונות<span class="n" id="n-acc"></span></button>
     </div>
   </div>
 </header>
@@ -239,7 +250,7 @@ async function unlock(saved){
   const pw=saved||(document.getElementById('pw')&&document.getElementById('pw').value.trim());if(!pw)return;
   if(!saved){const b=document.getElementById('ub');b.disabled=true;b.textContent='פותח… (כמה שניות)'}
   else document.getElementById('app').innerHTML='<div class="empty">פותח את הנתונים…</div>';
-  try{DATA=await decrypt(pw);if(!saved)ls('kbt_pw',document.getElementById('rem').checked?pw:'');document.getElementById('lockB').hidden=false;document.getElementById('upd').textContent='עודכן: '+DATA.updated;render()}
+  try{DATA=await decrypt(pw);KPW=pw;setTimeout(loadAcc,300);if(!saved)ls('kbt_pw',document.getElementById('rem').checked?pw:'');document.getElementById('lockB').hidden=false;document.getElementById('upd').textContent='עודכן: '+DATA.updated;render()}
   catch(e){if(saved&&e.message==='pw')ls('kbt_pw','');lockView(e.message==='pw'?'סיסמה שגויה':!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
 }
 function relock(){if(!confirm('לנעול ולשכוח את הסיסמה במכשיר הזה?'))return;ls('kbt_pw','');DATA=null;lockView()}
@@ -329,6 +340,7 @@ function render(){
   const all=buildAlerts(),every=buildAlerts(true);
   document.getElementById('n-alerts').textContent=every.filter(r=>r.lvl==='today'||r.lvl==='bad').length||'';
   if(state.view==='route'){renderRoute();return}
+  if(state.view==='acc'){renderAcc();return}
   if(state.view==='alerts'){
     const rows=all.filter(r=>(state.kind==='all'||r.type===state.kind)&&matches(r)&&(!state.only||r.lvl===state.only));
     const c=l=>rows.filter(r=>r.lvl===l).length;
@@ -445,6 +457,121 @@ function bind(){
   document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>document.querySelector(`.tab[data-v="${b.dataset.goto}"]`).click());
   document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.copy);b.textContent='הועתק'}catch(e){b.textContent='לא הועתק'}});
 }
+/*ACC-START*/
+/* ===== תאונות ותחקירים (kbt/acc.bin – מוצפן באותה סיסמה) ===== */
+let KPW='',ACCD=null,ACCL=null;const AST={f:'pend',vt:'',br:'',q:'',lim:40};
+async function decFile(path,pw){
+  const buf=new Uint8Array(await (await fetch(path,{cache:'no-cache'})).arrayBuffer());
+  const salt=buf.slice(3,19),iv=buf.slice(19,31),ct=buf.slice(31);
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:600000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+  const gz=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);
+  return JSON.parse(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
+}
+function loadAcc(){if(!ACCL)ACCL=decFile('kbt/acc.bin',KPW).then(d=>{ACCD=d;const n=d.acc.filter(a=>!a.off).length;const b=document.getElementById('n-acc');if(b)b.textContent=n||'';if(state.view==='acc')render()}).catch(()=>{ACCL=null});return ACCL}
+const pdh=x=>{const m=String(x||'').match(/(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})/);if(!m)return null;let y=+m[3];if(y<100)y+=2000;return new Date(y,m[2]-1,+m[1])};
+const isMotoV=t=>/אופנוע|קטנוע/.test(t||''),isCarV=t=>/אמבולנס|רכב|מינילנס|ג'יפ|משאית|טרקטור/.test(t||'');
+function accPrior(a){const t=pdh(a.d);return ACCD.acc.filter(x=>a.pv&&x.pv===a.pv&&x.id!==a.id&&pdh(x.d)<=t).sort((x,y)=>pdh(y.d)-pdh(x.d))}
+function docLine(l,v){const d=pdh(v);if(!d)return `${l}: אין תאריך במערכת`;const n=Math.round((d-new Date())/864e5);return `${l}: ${n<0?'*פג* ב־':'בתוקף עד '}${v}`}
+/* נקודות לתשומת לב – רק עובדות מהנתונים, בלי המלצות מומצאות */
+function accFlags(a,p,prior){
+  const F=[],t=pdh(a.d),y=prior.filter(x=>(t-pdh(x.d))/864e5<=365);
+  if(y.length)F.push(`זו התאונה ה־${y.length+1} שלו ב־12 החודשים שקדמו לה`);
+  if(p&&p.s){const L=p.s.map((x,i)=>[x,i]).filter(x=>x[0]!=null);if(L.length){const [x,i]=L[L.length-1];if(x<25)F.push(`ציון סייפטי אחרון ${x} (${ACCD.months[i]}) – מתחת ל־25`)}}
+  if(p&&isMotoV(a.vt)){const r=p.ride[0];if(!r)F.push('אין הדרכת רכיבה ב־2025–2026');else{const sc=parseFloat(r.sc);if(/לא/.test(r.pas||'')||(!isNaN(sc)&&sc<8))F.push(`הדרכת רכיבה אחרונה (${r.d}): ציון ${r.sc||'—'}${r.pas?' · עבר: '+r.pas:''}`)}}
+  if(p&&isCarV(a.vt)&&!p.alt.length)F.push('אין הדרכת נהיגה (אלטרנטיבי) ב־2025–2026');
+  if(p)[['רישיון נהיגה',p.lic],['תיק נהג',p.health],['מידע תעבורתי',p.pp?'':p.traffic]].forEach(([l,v])=>{const d=pdh(v);if(d&&d<new Date())F.push(`${l} פג ב־${v}`)});
+  return F;
+}
+function accDraft(a){
+  const p=ACCD.prof[a.pv]||null,prior=accPrior(a),F=accFlags(a,p,prior),B='____';
+  const L=[];
+  L.push(`*תחקיר תאונה ראשוני – ${a.vt||'כלי'}*`,`*מס' תאונה:* ${a.id}`,'','*פרטי אירוע:*');
+  L.push(`• *שם נהג ומס' כונן:* ${a.n}${a.pv?' | כונן '+a.pv:''}${p&&p.age?' (גיל: '+p.age+')':''}`);
+  if(p&&p.ph)L.push(`• *נייד:* ${p.ph}`);
+  L.push(`• *סניף:* ${a.br||(p&&p.br)||B}`);
+  L.push(`• *מספר וסוג כלי מעורב:* ${a.vt} ${a.num||B}${a.plate?' ('+a.plate+')':''}`);
+  L.push(`• *תאריך:* ${a.d} | *שעה:* ${a.time||B}`,`• *מיקום:* ${a.place||B}`);
+  L.push(`• *סוג נסיעה:* ${a.trip||B} | *סוג תאונה:* ${a.kind||B}`);
+  if(a.cause)L.push(`• *סיבת התאונה (בדיווח):* ${a.cause}`);
+  if(a.ev)L.push(`• *בדרך לאירוע:* ${a.ev}`);
+  L.push(`• *נפגעים:* ${a.inj||B}`,`• *צד ג' / נזק:* ${a.other||B}`,`• *קצין בטיחות:* דני בן דוד`);
+  L.push('','*תיאור האירוע (גרסת הנהג):*',a.drv||B);
+  if(a.text)L.push('','*דיווח המוקד:*',a.text);
+  L.push('','*רקע על הנהג:*');
+  if(!p)L.push('• לא נמצא כרטיס מתנדב תואם במערכת – יש להשלים ידנית');
+  else{
+    if(p.perm)L.push(`• *הרשאות נהיגה:* ${p.perm}`);
+    L.push(`• ${docLine('רישיון נהיגה',p.lic)}`,`• ${docLine('תיק נהג (הצהרת בריאות)',p.health)}`,p.pp?'• מידע תעבורתי: בעל דרכון – לא רלוונטי':`• ${docLine('מידע תעבורתי',p.traffic)}`);
+    if(p.s){const L3=p.s.map((x,i)=>[x,i]).filter(x=>x[0]!=null).slice(-3);
+      L.push(`• *דוח סייפטי (איתורן):* ${L3.map(([x,i])=>`${ACCD.months[i]} – ${x}`).join(' · ')||'אין ציונים'}`);
+      if(p.ev){const E=Object.entries(p.ev).sort((x,y)=>y[1][1]-x[1][1]).slice(0,3);if(E.length)L.push(`  עיקר האירועים: ${E.map(([k,[n,pc]])=>`${k} ${Math.round(pc)}%`).join(', ')}`)}}
+    else L.push('• *דוח סייפטי (איתורן):* לא מופיע בדוח');
+    if(isMotoV(a.vt)||(!isCarV(a.vt)&&/אופנוע/.test(p.perm||''))){
+      if(p.ride.length){L.push('• *הדרכות רכיבה (חיים בדרכים):*');p.ride.forEach(r=>L.push(`  - ${r.d}: ציון ${r.sc||'—'}${r.pas?' · עבר: '+r.pas:''}${r.ins?' · מדריך: '+r.ins:''}${r.note?'\n    הערות המדריך: '+r.note:''}`))}
+      else L.push('• *הדרכות רכיבה (חיים בדרכים):* אין ב־2025–2026');
+    }
+    if(isCarV(a.vt)){
+      if(p.alt.length){L.push('• *הדרכות נהיגה (אלטרנטיבי):*');p.alt.forEach(r=>L.push(`  - ${r.d}${r.st?' · '+r.st:''}${r.rec?' · המלצה: '+r.rec:''}${r.ins?' · מדריך: '+r.ins:''}${r.note?'\n    הערות: '+r.note:''}`))}
+      else L.push('• *הדרכות נהיגה (אלטרנטיבי):* אין ב־2025–2026');
+    }
+  }
+  L.push(`• *תאונות קודמות (מ־2025):* ${prior.length}`);
+  prior.forEach((x,i)=>L.push(`  ${i+1}. ${x.d} – ${x.vt} ${x.num} – ${x.kind||x.cause||'תאונה'}${x.fault?' · אשמה: '+x.fault:''}`));
+  if(F.length){L.push('','*נקודות לתשומת לב מהנתונים:*');F.forEach(f=>L.push('• '+f))}
+  L.push('','*ממצאי התחקיר:*','• '+B,'','*האם ניתן היה למנוע:* '+B,'*אשמה:* '+(a.fault||B),'','*מסקנות והמלצות:*','• '+B,'','דני בן דוד','קצין בטיחות בתעבורה','מרחב ירושלים');
+  return L.join('\n');
+}
+function accCardK(a){
+  const p=ACCD.prof[a.pv],pend=!a.off,prior=a.pv?ACCD.acc.filter(x=>x.pv===a.pv).length-1:0;
+  return `<div class="card acck${pend?' pend':''}"><div class="who">
+    <div class="name">${esc(a.n||'—')}${a.pv?` <span class="meta" style="display:inline">· ${esc(a.pv)}</span>`:''}</div>
+    <div class="meta"><span>${esc(a.d)}</span><span>${esc(a.vt)} ${esc(a.num)}</span><span>${esc(a.br)}</span>${prior>0?`<span class="chip warn">${prior} תאונות נוספות</span>`:''}</div>
+    <div class="meta" style="margin-top:4px">${a.kind?`<span class="chip bad">${esc(a.kind)}</span>`:''}${a.cause?`<span class="chip miss">${esc(a.cause)}</span>`:''}${a.fault?`<span class="chip ${/איחוד/.test(a.fault)?'bad':'ok'}">אשמה: ${esc(a.fault)}</span>`:''}${a.trip?`<span class="chip miss">${esc(a.trip)}</span>`:''}</div>
+    ${a.drv?`<p class="accq"><b>גרסת הנהג:</b> ${esc(a.drv)}</p>`:''}
+    ${pend?'<p class="accq pendt"><b>⏳ ממתין לתחקיר קצין בטיחות</b></p>':`<details class="accq"><summary><b>תחקיר קצין בטיחות</b></summary><div class="pre">${esc(a.off)}${a.off.length>=255?'\n…(הייצוא מהמערכת מקצר ל־255 תווים)':''}</div></details>`}
+  </div><div class="acts"><button class="wa sm" style="background:var(--accent);border:0;cursor:pointer;font:inherit;font-weight:700" data-inv="${esc(a.id)}">${pend?'הכנת תחקיר':'תחקיר מחדש'}</button>${p&&p.ph?`<a class="wa sm" href="https://wa.me/972${esc(p.ph.replace(/^0/,''))}" target="_blank" rel="noopener">${WA_ICON}לנהג</a>`:''}</div></div>`;
+}
+function renderAcc(){
+  const app=document.getElementById('app');
+  if(!ACCD){app.innerHTML='<div class="empty">טוען תאונות…</div>';loadAcc();return}
+  const A=ACCD.acc,q=AST.q.trim(),y=new Date().getFullYear();
+  const F=A.filter(a=>(AST.f!=='pend'||!a.off)&&(AST.f!=='mine'||/איחוד/.test(a.fault))&&(!AST.vt||a.vt===AST.vt)&&(!AST.br||a.br===AST.br)&&(!q||[a.n,a.pv,a.num,a.id,a.br].some(x=>(x||'').includes(q))));
+  const cnt=k=>A.filter(k).length,vts=[...new Set(A.map(a=>a.vt).filter(Boolean))],brs=[...new Set(A.map(a=>a.br).filter(Boolean))].sort();
+  let h=`<div class="summary">
+    <button class="stat bad${AST.f==='pend'?' on':''}" data-af="pend"><b>${cnt(a=>!a.off)}</b><span>ממתינות לתחקיר</span></button>
+    <button class="stat${AST.f==='all'?' on':''}" data-af="all"><b>${A.length}</b><span>כל התאונות 2025–2026</span></button>
+    <button class="stat warn${AST.f==='mine'?' on':''}" data-af="mine"><b>${cnt(a=>/איחוד/.test(a.fault))}</b><span>אשמת נהג איחוד הצלה</span></button>
+    <div class="stat" style="cursor:default"><b>${cnt(a=>(pdh(a.d)||0).getFullYear?.()===y)}</b><span>תאונות ב־${y}</span></div></div>
+  <div class="controls"><input id="aq" type="search" placeholder="חיפוש: שם, פרייבט, מס' כלי, ACC" value="${esc(AST.q)}">
+    <select id="avt"><option value="">כל סוגי הכלים</option>${vts.map(v=>`<option${v===AST.vt?' selected':''}>${esc(v)}</option>`).join('')}</select>
+    <select id="abr"><option value="">כל הסניפים</option>${brs.map(v=>`<option${v===AST.br?' selected':''}>${esc(v)}</option>`).join('')}</select></div>
+  <h2>${AST.f==='pend'?'ממתינות לתחקיר':AST.f==='mine'?'אשמת נהג איחוד הצלה':'כל התאונות'} <span class="cnt">${F.length}</span></h2>
+  <div class="list">${F.slice(0,AST.lim).map(accCardK).join('')||`<div class="empty">${AST.f==='pend'?'אין תאונות שממתינות לתחקיר 👍':'לא נמצאו תאונות'}</div>`}</div>
+  ${F.length>AST.lim?`<button class="more" id="amore">עוד ${F.length-AST.lim}</button>`:''}
+  <p class="legend">מקור: ייצוא "תאונות דני בן דוד" (${esc(ACCD.upd)}). תאונה בלי "תיאור המקרה ע"פ קצין בטיחות" נחשבת ממתינה לתחקיר.</p>`;
+  app.innerHTML=h;
+  app.querySelectorAll('[data-af]').forEach(b=>b.onclick=()=>{AST.f=b.dataset.af;AST.lim=40;render()});
+  const qi=document.getElementById('aq');qi.oninput=()=>{AST.q=qi.value;const pos=qi.selectionStart;render();const n=document.getElementById('aq');n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}};
+  document.getElementById('avt').onchange=e=>{AST.vt=e.target.value;render()};document.getElementById('abr').onchange=e=>{AST.br=e.target.value;render()};
+  const m=document.getElementById('amore');if(m)m.onclick=()=>{AST.lim+=40;render()};
+  app.querySelectorAll('[data-inv]').forEach(b=>b.onclick=()=>invOpen(b.dataset.inv));
+}
+function invOpen(id){
+  const a=ACCD.acc.find(x=>x.id===id);if(!a)return;const key='inv:'+id;let saved='';try{saved=localStorage.getItem(key)||''}catch(e){}
+  const ov=document.createElement('div');ov.className='invov';
+  ov.innerHTML=`<div class="invbox" role="dialog" aria-label="תחקיר"><div class="invh"><div><small>${esc(a.id)} · ${esc(a.d)}</small><h2 style="margin:0">תחקיר – ${esc(a.n)}</h2></div><button class="hb x" aria-label="סגירה">✕</button></div>
+    <p class="legend" style="margin:0">הטיוטה כבר כוללת את כל מה שיש במערכת על המתנדב. משלימים את השדות המסומנים ב־____. נשמר אוטומטית במכשיר.</p>
+    <textarea id="invt" spellcheck="false">${esc(saved||accDraft(a))}</textarea>
+    <div class="btns"><button class="wa" id="invc" style="border:0;cursor:pointer;font:inherit;font-weight:700;background:var(--accent)">העתקה</button><a class="wa" id="invw" target="_blank" rel="noopener">${WA_ICON}וואטסאפ</a><a class="wa mail" id="invm">מייל</a><button class="more" id="invr" style="padding:8px 12px">טיוטה מחדש מהנתונים</button></div></div>`;
+  document.body.append(ov);
+  const t=ov.querySelector('#invt'),upd=()=>{try{localStorage.setItem(key,t.value)}catch(e){}ov.querySelector('#invw').href='https://wa.me/?text='+encodeURIComponent(t.value);ov.querySelector('#invm').href=`mailto:?subject=${encodeURIComponent('תחקיר תאונה '+a.id+' – '+a.n)}&body=${encodeURIComponent(t.value.replace(/\*/g,''))}`};
+  upd();t.oninput=upd;
+  ov.querySelector('.x').onclick=()=>ov.remove();ov.onclick=e=>{if(e.target===ov)ov.remove()};
+  ov.querySelector('#invc').onclick=async e=>{try{await navigator.clipboard.writeText(t.value);e.target.textContent='הועתק ✓'}catch(_){t.select();document.execCommand('copy');e.target.textContent='הועתק ✓'}};
+  ov.querySelector('#invr').onclick=()=>{if(t.value!==accDraft(a)&&!confirm('להחליף את מה שכתבת בטיוטה חדשה מהנתונים?'))return;t.value=accDraft(a);upd()};
+}
+/*ACC-END*/
 </script>
 </body>
 </html>
