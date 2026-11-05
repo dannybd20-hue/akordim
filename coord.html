@@ -275,6 +275,8 @@ h3.grp{margin:14px 4px 6px;font-size:.95rem;color:var(--muted)}
 .grp2{display:flex;align-items:center;gap:10px;margin:16px 0 6px;padding:12px 14px;border-radius:12px;font-size:1.05rem;color:#fff}
 .grp2 span{font-size:1.4rem}.grp2 b{margin-inline-start:auto;background:#ffffff33;border-radius:99px;padding:2px 12px;font-size:1rem}
 .grp2.gm{background:#ea580c}.grp2.ga{background:#c22b2b}.grp2.gc{background:#1f5fae}
+.fu{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:0 14px 10px}.fu .fun{font-size:.88rem}.fu small{color:var(--muted);font-size:.75rem}
+.fud{margin-top:4px}.fud button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
 </style>
 
 
@@ -521,6 +523,7 @@ function vRow(v){
   const is=vehIssues(v);
   return `<div class="vcard${is.some(x=>x.lvl==='bad')?' bad':is.length?' warn':''}">
     <div class="vh2"><span class="plate">${esc(v.plate)}</span><span class="pid"><b>כלי ${esc(v.num)} · ${esc(v.type)}</b><small>נהג: ${esc(v.name||'—')}${(()=>{const d=DATA.people.find(p=>(v.phone&&p.ph===v.phone)||p.n===v.name);return d&&d.pv?' · פרייבט '+esc(d.pv):''})()}</small></span>${v.phone?`<a class="cb call" href="tel:${esc(v.phone)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(v.phone,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}</div>
+    ${is.length?fuLine(v):''}
     <div class="vstat">${is.length?is.map(x=>`<span class="pill ${x.lvl}">${x.lvl==='bad'?'⛔':'⚠️'} ${esc(x.t)}</span>`).join(''):'<span class="pill ok">✓ הכלי תקין – אין חריגות</span>'}</div>
     <div class="dgrid4">${dstate('טסט (רישיון רכב)',v.test,t,'test')}${dstate('טיפול אחרון',v.service,svDue,'service')}${dstate('בדיקת קצב"ת',v.check,c,'check')}${dstate('ביטוח',v.ins,i,'ins')}</div>
   </div>`;
@@ -730,6 +733,44 @@ function pendingAlert(){
 let ALLX=null;
 async function loadAllX(){const r=await api({action:'list',br:'*'});ALLX=r?r.rows.sort((a,b)=>b.ts-a.ts):[];if(st.view==='exit')render()}
 
+/* ===== מעקב טיפול בחריגת כלי: הרכז קובע "הקפצה" בעוד X ימים ===== */
+let FU=null;
+const fuKey=num=>'fu:'+DATA.br+':'+num;
+function fuGet(num){let l=null;try{l=JSON.parse(ls(fuKey(num))||'null')}catch(e){}const r=FU&&FU[num];if(r&&(!l||r.ts>=l.ts))return r.done?null:r;return l&&!l.done?l:null}
+function fuSave(num,o){o.ts=Date.now();o.by=ADMIN?'מנהל':(DATA.coord||'');ls(fuKey(num),JSON.stringify(o));if(FU)FU[num]=o;api({action:'fu_set',num,o})}
+async function loadFu(){const br=DATA.br,r=await api({action:'fu_list'});if(!r||DATA.br!==br)return;FU={};r.rows.forEach(x=>{if(!FU[x.num]||x.o.ts>FU[x.num].ts)FU[x.num]=x.o});if(st.view==='veh'||st.view==='sum')render();setTimeout(fuAlerts,1200)}
+function fuLine(v){const f=fuGet(v.num),due=f&&new Date(f.due),late=f&&due<=new Date();
+  return `<div class="fu">${f?`<span class="pill ${late?'bad':'mid'}">⏰ בטיפול · ${late?'הגיע מועד המעקב':'מעקב ב־'+esc(due.toLocaleDateString('he-IL'))}</span>${f.note?`<span class="fun">${esc(f.note)}</span>`:''}${f.by?`<small>${esc(f.by)} · ${esc(new Date(f.ts).toLocaleDateString('he-IL'))}</small>`:''}`:''}
+    <button type="button" class="btn ghost sm" data-fu="${esc(v.num)}">${f?'עדכון / הקפצה':'⏰ בטיפול – הקפצה'}</button>${f?`<button type="button" class="btn ok sm" data-fudone="${esc(v.num)}">טופל ✓</button>`:''}</div>`}
+function fuDialog(num){const v=DATA.veh.find(x=>x.num===num);if(!v)return;const f=fuGet(num)||{};
+  const ov=document.createElement('div');ov.className='ov center';
+  ov.innerHTML=`<div class="alertbox" role="dialog"><div class="ah"><span>${IC.wrench}</span><div><small>מעקב טיפול</small><h2>כלי ${esc(v.num)} · ${esc(v.type)}</h2></div></div>
+    <p class="hint" style="padding:0">${vehIssues(v).map(i=>esc(i.t)).join(' · ')}${v.name?' · נהג: '+esc(v.name):''}</p>
+    <label class="full" style="display:flex;flex-direction:column;gap:4px">מה המצב?<textarea id="fun" rows="3" placeholder="לדוגמה: הכלי במוסך, הנהג במילואים, חוזר ביום ראשון">${esc(f.note||'')}</textarea></label>
+    <div><small>להקפיץ לי בעוד:</small><div class="seg fud">${[1,3,7,14,30].map(d=>`<button type="button" data-d="${d}">${d===1?'יום':d+' ימים'}</button>`).join('')}</div>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:8px">או תאריך: <input type="date" id="fudt" value="${f.due?new Date(f.due).toISOString().slice(0,10):''}"></label></div>
+    <div class="acts"><button class="btn" id="fusave">שמירה</button><button class="btn ghost" id="fux">ביטול</button></div></div>`;
+  document.body.append(ov);const dt=ov.querySelector('#fudt');
+  ov.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{const d=new Date();d.setDate(d.getDate()+ +b.dataset.d);dt.value=d.toISOString().slice(0,10);ov.querySelectorAll('[data-d]').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+  ov.querySelector('#fux').onclick=()=>ov.remove();
+  ov.querySelector('#fusave').onclick=()=>{if(!dt.value){dt.focus();return}fuSave(num,{due:new Date(dt.value+'T08:00').getTime(),note:ov.querySelector('#fun').value.trim()});ov.remove();render()};
+}
+document.addEventListener('click',e=>{const a=e.target.closest('[data-fu]');if(a){e.stopPropagation();fuDialog(a.dataset.fu);return}
+  const d=e.target.closest('[data-fudone]');if(d){const f=fuGet(d.dataset.fudone)||{};fuSave(d.dataset.fudone,{...f,done:1});render()}},true);
+/* בכניסה: תזכורת על מעקבים שהגיע זמנם */
+function fuAlerts(){if(!DATA||document.querySelector('.ov.center'))return;const now=Date.now();
+  const L=DATA.veh.map(v=>({v,f:fuGet(v.num)})).filter(x=>x.f&&x.f.due<=now&&!ss('fuseen:'+x.v.num+':'+x.f.due));if(!L.length)return;
+  const {v,f}=L[0],ov=document.createElement('div');ov.className='ov center';
+  ov.innerHTML=`<div class="alertbox" role="alertdialog"><div class="ah"><span>${IC.wrench}</span><div><small>תזכורת מעקב${L.length>1?` · 1 מתוך ${L.length}`:''}</small><h2>כלי ${esc(v.num)} · ${esc(v.type)}</h2></div></div>
+    <p>${vehIssues(v).map(i=>esc(i.t)).join(' · ')||'אין חריגה כרגע במערכת'}${v.name?' · נהג: '+esc(v.name):''}</p>${f.note?`<p class="hint" style="padding:0">ההערה שלך: ${esc(f.note)}</p>`:''}
+    <div class="acts">${v.phone?`<a class="btn wa" href="${waLink(v.phone,'')}" target="_blank" rel="noopener">${WA_ICON}לנהג</a>`:''}<button class="btn ok" id="fud1">טופל ✓</button><button class="btn" id="fud2">הקפצה שוב</button><button class="btn ghost" id="fud3">אחר כך</button></div></div>`;
+  document.body.append(ov);const seen=()=>ss('fuseen:'+v.num+':'+f.due,'1');
+  ov.querySelector('#fud1').onclick=()=>{fuSave(v.num,{...f,done:1});ov.remove();render();setTimeout(fuAlerts,200)};
+  ov.querySelector('#fud2').onclick=()=>{seen();ov.remove();fuDialog(v.num)};
+  ov.querySelector('#fud3').onclick=()=>{seen();ov.remove();setTimeout(fuAlerts,200)};
+}
+function ss(k,v){try{if(v===undefined)return sessionStorage.getItem(k);sessionStorage.setItem(k,v)}catch(e){return null}}
+
 /* ===== מפת מתנדבים – לפי כתובת המגורים ===== */
 const MAP={el:null,map:null,layer:null,br:null,run:0,done:0,total:0,miss:[],flt:'all'};
 const GEO_V='geo1:';
@@ -847,7 +888,7 @@ document.addEventListener('visibilitychange',()=>document.body.classList.toggle(
 window.addEventListener('blur',()=>document.body.classList.add('hide-all'));window.addEventListener('focus',()=>document.body.classList.remove('hide-all'));
 document.addEventListener('copy',e=>{if(document.body.classList.contains('secure')&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||''))e.preventDefault()});
 document.addEventListener('contextmenu',e=>{if(document.body.classList.contains('secure'))e.preventDefault()});
-function show(){setTimeout(accAlerts,600);ACKS=null;setTimeout(loadAcks,100);INVS=null;setTimeout(loadInvs,150);if(ADMIN){setTimeout(loadPending,300);if(!window._pendT)window._pendT=setInterval(loadPending,120000)}$('gsw').hidden=false;const gi=$('gs');gi.oninput=()=>gsearch(gi.value);document.documentElement.style.setProperty('--hh',document.querySelector('.appbar').offsetHeight+'px');watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
+function show(){setTimeout(accAlerts,600);ACKS=null;setTimeout(loadAcks,100);INVS=null;setTimeout(loadInvs,150);FU=null;setTimeout(loadFu,200);setTimeout(fuAlerts,1500);if(ADMIN){setTimeout(loadPending,300);if(!window._pendT)window._pendT=setInterval(loadPending,120000)}$('gsw').hidden=false;const gi=$('gs');gi.oninput=()=>gsearch(gi.value);document.documentElement.style.setProperty('--hh',document.querySelector('.appbar').offsetHeight+'px');watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
 
 /* ===== כניסה ===== */
 function lockView(err){
