@@ -278,6 +278,9 @@ h3.grp{margin:14px 4px 6px;font-size:.95rem;color:var(--muted)}
 .fu{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:0 14px 10px}.fu .fun{font-size:.88rem}.fu small{color:var(--muted);font-size:.75rem}
 .fud{margin-top:4px}.fud button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
 .dc.tap{cursor:pointer;position:relative;outline:2px dashed currentColor;outline-offset:-4px}.dc .tapi{display:block;font-size:.72rem;font-weight:700;margin-top:4px}
+.drs{margin-bottom:8px;flex-wrap:wrap}.drs button span{font-size:.78rem;opacity:.75;margin-inline-start:4px}
+.bdg.tr{background:var(--mid-bg);color:var(--mid)}.mp.mid{background:var(--mid-bg);color:var(--mid)}
+#vmap.fixing{outline:3px solid var(--warn);cursor:crosshair}
 </style>
 
 
@@ -338,6 +341,14 @@ function docStatus(p){
 }
 function safetyNow(p){if(!p.s)return null;let m=p.s.length-1;while(m>=0&&p.s[m]==null)m--;if(m<0)return null;let k=0;for(let j=m;j>=0&&p.s[j]!=null&&p.s[j]<25;j--)k++;let prev=null;for(let j=m-1;j>=0;j--)if(p.s[j]!=null){prev=p.s[j];break}return {x:p.s[m],m,streak:k,prev}}
 const lastRide=p=>(p.ride||[])[0]||null, lastAlt=p=>(p.alt||[])[0]||null;
+/* משתלם (בתהליך נהיגה): אין לו אף הרשאה מלאה לכלי מנועי, רק "משתלם"/"טרום משתלם" */
+const VEHRX=/אופנוע|אמבולנס|רכב|מינילנס/;
+function trTags(p){return (p.perm||'').split(';').map(x=>x.trim()).filter(x=>/משתלם/.test(x))}
+function isTr(p){if(p._tr!==undefined)return p._tr;const P=(p.perm||'').split(';').map(x=>x.trim()).filter(Boolean);
+  return p._tr=!P.some(x=>VEHRX.test(x)&&!/משתלם/.test(x)&&!/^(חונך|טסטר)/.test(x))&&trTags(p).length>0}
+const trLabel=x=>'🎓 '+x.replace(' ארגוני מבצעי','').replace(' רגילות בלבד','');
+const drF=p=>st.dr==='trn'?isTr(p):st.dr==='all'?true:!isTr(p);
+function drSeg(){const P=DATA.people,t=P.filter(isTr).length;return `<div class="seg drs">${[['act','נהגים בפועל',P.length-t],['trn','בתהליך – משתלמים',t],['all','הכל',P.length]].map(([k,l,n])=>`<button data-dr="${k}" aria-pressed="${(st.dr||'act')===k}">${l} <span>${n}</span></button>`).join('')}</div>`}
 const isMoto=p=>/אופנוע/.test(p.perm||'')||(p.cars||[]).some(c=>/אופנוע/.test(c.type||''));
 /* השתלמות שנתית 2026: אופנוע > אמבולנס > רכב. השתלמות של הדרגה הגבוהה פוטרת מהנמוכות */
 const ANN_Y=2026;
@@ -430,7 +441,7 @@ function delHist(id){ls(HK(),JSON.stringify(localHist().filter(h=>h.id!==id)));i
 
 
 /* ===== תצוגה ===== */
-let DATA=null,ADMIN=null;const st={view:'sum',q:'',flt:'all',sel:null,f:{}};
+let DATA=null,ADMIN=null;const st={view:'sum',q:'',flt:'all',sel:null,f:{},dr:'act'};
 const IC={
   users:'<svg viewBox="0 0 24 24"><path d="M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-8 1a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm8 1c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4ZM8 14c-.3 0-.7 0-1.1.1A4.7 4.7 0 0 1 9 17v2H1v-2c0-2 4-3 7-3Z"/></svg>',
   car:'<svg viewBox="0 0 24 24"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11v7a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H8v1a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1Zm2.3-1h9.4l-1-3H8.3ZM7.5 15A1.5 1.5 0 1 0 6 13.5 1.5 1.5 0 0 0 7.5 15Zm9 0a1.5 1.5 0 1 0-1.5-1.5 1.5 1.5 0 0 0 1.5 1.5Z"/></svg>',
@@ -465,7 +476,7 @@ function pRow(p){
   return `<div class="prow${m.attn?' attn':''}" role="button" tabindex="0" data-p="${esc(p.pv||p.n)}">
     <span class="av" style="background:${colorOf(p.n)}">${esc(ini(p.n))}</span>
     <span class="pid"><b>${esc(p.n)}</b><small>${[p.pv&&'פרייבט '+p.pv,car&&`כלי ${car.num}${car.type?' '+car.type:''}`,p.city].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</small>
-      <span class="minis">${m.sn?mini('סייפטי',m.sn.x,lvlSafety(m.sn.x)):''}${m.r?mini('הדרכת רכיבה',m.rs===0?'נכשל':(m.r.sc||'—'),lvlRide(m.rs)):''}${m.bad?mini('מסמכים',m.bad+' פגים','bad'):m.warn?mini('מסמכים','פג בקרוב','warn'):''}${annMiss(p)?mini('השתלמות '+ANN_Y,'לא בוצעה','bad'):''}${rideYears(p)!=null?mini('ותק רכיבה',rideYears(p)+' ש׳','na'):''}</span></span>
+      <span class="minis">${m.sn?mini('סייפטי',m.sn.x,lvlSafety(m.sn.x)):''}${m.r?mini('הדרכת רכיבה',m.rs===0?'נכשל':(m.r.sc||'—'),lvlRide(m.rs)):''}${m.bad?mini('מסמכים',m.bad+' פגים','bad'):m.warn?mini('מסמכים','פג בקרוב','warn'):''}${trTags(p).map(x=>`<span class="mp mid">${esc(trLabel(x))}</span>`).join('')}${annMiss(p)?mini('השתלמות '+ANN_Y,'לא בוצעה','bad'):''}${rideYears(p)!=null?mini('ותק רכיבה',rideYears(p)+' ש׳','na'):''}</span></span>
     ${tel?`<a class="cb call" href="tel:${esc(tel)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(tel,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}
   </div>`;
 }
@@ -475,11 +486,12 @@ function render(){
   const P=DATA.people,M=DATA.months[DATA.months.length-1];
   let h=ADMIN?adminBar():'';
   if(st.view==='sum'){
-    const ms=P.map(p=>({p,m:metrics(p)})),low=ms.filter(o=>o.m.sn&&o.m.sn.x<25),docs=ms.filter(o=>o.m.bad),vi=DATA.veh.filter(v=>vehIssues(v).length);
+    const Pa=P.filter(p=>!isTr(p)),Pt=P.filter(isTr),ms=Pa.map(p=>({p,m:metrics(p)})),low=ms.filter(o=>o.m.sn&&o.m.sn.x<25),docs=ms.filter(o=>o.m.bad),vi=DATA.veh.filter(v=>vehIssues(v).length);
     const sc=ms.map(o=>o.m.sn).filter(Boolean),avg=sc.length?Math.round(sc.reduce((a,c)=>a+c.x,0)/sc.length):'—';
     const H=hist(),yes=H.filter(x=>x.dec==='yes').length,att=ms.filter(o=>o.m.attn);
     h+=`<section class="kpis">
-      ${kpi(IC.users,'נהגים בסניף',P.length,'בעלי הרשאת נהיגה','','all')}
+      ${kpi(IC.users,'נהגים בפועל',Pa.length,'בעלי הרשאת נהיגה מלאה','','all')}
+      ${kpi(IC.users,'בתהליך נהיגה',Pt.length,Pt.length?'משתלמים – לחץ לרשימה':'אין משתלמים','mid','trn')}
       ${kpi(IC.car,'כלים בסניף',DATA.veh.length,vi.length?vi.length+' עם חריגה':'כולם תקינים',vi.length?'warn':'ok','veh')}
       ${kpi(IC.gauge,'ממוצע סייפטי',avg,M,typeof avg==='number'&&avg<35?'warn':'','avg')}
       ${kpi(IC.alert,'מתחת ל־25 בסייפטי',low.length,low.length?'דורשים שיחה':'אין',low.length?'bad':'ok','low')}
@@ -496,8 +508,8 @@ function render(){
     ${vi.length?`<section class="panel"><header><h2>כלים עם חריגה</h2><span class="count">${vi.length}</span></header><div class="vlist">${vi.map(vRow).join('')}</div></section>`:''}`;
   } else if(st.view==='ppl'){
     const q=st.q.trim(),F={all:()=>true,attn:p=>metrics(p).attn,moto:p=>isMoto(p),amb:p=>/אמבולנס/.test(p.perm||'')||(p.cars||[]).some(c=>/אמבולנס/.test(c.type||''))};
-    const L=P.filter(p=>F[st.flt](p)&&(!q||[p.n,p.pv,p.ph,p.city].some(x=>(x||'').includes(q))));
-    h+=`<div class="toolbar"><div class="search">${IC.users}<input id="q" type="search" placeholder="חיפוש לפי שם, פרייבט או טלפון" value="${esc(st.q)}"></div>
+    const L=P.filter(p=>drF(p)&&F[st.flt](p)&&(!q||[p.n,p.pv,p.ph,p.city].some(x=>(x||'').includes(q))));
+    h+=`<div class="toolbar">${drSeg()}<div class="search">${IC.users}<input id="q" type="search" placeholder="חיפוש לפי שם, פרייבט או טלפון" value="${esc(st.q)}"></div>
       <div class="seg">${[['all','הכל'],['attn','דורשים תשומת לב'],['moto','אופנוענים'],['amb','נהגי אמבולנס']].map(([k,l])=>`<button data-f="${k}" aria-pressed="${st.flt===k}">${l}</button>`).join('')}</div></div>
       <section class="panel"><header><h2>נהגים</h2><span class="count">${L.length}</span></header><div class="plist">${L.map(pRow).join('')||'<div class="empty">לא נמצאו נהגים</div>'}</div></section>`;
   } else if(st.view==='map'){
@@ -591,7 +603,7 @@ function exitView(){
 
 /* לחיצה על קוביה: נפתחת הרשימה שמאחורי המספר */
 function drill(k){
-  const P=DATA.people,M=DATA.months[DATA.months.length-1];
+  const P=DATA.people.filter(p=>!isTr(p)),M=DATA.months[DATA.months.length-1];
   if(k==='exit'){document.querySelector('.tab[data-v="exit"]').click();return}
   if(k==='acc'){document.querySelector('.tab[data-v="acc"]').click();return}
   let title='',body='';
@@ -600,6 +612,7 @@ function drill(k){
   else if(k==='avg'){title='ציוני סייפטי · '+M;const L=P.filter(p=>safetyNow(p)).sort((a,b)=>safetyNow(a).x-safetyNow(b).x);body=L.map(pRow).join('')+(P.length>L.length?`<p class="hint">${P.length-L.length} נהגים בלי ציון סייפטי</p>`:'')}
   else if(k==='low'){title='מתחת ל־25 בסייפטי';body=P.filter(p=>{const s=safetyNow(p);return s&&s.x<25}).sort((a,b)=>safetyNow(a).x-safetyNow(b).x).map(pRow).join('')}
   else if(k==='insp'){title='עזרה בבדיקות לקצב"ת האלוף';const L=inspLate();body=L.length?`<p class="hint">לחיצה על קוביית "בדיקת קצב"ת" בכל כלי פותחת את טופס הבדיקה על שמך. הבדיקה מגיעה לדני לאישור. תודה על העזרה!</p><div class="vlist">${L.map(vRow).join('')}</div>`:''}
+  else if(k==='trn'){title='בתהליך נהיגה – משתלמים';const L=DATA.people.filter(isTr);body=L.length?'<p class="hint">מתנדבים שכל הרשאות הנהיגה שלהם הן משתלם / טרום משתלם.</p>'+L.map(pRow).join(''):''}
   else if(k==='ann'){title='לא ביצעו השתלמות שנתית '+ANN_Y;const L=P.filter(annMiss);const g=['אופנוע','אמבולנס','רכב'];body=g.map(n=>{const G=L.filter(p=>annual(p).need===n);const ic={'אופנוע':'🏍️','אמבולנס':'🚑','רכב':'🚗'}[n],cl={'אופנוע':'gm','אמבולנס':'ga','רכב':'gc'}[n];return G.length?`<h3 class="grp2 ${cl}"><span>${ic}</span>${n} כביש ${ANN_Y}<b>${G.length}</b></h3>`+G.map(p=>pRow(p)+`<div class="sub">${pill('bad','נדרש: '+annual(p).course)} ${p.ph?`<a class="btn wa sm" href="${waLink(p.ph,annMsg(p))}" target="_blank" rel="noopener">${WA_ICON}תזכורת להירשם</a>`:''}</div>`).join(''):''}).join('')}
   else if(k==='docs'){title='נהגים עם מסמך שפג';body=P.filter(p=>docStatus(p).some(d=>d.lvl==='bad')).map(p=>pRow(p)+`<div class="sub">${docStatus(p).filter(d=>d.lvl==='bad').map(d=>pill('bad',d.l+': '+d.t)).join(' ')}</div>`).join('')}
   const ov=document.createElement('div');ov.className='ov';ov.innerHTML=`<aside class="drawer"><header class="dh"><button class="x" aria-label="סגירה">${IC.x}</button><div><h2>${esc(title)}</h2><p>${esc(DATA.br)}</p></div></header><section class="panel" style="margin:0 16px"><div class="plist">${body||'<div class="empty">אין</div>'}</div></section></aside>`;
@@ -613,12 +626,12 @@ function hebBd(bd){const d=pd(bd);if(!d)return '';try{return new Intl.DateTimeFo
 function pbRow(p){const tel=(p.ph||'').replace(/\D/g,''),cars=p.cars||[];
   const vb=cars.map(c=>`<span class="bdg car">${/אופנוע|אופניים/.test(c.type||'')?'🏍️':/רכב|ג'יפ/.test(c.type||'')?'🚗':'🚑'} ${esc(c.num)}</span>`).join('');
   return `<div class="prow pb" role="button" tabindex="0" data-c="${esc(p.pv||p.n)}"><span class="av" style="background:${colorOf(p.n)}">${esc(ini(p.n))}</span>
-    <span class="pid"><b>${esc(p.n)}</b><span class="badges">${p.pv?`<span class="bdg">${esc(p.pv)}</span>`:''}${vb}${annMiss(p)?`<span class="bdg bad">✗ השתלמות ${ANN_Y}</span>`:''}</span><small>${esc([(p.perm||'').split(/;\s*/)[0],p.city].filter(Boolean).join(' · ')||DATA.br)}</small></span>
+    <span class="pid"><b>${esc(p.n)}</b><span class="badges">${p.pv?`<span class="bdg">${esc(p.pv)}</span>`:''}${vb}${trTags(p).map(x=>`<span class="bdg tr">${esc(trLabel(x))}</span>`).join('')}${annMiss(p)?`<span class="bdg bad">✗ השתלמות ${ANN_Y}</span>`:''}</span><small>${esc([(p.perm||'').split(/;\s*/)[0],p.city].filter(Boolean).join(' · ')||DATA.br)}</small></span>
     ${tel?`<a class="cb call" href="tel:${esc(tel)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(tel,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}</div>`}
 function phonebookView(){
-  const q=st.q.trim(),L=DATA.people.filter(p=>!q||[p.n,p.pv,p.ph,p.city,(p.cars||[]).map(c=>c.num).join(' ')].some(x=>(x||'').includes(q)));
+  const q=st.q.trim(),L=DATA.people.filter(p=>drF(p)).filter(p=>!q||[p.n,p.pv,p.ph,p.city,(p.cars||[]).map(c=>c.num).join(' ')].some(x=>(x||'').includes(q)));
   const col=new Intl.Collator('he');L.sort((a,b)=>col.compare(a.n,b.n));
-  let h=`<div class="toolbar"><div class="search">${IC.users}<input id="q" type="search" placeholder="חיפוש: שם, טלפון, פרייבט, מס׳ רכב, יישוב…" value="${esc(st.q)}"></div></div><section class="panel">`,last='';
+  let h=`<div class="toolbar">${drSeg()}<div class="search">${IC.users}<input id="q" type="search" placeholder="חיפוש: שם, טלפון, פרייבט, מס׳ רכב, יישוב…" value="${esc(st.q)}"></div></div><section class="panel">`,last='';
   L.forEach(p=>{const l=(p.n||'#').charAt(0);if(l!==last){h+=`<div class="lt">${esc(l)}</div>`;last=l}h+=pbRow(p)});
   return h+(L.length?'':'<div class="empty">לא נמצאו אנשי קשר</div>')+`</section><p class="foot">${L.length} אנשי קשר עם הרשאת נהיגה · ${esc(DATA.br)}</p>`;
 }
@@ -788,7 +801,7 @@ function inspLate(){return DATA.veh.filter(v=>{const c=pd(v.check);return c&&day
 
 /* ===== מפת מתנדבים – לפי כתובת המגורים ===== */
 const MAP={el:null,map:null,layer:null,br:null,run:0,done:0,total:0,miss:[],flt:'all'};
-const GEO_V='geo1:';
+const GEO_V='geo2:';
 function addrOf(p){
   let s=String(p.st||'').replace(/\s+/g,' ').trim(),c=String(p.city||'').replace(/\s+/g,' ').trim();
   if(!c&&!s)return null;
@@ -799,23 +812,29 @@ function addrOf(p){
 function geoGet(q){const v=ls(GEO_V+q);if(!v)return undefined;if(v[0]==='x')return Date.now()-(+v.slice(1))<7*864e5?null:undefined;const [a,b,ap]=v.split(',');return {lat:+a,lng:+b,ap:ap==='1'}}
 function geoSet(q,r){ls(GEO_V+q,r?`${r.lat.toFixed(6)},${r.lng.toFixed(6)},${r.ap?1:0}`:'x'+Date.now())}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function nomi(params){
-  const u='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=il&accept-language=he&'+new URLSearchParams(params);
-  try{const r=await fetch(u).then(r=>r.json());await sleep(1100);return r&&r[0]?{lat:+r[0].lat,lng:+r[0].lon}:null}catch(e){await sleep(1500);return null}
+/* OpenStreetMap: חיפוש מובנה (רחוב + יישוב) ובדיקה שהתוצאה באמת באותו יישוב – לא סתם נקודה */
+const normC=s=>String(s||'').replace(/[\s\-–־"'׳״]/g,'').replace(/^ה/,'');
+async function nomi(params,city){
+  const u='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=3&countrycodes=il&accept-language=he&addressdetails=1&'+new URLSearchParams(params);
+  try{const R=await fetch(u).then(r=>r.json());await sleep(1100);
+    const hit=(R||[]).find(x=>{const a=x.address||{},c=normC(city);if(!c)return true;return [a.city,a.town,a.village,a.municipality,a.suburb,a.hamlet,a.neighbourhood].some(v=>v&&(normC(v).includes(c)||c.includes(normC(v))))});
+    return hit?{lat:+hit.lat,lng:+hit.lon,ap:!(hit.address&&hit.address.house_number)}:null}catch(e){await sleep(1500);return null}
 }
-/* קודם דרך הסקריפט של גוגל (מדויק יותר בעברית), ואם אין – OpenStreetMap */
+/* קודם דרך הסקריפט של גוגל (מדויק יותר בעברית), ואם אין – OpenStreetMap. בלי "מרכז היישוב" – כתובת שלא אותרה לא מוצגת */
 async function geocodeAll(list,onStep){
   const need=list.filter(o=>geoGet(o.a.q)===undefined),qs=[...new Set(need.map(o=>o.a.q))];
   if(qs.length&&SYNC_URL){
     for(let i=0;i<qs.length;i+=25){const r=await api({action:'geo',q:qs.slice(i,i+25)});
-      if(r&&r.res)r.res.forEach((x,j)=>{if(x)geoSet(qs[i+j],x);else if(x===null)geoSet(qs[i+j],null)});if(onStep()===false)return}
+      if(r&&r.res)r.res.forEach((x,j)=>{if(x)geoSet(qs[i+j],x)});if(onStep()===false)return}
   }
   for(const q of qs){if(geoGet(q)!==undefined)continue;const o=need.find(n=>n.a.q===q).a;
-    let r=await nomi({q});
-    if(!r&&o.s&&/\d/.test(o.s)){r=await nomi({street:o.s.replace(/\s*\d+\s*[א-ת]?$/,''),city:o.c});if(r)r.ap=false}
-    if(!r&&o.c){r=await nomi({city:o.c});if(r)r.ap=true}
+    let r=o.s?await nomi({street:o.s,city:o.c},o.c):null;
+    if(!r&&o.s)r=await nomi({q},o.c);
     geoSet(q,r);if(onStep()===false)return}
 }
+/* תיקון ידני: הרכז גורר את האופנוע למקום הנכון – נשמר במכשיר */
+const FIXK=p=>'geofix:'+DATA.br+':'+(p.pv||p.n);
+function geoFix(p){try{return JSON.parse(ls(FIXK(p))||'null')}catch(e){return null}}
 function loadLeaflet(){
   if(window.L&&L.markerClusterGroup)return Promise.resolve();
   const css=h=>{const l=document.createElement('link');l.rel='stylesheet';l.href=h;document.head.append(l)};
@@ -839,16 +858,17 @@ function popHtml(p){
   const m=metrics(p),a=addrOf(p),tel=(p.ph||'').replace(/\D/g,''),car=(p.cars||[])[0];
   return `<div class="mpop" dir="rtl"><b>${esc(p.n)}</b>
     <small>${[p.pv&&'פרייבט '+p.pv,'אופנוע '+motoOf(p).join(', ')].filter(Boolean).map(esc).join(' · ')}</small>
-    <small>🏠 ${esc(a?a.q:'')}${p._ap?' <i>(מיקום משוער – לפי היישוב)</i>':''}</small>
+    <small>🏠 ${esc(a?a.q:'')}${geoFix(p)?' <i>(מיקום שתוקן ידנית)</i>':p._ap?' <i>(מיקום משוער – לפי הרחוב)</i>':''}</small>
     <span class="minis">${m.sn?mini('סייפטי',m.sn.x,lvlSafety(m.sn.x)):''}${m.r?mini('רכיבה',m.rs===0?'נכשל':(m.r.sc||'—'),lvlRide(m.rs)):''}${m.bad?mini('מסמכים',m.bad+' פגים','bad'):''}</span>
-    <span class="macts"><button type="button" class="btn" data-mp="${esc(p.pv||p.n)}">כרטיס מלא</button>${tel?`<a class="cb call" href="tel:${esc(tel)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(tel,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}<a class="btn ghost" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a?a.q:'')}" target="_blank" rel="noopener">ניווט</a></span></div>`;
+    <span class="macts"><button type="button" class="btn" data-mp="${esc(p.pv||p.n)}">כרטיס מלא</button>${tel?`<a class="cb call" href="tel:${esc(tel)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(tel,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}<button type="button" class="btn ghost" data-mfix="${esc(p.pv||p.n)}">המיקום לא נכון</button><a class="btn ghost" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a?a.q:'')}" target="_blank" rel="noopener">ניווט</a></span></div>`;
 }
 function drawPins(){
   if(!MAP.map)return;MAP.layer.clearLayers();const pts=[];MAP.miss=[];
   const F={all:()=>true,moto:()=>true,attn:p=>metrics(p).attn}[MAP.flt]||(()=>true);
-  for(const p of mapPeople()){const a=addrOf(p);if(!a||!F(p))continue;const g=geoGet(a.q);if(!g){if(g===null)MAP.miss.push(p);continue}
+  for(const p of mapPeople()){const a=addrOf(p);if(!a||!F(p))continue;const g=geoFix(p)||geoGet(a.q);if(!g){if(g===null)MAP.miss.push(p);continue}
     p._ap=g.ap;const mk=L.marker([g.lat,g.lng],{icon:L.divIcon({html:pinHtml(p),className:'',iconSize:[52,52],iconAnchor:[26,46],popupAnchor:[0,-40]}),title:p.n});
-    mk.bindPopup(()=>popHtml(p),{maxWidth:280});MAP.layer.addLayer(mk);pts.push([g.lat,g.lng])}
+    mk.bindPopup(()=>popHtml(p),{maxWidth:280});mk._p=p;
+MAP.layer.addLayer(mk);pts.push([g.lat,g.lng])}
   const fin=MAP.done>=MAP.total;if(pts.length&&(!MAP.fitN||(fin&&!MAP.fitted))){MAP.map.fitBounds(pts,{padding:[30,30],maxZoom:15});MAP.fitN=1;MAP.fitted=fin}
   return pts.length;
 }
@@ -865,7 +885,8 @@ async function mountMap(){
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(MAP.map);
     MAP.layer=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:40,spiderfyOnMaxZoom:true,
       iconCreateFunction:c=>L.divIcon({html:`<div class="mclu"><img src="icons/moto-pin.png" alt=""><b>${c.getChildCount()}</b></div>`,className:'',iconSize:[56,56]})}).addTo(MAP.map);
-    MAP.el.addEventListener('click',e=>{const b=e.target.closest('[data-mp]');if(b){MAP.map.closePopup();personSheet(b.dataset.mp)}})}
+    MAP.map.on('click',e=>{const p=MAP.fixing;if(!p)return;ls(FIXK(p),JSON.stringify({lat:e.latlng.lat,lng:e.latlng.lng,fix:1}));MAP.fixing=null;MAP.el.classList.remove('fixing');mapStatus(drawPins())});
+    MAP.el.addEventListener('click',e=>{const b=e.target.closest('[data-mp]');if(b){MAP.map.closePopup();personSheet(b.dataset.mp)}const f=e.target.closest('[data-mfix]');if(f){let mk=null;MAP.layer.eachLayer(l=>{if(l._p&&(l._p.pv||l._p.n)===f.dataset.mfix)mk=l});if(mk){MAP.map.closePopup();MAP.fixing=mk._p;MAP.el.classList.add('fixing');$('mstat').innerHTML=`<b>לחץ על המפה במקום שבו ${esc(mk._p.n)} גר</b> – המיקום יישמר. <button type="button" class="btn ghost sm" id="fixx">ביטול</button>`;const x=$('fixx');if(x)x.onclick=()=>{MAP.fixing=null;MAP.el.classList.remove('fixing');mapStatus(drawPins())}}}})}
   setTimeout(()=>MAP.map.invalidateSize(),50);
   const list=mapPeople().map(p=>({p,a:addrOf(p)})).filter(o=>o.a),qs=[...new Set(list.map(o=>o.a.q))];
   if(MAP.br!==DATA.br){MAP.br=DATA.br;MAP.fitted=false;MAP.fitN=0;MAP.run++;MAP.busy=false}
@@ -887,6 +908,7 @@ function bind(){
   document.querySelectorAll('#app .prow.pb').forEach(c=>{c.onclick=e=>{if(!e.target.closest('a'))contactSheet(c.dataset.c)};c.onkeydown=e=>{if(e.key==='Enter')contactSheet(c.dataset.c)}});
   document.querySelectorAll('.kpi[data-k],.annban[data-k]').forEach(b=>b.onclick=()=>drill(b.dataset.k));
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{st.flt=b.dataset.f;render()});
+  document.querySelectorAll('[data-dr]').forEach(b=>b.onclick=()=>{st.dr=b.dataset.dr;render()});
   const q=$('q');if(q)q.oninput=e=>{st.q=e.target.value;const pos=e.target.selectionStart;render();const n=$('q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}};
   const pb=$('pendB');if(pb)pb.onclick=pendingAlert;
   const cp=$('cpm');if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(coordMsg(DATA.br));cp.textContent='הועתק'}catch(e){cp.textContent='לא הועתק'}};
