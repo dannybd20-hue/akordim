@@ -563,7 +563,7 @@ const TEST_P={n:'דני בן דוד (בדיקה)',pv:'',ph:'0508820408',em:'dann
 function accCard(a){return `<article class="acc"><header><span class="pill bad">${esc(a.kind||'תאונה')}</span><b>${esc(a.d)}${a.time?' · '+esc(a.time):''}</b></header>
   <h4>${esc(a.n)} <small>פרייבט ${esc(a.pv)}</small></h4>
   <dl><dt>מיקום</dt><dd>${esc(a.place||'—')}</dd><dt>כלי</dt><dd>${esc(a.veh||'—')}</dd><dt>בדרך לאירוע</dt><dd>${esc(a.ev||'—')}</dd><dt>נפגעים</dt><dd>${esc(a.inj||'—')}</dd>${a.other?`<dt>צד נוסף</dt><dd>${esc(a.other)}</dd>`:''}${a.inv?`<dt>מטפל</dt><dd>${esc(a.inv)}</dd>`:''}</dl>
-  <p>${esc(a.text||'').replace(/\n/g,'<br>')}</p><footer>דווח ב־${esc(a.rep||a.d)}</footer></article>`}
+  <p>${esc(a.text||'').replace(/\n/g,'<br>')}</p><footer>דווח ב־${esc(a.rep||a.d)}${ackLine(a)}</footer></article>`}
 function accView(){const A=[...(DATA.acc||[])].sort((a,b)=>(pd(b.d)||0)-(pd(a.d)||0));
   return `<section class="panel"><header><h2>תאונות בסניף</h2><span class="count">${A.length}</span></header><div class="accs">${A.map(accCard).join('')||'<div class="empty">לא דווחו תאונות בסניף</div>'}</div><p class="hint">תאונות חדשות מופיעות גם כהודעה קופצת בכניסה לאפליקציה.</p></section>`}
 /* הודעה קופצת על תאונה חדשה – פעם אחת לכל תאונה, עד שהרכז מאשר שראה */
@@ -571,10 +571,19 @@ function accAlerts(){
   if(ADMIN)return;const N=(DATA.acc||[]).filter(a=>!ls('accseen:'+a.id));if(!N.length)return;
   const a=N[0],ov=document.createElement('div');ov.className='ov center';
   ov.innerHTML=`<div class="alertbox" role="alertdialog" aria-label="דיווח על תאונה"><div class="ah"><span>${IC.alert}</span><div><small>הודעה מקצין הבטיחות${N.length>1?` · 1 מתוך ${N.length}`:''}</small><h2>דיווח על תאונה בסניף</h2></div></div>${accCard(a)}
-    <p class="hint" style="padding:0">לטיפולך ולמעקב. לשאלות – דני בן דוד.</p><div class="acts"><button class="btn" id="aok">קראתי</button><button class="btn ghost" id="aopen">לתיק של ${esc(first(a.n))}</button></div></div>`;
+    <p class="hint" style="padding:0">יש לאשר קריאה – האישור נשלח לקצין הבטיחות. לשאלות – דני בן דוד.</p><div class="acts"><button class="btn" id="aok">אישור קריאה</button><button class="btn ghost" id="aopen">לתיק של ${esc(first(a.n))}</button></div></div>`;
   document.body.append(ov);
-  const done=()=>{ls('accseen:'+a.id,'1');ov.remove();setTimeout(accAlerts,200)};
+  const done=()=>{ls('accseen:'+a.id,String(Date.now()));api({action:'ack',id:a.id,n:DATA.coord||''});ov.remove();setTimeout(accAlerts,200)};
   ov.querySelector('#aok').onclick=done;ov.querySelector('#aopen').onclick=()=>{done();personSheet(a.pv)};
+}
+
+/* סטטוס אישור קריאה: הרכז רואה שאישר; המנהל רואה מי אישר ומתי (מהגיליון) */
+let ACKS=null;
+async function loadAcks(){if(!ADMIN)return;const r=await api({action:'acks'});if(r){ACKS=r.rows;if(st.view==='acc'||st.view==='sum')render()}}
+function ackLine(a){
+  if(ADMIN){const k=(ACKS||[]).find(x=>x.id===a.id&&x.br===DATA.br);
+    return k?` · <span class="pill ok">✓ נקרא ע"י ${esc(k.n||'הרכז')} · ${esc(new Date(k.ts).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))}</span>`:SYNC_URL?` · <span class="pill bad">${ACKS?'עוד לא נקרא':'בודק…'}</span>`:' · <span class="pill na">אישורי קריאה יופיעו אחרי חיבור הסנכרון</span>'}
+  const s=ls('accseen:'+a.id);return s?` · <span class="pill ok">✓ אישרת קריאה${+s>1?' ב־'+esc(new Date(+s).toLocaleDateString('he-IL')):''}</span>`:' · <span class="pill bad">ממתין לאישור קריאה</span>';
 }
 
 function coordMsg(b){const c=ADMIN[b];return `שלום ${first(c.coord)||''},\n\nפתחתי לך מערכת חדשה לניהול הבטיחות של סניף *${b}* 🚑\n\nבמערכת תוכל לראות:\n• את כל הנהגים בסניף – פרטים, מסמכים ותוקף רישיונות\n• ציוני סייפטי לכל חודש\n• ציוני הדרכות רכיבה (חיים בדרכים) והדרכות נהיגה (אלטרנתיבי)\n• את כל הכלים של הסניף ומצב הטסטים, הטיפולים והבדיקות\n• *טופס יציאה מגזרה* – בוחרים מתנדב, המערכת בודקת את כל הנתונים שלו ונותנת המלצה, ואם מאשרים – יש הודעת בטיחות מוכנה לשליחה\n\nכניסה:\n🔗 https://dannybd20-hue.github.io/akordim/coord.html\n🔑 סיסמה: *${c.pw}*\n\nהמערכת לצפייה בלבד, ורואים בה רק את הסניף שלך. כדאי להוסיף את הקישור למסך הבית בטלפון.\nהסיסמה אישית לך – לא להעביר הלאה.\n\nאם יש שאלה, אני זמין.\nדני בן דוד\nקצב"ת ירושלים`}
@@ -603,7 +612,7 @@ document.addEventListener('visibilitychange',()=>document.body.classList.toggle(
 window.addEventListener('blur',()=>document.body.classList.add('hide-all'));window.addEventListener('focus',()=>document.body.classList.remove('hide-all'));
 document.addEventListener('copy',e=>{if(document.body.classList.contains('secure')&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||''))e.preventDefault()});
 document.addEventListener('contextmenu',e=>{if(document.body.classList.contains('secure'))e.preventDefault()});
-function show(){setTimeout(accAlerts,600);$('gsw').hidden=false;const gi=$('gs');gi.oninput=()=>gsearch(gi.value);document.documentElement.style.setProperty('--hh',document.querySelector('.appbar').offsetHeight+'px');watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
+function show(){setTimeout(accAlerts,600);ACKS=null;setTimeout(loadAcks,100);$('gsw').hidden=false;const gi=$('gs');gi.oninput=()=>gsearch(gi.value);document.documentElement.style.setProperty('--hh',document.querySelector('.appbar').offsetHeight+'px');watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
 
 /* ===== כניסה ===== */
 function lockView(err){
