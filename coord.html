@@ -337,10 +337,10 @@ const ANN_Y=2026;
 function annual(p){
   const P=p.perm||'',C=(p.crs||[]).join(';'),mo=isMoto(p),amb=/אמבולנס/.test(P),car=/רכב ארגוני|רכב 4\*4|רכב חירום/.test(P);
   const need=mo?'אופנוע':amb?'אמבולנס':car?'רכב':null;if(!need)return null;
-  /* טסט על כלי ארגוני השנה (טסט פנימי אופנוע / טסט מנהלה שעבר) – פטור מההשתלמות השנתית בכלל */
+  /* טסט השנה: טסט פנימי אופנוע פוטר רק השתלמות אופנוע; טסט מנהלה (רכב/אמבולנס) פוטר רק אמבולנס/רכב – שני דברים נפרדים */
   const e=p.ext||{},mt=pd(e.mt),at=admTest(p),atd=at&&/עבר/.test(at.st)?pd(at.date):null;
-  if(mt&&mt.getFullYear()===ANN_Y)return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'טסט פנימי אופנוע ('+e.mt+')'};
-  if(atd&&atd.getFullYear()===ANN_Y)return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'טסט מנהלה ('+at.date+')'};
+  if(need==='אופנוע'&&mt&&mt.getFullYear()===ANN_Y)return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'טסט פנימי אופנוע ('+e.mt+')'};
+  if(need!=='אופנוע'&&atd&&atd.getFullYear()===ANN_Y)return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'טסט מנהלה ('+at.date+')'};
   /* הדרכה בפועל השנה: חיים בדרכים (רכיבה) פוטר הכול; אלטרנתיבי פוטר אמבולנס ורכב */
   const yr=x=>{const d=pd(x&&x.d);return d&&d.getFullYear()===ANN_Y},rd=(p.ride||[]).find(yr),ad=(p.alt||[]).find(yr);
   if(rd)return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'הדרכת רכיבה – חיים בדרכים ('+rd.d+')'};
