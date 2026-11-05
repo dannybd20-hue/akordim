@@ -121,6 +121,14 @@ td.d-bad{color:var(--bad);font-weight:700} td.d-warn{color:var(--warn);font-weig
 .more{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:600 .95rem var(--f-body);padding:10px;border-radius:10px;cursor:pointer}
 .legend{font-size:.85rem;color:var(--muted)}
 @media (max-width:520px){.card{grid-template-columns:1fr}.acts{flex-direction:row;flex-wrap:wrap}.wa{flex:1}}
+.mrow{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin-top:8px}
+.mc{display:flex;flex-direction:column;align-items:center;border-radius:8px;padding:3px 0;background:var(--bg);border:1px solid var(--line);line-height:1.15}
+.mc small{font-size:.66rem;color:var(--muted)}.mc b{font-size:.85rem}
+.mc.sc-low{background:#fbe9e9;border-color:#f3c4c4}.mc.sc-low b{color:#c62f2f}
+.mc.sc-mid{background:#fdf0d9;border-color:#f3dcae}.mc.sc-mid b{color:#9a5b00}
+.mc.sc-good,.mc.sc-top{background:#e3f4ea;border-color:#bfe3cd}.mc.sc-good b,.mc.sc-top b{color:#1d7a46}
+.mc.cur{outline:2px solid var(--accent);outline-offset:1px}
+@media (max-width:520px){.mrow{grid-template-columns:repeat(6,1fr)}}
 </style>
 <style>
 .cats button.c-demote[aria-pressed="true"]{background:var(--bad);border-color:var(--bad)}
@@ -307,6 +315,8 @@ function statsOf(v,m){
   let fall=0;{let last=null,k=0;for(let j=m;j>=0&&k<3;j--)if(v.s[j]!=null){if(last!=null&&v.s[j]>last)fall++;else if(last!=null)break;last=v.s[j];k++}}
   return {x,prev,chg:x!=null&&prev!=null?x-prev:null,peak,fromPeak:x!=null&&peak!=null?x-peak:null,slope,avg,n:pts.length,fall};
 }
+/* כל החודשים של המתנדב – ציון לכל חודש, החודש הנבחר מודגש */
+function monRow(v,m){return `<div class="mrow">${DATA.months.map((M,i)=>{const x=v.s[i];return `<span class="mc ${x==null?'':scCls(x)}${i===m?' cur':''}" title="${esc(M)}"><small>${esc(M.split(' ')[0].slice(0,3))}</small><b>${x??'—'}</b></span>`}).join('')}</div>`}
 function spark(v,m){
   const W=240,H=34,P=3,xs=v.s.slice(0,m+1),n=xs.length;const X=i=>P+i*(W-2*P)/Math.max(1,n-1),Y=y=>H-P-(Math.min(100,y)/100)*(H-2*P);
   let d='',open=false;xs.forEach((y,i)=>{if(y==null){open=false;return}d+=(open?'L':'M')+X(i).toFixed(1)+' '+Y(y).toFixed(1);open=true});
@@ -336,7 +346,7 @@ function card(v,m){
   const wa=v.ph?`<a class="wa sm${sent?' done':''}" href="${waLink(v.ph,text)}" target="_blank" rel="noopener" data-sent="${esc(sk)}" ${cm}>${WA_ICON}${sent?'נשלח':'וואטסאפ'}</a>`:'';
   const ml=`<a class="mail sm" href="mailto:${esc(v.em||'')}?subject=${encodeURIComponent(SUBJ[c]+' – '+M)}&body=${encodeURIComponent(text.replace(/\*/g,''))}" data-sent="${esc(sk)}" ${cm}>מייל</a>`;
   const cp=`<button class="mail sm" type="button" data-copy="${esc(text)}">העתק</button>`;
-  return `<div class="card"><div class="who"><div class="name">${esc(v.n)}</div><div class="meta"><span>פרייבט ${esc(v.pv)}</span><span>${esc(v.br)}</span>${k>=2?`<span class="streak">${k} חודשים ברצף מתחת ל־25</span>`:''}</div>${spark(v,m)}${v.ev?`<div class="meta">${Object.entries(v.ev).sort((x,y)=>y[1][1]-x[1][1]).slice(0,4).map(([c,[n,pc]])=>`<span class="chip ${pc>=25?'bad':pc>=10?'warn':'miss'}">${esc(c)} ${Math.round(pc)}%</span>`).join('')}</div>`:''}<div class="meta">${trendTxt(st)}${st.fromPeak!=null&&st.fromPeak<0?`<span>${-st.fromPeak} מתחת לשיא (${st.peak})</span>`:''}${st.avg!=null?`<span>ממוצע ${st.avg}</span>`:''}</div></div>
+  return `<div class="card"><div class="who"><div class="name">${esc(v.n)}</div><div class="meta"><span>פרייבט ${esc(v.pv)}</span><span>${esc(v.br)}</span>${k>=2?`<span class="streak">${k} חודשים ברצף מתחת ל־25</span>`:''}</div>${spark(v,m)}${monRow(v,m)}${v.ev?`<div class="meta">${Object.entries(v.ev).sort((x,y)=>y[1][1]-x[1][1]).slice(0,4).map(([c,[n,pc]])=>`<span class="chip ${pc>=25?'bad':pc>=10?'warn':'miss'}">${esc(c)} ${Math.round(pc)}%</span>`).join('')}</div>`:''}<div class="meta">${trendTxt(st)}${st.fromPeak!=null&&st.fromPeak<0?`<span>${-st.fromPeak} מתחת לשיא (${st.peak})</span>`:''}${st.avg!=null?`<span>ממוצע ${st.avg}</span>`:''}</div></div>
     <div class="score ${scCls(x)}">${x}</div>
     <div class="issues"><div class="irow"><span class="tel">${v.ph?fmtPhone(v.ph):'אין טלפון'}${v.em?` · <span class="em">${esc(v.em)}</span>`:''}</span><span class="btns">${wa}${ml}${cp}</span></div>${v.rep?`<details class="anal"><summary>📄 ניתוח מלא מהדוח</summary><pre>${esc(analysis(v).replace(/\*/g,''))}</pre><div class="btns">${v.ph?`<a class="wa sm" href="${waLink(v.ph,`מה קורה ${first(v.n)},\nשלחתי לך גם את הפירוט המלא מהדוח, אם תרצה לראות בעצמך:\n\n${analysis(v)}\n\nאם משהו לא ברור – תכתוב לי.\n${ME}`)}" target="_blank" rel="noopener">${WA_ICON}שלח ניתוח</a>`:''}<button class="mail sm" type="button" data-copy="${esc(analysis(v))}">העתק ניתוח</button></div></details>`:''}</div></div>`;
 }
