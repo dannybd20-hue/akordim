@@ -640,7 +640,7 @@ function accCard(a){const dd=(k,l)=>a[k]?`<dt>${l}</dt><dd>${esc(a[k])}</dd>`:''
   const full=INVS&&INVS[a.acc||a.id];
   return `<article class="acc"><header><span class="pill bad">${esc(a.kind||'תאונה')}</span><b>${esc(a.d)}${a.time?' · '+esc(a.time):''}</b></header>
   <h4>${esc(a.n)}${a.pv?` <small>פרייבט ${esc(a.pv)}</small>`:''}</h4>
-  <dl>${dd('veh','כלי')}${dd('place','מיקום')}${dd('trip','סוג נסיעה')}${dd('cause','סיבה')}${dd('fault','אשמה')}${dd('ev','בדרך לאירוע')}${dd('inj','נפגעים')}${dd('dmg','נזק לכלי')}${dd('other','צד נוסף')}</dl>
+  <dl>${dd('veh','כלי')}${dd('place','מיקום')}${dd('tod','זמן ביום')}${dd('ageAt','גיל בזמן התאונה')}${dd('act','סוג פעילות')}${dd('trip','סוג נסיעה')}${dd('cause','סיבה')}${dd('fault','אשמה')}${dd('prev','יכל למנוע')}${dd('dfault','אשמה לדברי הנהג')}${dd('dprev','פעולות מניעה')}${dd('how','כיצד יכל למנוע')}${dd('ev','בדרך לאירוע')}${dd('inj','נפגעים בנפש')}${dd('third','מעורב צד ג׳')}${dd('dmg','נזק לכלי')}${dd('dmg3','נזק לצד ג׳')}${dd('other','צד נוסף')}${dd('appr','אישר את הפרטים')}</dl>
   ${a.drv?`<div class="accx"><h5>${inv?'תחקיר קצין הבטיחות':'גרסת הנהג'}</h5><p>${fmtWA(a.drv)}</p></div>`:''}${a.text&&!a.drv?`<p>${fmtWA(a.text)}</p>`:''}
   ${full?`<div class="accx"><h5>תחקיר קצין הבטיחות</h5><p>${fmtWA(full.text)}</p></div>`:a.off&&!dup?`<div class="accx"><h5>תחקיר קצין הבטיחות</h5><p>${fmtWA(a.off)}${a.off.length>=255?' …':''}</p></div>`:a.off?'':'<p class="pendi">⏳ התחקיר בטיפול קצין הבטיחות</p>'}
   <footer>${a.acc?esc(a.acc)+' · ':''}${a.rep?'דווח ב־'+esc(a.rep):esc(a.d)}${a.al?ackLine(a):''}</footer></article>`}
