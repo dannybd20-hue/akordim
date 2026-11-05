@@ -485,6 +485,7 @@ function render(){
       ${kpi(IC.alert,'מתחת ל־25 בסייפטי',low.length,low.length?'דורשים שיחה':'אין',low.length?'bad':'ok','low')}
       ${kpi(IC.doc,'מסמכים שפגו',docs.length,'רישיון / תיק נהג / מידע תעבורתי',docs.length?'bad':'ok','docs')}
       ${kpi(IC.out,'יציאות מגזרה',yes,H.length?`${H.length} בקשות`:'אין בקשות','','exit')}
+      ${(()=>{const L=inspLate();return kpi(IC.wrench,'עזרה בבדיקות לקצב"ת האלוף',L.length,L.length?'כלים שהבדיקה שלהם באיחור':'אין כלים באיחור',L.length?'warn':'ok','insp')})()}
       ${kpi(IC.doc,'השתלמות שנתית '+ANN_Y,P.filter(annMiss).length,P.filter(annMiss).length?'לא ביצעו – יש להירשם':'כולם ביצעו',P.filter(annMiss).length?'bad':'ok','ann')}
       ${kpi(IC.alert,'תאונות 2025–2026',(DATA.acc||[]).length,(DATA.acc||[]).length?'לחץ לפירוט':'לא דווחו תאונות',(DATA.acc||[]).length?'bad':'ok','acc')}
     </section>
@@ -598,6 +599,7 @@ function drill(k){
   else if(k==='veh'){title='כלים בסניף';const V=[...DATA.veh].sort((a,b)=>vehIssues(b).length-vehIssues(a).length);body=`<div class="vlist">${V.map(vRow).join('')}</div>`}
   else if(k==='avg'){title='ציוני סייפטי · '+M;const L=P.filter(p=>safetyNow(p)).sort((a,b)=>safetyNow(a).x-safetyNow(b).x);body=L.map(pRow).join('')+(P.length>L.length?`<p class="hint">${P.length-L.length} נהגים בלי ציון סייפטי</p>`:'')}
   else if(k==='low'){title='מתחת ל־25 בסייפטי';body=P.filter(p=>{const s=safetyNow(p);return s&&s.x<25}).sort((a,b)=>safetyNow(a).x-safetyNow(b).x).map(pRow).join('')}
+  else if(k==='insp'){title='עזרה בבדיקות לקצב"ת האלוף';const L=inspLate();body=L.length?`<p class="hint">לחיצה על קוביית "בדיקת קצב"ת" בכל כלי פותחת את טופס הבדיקה על שמך. הבדיקה מגיעה לדני לאישור. תודה על העזרה!</p><div class="vlist">${L.map(vRow).join('')}</div>`:''}
   else if(k==='ann'){title='לא ביצעו השתלמות שנתית '+ANN_Y;const L=P.filter(annMiss);const g=['אופנוע','אמבולנס','רכב'];body=g.map(n=>{const G=L.filter(p=>annual(p).need===n);const ic={'אופנוע':'🏍️','אמבולנס':'🚑','רכב':'🚗'}[n],cl={'אופנוע':'gm','אמבולנס':'ga','רכב':'gc'}[n];return G.length?`<h3 class="grp2 ${cl}"><span>${ic}</span>${n} כביש ${ANN_Y}<b>${G.length}</b></h3>`+G.map(p=>pRow(p)+`<div class="sub">${pill('bad','נדרש: '+annual(p).course)} ${p.ph?`<a class="btn wa sm" href="${waLink(p.ph,annMsg(p))}" target="_blank" rel="noopener">${WA_ICON}תזכורת להירשם</a>`:''}</div>`).join(''):''}).join('')}
   else if(k==='docs'){title='נהגים עם מסמך שפג';body=P.filter(p=>docStatus(p).some(d=>d.lvl==='bad')).map(p=>pRow(p)+`<div class="sub">${docStatus(p).filter(d=>d.lvl==='bad').map(d=>pill('bad',d.l+': '+d.t)).join(' ')}</div>`).join('')}
   const ov=document.createElement('div');ov.className='ov';ov.innerHTML=`<aside class="drawer"><header class="dh"><button class="x" aria-label="סגירה">${IC.x}</button><div><h2>${esc(title)}</h2><p>${esc(DATA.br)}</p></div></header><section class="panel" style="margin:0 16px"><div class="plist">${body||'<div class="empty">אין</div>'}</div></section></aside>`;
@@ -781,6 +783,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-bd]');if(!
     <p class="hint" style="padding:0">הבדיקה תירשם על שמך ותגיע לקצין הבטיחות לאישור.${v.name?' נהג הכלי: '+esc(v.name)+'.':''}</p>
     <div class="acts"><a class="btn ok" id="bdy" href="${esc(bdikaLink(v))}" target="_blank" rel="noopener">כן, לטופס הבדיקה</a><button class="btn ghost" id="bdn">לא עכשיו</button></div></div>`;
   document.body.append(ov);ov.querySelector('#bdn').onclick=()=>ov.remove();ov.querySelector('#bdy').addEventListener('click',()=>setTimeout(()=>ov.remove(),300));ov.onclick=x=>{if(x.target===ov)ov.remove()}},true);
+
+function inspLate(){return DATA.veh.filter(v=>{const c=pd(v.check);return c&&days(c)<0}).sort((a,b)=>pd(a.check)-pd(b.check))}
 
 /* ===== מפת מתנדבים – לפי כתובת המגורים ===== */
 const MAP={el:null,map:null,layer:null,br:null,run:0,done:0,total:0,miss:[],flt:'all'};
