@@ -8,3 +8,11 @@
 2. ws/ מכיל את קבצי המקור האחרונים ואת pw.txt.
 3. עדכון: kbt/build.py → kbt/encrypt.py → kbt/kbt.bin; safety/build.py (+pdfs.py) → safety/safety.bin;
    ride/build.py → kbt/ride.bin; coord/build.py → coord/*.bin; coord/assemble.py → coord.html.
+
+עדכון 05/11/2026:
+- טבלת אנשי הקשר החדשה (עם קורסים, השתלמות רכיבה, טסטים): ws/src/bc3262b0-…xlsx. יש לשחזר ממנה את ws/pb.pkl
+  (שורת הכותרת היא השורה שמתחילה ב"שם מלא"; to_pickle).
+- ws/altparse.py – פענוח טופס אלטרנתיבי (acc/raw/alt_new.xlsx מהדרייב).
+- acc2/build.py – טבלת התאונות (ws/src/a8bbd08d-…xlsx) → kbt/acc.bin; acc2/ai.json – ממצאים/מסקנות שנוסחו.
+- kbt/acc.js + kbt/acc_inject.py – לשונית התאונות ב-kbt.html (מוזרק, לא דרך port.py – port.py ישן!).
+- coord/map.js – מפת אופנוענים. coord-script.gs (עם מפתחות) נמצא רק בגיבוי.
