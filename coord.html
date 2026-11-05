@@ -341,6 +341,10 @@ function annual(p){
   const e=p.ext||{},mt=pd(e.mt),at=admTest(p),atd=at&&/עבר/.test(at.st)?pd(at.date):null;
   if(mt&&mt.getFullYear()===ANN_Y)return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'טסט פנימי אופנוע ('+e.mt+')'};
   if(atd&&atd.getFullYear()===ANN_Y)return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'טסט מנהלה ('+at.date+')'};
+  /* הדרכה בפועל השנה: חיים בדרכים (רכיבה) פוטר הכול; אלטרנתיבי פוטר אמבולנס ורכב */
+  const yr=x=>{const d=pd(x&&x.d);return d&&d.getFullYear()===ANN_Y},rd=(p.ride||[]).find(yr),ad=(p.alt||[]).find(yr);
+  if(rd)return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'הדרכת רכיבה – חיים בדרכים ('+rd.d+')'};
+  if(ad&&need!=='אופנוע')return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'הדרכת אלטרנתיבי ('+ad.d+')'};
   const r1=pd((p.ext||{}).r1),dr1=!!r1&&r1.getFullYear()===ANN_Y;
   const dm=dr1||new RegExp('אופנוע כביש '+ANN_Y).test(C),da=new RegExp('אמבולנס כביש '+ANN_Y).test(C),dc=new RegExp('רכב כביש '+ANN_Y).test(C);
   const done=need==='אופנוע'?dm:need==='אמבולנס'?dm||da:dm||da||dc;
