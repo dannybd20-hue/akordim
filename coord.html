@@ -313,7 +313,7 @@ const $=id=>document.getElementById(id);
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){return null}}
 const first=n=>(n||'').split(' ')[0];
-function waLink(p,t){p=(p||'').replace(/\D/g,'');if(p.startsWith('0'))p='972'+p.slice(1);return `https://wa.me/${p}?text=${encodeURIComponent(t)}`}
+function waLink(p,t){/* בלי אימוג'י – בחלק מהטלפונים הם מגיעים כ־� */t=String(t||'').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\uFE0F\u200D]/gu,'').replace(/[ \t]+\n/g,'\n').replace(/ {2,}/g,' ');p=(p||'').replace(/\D/g,'');if(p.startsWith('0'))p='972'+p.slice(1);return `https://wa.me/${p}?text=${encodeURIComponent(t)}`}
 const fmtPhone=p=>{p=(p||'').replace(/\D/g,'');return p.length===10?p.slice(0,3)+'-'+p.slice(3):p};
 const T0=(()=>{const d=new Date();d.setHours(0,0,0,0);return d})();
 function pd(s){const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s||'');return m?new Date(+m[3],+m[2]-1,+m[1]):null}
@@ -952,7 +952,7 @@ function lockView(err){
   setTimeout(()=>{const i=$('pw');if(i)i.focus()},50);
 }
 async function unlock(saved){
-  let pw=saved||($('pw')&&$('pw').value.trim().toLowerCase());if(!pw)return;
+  let pw=saved||($('pw')&&(s=>s.replace(/[א-ת]/g,c=>({'ק':'e','ר':'r','א':'t','ט':'y','ו':'u','ן':'i','ם':'o','פ':'p','ש':'a','ד':'s','ג':'d','כ':'f','ע':'g','י':'h','ח':'j','ל':'k','ך':'l','ז':'z','ס':'x','ב':'c','ה':'v','נ':'b','מ':'n','צ':'m'})[c]||c))($('pw').value.trim().toLowerCase()).replace(/\.$/,''));if(!pw)return;
   /* סיסמת סניף בלי מקף / עם רווחים / מקף אחר – מתקנים לפורמט 1234-5678 */
   {const d=pw.replace(/[\s\-–—_.]/g,'');if(/^\d{8}$/.test(d))pw=d.slice(0,4)+'-'+d.slice(4)}
   if(!saved){$('ub').disabled=true;$('ub').textContent='פותח…'}else $('app').innerHTML='<div class="empty">פותח…</div>';

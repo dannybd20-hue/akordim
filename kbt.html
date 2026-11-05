@@ -227,7 +227,7 @@ const RANK={today:0,bad:1,warn:2,miss:3};
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
 const state={only:null,view:'alerts',cat:ls('cat')||'',kind:ls('kind')||'all',win:+(ls('win3')||3),q:'',branch:'',showMiss:ls('miss')==='1',limit:60};
 
-function waLink(phone,text){let p=(phone||'').replace(/\D/g,'');if(p.startsWith('0'))p='972'+p.slice(1);return `https://wa.me/${p}?text=${encodeURIComponent(text)}`}
+function waLink(phone,text){text=String(text||'').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\uFE0F\u200D]/gu,'').replace(/[ \t]+\n/g,'\n').replace(/ {2,}/g,' ');let p=(phone||'').replace(/\D/g,'');if(p.startsWith('0'))p='972'+p.slice(1);return `https://wa.me/${p}?text=${encodeURIComponent(text)}`}
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function fmtPhone(p){p=(p||'').replace(/\D/g,'');return p.length===10?p.slice(0,3)+'-'+p.slice(3):p}
 
@@ -253,7 +253,7 @@ function lockView(err){
   setTimeout(()=>{const i=document.getElementById('pw');if(i)i.focus()},50);
 }
 async function unlock(saved){
-  const pw=saved||(document.getElementById('pw')&&document.getElementById('pw').value.trim().toLowerCase());if(!pw)return;
+  const pw=saved||(document.getElementById('pw')&&(s=>s.replace(/[א-ת]/g,c=>({'ק':'e','ר':'r','א':'t','ט':'y','ו':'u','ן':'i','ם':'o','פ':'p','ש':'a','ד':'s','ג':'d','כ':'f','ע':'g','י':'h','ח':'j','ל':'k','ך':'l','ז':'z','ס':'x','ב':'c','ה':'v','נ':'b','מ':'n','צ':'m'})[c]||c))(document.getElementById('pw').value.trim().toLowerCase()).replace(/\.$/,''));if(!pw)return;
   if(!saved){const b=document.getElementById('ub');b.disabled=true;b.textContent='פותח… (כמה שניות)'}
   else document.getElementById('app').innerHTML='<div class="empty">פותח את הנתונים…</div>';
   try{DATA=await decrypt(pw);KPW=pw;setTimeout(loadAcc,300);setTimeout(()=>loadBd(true),900);if(!window._bdT)window._bdT=setInterval(()=>loadBd(true),180000);if(!saved)ls('kbt_pw',document.getElementById('rem').checked?pw:'');document.getElementById('lockB').hidden=false;document.getElementById('upd').textContent='עודכן: '+DATA.updated;render()}

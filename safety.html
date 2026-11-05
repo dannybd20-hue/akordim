@@ -167,7 +167,7 @@ const $=id=>document.getElementById(id);
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
 function first(n){return (n||'').split(' ')[0]}
-function waLink(p,t){p=(p||'').replace(/\D/g,'');if(p.startsWith('0'))p='972'+p.slice(1);return `https://wa.me/${p}?text=${encodeURIComponent(t)}`}
+function waLink(p,t){/* בלי אימוג'י – בחלק מהטלפונים הם מגיעים כ־� */t=String(t||'').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\uFE0F\u200D]/gu,'').replace(/[ \t]+\n/g,'\n').replace(/ {2,}/g,' ');p=(p||'').replace(/\D/g,'');if(p.startsWith('0'))p='972'+p.slice(1);return `https://wa.me/${p}?text=${encodeURIComponent(t)}`}
 function fmtPhone(p){p=(p||'').replace(/\D/g,'');return p.length===10?p.slice(0,3)+'-'+p.slice(3):p}
 const TODAY_KEY=new Date().toISOString().slice(0,10);
 const SIGN='בברכה,\nדני בן דוד\nקצין בטיחות בתעבורה\nמרחב ירושלים';
@@ -459,7 +459,7 @@ function lockView(err){
   setTimeout(()=>{const i=$('pw');if(i)i.focus()},50);
 }
 async function unlock(saved){
-  const pw=saved||($('pw')&&$('pw').value.trim().toLowerCase());if(!pw)return;
+  const pw=saved||($('pw')&&(s=>s.replace(/[א-ת]/g,c=>({'ק':'e','ר':'r','א':'t','ט':'y','ו':'u','ן':'i','ם':'o','פ':'p','ש':'a','ד':'s','ג':'d','כ':'f','ע':'g','י':'h','ח':'j','ל':'k','ך':'l','ז':'z','ס':'x','ב':'c','ה':'v','נ':'b','מ':'n','צ':'m'})[c]||c))($('pw').value.trim().toLowerCase()).replace(/\.$/,''));if(!pw)return;
   if(!saved){$('ub').disabled=true;$('ub').textContent='פותח… (כמה שניות)'}else $('app').innerHTML='<div class="empty">פותח את הנתונים…</div>';
   try{DATA=await decrypt(pw);SPW=pw;if(!saved)ls('kbt_pw',$('rem').checked?pw:'');$('lockB').hidden=false;$('upd').textContent='עודכן: '+DATA.updated;
     state.m=DATA.months.length-1;render()}
