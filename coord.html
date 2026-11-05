@@ -388,8 +388,10 @@ async function api(o){await SYNC_CHECK;if(!SYNC_URL||!CUR_PW)return null;try{con
 async function syncHist(){const br=DATA.br,r=await api({action:'list'});if(!r||DATA.br!==br)return;REMOTE=r.rows;const ids=new Set(REMOTE.map(x=>x.id));
   for(const h of localHist())if(!ids.has(h.id)&&await api({action:'add',r:h}))REMOTE.push(h);
   render();setTimeout(offDecAlerts,900)}
-function addHist(h){h.id=Date.now()+'-'+Math.random().toString(36).slice(2,7);h.coord=ADMIN?'מנהל':(DATA.coord||'');const H=localHist();H.unshift(h);ls(HK(),JSON.stringify(H.slice(0,500)));
-  if(REMOTE)REMOTE.unshift(h);api({action:'add',r:h})}
+function addHist(h){if(ADMIN&&(h.dec==='yes'||h.dec==='no'))h.off='1';h.id=Date.now()+'-'+Math.random().toString(36).slice(2,7);h.coord=ADMIN?'מנהל':(DATA.coord||'');const H=localHist();H.unshift(h);ls(HK(),JSON.stringify(H.slice(0,500)));
+  /* החלטה של קצין הבטיחות (מצב מנהל) נרשמת כ"ע"י קצין בטיחות" – ולרכז קופצת הודעה */
+  if(ADMIN&&(h.dec==='yes'||h.dec==='no'))h.off='1';
+  if(REMOTE)REMOTE.unshift(h);api({action:'add',r:h.off&&h.dec!=='pending'?{...h,dec:'off'+h.dec}:h})}
 /* מי מחובר עכשיו */
 let ONLINE=null;const DEV_ID=(()=>{let i=ls('coord_dev');if(!i){i=Math.random().toString(36).slice(2,12);ls('coord_dev',i)}return i})(),SINCE=Date.now();
 const DEV=(()=>{const u=navigator.userAgent;return /iPhone/.test(u)?'אייפון':/Android/.test(u)?'אנדרואיד':/Windows/.test(u)?'מחשב':/Mac/.test(u)?'מק':'מכשיר'})();
@@ -550,7 +552,7 @@ function exitView(){
     if($('xreq'))$('xreq').onclick=()=>{sync();const h={pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'pending',ts:Date.now()};addHist(h);const m=offReqMsg(h,e);
       render();$('xout').innerHTML=`<div class="done warn"><b>${IC.out}הבקשה נשלחה לקצין הבטיחות</b><p>${SYNC_URL?'דני יקבל אותה באפליקציה. כשהוא יחליט – תקפוץ לך הודעה, ואז אפשר לשלוח לאופנוען את הודעת הבטיחות.':'כדי שהבקשה תגיע לדני עכשיו – שלח לו אותה בוואטסאפ:'}</p><div class="acts"><a class="btn wa" href="${waLink(OFFICER_PH,m)}" target="_blank" rel="noopener">${WA_ICON}${SYNC_URL?'לזרז בוואטסאפ לדני':'שליחה לדני בן דוד'}</a></div></div>`};
     if($('xyes'))$('xyes').onclick=()=>{sync();if(p!==TEST_P)addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'yes',ts:Date.now()});const m=safetyMsg(p,f);
-      render();$('xout').innerHTML=`<div class="done ok"><b>${IC.check}היציאה נרשמה כמאושרת</b><p>הודעת הבטיחות מוכנה – רק לשלוח:</p><pre>${esc(m.replace(/\*/g,''))}</pre><div class="acts">${p.ph?`<a class="btn wa" href="${waLink(p.ph,m)}" target="_blank" rel="noopener">${WA_ICON}שליחה ל${esc(first(p.n))}</a>`:''}<a class="btn ghost" href="mailto:${esc(p.em||'')}?subject=${encodeURIComponent('אישור יציאה מהגזרה')}&body=${encodeURIComponent(m.replace(/\*/g,''))}">מייל</a></div></div>`};
+      render();$('xout').innerHTML=`<div class="done ok"><b>${IC.check}היציאה נרשמה כמאושרת</b>${ADMIN&&p!==TEST_P?`<p>${SYNC_URL?'לרכז הסניף תקפוץ הודעה באפליקציה.':''}</p>${ADMIN[DATA.br]&&ADMIN[DATA.br].cph?`<div class="acts"><a class="btn wa" href="${waLink(ADMIN[DATA.br].cph,`*יציאה מהגזרה – אישור קצין בטיחות*\n\nאישרתי את היציאה של ${p.n}${f.dest?' ל'+f.dest:''}${f.from?' בתאריך '+fmt(new Date(f.from)):''}.\nהודעת הבטיחות נשלחת אליו ממני.\n\nדני בן דוד · קצין בטיחות`)}" target="_blank" rel="noopener">${WA_ICON}עדכון הרכז בוואטסאפ</a></div>`:''}`:''}<p>הודעת הבטיחות מוכנה – רק לשלוח:</p><pre>${esc(m.replace(/\*/g,''))}</pre><div class="acts">${p.ph?`<a class="btn wa" href="${waLink(p.ph,m)}" target="_blank" rel="noopener">${WA_ICON}שליחה ל${esc(first(p.n))}</a>`:''}<a class="btn ghost" href="mailto:${esc(p.em||'')}?subject=${encodeURIComponent('אישור יציאה מהגזרה')}&body=${encodeURIComponent(m.replace(/\*/g,''))}">מייל</a></div></div>`};
     $('xno').onclick=()=>{sync();if(p!==TEST_P)addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'no',ts:Date.now()});render();$('xout').innerHTML=`<div class="done bad"><b>${IC.x}הבקשה נרשמה כלא מאושרת</b></div>`};
   }
 }
@@ -642,7 +644,7 @@ function accAlerts(){
   ov.innerHTML=`<div class="alertbox" role="alertdialog" aria-label="דיווח על תאונה"><div class="ah"><span>${IC.alert}</span><div><small>הודעה מקצין הבטיחות${N.length>1?` · 1 מתוך ${N.length}`:''}</small><h2>דיווח על תאונה בסניף</h2></div></div>${accCard(a)}
     <p class="hint" style="padding:0">יש לאשר קריאה – האישור נשלח לקצין הבטיחות. לשאלות – דני בן דוד.</p><div class="acts"><button class="btn" id="aok">אישור קריאה</button><button class="btn ghost" id="aopen">לתיק של ${esc(first(a.n))}</button></div></div>`;
   document.body.append(ov);
-  const done=()=>{ls('accseen:'+a.id,String(Date.now()));api({action:'ack',id:a.id,n:DATA.coord||''});ov.remove();setTimeout(accAlerts,200)};
+  const done=()=>{ls('accseen:'+a.id,String(Date.now()));api({action:'ack',id:a.id,n:DATA.coord||''});ov.remove();setTimeout(()=>{accAlerts();offDecAlerts()},200)};
   ov.querySelector('#aok').onclick=done;ov.querySelector('#aopen').onclick=()=>{done();personSheet(a.pv)};
 }
 
@@ -664,7 +666,7 @@ function offDecAlerts(){
   const N=REMOTE.filter(x=>x.off&&x.dec!=='pending'&&!ls('offseen:'+x.id));if(!N.length)return;
   const x=N[0],yes=x.dec==='yes',p=DATA.people.find(q=>q.pv===x.pv)||{n:x.n,pv:x.pv},m=yes?safetyMsg(p,{dest:x.dest,from:x.from}):'';
   const ov=document.createElement('div');ov.className='ov center';
-  ov.innerHTML=`<div class="alertbox" role="alertdialog"><div class="ah ${yes?'ok':''}"><span>${yes?IC.check:IC.x}</span><div><small>תשובת קצין הבטיחות${N.length>1?` · 1 מתוך ${N.length}`:''}</small><h2>היציאה של ${esc(x.n)} ${yes?'אושרה':'לא אושרה'}</h2></div></div>
+  ov.innerHTML=`<div class="alertbox" role="alertdialog"><div class="ah ${yes?'ok':''}"><span>${yes?IC.check:IC.x}</span><div><small>הודעה מקצין הבטיחות${N.length>1?` · 1 מתוך ${N.length}`:''}</small><h2>יציאה מהגזרה – ${esc(x.n)} ${yes?'אושרה':'לא אושרה'}</h2></div></div>
     <p>${esc(x.dest?'יעד: '+x.dest:'')}${x.from?' · '+esc(fmt(new Date(x.from))):''}</p>${x.off&&x.off!=='1'?`<p class="hint" style="padding:0">הערת קצין הבטיחות: ${esc(x.off)}</p>`:''}
     ${yes?`<p class="hint" style="padding:0">הודעת הבטיחות מוכנה – רק לשלוח:</p><pre>${esc(m.replace(/\*/g,''))}</pre>`:''}
     <div class="acts">${yes&&p.ph?`<a class="btn wa" id="dsend" href="${waLink(p.ph,m)}" target="_blank" rel="noopener">${WA_ICON}שליחה ל${esc(first(p.n))}</a>`:''}<button class="btn ${yes?'ghost':''}" id="dok">הבנתי</button></div></div>`;
