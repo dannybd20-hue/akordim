@@ -277,6 +277,7 @@ h3.grp{margin:14px 4px 6px;font-size:.95rem;color:var(--muted)}
 .grp2.gm{background:#ea580c}.grp2.ga{background:#c22b2b}.grp2.gc{background:#1f5fae}
 .fu{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:0 14px 10px}.fu .fun{font-size:.88rem}.fu small{color:var(--muted);font-size:.75rem}
 .fud{margin-top:4px}.fud button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.dc.tap{cursor:pointer;position:relative;outline:2px dashed currentColor;outline-offset:-4px}.dc .tapi{display:block;font-size:.72rem;font-weight:700;margin-top:4px}
 </style>
 
 
@@ -524,9 +525,8 @@ function vRow(v){
   return `<div class="vcard${is.some(x=>x.lvl==='bad')?' bad':is.length?' warn':''}">
     <div class="vh2"><span class="plate">${esc(v.plate)}</span><span class="pid"><b>כלי ${esc(v.num)} · ${esc(v.type)}</b><small>נהג: ${esc(v.name||'—')}${(()=>{const d=DATA.people.find(p=>(v.phone&&p.ph===v.phone)||p.n===v.name);return d&&d.pv?' · פרייבט '+esc(d.pv):''})()}</small></span>${v.phone?`<a class="cb call" href="tel:${esc(v.phone)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(v.phone,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}</div>
     ${is.length?fuLine(v):''}
-    ${(()=>{const c=pd(v.check);return c&&days(c)<=14?`<div class="fu"><a class="btn sm" href="${esc(bdikaLink(v))}" target="_blank" rel="noopener">📋 מילוי טופס בדיקת קצב"ת</a><small>הבדיקה נשלחת לקצין הבטיחות לאישור</small></div>`:''})()}
     <div class="vstat">${is.length?is.map(x=>`<span class="pill ${x.lvl}">${x.lvl==='bad'?'⛔':'⚠️'} ${esc(x.t)}</span>`).join(''):'<span class="pill ok">✓ הכלי תקין – אין חריגות</span>'}</div>
-    <div class="dgrid4">${dstate('טסט (רישיון רכב)',v.test,t,'test')}${dstate('טיפול אחרון',v.service,svDue,'service')}${dstate('בדיקת קצב"ת',v.check,c,'check')}${dstate('ביטוח',v.ins,i,'ins')}</div>
+    <div class="dgrid4">${dstate('טסט (רישיון רכב)',v.test,t,'test')}${dstate('טיפול אחרון',v.service,svDue,'service')}${(()=>{const h=dstate('בדיקת קצב"ת',v.check,c,'check');return c&&days(c)<=14?h.replace('<div class="dc ',`<div data-bd="${esc(v.num)}" role="button" tabindex="0" title="לחיצה – עזרה בביצוע הבדיקה" class="dc tap `).replace('</em></div>','</em><span class="tapi">👆 לחיצה לביצוע בדיקה</span></div>'):h})()}${dstate('ביטוח',v.ins,i,'ins')}</div>
   </div>`;
 }
 function personSheet(key){
@@ -774,6 +774,13 @@ function ss(k,v){try{if(v===undefined)return sessionStorage.getItem(k);sessionSt
 
 /* טופס בדיקה שהרכז ממלא בעצמו – על שמו, ומגיע לקצין הבטיחות לאישור */
 function bdikaLink(v){const q=new URLSearchParams({c:ADMIN?'':(DATA.coord||''),cp:ADMIN?'':(DATA.cpv||''),br:DATA.br,d:v.name||''});return DATA.form+'#v'+v.num+'&'+q.toString()}
+
+document.addEventListener('click',e=>{const t=e.target.closest('[data-bd]');if(!t)return;e.stopPropagation();
+  const v=DATA.veh.find(x=>x.num===t.dataset.bd);if(!v)return;const ov=document.createElement('div');ov.className='ov center';
+  ov.innerHTML=`<div class="alertbox" role="dialog"><div class="ah ok"><span>📋</span><div><small>בדיקת קצב"ת · כלי ${esc(v.num)} · ${esc(v.type)}</small><h2>תרצה לעזור לדני לבצע בדיקה לכלי?</h2></div></div>
+    <p class="hint" style="padding:0">הבדיקה תירשם על שמך ותגיע לקצין הבטיחות לאישור.${v.name?' נהג הכלי: '+esc(v.name)+'.':''}</p>
+    <div class="acts"><a class="btn ok" id="bdy" href="${esc(bdikaLink(v))}" target="_blank" rel="noopener">כן, לטופס הבדיקה</a><button class="btn ghost" id="bdn">לא עכשיו</button></div></div>`;
+  document.body.append(ov);ov.querySelector('#bdn').onclick=()=>ov.remove();ov.querySelector('#bdy').addEventListener('click',()=>setTimeout(()=>ov.remove(),300));ov.onclick=x=>{if(x.target===ov)ov.remove()}},true);
 
 /* ===== מפת מתנדבים – לפי כתובת המגורים ===== */
 const MAP={el:null,map:null,layer:null,br:null,run:0,done:0,total:0,miss:[],flt:'all'};
