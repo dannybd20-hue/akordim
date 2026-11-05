@@ -329,8 +329,9 @@ function card(v,m){
   const c=catOf(v,m),x=v.s[m],st=statsOf(v,m),M=DATA.months[m],k=streakAt(v,m);
   const text=MSG[c](v,x,M.split(' ')[0],k,st.prev);
   const sk='sf:'+v.pv+':'+m+':'+c,sent=ls(sk);
-  const wa=v.ph?`<a class="wa sm${sent?' done':''}" href="${waLink(v.ph,text)}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}${sent?'נשלח':'וואטסאפ'}</a>`:'';
-  const ml=`<a class="mail sm" href="mailto:${esc(v.em||'')}?subject=${encodeURIComponent(SUBJ[c]+' – '+M)}&body=${encodeURIComponent(text.replace(/\*/g,''))}" data-sent="${esc(sk)}">מייל</a>`;
+  const cm=`data-cpv="${esc(v.pv)}" data-cbr="${esc(v.br)}" data-cn="${esc(v.n)}" data-cm="${esc(M)}" data-ck="${esc(c)}" data-ct="${esc(text)}"`;
+  const wa=v.ph?`<a class="wa sm${sent?' done':''}" href="${waLink(v.ph,text)}" target="_blank" rel="noopener" data-sent="${esc(sk)}" ${cm}>${WA_ICON}${sent?'נשלח':'וואטסאפ'}</a>`:'';
+  const ml=`<a class="mail sm" href="mailto:${esc(v.em||'')}?subject=${encodeURIComponent(SUBJ[c]+' – '+M)}&body=${encodeURIComponent(text.replace(/\*/g,''))}" data-sent="${esc(sk)}" ${cm}>מייל</a>`;
   const cp=`<button class="mail sm" type="button" data-copy="${esc(text)}">העתק</button>`;
   return `<div class="card"><div class="who"><div class="name">${esc(v.n)}</div><div class="meta"><span>פרייבט ${esc(v.pv)}</span><span>${esc(v.br)}</span>${k>=2?`<span class="streak">${k} חודשים ברצף מתחת ל־25</span>`:''}</div>${spark(v,m)}${v.ev?`<div class="meta">${Object.entries(v.ev).sort((x,y)=>y[1][1]-x[1][1]).slice(0,4).map(([c,[n,pc]])=>`<span class="chip ${pc>=25?'bad':pc>=10?'warn':'miss'}">${esc(c)} ${Math.round(pc)}%</span>`).join('')}</div>`:''}<div class="meta">${trendTxt(st)}${st.fromPeak!=null&&st.fromPeak<0?`<span>${-st.fromPeak} מתחת לשיא (${st.peak})</span>`:''}${st.avg!=null?`<span>ממוצע ${st.avg}</span>`:''}</div></div>
     <div class="score ${scCls(x)}">${x}</div>
@@ -460,12 +461,18 @@ function lockView(err){
 async function unlock(saved){
   const pw=saved||($('pw')&&$('pw').value.trim());if(!pw)return;
   if(!saved){$('ub').disabled=true;$('ub').textContent='פותח… (כמה שניות)'}else $('app').innerHTML='<div class="empty">פותח את הנתונים…</div>';
-  try{DATA=await decrypt(pw);if(!saved)ls('kbt_pw',$('rem').checked?pw:'');$('lockB').hidden=false;$('upd').textContent='עודכן: '+DATA.updated;
+  try{DATA=await decrypt(pw);SPW=pw;if(!saved)ls('kbt_pw',$('rem').checked?pw:'');$('lockB').hidden=false;$('upd').textContent='עודכן: '+DATA.updated;
     state.m=DATA.months.length-1;render()}
   catch(e){if(saved&&e.message==='pw')ls('kbt_pw','');lockView(e.message==='pw'?'סיסמה שגויה':!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
 }
 function relock(){if(!confirm('לנעול ולשכוח את הסיסמה במכשיר הזה?'))return;ls('kbt_pw','');DATA=null;lockView()}
 {const p=ls('kbt_pw');p?unlock(p):lockView()}
+
+/* כששולחים הודעה למתנדב – היא נרשמת גם אצל רכז התחבורה של הסניף (קופצת לו באפליקציית בטיחות סניף) */
+let SPW='';const COORD_SYNC='https://script.google.com/macros/s/AKfycbw03x21xEa5N4bP6REQthkOJWN85UUsVX3sBgSUvgyhl3fMKdhydg3rLcSvHsj-ke2q2A/exec';
+document.addEventListener('click',async e=>{const a=e.target.closest('a[data-ct]');if(!a||!SPW)return;
+  try{const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('dbd-coord-api:'+SPW)),tk=[...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
+    fetch(COORD_SYNC,{method:'POST',body:JSON.stringify({action:'msg_add',t:tk,pv:a.dataset.cpv,mbr:a.dataset.cbr,n:a.dataset.cn,m:a.dataset.cm,kind:a.dataset.ck,text:a.dataset.ct}),keepalive:true}).catch(()=>{})}catch(_){}},true);
 </script>
 </body>
 </html>

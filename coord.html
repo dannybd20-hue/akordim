@@ -281,6 +281,7 @@ h3.grp{margin:14px 4px 6px;font-size:.95rem;color:var(--muted)}
 .drs{margin-bottom:8px;flex-wrap:wrap}.drs button span{font-size:.78rem;opacity:.75;margin-inline-start:4px}
 .bdg.tr{background:var(--mid-bg);color:var(--mid)}.mp.mid{background:var(--mid-bg);color:var(--mid)}
 #vmap.fixing{outline:3px solid var(--warn);cursor:crosshair}
+.msgtxt{background:var(--soft);border-radius:12px;padding:12px;line-height:1.6;max-height:45vh;overflow:auto;font-size:.95rem}
 </style>
 
 
@@ -556,7 +557,7 @@ function personSheet(key){
       <section class="card"><h3>קורסים והשתלמויות</h3>${(()=>{const a=annual(p);return a?(a.done?`<p>${pill('ok','✓ השתלמות שנתית '+ANN_Y+': '+a.by)}</p>`:`<p>${pill('bad','✗ לא ביצע השתלמות שנתית: '+a.course)}</p><p class="muted">שים לב – יש להירשם בהקדם להשתלמות.</p>${p.ph?`<div class="acts"><a class="btn wa" href="${waLink(p.ph,annMsg(p))}" target="_blank" rel="noopener">${WA_ICON}תזכורת להירשם</a></div>`:''}`):''})()}${(()=>{const e=p.ext||{},ry=rideYears(p),at=admTest(p);const rows=[e.r1&&['השתלמות רכיבה יום א׳',e.r1],e.r2&&['השתלמות רכיבה יום ב׳',e.r2],ry!=null&&['ותק רכיבה בארגון',`<b>${ry}</b> שנים (מ־${esc(e.r2)})`],e.mt&&['טסט פנימי אופנוע',esc(e.mt)],at&&['טסט מנהלה רכב / אמבולנס',esc([at.st,at.date,at.who&&'בוחן: '+at.who].filter(Boolean).join(' · '))]].filter(Boolean);
       return rows.length?`<dl>${rows.map(([k,v])=>`<dt>${k}</dt><dd>${k==='ותק רכיבה בארגון'||k.startsWith('טסט')?v:esc(v)}</dd>`).join('')}</dl>`:''})()}<div class="tags">${(p.crs||[]).map(x=>pill(new RegExp(ANN_Y).test(x)?'ok':'na',x)).join('')||'<span class="muted">לא רשומים קורסים</span>'}</div></section>
       <section class="card"><h3>כלים</h3>${V.length?V.map(v=>{const is=vehIssues(v);return `<div class="vmini"><span class="plate">${esc(v.plate)}</span><span>כלי ${esc(v.num)} · ${esc(v.type)}</span>${is.map(i=>pill(i.lvl,i.t)).join('')||pill('ok','תקין')}</div>`}).join(''):'<p class="muted">אין כלי צמוד</p>'}</section>
-      <section class="card wide"><h3>ציוני סייפטי לפי חודש</h3>${scores}</section>
+      <section class="card wide"><h3>ציוני סייפטי לפי חודש</h3>${scores}</section>${msgSection(p)}
       <section class="card"><h3>🏍️ הדרכות רכיבה (חיים בדרכים) · 2025–2026</h3>${tl(p.ride||[],x=>{const n=/לא עבר/.test(x.sc)?0:num(x.sc);return `<li><span class="tb ${lvlRide(n)}">${esc(x.sc||'—')}</span><div><small>${esc(x.d)} · ${esc(x.ins)}${x.urg?' · דחופה':''}</small><p>${esc([x.op,x.note,x.gen].filter(Boolean).join(' · ')||'—')}</p>${x.pas?`<small>הרכבת רוכב נוסף: ${esc(x.pas)}</small>`:''}</div></li>`})}</section>
       <section class="card"><h3>🚑 הדרכות נהיגה (אלטרנתיבי) · 2025–2026</h3>${tl(p.alt||[],x=>`<li><span class="tb na" style="font-size:.72rem">${esc((x.st||'').replace(/^שלב\s*/,'')||'—')}</span><div><small>${esc(x.d)} · ${esc(x.st)} · ${esc(x.ins)}</small>${(x.sc||[]).length?`<span class="tags">${x.sc.map(([k,n])=>pill(lvlAlt(num(n)),k+' '+n)).join('')}</span>`:''}${x.rec?`<small>המלצה: ${esc(x.rec)}</small>`:''}${x.note?`<p>${esc(x.note)}</p>`:''}</div></li>`)}</section>
       <section class="card"><h3>עבר תאונות</h3>${(p.acc||[]).length?`<div class="alist">${p.acc.map(accRow).join('')}</div>`:'<p class="muted">לא דווחו תאונות</p>'}</section>
@@ -799,6 +800,20 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-bd]');if(!
 
 function inspLate(){return DATA.veh.filter(v=>{const c=pd(v.check);return c&&days(c)<0}).sort((a,b)=>pd(a.check)-pd(b.check))}
 
+/* ===== הודעות שקצין הבטיחות שלח למתנדבי הסניף (מאפליקציית הסייפטי) ===== */
+let MSGS=null;
+async function loadMsgs(){const br=DATA.br,r=await api({action:'msgs'});if(!r||DATA.br!==br)return;MSGS=r.rows.sort((a,b)=>b.ts-a.ts);setTimeout(msgAlerts,700)}
+function msgAlerts(){if(ADMIN||!MSGS||document.querySelector('.ov.center'))return;const N=MSGS.filter(x=>!ls('msgseen:'+x.id+':'+x.ts));if(!N.length)return;
+  const x=N[0],ov=document.createElement('div');ov.className='ov center';
+  ov.innerHTML=`<div class="alertbox" role="alertdialog"><div class="ah ok"><span>💬</span><div><small>הודעה מקצין הבטיחות${N.length>1?` · 1 מתוך ${N.length}`:''}</small><h2>שים לב – נשלחה ל${esc(x.n)} ההודעה הבאה</h2></div></div>
+    <p class="hint" style="padding:0">דוח סייפטי ${esc(x.m||'')} · נשלח ב־${esc(new Date(x.ts).toLocaleDateString('he-IL'))}</p>
+    <div class="msgtxt">${fmtWA(x.text)}</div>
+    <div class="acts"><button class="btn" id="mok">ראיתי</button>${DATA.people.some(p=>p.pv===x.pv)?`<button class="btn ghost" id="mcard">לתיק של ${esc(first(x.n))}</button>`:''}</div></div>`;
+  document.body.append(ov);const done=()=>{ls('msgseen:'+x.id+':'+x.ts,'1');ov.remove();setTimeout(msgAlerts,200)};
+  ov.querySelector('#mok').onclick=done;const c=ov.querySelector('#mcard');if(c)c.onclick=()=>{done();personSheet(x.pv)};
+}
+function msgSection(p){const L=(MSGS||[]).filter(x=>x.pv===p.pv);return L.length?`<section class="card wide"><h3>💬 הודעות מקצין הבטיחות</h3>${L.map(x=>`<details><summary>${esc(x.m||'')} · ${esc(new Date(x.ts).toLocaleDateString('he-IL'))}</summary><div class="msgtxt">${fmtWA(x.text)}</div></details>`).join('')}</section>`:''}
+
 /* ===== מפת מתנדבים – לפי כתובת המגורים ===== */
 const MAP={el:null,map:null,layer:null,br:null,run:0,done:0,total:0,miss:[],flt:'all'};
 const GEO_V='geo2:';
@@ -925,7 +940,7 @@ document.addEventListener('visibilitychange',()=>document.body.classList.toggle(
 window.addEventListener('blur',()=>document.body.classList.add('hide-all'));window.addEventListener('focus',()=>document.body.classList.remove('hide-all'));
 document.addEventListener('copy',e=>{if(document.body.classList.contains('secure')&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||''))e.preventDefault()});
 document.addEventListener('contextmenu',e=>{if(document.body.classList.contains('secure'))e.preventDefault()});
-function show(){setTimeout(accAlerts,600);ACKS=null;setTimeout(loadAcks,100);INVS=null;setTimeout(loadInvs,150);FU=null;setTimeout(loadFu,200);setTimeout(fuAlerts,1500);if(ADMIN){setTimeout(loadPending,300);if(!window._pendT)window._pendT=setInterval(loadPending,120000)}$('gsw').hidden=false;const gi=$('gs');gi.oninput=()=>gsearch(gi.value);document.documentElement.style.setProperty('--hh',document.querySelector('.appbar').offsetHeight+'px');watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
+function show(){setTimeout(accAlerts,600);ACKS=null;setTimeout(loadAcks,100);INVS=null;setTimeout(loadInvs,150);FU=null;setTimeout(loadFu,200);MSGS=null;setTimeout(loadMsgs,250);setTimeout(fuAlerts,1500);if(ADMIN){setTimeout(loadPending,300);if(!window._pendT)window._pendT=setInterval(loadPending,120000)}$('gsw').hidden=false;const gi=$('gs');gi.oninput=()=>gsearch(gi.value);document.documentElement.style.setProperty('--hh',document.querySelector('.appbar').offsetHeight+'px');watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
 
 /* ===== כניסה ===== */
 function lockView(err){
