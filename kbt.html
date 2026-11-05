@@ -574,7 +574,7 @@ function renderAcc(){
   app.querySelectorAll('[data-inv]').forEach(b=>b.onclick=()=>invOpen(b.dataset.inv));
 }
 function invOpen(id){
-  const a=ACCD.acc.find(x=>x.id===id);if(!a)return;const key='inv2:'+id;let saved='';try{saved=localStorage.getItem(key)||''}catch(e){}if(!saved&&INVK[id])saved=INVK[id].text;
+  const a=ACCD.acc.find(x=>x.id===id);if(!a)return;const key='inv3:'+id;let saved='';try{saved=localStorage.getItem(key)||''}catch(e){}if(!saved&&INVK[id])saved=INVK[id].text;
   const ov=document.createElement('div');ov.className='invov';
   ov.innerHTML=`<div class="invbox" role="dialog" aria-label="תחקיר"><div class="invh"><div><small>${esc(a.id)} · ${esc(a.d)}</small><h2 style="margin:0">תחקיר – ${esc(a.n)}</h2></div><button class="hb x" aria-label="סגירה">✕</button></div>
     <p class="legend" style="margin:0">הטיוטה כבר כוללת את כל מה שיש במערכת על המתנדב. משלימים את השדות המסומנים ב־____. נשמר אוטומטית במכשיר.</p>
