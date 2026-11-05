@@ -491,16 +491,15 @@ function accFlags(a,p,prior){
   return F;
 }
 function accDraft(a){
-  const p=ACCD.prof[a.pv]||null,prior=accPrior(a),F=accFlags(a,p,prior),B='____';
+  const p=ACCD.prof[a.pv]||null,prior=accPrior(a),B='____',ai=a.ai||{};
   const L=[];
   L.push(`*תחקיר תאונה ראשוני – ${a.vt||'כלי'}*`,`*מס' תאונה:* ${a.id}`,'','*פרטי אירוע:*');
   L.push(`• *שם נהג ומס' כונן:* ${a.n}${a.pv?' | כונן '+a.pv:''}${a.ageAt?' (גיל בזמן התאונה: '+a.ageAt+')':p&&p.age?' (גיל: '+p.age+')':''}`);
-  if(p&&p.ph)L.push(`• *נייד:* ${p.ph}`);
   L.push(`• *סניף:* ${a.br||(p&&p.br)||B}`);
   L.push(`• *מספר וסוג כלי מעורב:* ${a.vt} ${a.num||B}${a.plate?' ('+a.plate+')':''}`);
   L.push(`• *תאריך:* ${a.d} | *שעה:* ${a.time||B}${a.tod?' ('+a.tod+')':''}`,`• *מיקום:* ${a.place||B}`);
   L.push(`• *סוג נסיעה:* ${a.trip||B} | *סוג תאונה:* ${a.kind||B}`);
-  if(a.cause)L.push(`• *סיבת התאונה (בדיווח):* ${a.cause}`);
+  if(a.cause)L.push(`• *סיבת התאונה:* ${a.cause}`);
   if(a.ev)L.push(`• *בדרך לאירוע:* ${a.ev}`);
   L.push(`• *נפגעים בנפש:* ${a.inj||a.injb||B}`);
   L.push(`• *נזק לכלי איחוד הצלה:* ${[a.dmgL,a.dmg].filter(Boolean).join(' – ')||B}`);
@@ -510,17 +509,14 @@ function accDraft(a){
   L.push('','*תיאור האירוע (גרסת הנהג):*',a.drv||B);
   if(a.text)L.push('','*דיווח המוקד:*',a.text);
   L.push('','*רקע על הנהג:*');
-  if(!p)L.push('• לא נמצא כרטיס מתנדב תואם במערכת – יש להשלים ידנית');
+  if(!p)L.push('• לא נמצא כרטיס מתנדב תואם במערכת');
   else{
     if(p.perm)L.push(`• *הרשאות נהיגה:* ${p.perm}`);
-    L.push(`• ${docLine('רישיון נהיגה',p.lic)}`,`• ${docLine('תיק נהג (הצהרת בריאות)',p.health)}`,p.pp?'• מידע תעבורתי: בעל דרכון – לא רלוונטי':`• ${docLine('מידע תעבורתי',p.traffic)}`);
-    if(p.s){const L3=p.s.map((x,i)=>[x,i]).filter(x=>x[0]!=null).slice(-3);
-      L.push(`• *דוח סייפטי (איתורן):* ${L3.map(([x,i])=>`${ACCD.months[i]} – ${x}`).join(' · ')||'אין ציונים'}`);
-      if(p.ev){const E=Object.entries(p.ev).sort((x,y)=>y[1][1]-x[1][1]).slice(0,3);if(E.length)L.push(`  עיקר האירועים: ${E.map(([k,[n,pc]])=>`${k} ${Math.round(pc)}%`).join(', ')}`)}}
+    if(p.s){const L3=p.s.map((x,i)=>[x,i]).filter(x=>x[0]!=null).slice(-3);L.push(`• *דוח סייפטי (איתורן):* ${L3.map(([x,i])=>`${ACCD.months[i]} – *${x}*`).join(' · ')||'אין ציונים'}`)}
     else L.push('• *דוח סייפטי (איתורן):* לא מופיע בדוח');
-    {const e=p.ext||{};if(e.r2){const d=pdh(e.r2),y=Math.max(0,Math.floor((pdh(a.d)-d)/(365.25*864e5)*10)/10);L.push(`• *ותק רכיבה בארגון:* ${y} שנים בזמן התאונה (השתלמות רכיבה יום א׳ ${e.r1||'—'}, יום ב׳ ${e.r2})`)}
+    {const e=p.ext||{};if(e.r2){const d=pdh(e.r2),y=Math.max(0,Math.floor((pdh(a.d)-d)/(365.25*864e5)*10)/10);L.push(`• *ותק רכיבה בארגון:* ${y} שנים בזמן התאונה`)}
      if(e.mt)L.push(`• *טסט פנימי אופנוע:* ${e.mt}`);
-     if(e.adm){const P=e.adm.split(',').map(x=>x.trim()),dt=P.find(x=>/^\d{4}-\d{2}-\d{2}$/.test(x));L.push(`• *טסט מנהלה רכב/אמבולנס:* ${[P[0],dt&&dt.split('-').reverse().join('/'),P.filter((x,i)=>i&&x!==dt).join(', ')&&'בוחן: '+P.filter((x,i)=>i&&x!==dt).join(', ')].filter(Boolean).join(' · ')}`)}}
+     if(e.adm&&isCarV(a.vt)){const P=e.adm.split(',').map(x=>x.trim()),dt=P.find(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)),w=P.filter((x,i)=>i&&x!==dt).join(', ');L.push(`• *טסט מנהלה רכב/אמבולנס:* ${[P[0],dt&&dt.split('-').reverse().join('/'),w&&'בוחן: '+w].filter(Boolean).join(' · ')}`)}}
     if(isMotoV(a.vt)||(!isCarV(a.vt)&&/אופנוע/.test(p.perm||''))){
       if(p.ride.length){L.push('• *הדרכות רכיבה (חיים בדרכים):*');p.ride.forEach(r=>L.push(`  - ${r.d}: ציון ${r.sc||'—'}${r.pas?' · עבר: '+r.pas:''}${r.ins?' · מדריך: '+r.ins:''}${r.note?'\n    הערות המדריך: '+r.note:''}`))}
       else L.push('• *הדרכות רכיבה (חיים בדרכים):* אין ב־2025–2026');
@@ -532,9 +528,7 @@ function accDraft(a){
   }
   L.push(`• *תאונות קודמות (מ־2025):* ${prior.length}`);
   prior.forEach((x,i)=>L.push(`  ${i+1}. ${x.d} – ${x.vt} ${x.num} – ${x.kind||x.cause||'תאונה'}${x.fault?' · אשמה: '+x.fault:''}`));
-  if(F.length){L.push('','*נקודות לתשומת לב מהנתונים:*');F.forEach(f=>L.push('• '+f))}
-  if(a.dfault||a.dprev||a.how){L.push('','*לדברי הנהג:*');if(a.dfault)L.push('• אשמה: '+a.dfault);if(a.dprev)L.push('• פעולות מניעה: '+a.dprev);if(a.how)L.push('• כיצד יכל למנוע: '+a.how)}
-  L.push('','*ממצאי התחקיר:*','• '+B,'','*האם ניתן היה למנוע:* '+B,'*אשמה:* '+(a.fault||B),'','*מסקנות והמלצות:*','• '+B,'','דני בן דוד','קצין בטיחות בתעבורה','מרחב ירושלים');
+  L.push('','*ממצאי התחקיר:*',...((ai.find||[]).length?ai.find.map(x=>'• '+x):['• '+B]),'','*האם ניתן היה למנוע:* '+(ai.prev||B),'*אשמה:* '+(a.fault||B),'','*מסקנות והמלצות:*',...((ai.rec||[]).length?ai.rec.map(x=>'• '+x):['• '+B]),'','דני בן דוד','קצין בטיחות בתעבורה','מרחב ירושלים');
   return L.join('\n');
 }
 function accCardK(a){
@@ -573,12 +567,12 @@ function renderAcc(){
   app.querySelectorAll('[data-inv]').forEach(b=>b.onclick=()=>invOpen(b.dataset.inv));
 }
 function invOpen(id){
-  const a=ACCD.acc.find(x=>x.id===id);if(!a)return;const key='inv:'+id;let saved='';try{saved=localStorage.getItem(key)||''}catch(e){}if(!saved&&INVK[id])saved=INVK[id].text;
+  const a=ACCD.acc.find(x=>x.id===id);if(!a)return;const key='inv2:'+id;let saved='';try{saved=localStorage.getItem(key)||''}catch(e){}if(!saved&&INVK[id])saved=INVK[id].text;
   const ov=document.createElement('div');ov.className='invov';
   ov.innerHTML=`<div class="invbox" role="dialog" aria-label="תחקיר"><div class="invh"><div><small>${esc(a.id)} · ${esc(a.d)}</small><h2 style="margin:0">תחקיר – ${esc(a.n)}</h2></div><button class="hb x" aria-label="סגירה">✕</button></div>
     <p class="legend" style="margin:0">הטיוטה כבר כוללת את כל מה שיש במערכת על המתנדב. משלימים את השדות המסומנים ב־____. נשמר אוטומטית במכשיר.</p>
     <textarea id="invt" spellcheck="false">${esc(saved||accDraft(a))}</textarea>
-    <div class="btns"><button class="wa" id="invsave" style="border:0;cursor:pointer;font:inherit;font-weight:700;background:var(--ok)">שמירה וסיום</button><button class="wa" id="invs" style="border:0;cursor:pointer;font:inherit;font-weight:700;background:var(--accent)">העתקה למערכת</button><button class="wa" id="invc" style="border:0;cursor:pointer;font:inherit;font-weight:700;background:var(--muted)">העתקה לוואטסאפ</button><a class="wa" id="invw" target="_blank" rel="noopener">${WA_ICON}וואטסאפ</a><a class="wa mail" id="invm">מייל</a><button class="more" id="invr" style="padding:8px 12px">טיוטה מחדש מהנתונים</button></div></div>`;
+    <div class="btns"><button class="wa" id="invsave" style="border:0;cursor:pointer;font:inherit;font-weight:700;background:var(--ok)">שמירה וסיום</button><button class="wa" id="invs" style="border:0;cursor:pointer;font:inherit;font-weight:700;background:var(--accent)">העתקה למערכת</button><button class="wa" id="invc" style="border:0;cursor:pointer;font:inherit;font-weight:700;background:var(--muted)">העתקה לוואטסאפ</button><a class="wa" id="invw" target="_blank" rel="noopener">${WA_ICON}לקבוצת "תחקירים"</a><a class="wa mail" id="invm">מייל</a><button class="more" id="invr" style="padding:8px 12px">טיוטה מחדש מהנתונים</button></div></div>`;
   document.body.append(ov);
   const t=ov.querySelector('#invt'),upd=()=>{try{localStorage.setItem(key,t.value)}catch(e){}ov.querySelector('#invw').href='https://wa.me/?text='+encodeURIComponent(t.value);ov.querySelector('#invm').href=`mailto:?subject=${encodeURIComponent('תחקיר תאונה '+a.id+' – '+a.n)}&body=${encodeURIComponent(t.value.replace(/\*/g,''))}`};
   upd();t.oninput=upd;
@@ -587,6 +581,7 @@ function invOpen(id){
   /* למערכת: טקסט נקי – בלי כוכביות/קווים תחתונים, כל שדה בשורה משלו */
   const plain=()=>t.value.replace(/\*/g,'').replace(/(^|\s)_([^_\n]+)_/g,'$1$2').replace(/^\s*>\s?/gm,'').replace(/^\s*•\s*/gm,'- ').replace(/[ \t]+$/gm,'').replace(/\n{3,}/g,'\n\n').trim();
   ov.querySelector('#invs').onclick=async e=>{const v=plain();try{await navigator.clipboard.writeText(v)}catch(_){const x=document.createElement('textarea');x.value=v;document.body.append(x);x.select();document.execCommand('copy');x.remove()}e.target.textContent='הועתק ✓ – להדביק במערכת'};
+  ov.querySelector('#invw').addEventListener('click',()=>{try{navigator.clipboard.writeText(t.value)}catch(_){}});
   ov.querySelector('#invsave').onclick=async e=>{const b=e.target;if(/____/.test(t.value)&&!confirm('יש עדיין שדות ____ שלא מולאו. לשמור בכל זאת?'))return;b.disabled=true;b.textContent='שומר…';
     const r=await kapi({action:'inv_save',id:a.id,abr:a.br,n:a.n,text:t.value});
     if(r){INVK[a.id]={id:a.id,br:a.br,n:a.n,text:t.value,ts:Date.now()};try{localStorage.removeItem(key)}catch(_){}b.textContent='נשמר ✓ – מופיע גם אצל הרכז';accBadge();setTimeout(()=>{ov.remove();render()},900)}
