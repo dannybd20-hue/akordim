@@ -568,12 +568,15 @@ function invOpen(id){
   ov.innerHTML=`<div class="invbox" role="dialog" aria-label="תחקיר"><div class="invh"><div><small>${esc(a.id)} · ${esc(a.d)}</small><h2 style="margin:0">תחקיר – ${esc(a.n)}</h2></div><button class="hb x" aria-label="סגירה">✕</button></div>
     <p class="legend" style="margin:0">הטיוטה כבר כוללת את כל מה שיש במערכת על המתנדב. משלימים את השדות המסומנים ב־____. נשמר אוטומטית במכשיר.</p>
     <textarea id="invt" spellcheck="false">${esc(saved||accDraft(a))}</textarea>
-    <div class="btns"><button class="wa" id="invc" style="border:0;cursor:pointer;font:inherit;font-weight:700;background:var(--accent)">העתקה</button><a class="wa" id="invw" target="_blank" rel="noopener">${WA_ICON}וואטסאפ</a><a class="wa mail" id="invm">מייל</a><button class="more" id="invr" style="padding:8px 12px">טיוטה מחדש מהנתונים</button></div></div>`;
+    <div class="btns"><button class="wa" id="invs" style="border:0;cursor:pointer;font:inherit;font-weight:700;background:var(--accent)">העתקה למערכת</button><button class="wa" id="invc" style="border:0;cursor:pointer;font:inherit;font-weight:700;background:var(--muted)">העתקה לוואטסאפ</button><a class="wa" id="invw" target="_blank" rel="noopener">${WA_ICON}וואטסאפ</a><a class="wa mail" id="invm">מייל</a><button class="more" id="invr" style="padding:8px 12px">טיוטה מחדש מהנתונים</button></div></div>`;
   document.body.append(ov);
   const t=ov.querySelector('#invt'),upd=()=>{try{localStorage.setItem(key,t.value)}catch(e){}ov.querySelector('#invw').href='https://wa.me/?text='+encodeURIComponent(t.value);ov.querySelector('#invm').href=`mailto:?subject=${encodeURIComponent('תחקיר תאונה '+a.id+' – '+a.n)}&body=${encodeURIComponent(t.value.replace(/\*/g,''))}`};
   upd();t.oninput=upd;
   ov.querySelector('.x').onclick=()=>ov.remove();ov.onclick=e=>{if(e.target===ov)ov.remove()};
   ov.querySelector('#invc').onclick=async e=>{try{await navigator.clipboard.writeText(t.value);e.target.textContent='הועתק ✓'}catch(_){t.select();document.execCommand('copy');e.target.textContent='הועתק ✓'}};
+  /* למערכת: טקסט נקי – בלי כוכביות/קווים תחתונים, כל שדה בשורה משלו */
+  const plain=()=>t.value.replace(/\*/g,'').replace(/(^|\s)_([^_\n]+)_/g,'$1$2').replace(/^\s*>\s?/gm,'').replace(/^\s*•\s*/gm,'- ').replace(/[ \t]+$/gm,'').replace(/\n{3,}/g,'\n\n').trim();
+  ov.querySelector('#invs').onclick=async e=>{const v=plain();try{await navigator.clipboard.writeText(v)}catch(_){const x=document.createElement('textarea');x.value=v;document.body.append(x);x.select();document.execCommand('copy');x.remove()}e.target.textContent='הועתק ✓ – להדביק במערכת'};
   ov.querySelector('#invr').onclick=()=>{if(t.value!==accDraft(a)&&!confirm('להחליף את מה שכתבת בטיוטה חדשה מהנתונים?'))return;t.value=accDraft(a);upd()};
 }
 /*ACC-END*/
