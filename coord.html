@@ -337,10 +337,15 @@ const ANN_Y=2026;
 function annual(p){
   const P=p.perm||'',C=(p.crs||[]).join(';'),mo=isMoto(p),amb=/אמבולנס/.test(P),car=/רכב ארגוני|רכב 4\*4|רכב חירום/.test(P);
   const need=mo?'אופנוע':amb?'אמבולנס':car?'רכב':null;if(!need)return null;
-  const dm=new RegExp('אופנוע כביש '+ANN_Y).test(C),da=new RegExp('אמבולנס כביש '+ANN_Y).test(C),dc=new RegExp('רכב כביש '+ANN_Y).test(C);
+  const r1=pd((p.ext||{}).r1),dr1=!!r1&&r1.getFullYear()===ANN_Y;
+  const dm=dr1||new RegExp('אופנוע כביש '+ANN_Y).test(C),da=new RegExp('אמבולנס כביש '+ANN_Y).test(C),dc=new RegExp('רכב כביש '+ANN_Y).test(C);
   const done=need==='אופנוע'?dm:need==='אמבולנס'?dm||da:dm||da||dc;
-  return {need,done,course:`${need} כביש ${ANN_Y}`,by:dm?`אופנוע כביש ${ANN_Y}`:da?`אמבולנס כביש ${ANN_Y}`:dc?`רכב כביש ${ANN_Y}`:''};
+  return {need,done,course:`${need} כביש ${ANN_Y}`,by:dr1?'השתלמות רכיבה יום א׳ ('+p.ext.r1+')':dm?`אופנוע כביש ${ANN_Y}`:da?`אמבולנס כביש ${ANN_Y}`:dc?`רכב כביש ${ANN_Y}`:''};
 }
+/* ותק רכיבה בארגון: מיום ב׳ של השתלמות הרכיבה (אז מקבלים אופנוע) */
+function rideYears(p){const d=pd((p.ext||{}).r2);if(!d)return null;return Math.max(0,Math.floor((Date.now()-d)/(365.25*864e5)*10)/10)}
+function admTest(p){const s=(p.ext||{}).adm;if(!s)return null;const P=s.split(',').map(x=>x.trim()).filter(Boolean),dt=P.find(x=>/^\d{4}-\d{2}-\d{2}$/.test(x));
+  return {st:P[0]||'',who:P.filter((x,i)=>i&&x!==dt).join(', '),date:dt?dt.split('-').reverse().join('/'):''}}
 const annMiss=p=>{const a=annual(p);return a&&!a.done?a:null};
 function annMsg(p){const a=annual(p);return `היי ${first(p.n)},\nלפי המערכת עדיין לא ביצעת את ההשתלמות השנתית לשנת ${ANN_Y} (*${a.course}*).\n\n*שים לב – יש להירשם בהקדם להשתלמות.*\n\nתודה,\n${DATA.coord||'רכז התחבורה'} · רכז תחבורה – ${DATA.br}`}
 function vehOf(p){return DATA.veh.filter(v=>(p.cars||[]).some(c=>c.num===v.num)||(p.ph&&v.phone===p.ph))}
@@ -384,7 +389,7 @@ let CUR_PW='',REMOTE=null;
 const HK=()=>'exit:'+DATA.br;
 function localHist(){try{return JSON.parse(ls(HK())||'[]').map(h=>(h.id=h.id||String(h.ts),h))}catch(e){return[]}}
 function hist(){const L=localHist();if(!REMOTE)return L;const ids=new Set(REMOTE.map(r=>r.id));return [...REMOTE,...L.filter(h=>!ids.has(h.id))].sort((a,b)=>b.ts-a.ts)}
-async function api(o){await SYNC_CHECK;if(!SYNC_URL||!CUR_PW)return null;try{const t=(await sha('dbd-coord-api:'+CUR_PW)).slice(0,32);const r=await fetch(SYNC_URL,{method:'POST',body:JSON.stringify({...o,t,br:DATA.br})}).then(r=>r.json());return r&&r.ok?r:null}catch(e){return null}}
+async function api(o){await SYNC_CHECK;if(!SYNC_URL||!CUR_PW)return null;try{const t=(await sha('dbd-coord-api:'+CUR_PW)).slice(0,32);const r=await fetch(SYNC_URL,{method:'POST',body:JSON.stringify({t,br:DATA.br,...o})}).then(r=>r.json());return r&&r.ok?r:null}catch(e){return null}}
 async function syncHist(){const br=DATA.br,r=await api({action:'list'});if(!r||DATA.br!==br)return;REMOTE=r.rows;const ids=new Set(REMOTE.map(x=>x.id));
   for(const h of localHist())if(!ids.has(h.id)&&await api({action:'add',r:h}))REMOTE.push(h);
   render();setTimeout(offDecAlerts,900)}
@@ -437,7 +442,7 @@ function pRow(p){
   return `<div class="prow${m.attn?' attn':''}" role="button" tabindex="0" data-p="${esc(p.pv||p.n)}">
     <span class="av" style="background:${colorOf(p.n)}">${esc(ini(p.n))}</span>
     <span class="pid"><b>${esc(p.n)}</b><small>${[p.pv&&'פרייבט '+p.pv,car&&`כלי ${car.num}${car.type?' '+car.type:''}`,p.city].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</small>
-      <span class="minis">${m.sn?mini('סייפטי',m.sn.x,lvlSafety(m.sn.x)):''}${m.r?mini('הדרכת רכיבה',m.rs===0?'נכשל':(m.r.sc||'—'),lvlRide(m.rs)):''}${m.bad?mini('מסמכים',m.bad+' פגים','bad'):m.warn?mini('מסמכים','פג בקרוב','warn'):''}${annMiss(p)?mini('השתלמות '+ANN_Y,'לא בוצעה','bad'):''}</span></span>
+      <span class="minis">${m.sn?mini('סייפטי',m.sn.x,lvlSafety(m.sn.x)):''}${m.r?mini('הדרכת רכיבה',m.rs===0?'נכשל':(m.r.sc||'—'),lvlRide(m.rs)):''}${m.bad?mini('מסמכים',m.bad+' פגים','bad'):m.warn?mini('מסמכים','פג בקרוב','warn'):''}${annMiss(p)?mini('השתלמות '+ANN_Y,'לא בוצעה','bad'):''}${rideYears(p)!=null?mini('ותק רכיבה',rideYears(p)+' ש׳','na'):''}</span></span>
     ${tel?`<a class="cb call" href="tel:${esc(tel)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(tel,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}
   </div>`;
 }
@@ -511,7 +516,8 @@ function personSheet(key){
     <div class="dgrid">
       <section class="card"><h3>פרטי קשר</h3><dl><dt>טלפון</dt><dd>${p.ph?`<a href="tel:${esc(p.ph)}">${fmtPhone(p.ph)}</a>`:'—'}</dd><dt>מייל</dt><dd class="ltr">${esc(p.em||'—')}</dd><dt>כתובת</dt><dd>${esc([p.st,p.city].filter(Boolean).join(', ')||'—')}</dd><dt>תאריך לידה</dt><dd>${esc(p.bd||'—')}</dd><dt>הרשאות</dt><dd>${(p.perm||'').split(/;\s*/).filter(Boolean).map(x=>pill('na',x)).join(' ')||'—'}</dd></dl>${p.ph?`<div class="acts"><a class="btn wa" href="${waLink(p.ph,'')}" target="_blank" rel="noopener">${WA_ICON}וואטסאפ</a><a class="btn ghost" href="tel:${esc(p.ph)}">${IC.phone}חיוג</a></div>`:''}</section>
       <section class="card"><h3>מסמכים</h3><ul class="checks">${ds.map(d=>`<li class="${d.lvl==='miss'?'na':d.lvl}"><span>${d.l}</span><b>${esc(d.t)}</b></li>`).join('')}${p.pp?'<li class="na"><span>מידע תעבורתי</span><b>בעל דרכון – לא נדרש</b></li>':''}</ul></section>
-      <section class="card"><h3>קורסים והשתלמויות</h3>${(()=>{const a=annual(p);return a?(a.done?`<p>${pill('ok','✓ השתלמות שנתית '+ANN_Y+': '+a.by)}</p>`:`<p>${pill('bad','✗ לא ביצע השתלמות שנתית: '+a.course)}</p><p class="muted">שים לב – יש להירשם בהקדם להשתלמות.</p>${p.ph?`<div class="acts"><a class="btn wa" href="${waLink(p.ph,annMsg(p))}" target="_blank" rel="noopener">${WA_ICON}תזכורת להירשם</a></div>`:''}`):''})()}<div class="tags">${(p.crs||[]).map(x=>pill(new RegExp(ANN_Y).test(x)?'ok':'na',x)).join('')||'<span class="muted">לא רשומים קורסים</span>'}</div></section>
+      <section class="card"><h3>קורסים והשתלמויות</h3>${(()=>{const a=annual(p);return a?(a.done?`<p>${pill('ok','✓ השתלמות שנתית '+ANN_Y+': '+a.by)}</p>`:`<p>${pill('bad','✗ לא ביצע השתלמות שנתית: '+a.course)}</p><p class="muted">שים לב – יש להירשם בהקדם להשתלמות.</p>${p.ph?`<div class="acts"><a class="btn wa" href="${waLink(p.ph,annMsg(p))}" target="_blank" rel="noopener">${WA_ICON}תזכורת להירשם</a></div>`:''}`):''})()}${(()=>{const e=p.ext||{},ry=rideYears(p),at=admTest(p);const rows=[e.r1&&['השתלמות רכיבה יום א׳',e.r1],e.r2&&['השתלמות רכיבה יום ב׳',e.r2],ry!=null&&['ותק רכיבה בארגון',`<b>${ry}</b> שנים (מ־${esc(e.r2)})`],e.mt&&['טסט פנימי אופנוע',esc(e.mt)],at&&['טסט מנהלה רכב / אמבולנס',esc([at.st,at.date,at.who&&'בוחן: '+at.who].filter(Boolean).join(' · '))]].filter(Boolean);
+      return rows.length?`<dl>${rows.map(([k,v])=>`<dt>${k}</dt><dd>${k==='ותק רכיבה בארגון'||k.startsWith('טסט')?v:esc(v)}</dd>`).join('')}</dl>`:''})()}<div class="tags">${(p.crs||[]).map(x=>pill(new RegExp(ANN_Y).test(x)?'ok':'na',x)).join('')||'<span class="muted">לא רשומים קורסים</span>'}</div></section>
       <section class="card"><h3>כלים</h3>${V.length?V.map(v=>{const is=vehIssues(v);return `<div class="vmini"><span class="plate">${esc(v.plate)}</span><span>כלי ${esc(v.num)} · ${esc(v.type)}</span>${is.map(i=>pill(i.lvl,i.t)).join('')||pill('ok','תקין')}</div>`}).join(''):'<p class="muted">אין כלי צמוד</p>'}</section>
       <section class="card wide"><h3>ציוני סייפטי לפי חודש</h3>${scores}</section>
       <section class="card"><h3>🏍️ הדרכות רכיבה (חיים בדרכים) · 2025–2026</h3>${tl(p.ride||[],x=>{const n=/לא עבר/.test(x.sc)?0:num(x.sc);return `<li><span class="tb ${lvlRide(n)}">${esc(x.sc||'—')}</span><div><small>${esc(x.d)} · ${esc(x.ins)}${x.urg?' · דחופה':''}</small><p>${esc([x.op,x.note,x.gen].filter(Boolean).join(' · ')||'—')}</p>${x.pas?`<small>הרכבת רוכב נוסף: ${esc(x.pas)}</small>`:''}</div></li>`})}</section>
@@ -541,7 +547,8 @@ function exitView(){
   h+='</div>';
   const H=hist();
   h+=`<section class="panel"><header><h2>היסטוריית יציאות</h2><span class="count">${H.length}</span></header>${H.length?`<div class="tw"><table><thead><tr><th>תאריך</th><th>מתנדב</th><th>יעד</th><th>המלצה</th><th>החלטה</th>${ADMIN?'<th></th>':''}</tr></thead><tbody>${H.map(x=>`<tr><td>${esc(new Date(x.ts).toLocaleDateString('he-IL'))}</td><td>${esc(x.n)}</td><td>${esc(x.dest||'—')}${x.from?`<br><small>${esc(x.from)}${x.to&&x.to!==x.from?' – '+esc(x.to):''}</small>`:''}</td><td>${pill(x.rec,x.rec==='ok'?'מומלץ':x.rec==='warn'?'לשים לב':'לא מומלץ')}</td><td>${x.dec==='pending'?pill('warn','ממתין לקצין בטיחות'):pill(x.dec==='yes'?'ok':'bad',(x.dec==='yes'?'אושר':'לא אושר')+(x.off?' ע"י קצין בטיחות':''))}</td>${ADMIN?`<td><button class="del" type="button" data-del="${esc(x.id)}" aria-label="מחיקה" title="מחיקת הרשומה">🗑️</button></td>`:''}</tr>`).join('')}</tbody></table></div>`:'<div class="empty">עוד לא נרשמו בקשות</div>'}<p class="hint">${SYNC_URL?(REMOTE?'מסונכרן עם משרד הקצב"ת ✓':'מסנכרן…'):'ההיסטוריה נשמרת במכשיר הזה.'}</p></section>`;
-  app.insertAdjacentHTML('beforeend',h);
+  if(ADMIN)h+=`<section class="panel"><header><h2>כל הסניפים – מהגיליון בגוגל</h2><span class="count">${ALLX?ALLX.length:'…'}</span></header>${!SYNC_URL?'<p class="hint">יופיע אחרי חיבור הסנכרון.</p>':!ALLX?'<p class="hint">טוען מהגיליון…</p>':ALLX.length?`<div class="tw"><table><thead><tr><th>נרשם</th><th>סניף</th><th>רכז</th><th>מתנדב</th><th>יעד ותאריך</th><th>החלטה</th></tr></thead><tbody>${ALLX.map(x=>`<tr><td>${esc(new Date(x.ts).toLocaleDateString('he-IL'))}</td><td>${esc(x.br)}</td><td>${esc(x.coord||'—')}</td><td>${esc(x.n)}${x.pv?`<br><small>${esc(x.pv)}</small>`:''}</td><td>${esc(x.dest||'—')}${x.from?`<br><small>${esc(x.from)}</small>`:''}</td><td>${x.dec==='pending'?pill('warn','ממתין לקצין בטיחות'):pill(x.dec==='yes'?'ok':'bad',(x.dec==='yes'?'אושר':'לא אושר')+(x.off?' ע"י קצין בטיחות':''))}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">אין עדיין רשומות בגיליון</div>'}<p class="hint"><button class="btn ghost sm" type="button" id="allxr">רענון</button></p></section>`;
+  app.insertAdjacentHTML('beforeend',h);if(ADMIN){if(ALLX===null&&SYNC_URL)loadAllX();const rb=$('allxr');if(rb)rb.onclick=()=>{ALLX=null;render();loadAllX()}}
   app.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const x=hist().find(h=>h.id===b.dataset.del);if(!x||!confirm(`למחוק את הרשומה של ${x.n}${x.dest?' ל'+x.dest:''}?`))return;delHist(x.id);render()});
   const sync=()=>{f.dest=$('xd').value.trim();f.veh=$('xv').value;f.from=$('xf').value;f.to=f.from;f.note=$('xn').value.trim()};
   $('xp').onchange=e=>{st.sel=e.target.value||null;sync();const pp=st.sel==='__test'?null:DATA.people.find(x=>(x.pv||x.n)===st.sel);if(pp&&!f.veh){const v=vehOf(pp)[0];if(v)f.veh=v.num}render()};
@@ -595,7 +602,7 @@ function contactSheet(key){
   const ov=document.createElement('div');ov.className='ov';ov.innerHTML=`<aside class="drawer pbs"><header class="dh"><button class="x" aria-label="סגירה">${IC.x}</button><span class="av lg" style="background:${colorOf(p.n)}">${esc(ini(p.n))}</span><div><h2>${esc(p.n)}</h2><p>${esc([p.pv&&'פרייבט '+p.pv,DATA.br].filter(Boolean).join(' · '))}</p></div></header>
     <div class="qa">${tel?`<a href="tel:${esc(tel)}"><i>📞</i>חיוג</a><a href="${waLink(tel,'')}" target="_blank" rel="noopener"><i>💬</i>וואטסאפ</a><a href="sms:${esc(tel)}"><i>✉️</i>הודעה</a>`:''}${p.em?`<a href="mailto:${esc(p.em)}"><i>📧</i>מייל</a>`:''}<button type="button" id="toSafety"><i>🛡️</i>תיק בטיחות</button></div>
     <section class="box"><h3>פרטי קשר</h3>${it('📱','טלפון נייד',esc(fmtPhone(p.ph)),tel?'tel:'+tel:'')}${it('📧','מייל',esc(p.em),p.em?'mailto:'+p.em:'')}${it('🏠','כתובת',esc(addr),addr?'https://waze.com/ul?q='+encodeURIComponent(addr)+'&navigate=yes':'')}</section>
-    <section class="box"><h3>ארגון</h3>${it('🏷️','פרייבט',esc(p.pv))}${it('🚦','הרשאות נהיגה',(p.perm||'').split(/;\s*/).filter(Boolean).map(x=>`<span class="tag">${esc(x)}</span>`).join(''))}${(p.crs||[]).length?it('🎓','קורסים והשתלמויות',p.crs.map(x=>`<span class="tag">${esc(x)}</span>`).join('')):''}${it('🏢','סניף',esc(DATA.br))}${it('🗺️','מחוז',esc(o.dist))}${it('👤','ראש סניף / מנהל אגף',esc(o.head))}${it('👥','סגן ראש סניף',esc(o.dep))}${it('🚗','רכז תחבורה סניפי',esc(DATA.coord))}${it('🦺','קצין בטיחות מחוזי',esc(o.officer))}</section>
+    <section class="box"><h3>ארגון</h3>${it('🏷️','פרייבט',esc(p.pv))}${it('🚦','הרשאות נהיגה',(p.perm||'').split(/;\s*/).filter(Boolean).map(x=>`<span class="tag">${esc(x)}</span>`).join(''))}${rideYears(p)!=null?it('🏍️','ותק רכיבה בארגון',esc(rideYears(p)+' שנים (מ־'+p.ext.r2+')')):''}${p.ext&&p.ext.mt?it('✅','טסט פנימי אופנוע',esc(p.ext.mt)):''}${admTest(p)?it('🚑','טסט מנהלה רכב / אמבולנס',esc((({st,date,who})=>[st,date,who&&'בוחן: '+who].filter(Boolean).join(' · '))(admTest(p)))):''}${(p.crs||[]).length?it('🎓','קורסים והשתלמויות',p.crs.map(x=>`<span class="tag">${esc(x)}</span>`).join('')):''}${it('🏢','סניף',esc(DATA.br))}${it('🗺️','מחוז',esc(o.dist))}${it('👤','ראש סניף / מנהל אגף',esc(o.head))}${it('👥','סגן ראש סניף',esc(o.dep))}${it('🚗','רכז תחבורה סניפי',esc(DATA.coord))}${it('🦺','קצין בטיחות מחוזי',esc(o.officer))}</section>
     ${p.bd||(p.cars||[]).length?`<section class="box"><h3>פרטים נוספים</h3>${it('🎂','תאריך לידה',esc(p.bd+(a?` (גיל ${a})`:'')))}${it('✡️','יום הולדת עברי',esc(hb))}${(p.cars||[]).map(c=>it('🚑','כלי ארגוני',esc(`כלי ${c.num}${c.type?' · '+c.type:''}${c.plate?' · '+c.plate:''}`))).join('')}</section>`:''}
   </aside>`;
   ov.onclick=e=>{if(e.target===ov||e.target.closest('.x'))return ov.remove();if(e.target.closest('#toSafety')){ov.remove();personSheet(key)}};document.body.append(ov);
@@ -698,6 +705,10 @@ function pendingAlert(){
     ov.querySelector('#pnext').onclick=()=>{ov.remove();const b=$('pendB');if(b){b.hidden=!PENDING.length;b.textContent=`🔔 ${PENDING.length} בקשות יציאה ממתינות`}if(REMOTE)syncHist();setTimeout(pendingAlert,150)}};
   ov.querySelector('#pyes').onclick=()=>decide(true);ov.querySelector('#pno').onclick=()=>decide(false);ov.querySelector('#plater').onclick=()=>ov.remove();
 }
+
+/* מנהל: כל יציאות המגזרה מכל הסניפים, ישר מהגיליון */
+let ALLX=null;
+async function loadAllX(){const r=await api({action:'list',br:'*'});ALLX=r?r.rows.sort((a,b)=>b.ts-a.ts):[];if(st.view==='exit')render()}
 
 /* ===== מפת מתנדבים – לפי כתובת המגורים ===== */
 const MAP={el:null,map:null,layer:null,br:null,run:0,done:0,total:0,miss:[],flt:'all'};
