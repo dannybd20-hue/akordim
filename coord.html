@@ -337,6 +337,10 @@ const ANN_Y=2026;
 function annual(p){
   const P=p.perm||'',C=(p.crs||[]).join(';'),mo=isMoto(p),amb=/אמבולנס/.test(P),car=/רכב ארגוני|רכב 4\*4|רכב חירום/.test(P);
   const need=mo?'אופנוע':amb?'אמבולנס':car?'רכב':null;if(!need)return null;
+  /* טסט על כלי ארגוני השנה (טסט פנימי אופנוע / טסט מנהלה שעבר) – פטור מההשתלמות השנתית בכלל */
+  const e=p.ext||{},mt=pd(e.mt),at=admTest(p),atd=at&&/עבר/.test(at.st)?pd(at.date):null;
+  if(mt&&mt.getFullYear()===ANN_Y)return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'טסט פנימי אופנוע ('+e.mt+')'};
+  if(atd&&atd.getFullYear()===ANN_Y)return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'טסט מנהלה ('+at.date+')'};
   const r1=pd((p.ext||{}).r1),dr1=!!r1&&r1.getFullYear()===ANN_Y;
   const dm=dr1||new RegExp('אופנוע כביש '+ANN_Y).test(C),da=new RegExp('אמבולנס כביש '+ANN_Y).test(C),dc=new RegExp('רכב כביש '+ANN_Y).test(C);
   const done=need==='אופנוע'?dm:need==='אמבולנס'?dm||da:dm||da||dc;
