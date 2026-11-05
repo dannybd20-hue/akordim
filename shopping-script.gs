@@ -93,6 +93,9 @@ function waChat_(c) {
   PropertiesService.getScriptProperties().setProperty('GREEN_CHAT', g.id);
   return g.id;
 }
+/* הודעות הוואטסאפ של הקניות (נוסף לרשימה, נקנה, תזכורת שבועית, סיכום שבועי): false = מושבתות.
+   הודעות התרופות לא מושפעות. כדי להחזיר: true, שמירה ופריסה חדשה */
+const SHOP_WA = false;
 function waOn_() { return !!waCfg_(); }
 function waSend_(text, to) {
   const c = waCfg_(); if (!c) return false;
@@ -107,6 +110,7 @@ function waSend_(text, to) {
 
 /* entries: [{n: שם, q: כמות, k: 'add' | 'pantry' | 'auto'}]. נשלחת הודעה אחת לכל הקבוצה */
 function notify_(entries, from, title) {
+  if (!SHOP_WA) return null;
   if (!entries || !entries.length || !waOn_()) return null;
   try {
     const verb = FEMALE.indexOf(from) >= 0 ? 'הוסיפה' : 'הוסיף';
@@ -121,6 +125,7 @@ function notify_(entries, from, title) {
 
 /* סימנו "נקנה": הודעה אחת לקבוצה על כל מה שנקנה (גם בלי סימון "שלח בוואטסאפ") */
 function notifyBought_(items, from) {
+  if (!SHOP_WA) return;
   if (!items || !items.length || !waOn_()) return;
   try {
     const verb = FEMALE.indexOf(from) >= 0 ? 'קנתה' : 'קנה';
@@ -145,14 +150,14 @@ function ensureReminders_() {
 // אפשר להריץ מהעורך כדי ליצור את הטריגרים מיד (אחרת הם נוצרים לבד בלילה הקרוב)
 function setupReminders() { ensureReminders_(); Logger.log('הטריגרים מוכנים: תזכורת ביום ' + REMIND_DAY + ' בשעה ' + REMIND_HOUR + ', סיכום ביום ' + SUMMARY_DAY + ' בשעה ' + SUMMARY_HOUR); }
 function weeklyReminder() {
-  if (!waOn_()) return;
+  if (!SHOP_WA || !waOn_()) return;
   const items = load_().st.items;
   if (!items.length) return;
   const lines = items.slice(0, 12).map(function (x) { return '• ' + x.name + (x.qty ? ' (' + x.qty + ')' : ''); });
   waSend_('🛒 *קניות לבית*\n⏰ תזכורת: ברשימה עדיין ' + items.length + (items.length === 1 ? ' פריט' : ' פריטים') + ':\n' + lines.join('\n') + (items.length > 12 ? '\nועוד ' + (items.length - 12) + '…' : '') + '\n\nלרשימה המלאה: ' + SHOP_LINK);
 }
 function weeklySummary() {
-  if (!waOn_()) return;
+  if (!SHOP_WA || !waOn_()) return;
   const st = load_().st, since = Date.now() - 7 * 864e5;
   const log = (st.log || []).filter(function (e) { return e.t >= since; });
   if (!log.length) return;
