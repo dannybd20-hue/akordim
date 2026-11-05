@@ -241,9 +241,16 @@ function buildItems(){
 }
 function val(k){const r=document.querySelector(`input[name="c_${k}"]:checked`);return r?r.value:''}
 
-const m=/^#v(\d+)/.exec(location.hash);if(m)$('num').value=m[1];
+const m=/^#v(\d+)(?:\.(\d*)\.([a-z]?)\.([A-Za-z0-9_-]*))?/.exec(location.hash);if(m)$('num').value=m[1];
+/* פרטים מהמערכת: פרייבט, סוג כלי ושם הנהג (מקודד) */
+const TNAME={m:'אופנוע',a:'אמבולנס',n:'מינילנס',c:'רכב סניפי',s:'רכב שטח'},TFULL={'אופנוע':'m','אמבולנס':'a','מינילנס':'n','רכב':'c',"ג'יפ":'s','רכב שטח':'s'};
+function setType(code){const t=TNAME[code];if(!t)return;const r=document.querySelector(`#types input[value="${t}"]`);if(r){r.checked=true;r.dispatchEvent(new Event('change',{bubbles:true}))}}
+if(m&&m[4]){try{const s=atob(m[4].replace(/-/g,'+').replace(/_/g,'/'));$('name').value=new TextDecoder().decode(Uint8Array.from(s,c=>c.charCodeAt(0)))}catch(e){}}
+if(m&&m[2])$('priv').value=m[2];
+if(m&&m[3])setTimeout(()=>setType(m[3]),0);
 /* בדיקה שרכז התחבורה ממלא בעצמו (מאפליקציית בטיחות סניף): על שמו, ומגיעה לקצין הבטיחות לאישור */
-const BY=(()=>{const q=new URLSearchParams(location.hash.replace(/^#v\d+&?/,''));return {c:q.get('c')||'',cp:q.get('cp')||'',br:q.get('br')||'',d:q.get('d')||''}})();
+const BY=(()=>{const q=new URLSearchParams(location.hash.replace(/^#v[^&]*&?/,''));return {c:q.get('c')||'',cp:q.get('cp')||'',br:q.get('br')||'',d:q.get('d')||'',t:q.get('t')||''}})();
+if(BY.t)setTimeout(()=>setType(TFULL[BY.t]),0);
 if(BY.c){$('name').value=BY.c;if(BY.cp)$('priv').value=BY.cp;const bn=document.createElement('div');bn.className='bybanner';bn.innerHTML='<b>בדיקה ע"י רכז תחבורה</b><span></span>';bn.querySelector('span').textContent=BY.c+(BY.br?' · '+BY.br:'')+(BY.d?' · נהג הכלי: '+BY.d:'')+' · הבדיקה תגיע לקצין הבטיחות לאישור';$('f').prepend(bn)}
 
 $('f').addEventListener('submit',async e=>{
