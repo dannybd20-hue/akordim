@@ -102,20 +102,74 @@ pre.preview{white-space:pre-wrap;background:var(--bg);border:1px solid var(--lin
 .logo{background:#fff;border-radius:12px;padding:10px 14px;width:fit-content;max-width:100%;margin-bottom:12px}
 .logo img{display:block;width:170px;height:auto}
 .bybanner{display:flex;flex-direction:column;gap:2px;background:#e6effa;border:1.5px solid #1f5fae;color:#1f5fae;border-radius:12px;padding:10px 12px;margin-bottom:12px}.bybanner span{color:inherit;font-size:.9rem}
+
+/* ===== עיצוב 2026 ===== */
+body{background:radial-gradient(1200px 400px at 50% -120px,#dbe7f7 0,transparent 70%),var(--bg)}
+header{background:linear-gradient(160deg,#0f2a4a 0%,#1f4f8f 60%,#2b66b3 100%);position:relative;overflow:hidden}
+header::after{content:"";position:absolute;inset:auto -60px -90px auto;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,#ea580c55,transparent 70%)}
+header .wrap{padding-block:22px 26px;position:relative;z-index:1}
+.hrow{display:flex;align-items:center;gap:14px}
+.logo{margin:0;padding:8px 12px;border-radius:14px;box-shadow:0 6px 20px #0004}
+.logo img{width:86px}
+h1{font-size:1.55rem;line-height:1.15}
+.hsub{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{background:#ffffff1f;border:1px solid #ffffff33;border-radius:99px;padding:3px 10px;font-size:.82rem;font-weight:600}
+header p{margin-top:12px;font-size:.95rem;opacity:.92}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:16px}
+.steps span{font-size:.75rem;font-weight:700;text-align:center;padding-top:8px;border-top:3px solid #ffffff40;opacity:.8}
+.steps span.on{border-color:#ffb27a;opacity:1}
+main .wrap{gap:16px;margin-top:-6px}
+section{border:0;border-radius:18px;padding:18px;box-shadow:0 1px 2px #0f2a4a14,0 8px 24px #0f2a4a0f}
+section>h2,.st{display:flex;align-items:center;gap:10px;font-size:1.2rem}
+.num{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#1f4f8f,#2b66b3);color:#fff;display:grid;place-items:center;font:700 .95rem var(--f-body);flex:none;box-shadow:0 3px 8px #1f4f8f40}
+label.f{font-size:.9rem;color:var(--muted)}
+input[type=text],input[type=tel],input[type=number],textarea,select{padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);font-size:1.05rem;transition:border-color .15s,box-shadow .15s}
+input:focus,textarea:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 4px #1f4f8f22}
+input:not(:placeholder-shown):valid,input[value]:not([value=""]){background:var(--surface)}
+.types{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.types label{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 8px;border-radius:16px;border:1.5px solid var(--line);background:var(--surface);transition:transform .1s,box-shadow .15s}
+.types label i{font-style:normal;font-size:2rem;line-height:1}
+.types label:hover{transform:translateY(-1px);box-shadow:0 6px 16px #0f2a4a14}
+.types label:has(input:checked){background:linear-gradient(135deg,#1f4f8f,#2b66b3);box-shadow:0 8px 20px #1f4f8f40}
+#items{gap:10px}
+.item{border:1.5px solid var(--line);border-radius:14px;padding:12px;background:var(--surface);transition:border-color .15s,background .15s}
+.item:first-of-type{border-top:1.5px solid var(--line);padding-top:12px}
+.item:has(input[value=ok]:checked){border-color:#1d7a4655;background:linear-gradient(0deg,var(--ok-bg),var(--surface) 70%)}
+.item.is-bad{border-color:#c62f2f66;background:linear-gradient(0deg,var(--bad-bg),var(--surface) 70%)}
+.item.missing{border-color:var(--bad);box-shadow:0 0 0 3px #c62f2f22}
+.q{font-size:1rem}
+.tri label{padding:11px 4px;border-radius:12px;background:var(--bg);border-color:transparent;transition:background .15s}
+.tri label span::before{margin-inline-end:4px}
+.tri input[value=ok]+span::before{content:"✓"}
+.tri input[value=bad]+span::before{content:"✕"}
+.tri input[value=other]+span::before{content:"…"}
+.tri label:has(input:checked){box-shadow:0 2px 8px #0002}
+.sub{border:0;margin-top:10px;padding:6px 12px;background:#e6effa;color:var(--accent);border-radius:10px;font-size:.92rem}
+.why{margin-top:2px}
+.photo{border:1.5px dashed #2b66b366;background:#f2f7fd;border-radius:14px}
+.bar{position:sticky;bottom:0;z-index:5;margin:0 -16px;padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);box-shadow:0 -6px 20px #0f2a4a1f;border-radius:18px 18px 0 0}
+.prog{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.85rem;font-weight:700;color:var(--muted)}
+.prog .pb{flex:1;height:8px;border-radius:99px;background:var(--line);overflow:hidden}.prog .pb i{display:block;height:100%;width:0;background:linear-gradient(90deg,#1d7a46,#3cb371);transition:width .3s}
+.btn.primary{background:linear-gradient(135deg,#ea580c,#f97316);box-shadow:0 8px 20px #ea580c40;font-size:1.1rem;padding:15px}
+.btn{border-radius:14px}
+.okmark{background:linear-gradient(135deg,#1d7a46,#3cb371);color:#fff;box-shadow:0 10px 24px #1d7a4640}
+.foot{background:var(--surface);border-radius:18px;padding:16px;box-shadow:0 1px 2px #0f2a4a14}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) body{background:var(--bg)}:root:not([data-theme="light"]) .sub{background:#182b44}:root:not([data-theme="light"]) .photo{background:#152030}}
 </style>
 </head>
 <body>
 <header><div class="wrap">
-  <div class="logo"><img src="brand/uh-logo.png" alt="איחוד הצלה" width="440" height="273"></div>
-  <h1>בדיקת תקינות כלי</h1>
-  <p>קצב"ת מרחב ירושלים · לוקח בערך 3 דקות. אם משהו לא תקין, כתוב מה הבעיה וזה יעזור לי לטפל בכלי מהר.</p>
+  <div class="hrow"><div class="logo"><img src="brand/uh-logo.png" alt="איחוד הצלה" width="440" height="273"></div>
+  <div><h1>בדיקת תקינות כלי</h1><div class="hsub"><span class="chip">קצב"ת מרחב ירושלים</span><span class="chip">⏱ כ־3 דקות</span></div></div></div>
+  <p>אם משהו לא תקין – כתוב מה הבעיה, וזה יעזור לי לטפל בכלי מהר.</p>
+  <div class="steps" id="steps"><span class="on">פרטים</span><span>סוג כלי</span><span>בדיקה</span><span>סיכום</span></div>
 </div></header>
 
 <main><div class="wrap">
 <form id="f" novalidate>
 <div style="display:flex;flex-direction:column;gap:18px">
   <section>
-    <h2>פרטים</h2>
+    <h2><span class="num">1</span>פרטים</h2>
     <div class="grid2">
       <label class="f">שם מלא<input id="name" type="text" autocomplete="name" required></label>
       <label class="f">מספר פרייבט<input id="priv" type="number" inputmode="numeric"></label>
@@ -125,18 +179,18 @@ pre.preview{white-space:pre-wrap;background:var(--bg);border:1px solid var(--lin
   </section>
 
   <section>
-    <h2>סוג כלי</h2>
+    <h2><span class="num">2</span>סוג כלי</h2>
     <div class="types" role="radiogroup" aria-label="סוג כלי" id="types"></div>
   </section>
 
   <section id="checks" hidden>
-    <h2 id="checksTitle">בדיקת הכלי</h2>
+    <h2><span class="num">3</span><span id="checksTitle">בדיקת הכלי</span></h2>
     <p class="hint">לכל סעיף: תקין, לא תקין, או אחר. אם משהו לא תקין, כתוב מה הבעיה.</p>
     <div id="items"></div>
   </section>
 
   <section id="summary" hidden>
-    <h2>סיכום</h2>
+    <h2><span class="num">4</span>סיכום</h2>
     <div class="item" style="border:0;padding:0">
       <div class="q">יש תקלה שמונעת נסיעה בטוחה בכלי?</div>
       <div class="tri" style="grid-template-columns:1fr 1fr">
@@ -152,7 +206,8 @@ pre.preview{white-space:pre-wrap;background:var(--bg);border:1px solid var(--lin
   </section>
 
   <p class="err" id="err" hidden></p>
-  <button class="btn primary" type="submit">סיימתי, הכן לשליחה</button>
+  <div class="bar"><div class="prog" id="prog" hidden><span id="progT">0/0</span><span class="pb"><i id="progB"></i></span></div>
+  <button class="btn primary" type="submit">סיימתי, הכן לשליחה</button></div>
 </div>
 </form>
 
@@ -215,7 +270,8 @@ const TYPES={
 };
 const $=id=>document.getElementById(id);
 let curType='';
-$('types').innerHTML=Object.keys(TYPES).map(t=>`<label><input type="radio" name="type" value="${t}"><span>${t}</span></label>`).join('');
+const TICON={'אופנוע':'🏍️','אמבולנס':'🚑','מינילנס':'🚐','רכב סניפי':'🚗','רכב שטח':'🚙'};
+$('types').innerHTML=Object.keys(TYPES).map(t=>`<label><i>${TICON[t]||'🚘'}</i><input type="radio" name="type" value="${t}"><span>${t}</span></label>`).join('');
 $('types').addEventListener('change',e=>{curType=e.target.value;buildItems();$('types').classList.remove('missing')});
 function keys(){return (TYPES[curType]||[]).filter(k=>Q[k])}
 function buildItems(){
@@ -241,6 +297,11 @@ function buildItems(){
 }
 function val(k){const r=document.querySelector(`input[name="c_${k}"]:checked`);return r?r.value:''}
 
+/* התקדמות: שלבים בכותרת + פס סעיפים שנענו */
+function progress(){const ks=typeof keys==='function'&&curType?keys():[],done=ks.filter(k=>val(k)).length,st=$('steps').children;
+  const s=!$('name').value.trim()||!$('num').value.trim()?0:!curType?1:done<ks.length?2:3;[...st].forEach((x,i)=>x.classList.toggle('on',i<=s));
+  if(ks.length){$('prog').hidden=false;$('progT').textContent=`${done}/${ks.length} סעיפים`;$('progB').style.width=Math.round(100*done/ks.length)+'%'}}
+document.addEventListener('change',progress);document.addEventListener('input',progress);setTimeout(progress,50);
 const m=/^#v(\d+)(?:\.(\d*)\.([a-z]?)\.([A-Za-z0-9_-]*))?/.exec(location.hash);if(m)$('num').value=m[1];
 /* פרטים מהמערכת: פרייבט, סוג כלי ושם הנהג (מקודד) */
 const TNAME={m:'אופנוע',a:'אמבולנס',n:'מינילנס',c:'רכב סניפי',s:'רכב שטח'},TFULL={'אופנוע':'m','אמבולנס':'a','מינילנס':'n','רכב':'c',"ג'יפ":'s','רכב שטח':'s'};
