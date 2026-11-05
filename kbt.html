@@ -163,7 +163,7 @@ const DBJ_URL='https://uh1221.com/DBJ';
 const TCODE={'אופנוע':'m','אמבולנס':'a','מינילנס':'n','רכב':'c',"ג'יפ":'s','רכב שטח':'s'};
 function formLink(v){const d=(DATA.drivers||[]).find(x=>(v.phone&&x.phone===v.phone)||x.name===v.name)||{};
   const b64=s=>btoa(String.fromCharCode(...new TextEncoder().encode(s||''))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-  return `${FORM_URL}#v${v.num}.${d.priv||''}.${TCODE[v.type]||''}.${b64(v.name)}`}
+  return `${FORM_URL}#v${v.num}.${v.priv||d.priv||''}.${TCODE[v.type]||''}.${b64(v.name)}`}
 function first(n){return (n||'').split(' ')[0]}
 function carTxt(c){return `כלי מס' ${c.num}`}
 function carLine(d){return d.cars&&d.cars.length?`\n(${d.cars.map(carTxt).join(', ')})`:''}
