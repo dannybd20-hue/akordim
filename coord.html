@@ -271,6 +271,9 @@ h3.grp{margin:14px 4px 6px;font-size:.95rem;color:var(--muted)}
 .arow .ai{display:flex;flex-direction:column;min-width:0}.arow .ai small{color:var(--muted);font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .arow .as{display:flex;flex-direction:column;gap:3px;align-items:flex-end}.arow .kgo svg{width:18px;height:18px;fill:var(--muted)}
 .accx{border-top:1px solid var(--line);padding-top:8px;margin-top:8px}.accx h5{margin:0 0 4px;font-size:.9rem;color:var(--mid)}.accx p{margin:0;line-height:1.6}
+.grp2{display:flex;align-items:center;gap:10px;margin:16px 0 6px;padding:12px 14px;border-radius:12px;font-size:1.05rem;color:#fff}
+.grp2 span{font-size:1.4rem}.grp2 b{margin-inline-start:auto;background:#ffffff33;border-radius:99px;padding:2px 12px;font-size:1rem}
+.grp2.gm{background:#ea580c}.grp2.ga{background:#c22b2b}.grp2.gc{background:#1f5fae}
 </style>
 
 
@@ -584,7 +587,7 @@ function drill(k){
   else if(k==='veh'){title='כלים בסניף';const V=[...DATA.veh].sort((a,b)=>vehIssues(b).length-vehIssues(a).length);body=`<div class="vlist">${V.map(vRow).join('')}</div>`}
   else if(k==='avg'){title='ציוני סייפטי · '+M;const L=P.filter(p=>safetyNow(p)).sort((a,b)=>safetyNow(a).x-safetyNow(b).x);body=L.map(pRow).join('')+(P.length>L.length?`<p class="hint">${P.length-L.length} נהגים בלי ציון סייפטי</p>`:'')}
   else if(k==='low'){title='מתחת ל־25 בסייפטי';body=P.filter(p=>{const s=safetyNow(p);return s&&s.x<25}).sort((a,b)=>safetyNow(a).x-safetyNow(b).x).map(pRow).join('')}
-  else if(k==='ann'){title='לא ביצעו השתלמות שנתית '+ANN_Y;const L=P.filter(annMiss);const g=['אופנוע','אמבולנס','רכב'];body=g.map(n=>{const G=L.filter(p=>annual(p).need===n);return G.length?`<h3 class="grp">${n} כביש ${ANN_Y} · ${G.length}</h3>`+G.map(p=>pRow(p)+`<div class="sub">${pill('bad','נדרש: '+annual(p).course)} ${p.ph?`<a class="btn wa sm" href="${waLink(p.ph,annMsg(p))}" target="_blank" rel="noopener">${WA_ICON}תזכורת להירשם</a>`:''}</div>`).join(''):''}).join('')}
+  else if(k==='ann'){title='לא ביצעו השתלמות שנתית '+ANN_Y;const L=P.filter(annMiss);const g=['אופנוע','אמבולנס','רכב'];body=g.map(n=>{const G=L.filter(p=>annual(p).need===n);const ic={'אופנוע':'🏍️','אמבולנס':'🚑','רכב':'🚗'}[n],cl={'אופנוע':'gm','אמבולנס':'ga','רכב':'gc'}[n];return G.length?`<h3 class="grp2 ${cl}"><span>${ic}</span>${n} כביש ${ANN_Y}<b>${G.length}</b></h3>`+G.map(p=>pRow(p)+`<div class="sub">${pill('bad','נדרש: '+annual(p).course)} ${p.ph?`<a class="btn wa sm" href="${waLink(p.ph,annMsg(p))}" target="_blank" rel="noopener">${WA_ICON}תזכורת להירשם</a>`:''}</div>`).join(''):''}).join('')}
   else if(k==='docs'){title='נהגים עם מסמך שפג';body=P.filter(p=>docStatus(p).some(d=>d.lvl==='bad')).map(p=>pRow(p)+`<div class="sub">${docStatus(p).filter(d=>d.lvl==='bad').map(d=>pill('bad',d.l+': '+d.t)).join(' ')}</div>`).join('')}
   const ov=document.createElement('div');ov.className='ov';ov.innerHTML=`<aside class="drawer"><header class="dh"><button class="x" aria-label="סגירה">${IC.x}</button><div><h2>${esc(title)}</h2><p>${esc(DATA.br)}</p></div></header><section class="panel" style="margin:0 16px"><div class="plist">${body||'<div class="empty">אין</div>'}</div></section></aside>`;
   ov.onclick=e=>{if(e.target===ov||e.target.closest('.x'))return ov.remove();const r=e.target.closest('.prow');if(r&&!e.target.closest('a'))personSheet(r.dataset.p)};
