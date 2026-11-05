@@ -352,9 +352,12 @@ function annual(p){
   if(rd)return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'הדרכת רכיבה – חיים בדרכים ('+rd.d+')'};
   if(ad&&need!=='אופנוע')return {need,done:true,course:`${need} כביש ${ANN_Y}`,by:'הדרכת אלטרנתיבי ('+ad.d+')'};
   const r1=pd((p.ext||{}).r1),dr1=!!r1&&r1.getFullYear()===ANN_Y;
-  const dm=dr1||new RegExp('אופנוע כביש '+ANN_Y).test(C),da=new RegExp('אמבולנס כביש '+ANN_Y).test(C),dc=new RegExp('רכב כביש '+ANN_Y).test(C);
+  /* קורס השנה – כביש או מגרש */
+  const cf=w=>(C.split(';').map(x=>x.trim()).find(x=>new RegExp('^'+w+'\\s+(כביש|מגרש)\\s+'+ANN_Y).test(x))||'');
+  const cm=cf('אופנוע(ים)?'),ca=cf('אמבולנס'),cc=cf('רכב');
+  const dm=dr1||!!cm,da=!!ca,dc=!!cc;
   const done=need==='אופנוע'?dm:need==='אמבולנס'?dm||da:dm||da||dc;
-  return {need,done,course:`${need} כביש ${ANN_Y}`,by:dr1?'השתלמות רכיבה יום א׳ ('+p.ext.r1+')':dm?`אופנוע כביש ${ANN_Y}`:da?`אמבולנס כביש ${ANN_Y}`:dc?`רכב כביש ${ANN_Y}`:''};
+  return {need,done,course:`${need} כביש ${ANN_Y}`,by:dr1?'השתלמות רכיבה יום א׳ ('+p.ext.r1+')':cm||ca||cc||''};
 }
 /* ותק רכיבה בארגון: מיום ב׳ של השתלמות הרכיבה (אז מקבלים אופנוע) */
 function rideYears(p){const d=pd((p.ext||{}).r2);if(!d)return null;return Math.max(0,Math.floor((Date.now()-d)/(365.25*864e5)*10)/10)}
