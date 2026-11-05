@@ -448,10 +448,10 @@ function personSheet(key){
   ov.onclick=e=>{if(e.target===ov||e.target.closest('.x'))ov.remove()};document.body.append(ov);
 }
 function exitView(){
-  const app=$('app'),p=st.sel?DATA.people.find(x=>(x.pv||x.n)===st.sel):null,f=st.f;
+  const app=$('app'),p=st.sel==='__test'?TEST_P:st.sel?DATA.people.find(x=>(x.pv||x.n)===st.sel):null,f=st.f;
   const riders=DATA.people.filter(isMoto),opts=riders.map(x=>`<option value="${esc(x.pv||x.n)}"${p===x?' selected':''}>${esc(x.n)}${x.pv?' · '+esc(x.pv):''}</option>`).join('');
   let h=`<div class="exit"><section class="panel"><header><h2>בקשת יציאה מהגזרה</h2><span class="count">${riders.length} אופנוענים</span></header><p class="hint">יציאה מהגזרה רלוונטית רק לאופנוענים.</p><div class="form">
-    <label class="full">אופנוען<select id="xp"><option value="">בחר אופנוען…</option>${opts}</select></label>
+    <label class="full">אופנוען<select id="xp"><option value="">בחר אופנוען…</option><option value="__test"${st.sel==='__test'?' selected':''}>🧪 בדיקה – שליחה לדני בן דוד</option>${opts}</select></label>
     <label>יעד<input id="xd" value="${esc(f.dest||'')}" placeholder="לדוגמה: אילת"></label>
     <label>אופנוע<select id="xv"><option value="">ללא אופנוע ארגוני</option>${DATA.veh.filter(v=>/אופנוע/.test(v.type||'')).map(v=>`<option value="${esc(v.num)}"${f.veh===v.num?' selected':''}>${esc(v.num)} · ${esc(v.type)} · ${esc(v.plate)}</option>`).join('')}</select></label>
     <label class="full">תאריך היציאה<input id="xf" type="date" value="${esc(f.from||'')}"></label>
@@ -461,7 +461,7 @@ function exitView(){
     const row=(cls,ic,t)=>`<li class="${cls}"><span>${ic}</span>${esc(t)}</li>`;
     h+=`<section class="verdict ${e.lvl}"><div class="vh"><span class="vi">${e.lvl==='ok'?IC.check:e.lvl==='warn'?IC.warn:IC.x}</span><div><small>המלצת המערכת</small><h2>${e.title}</h2><p>${esc(p.n)} · ${H.length} בקשות קודמות · ${yes} יציאות</p></div></div>
       <ul class="vlist2">${e.bad.map(t=>row('bad',IC.x,t)).join('')}${e.warn.map(t=>row('warn',IC.warn,t)).join('')}${e.good.map(t=>row('ok',IC.check,t)).join('')}</ul>
-      <p class="hint">ההחלטה שלך. ההמלצה היא כלי עזר בלבד.</p>
+      <p class="hint">${p===TEST_P?'🧪 מצב בדיקה: ההודעה תישלח לדני בן דוד, ולא תירשם בהיסטוריה.':'ההחלטה שלך. ההמלצה היא כלי עזר בלבד.'}</p>
       <div class="acts"><button class="btn ok" id="xyes">${IC.check}מאשר יציאה</button><button class="btn bad" id="xno">${IC.x}לא מאשר</button><button class="btn ghost" id="xcard">תיק המתנדב</button></div><div id="xout"></div></section>`;
   }
   h+='</div>';
@@ -470,14 +470,14 @@ function exitView(){
   app.insertAdjacentHTML('beforeend',h);
   app.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const x=hist().find(h=>h.id===b.dataset.del);if(!x||!confirm(`למחוק את הרשומה של ${x.n}${x.dest?' ל'+x.dest:''}?`))return;delHist(x.id);render()});
   const sync=()=>{f.dest=$('xd').value.trim();f.veh=$('xv').value;f.from=$('xf').value;f.to=f.from;f.note=$('xn').value.trim()};
-  $('xp').onchange=e=>{st.sel=e.target.value||null;sync();const pp=DATA.people.find(x=>(x.pv||x.n)===st.sel);if(pp&&!f.veh){const v=vehOf(pp)[0];if(v)f.veh=v.num}render()};
+  $('xp').onchange=e=>{st.sel=e.target.value||null;sync();const pp=st.sel==='__test'?null:DATA.people.find(x=>(x.pv||x.n)===st.sel);if(pp&&!f.veh){const v=vehOf(pp)[0];if(v)f.veh=v.num}render()};
   ['xd','xv','xf','xn'].forEach(id=>$(id).onchange=()=>{sync();if(id!=='xn')render()});
   if(p){
     const e=evaluate(p,f);
     $('xcard').onclick=()=>personSheet(p.pv||p.n);
-    $('xyes').onclick=()=>{sync();addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'yes',ts:Date.now()});const m=safetyMsg(p,f);
+    $('xyes').onclick=()=>{sync();if(p!==TEST_P)addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'yes',ts:Date.now()});const m=safetyMsg(p,f);
       render();$('xout').innerHTML=`<div class="done ok"><b>${IC.check}היציאה נרשמה כמאושרת</b><p>הודעת הבטיחות מוכנה – רק לשלוח:</p><pre>${esc(m.replace(/\*/g,''))}</pre><div class="acts">${p.ph?`<a class="btn wa" href="${waLink(p.ph,m)}" target="_blank" rel="noopener">${WA_ICON}שליחה ל${esc(first(p.n))}</a>`:''}<a class="btn ghost" href="mailto:${esc(p.em||'')}?subject=${encodeURIComponent('אישור יציאה מהגזרה')}&body=${encodeURIComponent(m.replace(/\*/g,''))}">מייל</a></div></div>`};
-    $('xno').onclick=()=>{sync();addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'no',ts:Date.now()});render();$('xout').innerHTML=`<div class="done bad"><b>${IC.x}הבקשה נרשמה כלא מאושרת</b></div>`};
+    $('xno').onclick=()=>{sync();if(p!==TEST_P)addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'no',ts:Date.now()});render();$('xout').innerHTML=`<div class="done bad"><b>${IC.x}הבקשה נרשמה כלא מאושרת</b></div>`};
   }
 }
 
@@ -535,6 +535,9 @@ function gsearch(q){
   box.querySelectorAll('.prow.pb').forEach(c=>c.onclick=e=>{if(!e.target.closest('a'))contactSheet(c.dataset.c)});
   $('gsx').onclick=()=>{$('gs').value='';gsearch('')};
 }
+
+/* מתנדב לבדיקה: הרכז יכול לנסות את כל התהליך, וההודעה נשלחת לדני */
+const TEST_P={n:'דני בן דוד (בדיקה)',pv:'',ph:'0508820408',em:'danny.b.d.20@gmail.com',perm:'אופנוע',cars:[],s:null,ride:[],alt:[],acc:[],lic:'31/12/2030',health:'31/12/2030',traffic:'',pp:1};
 
 function coordMsg(b){const c=ADMIN[b];return `שלום ${first(c.coord)||''},\n\nפתחתי לך מערכת חדשה לניהול הבטיחות של סניף *${b}* 🚑\n\nבמערכת תוכל לראות:\n• את כל הנהגים בסניף – פרטים, מסמכים ותוקף רישיונות\n• ציוני סייפטי לכל חודש\n• ציוני הדרכות רכיבה (חיים בדרכים) והדרכות נהיגה (אלטרנתיבי)\n• את כל הכלים של הסניף ומצב הטסטים, הטיפולים והבדיקות\n• *טופס יציאה מגזרה* – בוחרים מתנדב, המערכת בודקת את כל הנתונים שלו ונותנת המלצה, ואם מאשרים – יש הודעת בטיחות מוכנה לשליחה\n\nכניסה:\n🔗 https://dannybd20-hue.github.io/akordim/coord.html\n🔑 סיסמה: *${c.pw}*\n\nהמערכת לצפייה בלבד, ורואים בה רק את הסניף שלך. כדאי להוסיף את הקישור למסך הבית בטלפון.\nהסיסמה אישית לך – לא להעביר הלאה.\n\nאם יש שאלה, אני זמין.\nדני בן דוד\nקצב"ת ירושלים`}
 
