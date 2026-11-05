@@ -241,6 +241,22 @@ body.hide-all main,body.hide-all .ov{filter:blur(18px)}
 .lockc input[type=password]{font:inherit;font-size:1.1rem;letter-spacing:.08em;padding:12px;border:1.5px solid var(--line);border-radius:12px;background:var(--soft);color:var(--fg);text-align:center;direction:ltr}
 .lockc .go{border:0;border-radius:12px;padding:13px;font:800 1rem var(--f);background:var(--accent);color:var(--accent-fg);cursor:pointer}
 .lockc .err{color:var(--bad);font-weight:700;min-height:1.2em}
+/* מפה */
+.mappanel{padding-bottom:10px}
+#vmap{height:calc(100vh - var(--hh,120px) - 190px);min-height:380px;border-radius:12px;overflow:hidden;margin:0 12px;border:1px solid var(--line,#e5e7eb);z-index:0}
+.mpin{width:46px;height:46px;border-radius:50%;background:#fff;border:3px solid #ea580c;box-shadow:0 3px 10px rgba(0,0,0,.28);display:grid;place-items:center;overflow:hidden}
+.mpin img{width:40px;height:40px;object-fit:contain}
+.mpin.bad{border-color:#dc2626;box-shadow:0 0 0 4px rgba(220,38,38,.3),0 3px 10px rgba(0,0,0,.28)}
+.mclu{position:relative;width:52px;height:52px;border-radius:50%;background:#fff;border:3px solid #0f2a4a;display:grid;place-items:center;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+.mclu img{width:40px;height:40px;object-fit:contain}
+.mclu b{position:absolute;top:-6px;right:-6px;background:#ea580c;color:#fff;font:700 12px/1 Arial;min-width:22px;height:22px;border-radius:11px;display:grid;place-items:center;padding:0 5px;border:2px solid #fff}
+.mpop{display:flex;flex-direction:column;gap:4px;font-family:inherit;min-width:200px}
+.mpop b{font-size:1rem}.mpop small{color:#475569}.mpop i{color:#b45309;font-style:normal}
+.mpop .macts{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.mpop .btn{padding:6px 10px;font-size:.8rem}
+.mbar{display:inline-block;vertical-align:middle;width:120px;height:6px;border-radius:3px;background:#e5e7eb;overflow:hidden;margin-inline-start:6px}
+.mbar i{display:block;height:100%;background:#ea580c}
+.leaflet-popup-content{margin:12px 14px}
 </style>
 
 
@@ -257,6 +273,7 @@ body.hide-all main,body.hide-all .ov{filter:blur(18px)}
     <button class="tab" role="tab" aria-selected="false" data-v="pb">ספר טלפונים</button>
     <button class="tab" role="tab" aria-selected="false" data-v="ppl">בטיחות נהגים</button>
     <button class="tab" role="tab" aria-selected="false" data-v="veh">רכבים</button>
+    <button class="tab" role="tab" aria-selected="false" data-v="map">מפה</button>
     <button class="tab" role="tab" aria-selected="false" data-v="exit">יציאה מגזרה</button>
     <button class="tab" role="tab" aria-selected="false" data-v="acc">תאונות</button>
     <span class="tab" style="margin-inline-start:auto;cursor:default;font-weight:400;font-size:.8rem" id="upd"></span>
@@ -420,7 +437,9 @@ function render(){
     h+=`<div class="toolbar"><div class="search">${IC.users}<input id="q" type="search" placeholder="חיפוש לפי שם, פרייבט או טלפון" value="${esc(st.q)}"></div>
       <div class="seg">${[['all','הכל'],['attn','דורשים תשומת לב'],['moto','אופנוענים'],['amb','נהגי אמבולנס']].map(([k,l])=>`<button data-f="${k}" aria-pressed="${st.flt===k}">${l}</button>`).join('')}</div></div>
       <section class="panel"><header><h2>נהגים</h2><span class="count">${L.length}</span></header><div class="plist">${L.map(pRow).join('')||'<div class="empty">לא נמצאו נהגים</div>'}</div></section>`;
-  } else if(st.view==='acc'){
+  } else if(st.view==='map'){
+    h+=mapView();
+} else if(st.view==='acc'){
     h+=accView();
   } else if(st.view==='pb'){
     h+=phonebookView();
@@ -428,6 +447,7 @@ function render(){
     h+=`<section class="panel"><header><h2>כלים בסניף</h2><span class="count">${DATA.veh.length}</span></header><div class="vlist">${DATA.veh.map(vRow).join('')}</div></section>`;
   } else {app.innerHTML=h;exitView();bind();return}
   app.innerHTML=h+`<p class="foot">צפייה בלבד · עודכן ${esc(DATA.upd)} · קצב"ת ירושלים</p>`;bind();
+  if(st.view==='map'){document.querySelectorAll('[data-mf]').forEach(b=>b.onclick=()=>{MAP.flt=b.dataset.mf;MAP.fitN=0;MAP.fitted=false;render()});mountMap()}
 }
 function dstate(label,dateStr,due,kind){
   if(!dateStr)return `<div class="dc na"><small>${label}</small><b>—</b><em>אין תאריך</em></div>`;
@@ -584,6 +604,93 @@ function ackLine(a){
   if(ADMIN){const k=(ACKS||[]).find(x=>x.id===a.id&&x.br===DATA.br);
     return k?` · <span class="pill ok">✓ נקרא ע"י ${esc(k.n||'הרכז')} · ${esc(new Date(k.ts).toLocaleString('he-IL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))}</span>`:SYNC_URL?` · <span class="pill bad">${ACKS?'עוד לא נקרא':'בודק…'}</span>`:' · <span class="pill na">אישורי קריאה יופיעו אחרי חיבור הסנכרון</span>'}
   const s=ls('accseen:'+a.id);return s?` · <span class="pill ok">✓ אישרת קריאה${+s>1?' ב־'+esc(new Date(+s).toLocaleDateString('he-IL')):''}</span>`:' · <span class="pill bad">ממתין לאישור קריאה</span>';
+}
+
+/* ===== מפת מתנדבים – לפי כתובת המגורים ===== */
+const MAP={el:null,map:null,layer:null,br:null,run:0,done:0,total:0,miss:[],flt:'all'};
+const GEO_V='geo1:';
+function addrOf(p){
+  let s=String(p.st||'').replace(/\s+/g,' ').trim(),c=String(p.city||'').replace(/\s+/g,' ').trim();
+  if(!c&&!s)return null;
+  s=s.replace(/(דירה|דיר'|ד'|כניסה|קומה|ת\.?ד\.?)\s*[\wא-ת]*.*$/,'').replace(/[,\-–]+\s*$/,'').trim();
+  if(c&&s.endsWith(c))s=s.slice(0,-c.length).replace(/[,\s]+$/,'').trim();
+  return {q:[s,c].filter(Boolean).join(', '),s,c};
+}
+function geoGet(q){const v=ls(GEO_V+q);if(!v)return undefined;if(v[0]==='x')return Date.now()-(+v.slice(1))<7*864e5?null:undefined;const [a,b,ap]=v.split(',');return {lat:+a,lng:+b,ap:ap==='1'}}
+function geoSet(q,r){ls(GEO_V+q,r?`${r.lat.toFixed(6)},${r.lng.toFixed(6)},${r.ap?1:0}`:'x'+Date.now())}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function nomi(params){
+  const u='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=il&accept-language=he&'+new URLSearchParams(params);
+  try{const r=await fetch(u).then(r=>r.json());await sleep(1100);return r&&r[0]?{lat:+r[0].lat,lng:+r[0].lon}:null}catch(e){await sleep(1500);return null}
+}
+/* קודם דרך הסקריפט של גוגל (מדויק יותר בעברית), ואם אין – OpenStreetMap */
+async function geocodeAll(list,onStep){
+  const need=list.filter(o=>geoGet(o.a.q)===undefined),qs=[...new Set(need.map(o=>o.a.q))];
+  if(qs.length&&SYNC_URL){
+    for(let i=0;i<qs.length;i+=25){const r=await api({action:'geo',q:qs.slice(i,i+25)});
+      if(r&&r.res)r.res.forEach((x,j)=>{if(x)geoSet(qs[i+j],x);else if(x===null)geoSet(qs[i+j],null)});if(onStep()===false)return}
+  }
+  for(const q of qs){if(geoGet(q)!==undefined)continue;const o=need.find(n=>n.a.q===q).a;
+    let r=await nomi({q});
+    if(!r&&o.s&&/\d/.test(o.s)){r=await nomi({street:o.s.replace(/\s*\d+\s*[א-ת]?$/,''),city:o.c});if(r)r.ap=false}
+    if(!r&&o.c){r=await nomi({city:o.c});if(r)r.ap=true}
+    geoSet(q,r);if(onStep()===false)return}
+}
+function loadLeaflet(){
+  if(window.L&&L.markerClusterGroup)return Promise.resolve();
+  const css=h=>{const l=document.createElement('link');l.rel='stylesheet';l.href=h;document.head.append(l)};
+  const js=h=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=h;s.onload=ok;s.onerror=no;document.head.append(s)});
+  const B='https://cdnjs.cloudflare.com/ajax/libs/';
+  css(B+'leaflet/1.9.4/leaflet.min.css');css(B+'leaflet.markercluster/1.5.3/MarkerCluster.min.css');
+  return js(B+'leaflet/1.9.4/leaflet.min.js').then(()=>js(B+'leaflet.markercluster/1.5.3/leaflet.markercluster.min.js'));
+}
+function mapView(){
+  const P=DATA.people,withA=P.filter(p=>addrOf(p)),F=MAP.flt;
+  return `<div class="toolbar"><div class="seg">${[['all','כל המתנדבים'],['moto','אופנוענים'],['attn','דורשים תשומת לב']].map(([k,l])=>`<button data-mf="${k}" aria-pressed="${F===k}">${l}</button>`).join('')}</div></div>
+  <section class="panel mappanel"><header><h2>מפת מתנדבים</h2><span class="count" id="mcnt">${withA.length}</span></header>
+    <p class="hint" id="mstat">טוען מפה…</p><div id="mapslot"></div>
+    ${P.length-withA.length?`<p class="hint">${P.length-withA.length} מתנדבים בלי כתובת מגורים במערכת – לא מופיעים במפה.</p>`:''}</section>`;
+}
+function pinHtml(p){const m=metrics(p);return `<div class="mpin${m.attn?' bad':''}"><img src="icons/moto-pin.png" alt=""></div>`}
+function popHtml(p){
+  const m=metrics(p),a=addrOf(p),tel=(p.ph||'').replace(/\D/g,''),car=(p.cars||[])[0];
+  return `<div class="mpop" dir="rtl"><b>${esc(p.n)}</b>
+    <small>${[p.pv&&'פרייבט '+p.pv,car&&'כלי '+car.num].filter(Boolean).map(esc).join(' · ')}</small>
+    <small>🏠 ${esc(a?a.q:'')}${p._ap?' <i>(מיקום משוער – לפי היישוב)</i>':''}</small>
+    <span class="minis">${m.sn?mini('סייפטי',m.sn.x,lvlSafety(m.sn.x)):''}${m.r?mini('רכיבה',m.rs===0?'נכשל':(m.r.sc||'—'),lvlRide(m.rs)):''}${m.bad?mini('מסמכים',m.bad+' פגים','bad'):''}</span>
+    <span class="macts"><button type="button" class="btn" data-mp="${esc(p.pv||p.n)}">כרטיס מלא</button>${tel?`<a class="cb call" href="tel:${esc(tel)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(tel,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}<a class="btn ghost" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a?a.q:'')}" target="_blank" rel="noopener">ניווט</a></span></div>`;
+}
+function drawPins(){
+  if(!MAP.map)return;MAP.layer.clearLayers();const pts=[];MAP.miss=[];
+  const F={all:()=>true,moto:p=>isMoto(p),attn:p=>metrics(p).attn}[MAP.flt];
+  for(const p of DATA.people){const a=addrOf(p);if(!a||!F(p))continue;const g=geoGet(a.q);if(!g){if(g===null)MAP.miss.push(p);continue}
+    p._ap=g.ap;const mk=L.marker([g.lat,g.lng],{icon:L.divIcon({html:pinHtml(p),className:'',iconSize:[46,46],iconAnchor:[23,40],popupAnchor:[0,-34]}),title:p.n});
+    mk.bindPopup(()=>popHtml(p),{maxWidth:280});MAP.layer.addLayer(mk);pts.push([g.lat,g.lng])}
+  const fin=MAP.done>=MAP.total;if(pts.length&&(!MAP.fitN||(fin&&!MAP.fitted))){MAP.map.fitBounds(pts,{padding:[30,30],maxZoom:15});MAP.fitN=1;MAP.fitted=fin}
+  return pts.length;
+}
+function mapStatus(n){const s=$('mstat');if(!s)return;const left=MAP.total-MAP.done;
+  s.innerHTML=left>0?`מאתר כתובות… ${MAP.done}/${MAP.total} <span class="mbar"><i style="width:${MAP.total?Math.round(100*MAP.done/MAP.total):0}%"></i></span><br><small>בפעם הראשונה בלבד – בפעמים הבאות המפה נפתחת מיד.</small>`
+    :`${n} מתנדבים על המפה · לחיצה על אופנוע פותחת את פרטי המתנדב${MAP.miss.length?` · <b>${MAP.miss.length}</b> כתובות שלא אותרו: ${MAP.miss.slice(0,6).map(p=>esc(p.n)).join(', ')}${MAP.miss.length>6?'…':''}`:''}`}
+async function mountMap(){
+  const slot=$('mapslot');if(!slot)return;
+  if(!MAP.el){MAP.el=document.createElement('div');MAP.el.id='vmap';MAP.el.dir='ltr'}
+  slot.append(MAP.el);
+  try{await loadLeaflet()}catch(e){$('mstat').textContent='לא הצלחתי לטעון את המפה – בדוק חיבור לאינטרנט.';return}
+  if(!$('mapslot'))return;
+  if(!MAP.map){MAP.map=L.map(MAP.el,{zoomControl:false,attributionControl:true}).setView([31.78,35.21],12);L.control.zoom({position:'bottomleft'}).addTo(MAP.map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(MAP.map);
+    MAP.layer=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:40,spiderfyOnMaxZoom:true,
+      iconCreateFunction:c=>L.divIcon({html:`<div class="mclu"><img src="icons/moto-pin.png" alt=""><b>${c.getChildCount()}</b></div>`,className:'',iconSize:[52,52]})}).addTo(MAP.map);
+    MAP.el.addEventListener('click',e=>{const b=e.target.closest('[data-mp]');if(b){MAP.map.closePopup();personSheet(b.dataset.mp)}})}
+  setTimeout(()=>MAP.map.invalidateSize(),50);
+  const list=DATA.people.map(p=>({p,a:addrOf(p)})).filter(o=>o.a),qs=[...new Set(list.map(o=>o.a.q))];
+  if(MAP.br!==DATA.br){MAP.br=DATA.br;MAP.fitted=false;MAP.fitN=0;MAP.run++;MAP.busy=false}
+  MAP.total=qs.length;const cnt=()=>qs.filter(q=>geoGet(q)!==undefined).length;MAP.done=cnt();
+  mapStatus(drawPins());
+  if(MAP.done<MAP.total&&!MAP.busy){MAP.busy=true;const run=MAP.run;let last=0;
+    await geocodeAll(list,()=>{if(run!==MAP.run)return false;MAP.done=cnt();if(Date.now()-last>2500||MAP.done===MAP.total){last=Date.now();if(st.view==='map'&&$('mapslot'))mapStatus(drawPins())}});
+    if(run!==MAP.run)return;MAP.busy=false;if(st.view==='map'&&$('mapslot')){MAP.done=cnt();mapStatus(drawPins())}}
 }
 
 function coordMsg(b){const c=ADMIN[b];return `שלום ${first(c.coord)||''},\n\nפתחתי לך מערכת חדשה לניהול הבטיחות של סניף *${b}* 🚑\n\nבמערכת תוכל לראות:\n• את כל הנהגים בסניף – פרטים, מסמכים ותוקף רישיונות\n• ציוני סייפטי לכל חודש\n• ציוני הדרכות רכיבה (חיים בדרכים) והדרכות נהיגה (אלטרנתיבי)\n• את כל הכלים של הסניף ומצב הטסטים, הטיפולים והבדיקות\n• *טופס יציאה מגזרה* – בוחרים מתנדב, המערכת בודקת את כל הנתונים שלו ונותנת המלצה, ואם מאשרים – יש הודעת בטיחות מוכנה לשליחה\n\nכניסה:\n🔗 https://dannybd20-hue.github.io/akordim/coord.html\n🔑 סיסמה: *${c.pw}*\n\nהמערכת לצפייה בלבד, ורואים בה רק את הסניף שלך. כדאי להוסיף את הקישור למסך הבית בטלפון.\nהסיסמה אישית לך – לא להעביר הלאה.\n\nאם יש שאלה, אני זמין.\nדני בן דוד\nקצב"ת ירושלים`}
