@@ -245,12 +245,13 @@ body.hide-all main,body.hide-all .ov{filter:blur(18px)}
 /* מפה */
 .mappanel{padding-bottom:10px}
 #vmap{height:calc(100vh - var(--hh,120px) - 190px);min-height:380px;border-radius:12px;overflow:hidden;margin:0 12px;border:1px solid var(--line,#e5e7eb);z-index:0}
-.mpin{width:46px;height:46px;border-radius:50%;background:#fff;border:3px solid #ea580c;box-shadow:0 3px 10px rgba(0,0,0,.28);display:grid;place-items:center;overflow:hidden}
-.mpin img{width:40px;height:40px;object-fit:contain}
-.mpin.bad{border-color:#dc2626;box-shadow:0 0 0 4px rgba(220,38,38,.3),0 3px 10px rgba(0,0,0,.28)}
-.mclu{position:relative;width:52px;height:52px;border-radius:50%;background:#fff;border:3px solid #0f2a4a;display:grid;place-items:center;box-shadow:0 3px 10px rgba(0,0,0,.3)}
-.mclu img{width:40px;height:40px;object-fit:contain}
-.mclu b{position:absolute;top:-6px;right:-6px;background:#ea580c;color:#fff;font:700 12px/1 Arial;min-width:22px;height:22px;border-radius:11px;display:grid;place-items:center;padding:0 5px;border:2px solid #fff}
+.mpin{position:relative;width:52px;height:52px;display:grid;place-items:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))}
+.mpin img{width:52px;height:52px;object-fit:contain}
+.mpin b{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);background:#0f2a4a;color:#fff;font:700 10px/1 Arial;padding:2px 5px;border-radius:6px;white-space:nowrap}
+.mpin.bad{filter:drop-shadow(0 0 4px #dc2626) drop-shadow(0 0 2px #dc2626)}.mpin.bad b{background:#dc2626}
+.mclu{position:relative;width:56px;height:56px;display:grid;place-items:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))}
+.mclu img{width:56px;height:56px;object-fit:contain}
+.mclu b{position:absolute;top:-4px;right:-6px;background:#ea580c;color:#fff;font:700 12px/1 Arial;min-width:22px;height:22px;border-radius:11px;display:grid;place-items:center;padding:0 5px;border:2px solid #fff}
 .mpop{display:flex;flex-direction:column;gap:4px;font-family:inherit;min-width:200px}
 .mpop b{font-size:1rem}.mpop small{color:#475569}.mpop i{color:#b45309;font-style:normal}
 .mpop .macts{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px}
@@ -761,34 +762,37 @@ function loadLeaflet(){
   css(B+'leaflet/1.9.4/leaflet.min.css');css(B+'leaflet.markercluster/1.5.3/MarkerCluster.min.css');
   return js(B+'leaflet/1.9.4/leaflet.min.js').then(()=>js(B+'leaflet.markercluster/1.5.3/leaflet.markercluster.min.js'));
 }
+/* במפה: רק מי שיש לו אופנוע ארגוני (עם מספר) */
+function motoOf(p){const s=new Set();vehOf(p).forEach(v=>{if(/אופנוע/.test(v.type||''))s.add(v.num)});(p.cars||[]).forEach(c=>{if(/אופנוע/.test(c.type||''))s.add(c.num)});return [...s]}
+const mapPeople=()=>DATA.people.filter(p=>motoOf(p).length);
 function mapView(){
-  const P=DATA.people,withA=P.filter(p=>addrOf(p)),F=MAP.flt;
-  return `<div class="toolbar"><div class="seg">${[['all','כל המתנדבים'],['moto','אופנוענים'],['attn','דורשים תשומת לב']].map(([k,l])=>`<button data-mf="${k}" aria-pressed="${F===k}">${l}</button>`).join('')}</div></div>
-  <section class="panel mappanel"><header><h2>מפת מתנדבים</h2><span class="count" id="mcnt">${withA.length}</span></header>
+  const P=mapPeople(),withA=P.filter(p=>addrOf(p)),F=MAP.flt;
+  return `<div class="toolbar"><div class="seg">${[['all','כל האופנוענים'],['attn','דורשים תשומת לב']].map(([k,l])=>`<button data-mf="${k}" aria-pressed="${F===k}">${l}</button>`).join('')}</div></div>
+  <section class="panel mappanel"><header><h2>מפת אופנוענים</h2><span class="count" id="mcnt">${withA.length}</span></header>
     <p class="hint" id="mstat">טוען מפה…</p><div id="mapslot"></div>
-    ${P.length-withA.length?`<p class="hint">${P.length-withA.length} מתנדבים בלי כתובת מגורים במערכת – לא מופיעים במפה.</p>`:''}</section>`;
+    ${P.length-withA.length?`<p class="hint">${P.length-withA.length} אופנוענים בלי כתובת מגורים במערכת – לא מופיעים במפה.</p>`:''}</section>`;
 }
-function pinHtml(p){const m=metrics(p);return `<div class="mpin${m.attn?' bad':''}"><img src="icons/moto-pin.png" alt=""></div>`}
+function pinHtml(p){const m=metrics(p);return `<div class="mpin${m.attn?' bad':''}"><img src="icons/moto-pin.png" alt=""><b>${esc(motoOf(p)[0]||'')}</b></div>`}
 function popHtml(p){
   const m=metrics(p),a=addrOf(p),tel=(p.ph||'').replace(/\D/g,''),car=(p.cars||[])[0];
   return `<div class="mpop" dir="rtl"><b>${esc(p.n)}</b>
-    <small>${[p.pv&&'פרייבט '+p.pv,car&&'כלי '+car.num].filter(Boolean).map(esc).join(' · ')}</small>
+    <small>${[p.pv&&'פרייבט '+p.pv,'אופנוע '+motoOf(p).join(', ')].filter(Boolean).map(esc).join(' · ')}</small>
     <small>🏠 ${esc(a?a.q:'')}${p._ap?' <i>(מיקום משוער – לפי היישוב)</i>':''}</small>
     <span class="minis">${m.sn?mini('סייפטי',m.sn.x,lvlSafety(m.sn.x)):''}${m.r?mini('רכיבה',m.rs===0?'נכשל':(m.r.sc||'—'),lvlRide(m.rs)):''}${m.bad?mini('מסמכים',m.bad+' פגים','bad'):''}</span>
     <span class="macts"><button type="button" class="btn" data-mp="${esc(p.pv||p.n)}">כרטיס מלא</button>${tel?`<a class="cb call" href="tel:${esc(tel)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(tel,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}<a class="btn ghost" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a?a.q:'')}" target="_blank" rel="noopener">ניווט</a></span></div>`;
 }
 function drawPins(){
   if(!MAP.map)return;MAP.layer.clearLayers();const pts=[];MAP.miss=[];
-  const F={all:()=>true,moto:p=>isMoto(p),attn:p=>metrics(p).attn}[MAP.flt];
-  for(const p of DATA.people){const a=addrOf(p);if(!a||!F(p))continue;const g=geoGet(a.q);if(!g){if(g===null)MAP.miss.push(p);continue}
-    p._ap=g.ap;const mk=L.marker([g.lat,g.lng],{icon:L.divIcon({html:pinHtml(p),className:'',iconSize:[46,46],iconAnchor:[23,40],popupAnchor:[0,-34]}),title:p.n});
+  const F={all:()=>true,moto:()=>true,attn:p=>metrics(p).attn}[MAP.flt]||(()=>true);
+  for(const p of mapPeople()){const a=addrOf(p);if(!a||!F(p))continue;const g=geoGet(a.q);if(!g){if(g===null)MAP.miss.push(p);continue}
+    p._ap=g.ap;const mk=L.marker([g.lat,g.lng],{icon:L.divIcon({html:pinHtml(p),className:'',iconSize:[52,52],iconAnchor:[26,46],popupAnchor:[0,-40]}),title:p.n});
     mk.bindPopup(()=>popHtml(p),{maxWidth:280});MAP.layer.addLayer(mk);pts.push([g.lat,g.lng])}
   const fin=MAP.done>=MAP.total;if(pts.length&&(!MAP.fitN||(fin&&!MAP.fitted))){MAP.map.fitBounds(pts,{padding:[30,30],maxZoom:15});MAP.fitN=1;MAP.fitted=fin}
   return pts.length;
 }
 function mapStatus(n){const s=$('mstat');if(!s)return;const left=MAP.total-MAP.done;
   s.innerHTML=left>0?`מאתר כתובות… ${MAP.done}/${MAP.total} <span class="mbar"><i style="width:${MAP.total?Math.round(100*MAP.done/MAP.total):0}%"></i></span><br><small>בפעם הראשונה בלבד – בפעמים הבאות המפה נפתחת מיד.</small>`
-    :`${n} מתנדבים על המפה · לחיצה על אופנוע פותחת את פרטי המתנדב${MAP.miss.length?` · <b>${MAP.miss.length}</b> כתובות שלא אותרו: ${MAP.miss.slice(0,6).map(p=>esc(p.n)).join(', ')}${MAP.miss.length>6?'…':''}`:''}`}
+    :`${n} אופנוענים על המפה · לחיצה על אופנוע פותחת את פרטי המתנדב${MAP.miss.length?` · <b>${MAP.miss.length}</b> כתובות שלא אותרו: ${MAP.miss.slice(0,6).map(p=>esc(p.n)).join(', ')}${MAP.miss.length>6?'…':''}`:''}`}
 async function mountMap(){
   const slot=$('mapslot');if(!slot)return;
   if(!MAP.el){MAP.el=document.createElement('div');MAP.el.id='vmap';MAP.el.dir='ltr'}
@@ -798,10 +802,10 @@ async function mountMap(){
   if(!MAP.map){MAP.map=L.map(MAP.el,{zoomControl:false,attributionControl:true}).setView([31.78,35.21],12);L.control.zoom({position:'bottomleft'}).addTo(MAP.map);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(MAP.map);
     MAP.layer=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:40,spiderfyOnMaxZoom:true,
-      iconCreateFunction:c=>L.divIcon({html:`<div class="mclu"><img src="icons/moto-pin.png" alt=""><b>${c.getChildCount()}</b></div>`,className:'',iconSize:[52,52]})}).addTo(MAP.map);
+      iconCreateFunction:c=>L.divIcon({html:`<div class="mclu"><img src="icons/moto-pin.png" alt=""><b>${c.getChildCount()}</b></div>`,className:'',iconSize:[56,56]})}).addTo(MAP.map);
     MAP.el.addEventListener('click',e=>{const b=e.target.closest('[data-mp]');if(b){MAP.map.closePopup();personSheet(b.dataset.mp)}})}
   setTimeout(()=>MAP.map.invalidateSize(),50);
-  const list=DATA.people.map(p=>({p,a:addrOf(p)})).filter(o=>o.a),qs=[...new Set(list.map(o=>o.a.q))];
+  const list=mapPeople().map(p=>({p,a:addrOf(p)})).filter(o=>o.a),qs=[...new Set(list.map(o=>o.a.q))];
   if(MAP.br!==DATA.br){MAP.br=DATA.br;MAP.fitted=false;MAP.fitN=0;MAP.run++;MAP.busy=false}
   MAP.total=qs.length;const cnt=()=>qs.filter(q=>geoGet(q)!==undefined).length;MAP.done=cnt();
   mapStatus(drawPins());
