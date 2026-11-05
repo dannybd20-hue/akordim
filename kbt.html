@@ -526,7 +526,7 @@ function accDraft(a){
       else L.push('• *הדרכות רכיבה (חיים בדרכים):* אין ב־2025–2026');
     }
     if(isCarV(a.vt)){
-      if(p.alt.length){L.push('• *הדרכות נהיגה (אלטרנטיבי):*');p.alt.forEach(r=>L.push(`  - ${r.d}${r.st?' · '+r.st:''}${r.rec?' · המלצה: '+r.rec:''}${r.ins?' · מדריך: '+r.ins:''}${r.note?'\n    הערות: '+r.note:''}`))}
+      if(p.alt.length){L.push('• *הדרכות נהיגה (אלטרנטיבי):*');p.alt.forEach(r=>L.push(`  - ${r.d}${r.st?' · '+r.st:''}${(r.sc||[]).length?' · '+r.sc.map(([k,n])=>k+' '+n).join(', '):''}${r.rec?' · המלצה: '+r.rec:''}${r.ins?' · מדריך: '+r.ins:''}${r.note?'\n    הערות: '+r.note:''}`))}
       else L.push('• *הדרכות נהיגה (אלטרנטיבי):* אין ב־2025–2026');
     }
   }
