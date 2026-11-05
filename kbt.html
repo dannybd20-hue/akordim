@@ -487,15 +487,19 @@ function accDraft(a){
   const p=ACCD.prof[a.pv]||null,prior=accPrior(a),F=accFlags(a,p,prior),B='____';
   const L=[];
   L.push(`*תחקיר תאונה ראשוני – ${a.vt||'כלי'}*`,`*מס' תאונה:* ${a.id}`,'','*פרטי אירוע:*');
-  L.push(`• *שם נהג ומס' כונן:* ${a.n}${a.pv?' | כונן '+a.pv:''}${p&&p.age?' (גיל: '+p.age+')':''}`);
+  L.push(`• *שם נהג ומס' כונן:* ${a.n}${a.pv?' | כונן '+a.pv:''}${a.ageAt?' (גיל בזמן התאונה: '+a.ageAt+')':p&&p.age?' (גיל: '+p.age+')':''}`);
   if(p&&p.ph)L.push(`• *נייד:* ${p.ph}`);
   L.push(`• *סניף:* ${a.br||(p&&p.br)||B}`);
   L.push(`• *מספר וסוג כלי מעורב:* ${a.vt} ${a.num||B}${a.plate?' ('+a.plate+')':''}`);
-  L.push(`• *תאריך:* ${a.d} | *שעה:* ${a.time||B}`,`• *מיקום:* ${a.place||B}`);
+  L.push(`• *תאריך:* ${a.d} | *שעה:* ${a.time||B}${a.tod?' ('+a.tod+')':''}`,`• *מיקום:* ${a.place||B}`);
   L.push(`• *סוג נסיעה:* ${a.trip||B} | *סוג תאונה:* ${a.kind||B}`);
   if(a.cause)L.push(`• *סיבת התאונה (בדיווח):* ${a.cause}`);
   if(a.ev)L.push(`• *בדרך לאירוע:* ${a.ev}`);
-  L.push(`• *נפגעים:* ${a.inj||B}`,`• *צד ג' / נזק:* ${a.other||B}`,`• *קצין בטיחות:* דני בן דוד`);
+  L.push(`• *נפגעים בנפש:* ${a.inj||a.injb||B}`);
+  L.push(`• *נזק לכלי איחוד הצלה:* ${[a.dmgL,a.dmg].filter(Boolean).join(' – ')||B}`);
+  if(a.third==='כן'||a.dmg3||a.n3||a.other)L.push(`• *צד ג':* ${[a.n3,a.ph3,a.dmg3L,a.dmg3,a.other].filter(Boolean).join(' · ')||B}`);
+  else L.push(`• *מעורבות צד ג':* ${a.third||B}`);
+  L.push(`• *קצין בטיחות:* דני בן דוד`);
   L.push('','*תיאור האירוע (גרסת הנהג):*',a.drv||B);
   if(a.text)L.push('','*דיווח המוקד:*',a.text);
   L.push('','*רקע על הנהג:*');
@@ -519,6 +523,7 @@ function accDraft(a){
   L.push(`• *תאונות קודמות (מ־2025):* ${prior.length}`);
   prior.forEach((x,i)=>L.push(`  ${i+1}. ${x.d} – ${x.vt} ${x.num} – ${x.kind||x.cause||'תאונה'}${x.fault?' · אשמה: '+x.fault:''}`));
   if(F.length){L.push('','*נקודות לתשומת לב מהנתונים:*');F.forEach(f=>L.push('• '+f))}
+  if(a.dfault||a.dprev||a.how){L.push('','*לדברי הנהג:*');if(a.dfault)L.push('• אשמה: '+a.dfault);if(a.dprev)L.push('• פעולות מניעה: '+a.dprev);if(a.how)L.push('• כיצד יכל למנוע: '+a.how)}
   L.push('','*ממצאי התחקיר:*','• '+B,'','*האם ניתן היה למנוע:* '+B,'*אשמה:* '+(a.fault||B),'','*מסקנות והמלצות:*','• '+B,'','דני בן דוד','קצין בטיחות בתעבורה','מרחב ירושלים');
   return L.join('\n');
 }
@@ -528,8 +533,8 @@ function accCardK(a){
     <div class="name">${esc(a.n||'—')}${a.pv?` <span class="meta" style="display:inline">· ${esc(a.pv)}</span>`:''}</div>
     <div class="meta"><span>${esc(a.d)}</span><span>${esc(a.vt)} ${esc(a.num)}</span><span>${esc(a.br)}</span>${prior>0?`<span class="chip warn">${prior} תאונות נוספות</span>`:''}</div>
     <div class="meta" style="margin-top:4px">${a.kind?`<span class="chip bad">${esc(a.kind)}</span>`:''}${a.cause?`<span class="chip miss">${esc(a.cause)}</span>`:''}${a.fault?`<span class="chip ${/איחוד/.test(a.fault)?'bad':'ok'}">אשמה: ${esc(a.fault)}</span>`:''}${a.trip?`<span class="chip miss">${esc(a.trip)}</span>`:''}</div>
-    ${a.drv?`<p class="accq"><b>גרסת הנהג:</b> ${esc(a.drv)}</p>`:''}
-    ${pend?'<p class="accq pendt"><b>⏳ ממתין לתחקיר קצין בטיחות</b></p>':`<details class="accq"><summary><b>תחקיר קצין בטיחות</b></summary><div class="pre">${esc(a.off)}${a.off.length>=255?'\n…(הייצוא מהמערכת מקצר ל־255 תווים)':''}</div></details>`}
+    ${a.time||a.place?`<div class="meta" style="margin-top:4px">${a.time?`<span>🕒 ${esc(a.time)}</span>`:''}${a.place?`<span>📍 ${esc(a.place)}</span>`:''}</div>`:''}${a.drv?`<p class="accq"><b>${/^\W*תחקיר/.test(a.drv)?'תחקיר':'גרסת הנהג'}:</b> ${esc(a.drv).replace(/\*([^*\n]+)\*/g,'<b>$1</b>')}</p>`:''}
+    ${pend?'<p class="accq pendt"><b>⏳ ממתין לתחקיר קצין בטיחות</b></p>':`<details class="accq"><summary><b>תחקיר קצין בטיחות</b></summary><div class="pre">${esc(a.off).replace(/\*([^*\n]+)\*/g,'<b>$1</b>')}${a.off.length>=255?'\n…(הייצוא מהמערכת מקצר ל־255 תווים)':''}</div></details>`}
   </div><div class="acts"><button class="wa sm" style="background:var(--accent);border:0;cursor:pointer;font:inherit;font-weight:700" data-inv="${esc(a.id)}">${pend?'הכנת תחקיר':'תחקיר מחדש'}</button>${p&&p.ph?`<a class="wa sm" href="https://wa.me/972${esc(p.ph.replace(/^0/,''))}" target="_blank" rel="noopener">${WA_ICON}לנהג</a>`:''}</div></div>`;
 }
 function renderAcc(){
