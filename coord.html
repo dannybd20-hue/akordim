@@ -622,20 +622,24 @@ const fmtWA=t=>esc(t).replace(/^&gt;\s?/gm,'').replace(/\*([^*\n]+)\*/g,'<b>$1</
 const _st=t=>String(t||'').replace(/[*_>\s]/g,'');
 function accCard(a){const dd=(k,l)=>a[k]?`<dt>${l}</dt><dd>${esc(a[k])}</dd>`:'';
   const inv=/^\W*תחקיר/.test(a.drv||''),dup=a.off&&inv&&_st(a.drv).startsWith(_st(a.off).slice(0,120));
+  const full=INVS&&INVS[a.acc||a.id];
   return `<article class="acc"><header><span class="pill bad">${esc(a.kind||'תאונה')}</span><b>${esc(a.d)}${a.time?' · '+esc(a.time):''}</b></header>
   <h4>${esc(a.n)}${a.pv?` <small>פרייבט ${esc(a.pv)}</small>`:''}</h4>
   <dl>${dd('veh','כלי')}${dd('place','מיקום')}${dd('trip','סוג נסיעה')}${dd('cause','סיבה')}${dd('fault','אשמה')}${dd('ev','בדרך לאירוע')}${dd('inj','נפגעים')}${dd('dmg','נזק לכלי')}${dd('other','צד נוסף')}</dl>
   ${a.drv?`<div class="accx"><h5>${inv?'תחקיר קצין הבטיחות':'גרסת הנהג'}</h5><p>${fmtWA(a.drv)}</p></div>`:''}${a.text&&!a.drv?`<p>${fmtWA(a.text)}</p>`:''}
-  ${a.off&&!dup?`<div class="accx"><h5>תחקיר קצין הבטיחות</h5><p>${fmtWA(a.off)}${a.off.length>=255?' …':''}</p></div>`:a.off?'':'<p class="pendi">⏳ התחקיר בטיפול קצין הבטיחות</p>'}
+  ${full?`<div class="accx"><h5>תחקיר קצין הבטיחות</h5><p>${fmtWA(full.text)}</p></div>`:a.off&&!dup?`<div class="accx"><h5>תחקיר קצין הבטיחות</h5><p>${fmtWA(a.off)}${a.off.length>=255?' …':''}</p></div>`:a.off?'':'<p class="pendi">⏳ התחקיר בטיפול קצין הבטיחות</p>'}
   <footer>${a.acc?esc(a.acc)+' · ':''}${a.rep?'דווח ב־'+esc(a.rep):esc(a.d)}${a.al?ackLine(a):''}</footer></article>`}
+let INVS=null;
+async function loadInvs(){const br=DATA.br,r=await api({action:'invs'});if(!r||DATA.br!==br)return;INVS={};r.rows.forEach(x=>INVS[x.id]=x);if(st.view==='acc'||st.view==='sum')render()}
+const accDone=a=>!!(a.off||(INVS&&INVS[a.acc||a.id]));
 function accRow(a){return `<button type="button" class="arow" data-acc="${esc(a.id)}"><span class="ad"><b>${esc((a.d||'').slice(0,5))}</b><small>${esc((a.d||'').slice(6))}</small></span>
   <span class="ai"><b>${esc(a.n)}</b><small>${esc([a.veh,a.kind||a.cause].filter(Boolean).join(' · '))}</small></span>
-  <span class="as">${a.off?pill('ok','תוחקר'):pill('warn','בתחקיר')}${/איחוד/.test(a.fault||'')?pill('bad','אשמת נהג'):''}</span><span class="kgo">${IC.chev}</span></button>`}
+  <span class="as">${accDone(a)?pill('ok','תוחקר'):pill('warn','בתחקיר')}${/איחוד/.test(a.fault||'')?pill('bad','אשמת נהג'):''}</span><span class="kgo">${IC.chev}</span></button>`}
 function accOpen(id){const a=(DATA.acc||[]).find(x=>x.id===id);if(!a)return;const ov=document.createElement('div');ov.className='ov';
   ov.innerHTML=`<aside class="drawer" role="dialog" aria-label="דוח תאונה"><header class="dh"><button class="x" aria-label="סגירה">${IC.x}</button><div><h2>דוח תאונה</h2><p>${esc(a.n)} · ${esc(a.d)}</p></div></header><div style="padding:0 16px 24px">${accCard(a)}${a.pv&&DATA.people.some(p=>p.pv===a.pv)?`<button class="btn ghost" type="button" id="accp" style="margin-top:10px">לתיק של ${esc(first(a.n))}</button>`:''}</div></aside>`;
   ov.onclick=e=>{if(e.target===ov||e.target.closest('.x'))return ov.remove();if(e.target.closest('#accp')){ov.remove();personSheet(a.pv)}};document.body.append(ov)}
 document.addEventListener('click',e=>{const r=e.target.closest('.arow[data-acc]');if(r)accOpen(r.dataset.acc)});
-function accView(){const A=[...(DATA.acc||[])].sort((a,b)=>(pd(b.d)||0)-(pd(a.d)||0)),pend=A.filter(a=>!a.off).length;
+function accView(){const A=[...(DATA.acc||[])].sort((a,b)=>(pd(b.d)||0)-(pd(a.d)||0)),pend=A.filter(a=>!accDone(a)).length;
   return `<section class="panel"><header><h2>תאונות בסניף · 2025–2026</h2><span class="count">${A.length}</span></header>${pend?`<p class="hint">${pend} בתחקיר אצל קצין הבטיחות</p>`:''}<div class="alist">${A.map(accRow).join('')||'<div class="empty">לא דווחו תאונות בסניף</div>'}</div><p class="hint">תאונות חדשות מופיעות גם כהודעה קופצת בכניסה לאפליקציה.</p></section>`}
 /* הודעה קופצת על תאונה חדשה – פעם אחת לכל תאונה, עד שהרכז מאשר שראה */
 function accAlerts(){
@@ -809,7 +813,7 @@ document.addEventListener('visibilitychange',()=>document.body.classList.toggle(
 window.addEventListener('blur',()=>document.body.classList.add('hide-all'));window.addEventListener('focus',()=>document.body.classList.remove('hide-all'));
 document.addEventListener('copy',e=>{if(document.body.classList.contains('secure')&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||''))e.preventDefault()});
 document.addEventListener('contextmenu',e=>{if(document.body.classList.contains('secure'))e.preventDefault()});
-function show(){setTimeout(accAlerts,600);ACKS=null;setTimeout(loadAcks,100);if(ADMIN){setTimeout(loadPending,300);if(!window._pendT)window._pendT=setInterval(loadPending,120000)}$('gsw').hidden=false;const gi=$('gs');gi.oninput=()=>gsearch(gi.value);document.documentElement.style.setProperty('--hh',document.querySelector('.appbar').offsetHeight+'px');watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
+function show(){setTimeout(accAlerts,600);ACKS=null;setTimeout(loadAcks,100);INVS=null;setTimeout(loadInvs,150);if(ADMIN){setTimeout(loadPending,300);if(!window._pendT)window._pendT=setInterval(loadPending,120000)}$('gsw').hidden=false;const gi=$('gs');gi.oninput=()=>gsearch(gi.value);document.documentElement.style.setProperty('--hh',document.querySelector('.appbar').offsetHeight+'px');watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
 
 /* ===== כניסה ===== */
 function lockView(err){

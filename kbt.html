@@ -468,7 +468,14 @@ async function decFile(path,pw){
   const gz=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);
   return JSON.parse(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
 }
-function loadAcc(){if(!ACCL)ACCL=decFile('kbt/acc.bin',KPW).then(d=>{ACCD=d;const n=d.acc.filter(a=>!a.off).length;const b=document.getElementById('n-acc');if(b)b.textContent=n||'';if(state.view==='acc')render()}).catch(()=>{ACCL=null});return ACCL}
+/* תחקירים מלאים נשמרים בגיליון (דרך הסקריפט של הרכזים) – בלי מגבלת 255 התווים של הדוח */
+const INV_URL='https://script.google.com/macros/s/AKfycbw03x21xEa5N4bP6REQthkOJWN85UUsVX3sBgSUvgyhl3fMKdhydg3rLcSvHsj-ke2q2A/exec';let INVK={};
+async function kapi(o){try{const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('dbd-coord-api:'+KPW));const tk=[...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
+  const r=await fetch(INV_URL,{method:'POST',body:JSON.stringify({...o,t:tk})}).then(r=>r.json());return r&&r.ok?r:null}catch(e){return null}}
+const accDoneK=a=>!!(a.off||INVK[a.id]);
+async function loadInvK(){const r=await kapi({action:'invs'});if(!r)return;INVK={};r.rows.forEach(x=>INVK[x.id]=x);accBadge();if(state.view==='acc')render()}
+function accBadge(){const b=document.getElementById('n-acc');if(b&&ACCD)b.textContent=ACCD.acc.filter(a=>!accDoneK(a)).length||''}
+function loadAcc(){if(!ACCL)ACCL=decFile('kbt/acc.bin',KPW).then(d=>{ACCD=d;loadInvK();const n=d.acc.filter(a=>!accDoneK(a)).length;const b=document.getElementById('n-acc');if(b)b.textContent=n||'';if(state.view==='acc')render()}).catch(()=>{ACCL=null});return ACCL}
 const pdh=x=>{const m=String(x||'').match(/(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})/);if(!m)return null;let y=+m[3];if(y<100)y+=2000;return new Date(y,m[2]-1,+m[1])};
 const isMotoV=t=>/אופנוע|קטנוע/.test(t||''),isCarV=t=>/אמבולנס|רכב|מינילנס|ג'יפ|משאית|טרקטור/.test(t||'');
 function accPrior(a){const t=pdh(a.d);return ACCD.acc.filter(x=>a.pv&&x.pv===a.pv&&x.id!==a.id&&pdh(x.d)<=t).sort((x,y)=>pdh(y.d)-pdh(x.d))}
@@ -528,23 +535,23 @@ function accDraft(a){
   return L.join('\n');
 }
 function accCardK(a){
-  const p=ACCD.prof[a.pv],pend=!a.off,prior=a.pv?ACCD.acc.filter(x=>x.pv===a.pv).length-1:0;
+  const p=ACCD.prof[a.pv],full=INVK[a.id],pend=!accDoneK(a),prior=a.pv?ACCD.acc.filter(x=>x.pv===a.pv).length-1:0;
   return `<div class="card acck${pend?' pend':''}"><div class="who">
     <div class="name">${esc(a.n||'—')}${a.pv?` <span class="meta" style="display:inline">· ${esc(a.pv)}</span>`:''}</div>
     <div class="meta"><span>${esc(a.d)}</span><span>${esc(a.vt)} ${esc(a.num)}</span><span>${esc(a.br)}</span>${prior>0?`<span class="chip warn">${prior} תאונות נוספות</span>`:''}</div>
     <div class="meta" style="margin-top:4px">${a.kind?`<span class="chip bad">${esc(a.kind)}</span>`:''}${a.cause?`<span class="chip miss">${esc(a.cause)}</span>`:''}${a.fault?`<span class="chip ${/איחוד/.test(a.fault)?'bad':'ok'}">אשמה: ${esc(a.fault)}</span>`:''}${a.trip?`<span class="chip miss">${esc(a.trip)}</span>`:''}</div>
     ${a.time||a.place?`<div class="meta" style="margin-top:4px">${a.time?`<span>🕒 ${esc(a.time)}</span>`:''}${a.place?`<span>📍 ${esc(a.place)}</span>`:''}</div>`:''}${a.drv?`<p class="accq"><b>${/^\W*תחקיר/.test(a.drv)?'תחקיר':'גרסת הנהג'}:</b> ${esc(a.drv).replace(/\*([^*\n]+)\*/g,'<b>$1</b>')}</p>`:''}
-    ${pend?'<p class="accq pendt"><b>⏳ ממתין לתחקיר קצין בטיחות</b></p>':`<details class="accq"><summary><b>תחקיר קצין בטיחות</b></summary><div class="pre">${esc(a.off).replace(/\*([^*\n]+)\*/g,'<b>$1</b>')}${a.off.length>=255?'\n…(הייצוא מהמערכת מקצר ל־255 תווים)':''}</div></details>`}
-  </div><div class="acts"><button class="wa sm" style="background:var(--accent);border:0;cursor:pointer;font:inherit;font-weight:700" data-inv="${esc(a.id)}">${pend?'הכנת תחקיר':'תחקיר מחדש'}</button>${p&&p.ph?`<a class="wa sm" href="https://wa.me/972${esc(p.ph.replace(/^0/,''))}" target="_blank" rel="noopener">${WA_ICON}לנהג</a>`:''}</div></div>`;
+    ${full?`<details class="accq"><summary><b>תחקיר מלא (נשמר ${esc(new Date(full.ts).toLocaleDateString('he-IL'))})</b></summary><div class="pre">${esc(full.text).replace(/\*([^*\n]+)\*/g,'<b>$1</b>')}</div></details>`:pend?'<p class="accq pendt"><b>⏳ ממתין לתחקיר קצין בטיחות</b></p>':`<details class="accq"><summary><b>תחקיר קצין בטיחות</b></summary><div class="pre">${esc(a.off).replace(/\*([^*\n]+)\*/g,'<b>$1</b>')}${a.off.length>=255?'\n…(הייצוא מהמערכת מקצר ל־255 תווים)':''}</div></details>`}
+  </div><div class="acts"><button class="wa sm" style="background:var(--accent);border:0;cursor:pointer;font:inherit;font-weight:700" data-inv="${esc(a.id)}">${pend?'הכנת תחקיר':full?'עריכת התחקיר':'תחקיר מחדש'}</button>${p&&p.ph?`<a class="wa sm" href="https://wa.me/972${esc(p.ph.replace(/^0/,''))}" target="_blank" rel="noopener">${WA_ICON}לנהג</a>`:''}</div></div>`;
 }
 function renderAcc(){
   const app=document.getElementById('app');
   if(!ACCD){app.innerHTML='<div class="empty">טוען תאונות…</div>';loadAcc();return}
   const A=ACCD.acc,q=AST.q.trim(),y=new Date().getFullYear();
-  const F=A.filter(a=>(AST.f!=='pend'||!a.off)&&(AST.f!=='mine'||/איחוד/.test(a.fault))&&(!AST.vt||a.vt===AST.vt)&&(!AST.br||a.br===AST.br)&&(!q||[a.n,a.pv,a.num,a.id,a.br].some(x=>(x||'').includes(q))));
+  const F=A.filter(a=>(AST.f!=='pend'||!accDoneK(a))&&(AST.f!=='mine'||/איחוד/.test(a.fault))&&(!AST.vt||a.vt===AST.vt)&&(!AST.br||a.br===AST.br)&&(!q||[a.n,a.pv,a.num,a.id,a.br].some(x=>(x||'').includes(q))));
   const cnt=k=>A.filter(k).length,vts=[...new Set(A.map(a=>a.vt).filter(Boolean))],brs=[...new Set(A.map(a=>a.br).filter(Boolean))].sort();
   let h=`<div class="summary">
-    <button class="stat bad${AST.f==='pend'?' on':''}" data-af="pend"><b>${cnt(a=>!a.off)}</b><span>ממתינות לתחקיר</span></button>
+    <button class="stat bad${AST.f==='pend'?' on':''}" data-af="pend"><b>${cnt(a=>!accDoneK(a))}</b><span>ממתינות לתחקיר</span></button>
     <button class="stat${AST.f==='all'?' on':''}" data-af="all"><b>${A.length}</b><span>כל התאונות 2025–2026</span></button>
     <button class="stat warn${AST.f==='mine'?' on':''}" data-af="mine"><b>${cnt(a=>/איחוד/.test(a.fault))}</b><span>אשמת נהג איחוד הצלה</span></button>
     <div class="stat" style="cursor:default"><b>${cnt(a=>(pdh(a.d)||0).getFullYear?.()===y)}</b><span>תאונות ב־${y}</span></div></div>
@@ -563,12 +570,12 @@ function renderAcc(){
   app.querySelectorAll('[data-inv]').forEach(b=>b.onclick=()=>invOpen(b.dataset.inv));
 }
 function invOpen(id){
-  const a=ACCD.acc.find(x=>x.id===id);if(!a)return;const key='inv:'+id;let saved='';try{saved=localStorage.getItem(key)||''}catch(e){}
+  const a=ACCD.acc.find(x=>x.id===id);if(!a)return;const key='inv:'+id;let saved='';try{saved=localStorage.getItem(key)||''}catch(e){}if(!saved&&INVK[id])saved=INVK[id].text;
   const ov=document.createElement('div');ov.className='invov';
   ov.innerHTML=`<div class="invbox" role="dialog" aria-label="תחקיר"><div class="invh"><div><small>${esc(a.id)} · ${esc(a.d)}</small><h2 style="margin:0">תחקיר – ${esc(a.n)}</h2></div><button class="hb x" aria-label="סגירה">✕</button></div>
     <p class="legend" style="margin:0">הטיוטה כבר כוללת את כל מה שיש במערכת על המתנדב. משלימים את השדות המסומנים ב־____. נשמר אוטומטית במכשיר.</p>
     <textarea id="invt" spellcheck="false">${esc(saved||accDraft(a))}</textarea>
-    <div class="btns"><button class="wa" id="invs" style="border:0;cursor:pointer;font:inherit;font-weight:700;background:var(--accent)">העתקה למערכת</button><button class="wa" id="invc" style="border:0;cursor:pointer;font:inherit;font-weight:700;background:var(--muted)">העתקה לוואטסאפ</button><a class="wa" id="invw" target="_blank" rel="noopener">${WA_ICON}וואטסאפ</a><a class="wa mail" id="invm">מייל</a><button class="more" id="invr" style="padding:8px 12px">טיוטה מחדש מהנתונים</button></div></div>`;
+    <div class="btns"><button class="wa" id="invsave" style="border:0;cursor:pointer;font:inherit;font-weight:700;background:var(--ok)">שמירה וסיום</button><button class="wa" id="invs" style="border:0;cursor:pointer;font:inherit;font-weight:700;background:var(--accent)">העתקה למערכת</button><button class="wa" id="invc" style="border:0;cursor:pointer;font:inherit;font-weight:700;background:var(--muted)">העתקה לוואטסאפ</button><a class="wa" id="invw" target="_blank" rel="noopener">${WA_ICON}וואטסאפ</a><a class="wa mail" id="invm">מייל</a><button class="more" id="invr" style="padding:8px 12px">טיוטה מחדש מהנתונים</button></div></div>`;
   document.body.append(ov);
   const t=ov.querySelector('#invt'),upd=()=>{try{localStorage.setItem(key,t.value)}catch(e){}ov.querySelector('#invw').href='https://wa.me/?text='+encodeURIComponent(t.value);ov.querySelector('#invm').href=`mailto:?subject=${encodeURIComponent('תחקיר תאונה '+a.id+' – '+a.n)}&body=${encodeURIComponent(t.value.replace(/\*/g,''))}`};
   upd();t.oninput=upd;
@@ -577,6 +584,10 @@ function invOpen(id){
   /* למערכת: טקסט נקי – בלי כוכביות/קווים תחתונים, כל שדה בשורה משלו */
   const plain=()=>t.value.replace(/\*/g,'').replace(/(^|\s)_([^_\n]+)_/g,'$1$2').replace(/^\s*>\s?/gm,'').replace(/^\s*•\s*/gm,'- ').replace(/[ \t]+$/gm,'').replace(/\n{3,}/g,'\n\n').trim();
   ov.querySelector('#invs').onclick=async e=>{const v=plain();try{await navigator.clipboard.writeText(v)}catch(_){const x=document.createElement('textarea');x.value=v;document.body.append(x);x.select();document.execCommand('copy');x.remove()}e.target.textContent='הועתק ✓ – להדביק במערכת'};
+  ov.querySelector('#invsave').onclick=async e=>{const b=e.target;if(/____/.test(t.value)&&!confirm('יש עדיין שדות ____ שלא מולאו. לשמור בכל זאת?'))return;b.disabled=true;b.textContent='שומר…';
+    const r=await kapi({action:'inv_save',id:a.id,abr:a.br,n:a.n,text:t.value});
+    if(r){INVK[a.id]={id:a.id,br:a.br,n:a.n,text:t.value,ts:Date.now()};try{localStorage.removeItem(key)}catch(_){}b.textContent='נשמר ✓ – מופיע גם אצל הרכז';accBadge();setTimeout(()=>{ov.remove();render()},900)}
+    else{b.disabled=false;b.textContent='לא נשמר – נסה שוב'}};
   ov.querySelector('#invr').onclick=()=>{if(t.value!==accDraft(a)&&!confirm('להחליף את מה שכתבת בטיוטה חדשה מהנתונים?'))return;t.value=accDraft(a);upd()};
 }
 /*ACC-END*/
