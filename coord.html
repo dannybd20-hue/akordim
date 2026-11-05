@@ -259,6 +259,18 @@ body.hide-all main,body.hide-all .ov{filter:blur(18px)}
 .mbar i{display:block;height:100%;background:#ea580c}
 .leaflet-popup-content{margin:12px 14px}
 .acc details{margin-top:6px}.acc details summary{cursor:pointer;color:var(--mid)}.acc .pendi{color:var(--warn);font-weight:700}
+.annban{display:flex;flex-direction:column;gap:4px;text-align:start;width:calc(100% - 24px);margin:0 12px;border:1.5px solid var(--bad);background:var(--bad-bg);color:var(--bad);border-radius:14px;padding:12px 14px;font:inherit;cursor:pointer}
+.annban span{color:var(--fg);font-size:.88rem}
+h3.grp{margin:14px 4px 6px;font-size:.95rem;color:var(--muted)}
+.bdg.bad{background:var(--bad-bg);color:var(--bad)}
+.btn.sm{padding:5px 10px;font-size:.8rem}
+.alist{display:flex;flex-direction:column}
+.arow{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;width:100%;background:none;border:0;border-bottom:1px solid var(--line);padding:11px 14px;font:inherit;color:inherit;text-align:start;cursor:pointer}
+.arow:hover{background:var(--soft)}.arow:last-child{border-bottom:0}
+.arow .ad{display:flex;flex-direction:column;align-items:center;min-width:46px;background:var(--bad-bg);color:var(--bad);border-radius:10px;padding:4px 6px;line-height:1.15}.arow .ad small{font-size:.7rem}
+.arow .ai{display:flex;flex-direction:column;min-width:0}.arow .ai small{color:var(--muted);font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arow .as{display:flex;flex-direction:column;gap:3px;align-items:flex-end}.arow .kgo svg{width:18px;height:18px;fill:var(--muted)}
+.accx{border-top:1px solid var(--line);padding-top:8px;margin-top:8px}.accx h5{margin:0 0 4px;font-size:.9rem;color:var(--mid)}.accx p{margin:0;line-height:1.6}
 </style>
 
 
@@ -320,6 +332,17 @@ function docStatus(p){
 function safetyNow(p){if(!p.s)return null;let m=p.s.length-1;while(m>=0&&p.s[m]==null)m--;if(m<0)return null;let k=0;for(let j=m;j>=0&&p.s[j]!=null&&p.s[j]<25;j--)k++;let prev=null;for(let j=m-1;j>=0;j--)if(p.s[j]!=null){prev=p.s[j];break}return {x:p.s[m],m,streak:k,prev}}
 const lastRide=p=>(p.ride||[])[0]||null, lastAlt=p=>(p.alt||[])[0]||null;
 const isMoto=p=>/אופנוע/.test(p.perm||'')||(p.cars||[]).some(c=>/אופנוע/.test(c.type||''));
+/* השתלמות שנתית 2026: אופנוע > אמבולנס > רכב. השתלמות של הדרגה הגבוהה פוטרת מהנמוכות */
+const ANN_Y=2026;
+function annual(p){
+  const P=p.perm||'',C=(p.crs||[]).join(';'),mo=isMoto(p),amb=/אמבולנס/.test(P),car=/רכב ארגוני|רכב 4\*4|רכב חירום/.test(P);
+  const need=mo?'אופנוע':amb?'אמבולנס':car?'רכב':null;if(!need)return null;
+  const dm=new RegExp('אופנוע כביש '+ANN_Y).test(C),da=new RegExp('אמבולנס כביש '+ANN_Y).test(C),dc=new RegExp('רכב כביש '+ANN_Y).test(C);
+  const done=need==='אופנוע'?dm:need==='אמבולנס'?dm||da:dm||da||dc;
+  return {need,done,course:`${need} כביש ${ANN_Y}`,by:dm?`אופנוע כביש ${ANN_Y}`:da?`אמבולנס כביש ${ANN_Y}`:dc?`רכב כביש ${ANN_Y}`:''};
+}
+const annMiss=p=>{const a=annual(p);return a&&!a.done?a:null};
+function annMsg(p){const a=annual(p);return `היי ${first(p.n)},\nלפי המערכת עדיין לא ביצעת את ההשתלמות השנתית לשנת ${ANN_Y} (*${a.course}*).\n\n*שים לב – יש להירשם בהקדם להשתלמות.*\n\nתודה,\n${DATA.coord||'רכז התחבורה'} · רכז תחבורה – ${DATA.br}`}
 function vehOf(p){return DATA.veh.filter(v=>(p.cars||[]).some(c=>c.num===v.num)||(p.ph&&v.phone===p.ph))}
 function vehIssues(v){const r=[];const t=pd(v.test);if(t&&days(t)<0)r.push({lvl:'bad',t:`טסט פג ב־${fmt(t)}`});else if(t&&days(t)<=14)r.push({lvl:'warn',t:`טסט פג בעוד ${days(t)} ימים`});
   const s=pd(v.service);if(s){const due=new Date(s);due.setFullYear(due.getFullYear()+1);if(days(due)<0)r.push({lvl:'warn',t:`טיפול אחרון ${fmt(s)} – עברה שנה`})}
@@ -337,6 +360,7 @@ function evaluate(p,f){
   /* ציון הדרכת רכיבה מתחת ל־8 (או לא עבר): הרכז לא מאשר לבד – הבקשה עוברת לקצין הבטיחות */
   const off=!!r&&(/לא עבר/.test(r.sc)||(rs!=null&&rs<8));
   if(isMoto(p)||r){if(!r)warn.push('אין הדרכת רכיבה ב־2025–2026');else if(/לא עבר/.test(r.sc))bad.push(`הדרכת רכיבה אחרונה (${r.d}): לא עבר`);else if(rs!=null&&rs<8)bad.push(`ציון הדרכת רכיבה ${rs} (${r.d}) – מתחת ל־8`);else if(rs!=null)good.push(`ציון הדרכת רכיבה ${rs} (${r.d})`)}
+  {const an=annMiss(p);if(an&&an.need==='אופנוע')warn.push(`לא ביצע השתלמות שנתית (${an.course})`)}
   /* אלטרנתיבי: כרגע בלי ציונים (יסודר בהמשך) */
   if((p.acc||[]).length>=2)warn.push(`${p.acc.length} תאונות בעבר`);
   const v=f.veh?DATA.veh.find(x=>x.num===f.veh):null;
@@ -411,7 +435,7 @@ function pRow(p){
   return `<div class="prow${m.attn?' attn':''}" role="button" tabindex="0" data-p="${esc(p.pv||p.n)}">
     <span class="av" style="background:${colorOf(p.n)}">${esc(ini(p.n))}</span>
     <span class="pid"><b>${esc(p.n)}</b><small>${[p.pv&&'פרייבט '+p.pv,car&&`כלי ${car.num}${car.type?' '+car.type:''}`,p.city].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</small>
-      <span class="minis">${m.sn?mini('סייפטי',m.sn.x,lvlSafety(m.sn.x)):''}${m.r?mini('הדרכת רכיבה',m.rs===0?'נכשל':(m.r.sc||'—'),lvlRide(m.rs)):''}${m.bad?mini('מסמכים',m.bad+' פגים','bad'):m.warn?mini('מסמכים','פג בקרוב','warn'):''}</span></span>
+      <span class="minis">${m.sn?mini('סייפטי',m.sn.x,lvlSafety(m.sn.x)):''}${m.r?mini('הדרכת רכיבה',m.rs===0?'נכשל':(m.r.sc||'—'),lvlRide(m.rs)):''}${m.bad?mini('מסמכים',m.bad+' פגים','bad'):m.warn?mini('מסמכים','פג בקרוב','warn'):''}${annMiss(p)?mini('השתלמות '+ANN_Y,'לא בוצעה','bad'):''}</span></span>
     ${tel?`<a class="cb call" href="tel:${esc(tel)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(tel,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}
   </div>`;
 }
@@ -431,8 +455,10 @@ function render(){
       ${kpi(IC.alert,'מתחת ל־25 בסייפטי',low.length,low.length?'דורשים שיחה':'אין',low.length?'bad':'ok','low')}
       ${kpi(IC.doc,'מסמכים שפגו',docs.length,'רישיון / תיק נהג / מידע תעבורתי',docs.length?'bad':'ok','docs')}
       ${kpi(IC.out,'יציאות מגזרה',yes,H.length?`${H.length} בקשות`:'אין בקשות','','exit')}
+      ${kpi(IC.doc,'השתלמות שנתית '+ANN_Y,P.filter(annMiss).length,P.filter(annMiss).length?'לא ביצעו – יש להירשם':'כולם ביצעו',P.filter(annMiss).length?'bad':'ok','ann')}
       ${kpi(IC.alert,'תאונות 2025–2026',(DATA.acc||[]).length,(DATA.acc||[]).length?'לחץ לפירוט':'לא דווחו תאונות',(DATA.acc||[]).length?'bad':'ok','acc')}
     </section>
+    ${(()=>{const n=P.filter(annMiss).length;return n?`<button type="button" class="annban" data-k="ann"><b>שים לב – ${n} מתנדבים לא ביצעו את ההשתלמות השנתית ${ANN_Y}</b><span>יש להירשם בהקדם להשתלמות. לחיצה לרשימה ולשליחת הודעה לכל אחד.</span></button>`:''})()}
     <section class="panel"><header><h2>דורשים תשומת לב</h2><span class="count">${att.length}</span></header>
       <p class="hint">סייפטי מתחת ל־25, מסמך שפג, או ציון הדרכה נמוך.</p>
       <div class="plist">${att.map(o=>pRow(o.p)).join('')||'<div class="empty">אין נהגים שדורשים טיפול 👍</div>'}</div></section>
@@ -483,11 +509,12 @@ function personSheet(key){
     <div class="dgrid">
       <section class="card"><h3>פרטי קשר</h3><dl><dt>טלפון</dt><dd>${p.ph?`<a href="tel:${esc(p.ph)}">${fmtPhone(p.ph)}</a>`:'—'}</dd><dt>מייל</dt><dd class="ltr">${esc(p.em||'—')}</dd><dt>כתובת</dt><dd>${esc([p.st,p.city].filter(Boolean).join(', ')||'—')}</dd><dt>תאריך לידה</dt><dd>${esc(p.bd||'—')}</dd><dt>הרשאות</dt><dd>${(p.perm||'').split(/;\s*/).filter(Boolean).map(x=>pill('na',x)).join(' ')||'—'}</dd></dl>${p.ph?`<div class="acts"><a class="btn wa" href="${waLink(p.ph,'')}" target="_blank" rel="noopener">${WA_ICON}וואטסאפ</a><a class="btn ghost" href="tel:${esc(p.ph)}">${IC.phone}חיוג</a></div>`:''}</section>
       <section class="card"><h3>מסמכים</h3><ul class="checks">${ds.map(d=>`<li class="${d.lvl==='miss'?'na':d.lvl}"><span>${d.l}</span><b>${esc(d.t)}</b></li>`).join('')}${p.pp?'<li class="na"><span>מידע תעבורתי</span><b>בעל דרכון – לא נדרש</b></li>':''}</ul></section>
+      <section class="card"><h3>קורסים והשתלמויות</h3>${(()=>{const a=annual(p);return a?(a.done?`<p>${pill('ok','✓ השתלמות שנתית '+ANN_Y+': '+a.by)}</p>`:`<p>${pill('bad','✗ לא ביצע השתלמות שנתית: '+a.course)}</p><p class="muted">שים לב – יש להירשם בהקדם להשתלמות.</p>${p.ph?`<div class="acts"><a class="btn wa" href="${waLink(p.ph,annMsg(p))}" target="_blank" rel="noopener">${WA_ICON}תזכורת להירשם</a></div>`:''}`):''})()}<div class="tags">${(p.crs||[]).map(x=>pill(new RegExp(ANN_Y).test(x)?'ok':'na',x)).join('')||'<span class="muted">לא רשומים קורסים</span>'}</div></section>
       <section class="card"><h3>כלים</h3>${V.length?V.map(v=>{const is=vehIssues(v);return `<div class="vmini"><span class="plate">${esc(v.plate)}</span><span>כלי ${esc(v.num)} · ${esc(v.type)}</span>${is.map(i=>pill(i.lvl,i.t)).join('')||pill('ok','תקין')}</div>`}).join(''):'<p class="muted">אין כלי צמוד</p>'}</section>
       <section class="card wide"><h3>ציוני סייפטי לפי חודש</h3>${scores}</section>
       <section class="card"><h3>🏍️ הדרכות רכיבה (חיים בדרכים) · 2025–2026</h3>${tl(p.ride||[],x=>{const n=/לא עבר/.test(x.sc)?0:num(x.sc);return `<li><span class="tb ${lvlRide(n)}">${esc(x.sc||'—')}</span><div><small>${esc(x.d)} · ${esc(x.ins)}${x.urg?' · דחופה':''}</small><p>${esc([x.op,x.note,x.gen].filter(Boolean).join(' · ')||'—')}</p>${x.pas?`<small>הרכבת רוכב נוסף: ${esc(x.pas)}</small>`:''}</div></li>`})}</section>
       <section class="card"><h3>🚑 הדרכות נהיגה (אלטרנתיבי) · 2025–2026</h3>${tl(p.alt||[],x=>`<li><span class="tb na" style="font-size:.72rem">${esc((x.st||'').replace(/^שלב\s*/,'')||'—')}</span><div><small>${esc(x.d)} · ${esc(x.st)} · ${esc(x.ins)}</small>${x.rec?`<small>המלצה: ${esc(x.rec)}</small>`:''}${x.note?`<p>${esc(x.note)}</p>`:''}</div></li>`)}</section>
-      <section class="card"><h3>עבר תאונות</h3>${(p.acc||[]).length?p.acc.map(accCard).join(''):'<p class="muted">לא דווחו תאונות</p>'}</section>
+      <section class="card"><h3>עבר תאונות</h3>${(p.acc||[]).length?`<div class="alist">${p.acc.map(accRow).join('')}</div>`:'<p class="muted">לא דווחו תאונות</p>'}</section>
       ${isMoto(p)?'':'<!--'}<section class="card"><h3>יציאות מגזרה</h3>${tl(H,x=>`<li><span class="tb ${x.dec==='yes'?'ok':'bad'}">${x.dec==='yes'?'✓':'✕'}</span><div><small>${esc(new Date(x.ts).toLocaleDateString('he-IL'))}</small><p>${esc(x.dest||'—')}${x.from?` · ${esc(x.from)}${x.to&&x.to!==x.from?'–'+esc(x.to):''}`:''}</p></div></li>`)}</section>${isMoto(p)?'':'-->'}
     </div></aside>`;
   ov.onclick=e=>{if(e.target===ov||e.target.closest('.x'))ov.remove()};document.body.append(ov);
@@ -538,6 +565,7 @@ function drill(k){
   else if(k==='veh'){title='כלים בסניף';const V=[...DATA.veh].sort((a,b)=>vehIssues(b).length-vehIssues(a).length);body=`<div class="vlist">${V.map(vRow).join('')}</div>`}
   else if(k==='avg'){title='ציוני סייפטי · '+M;const L=P.filter(p=>safetyNow(p)).sort((a,b)=>safetyNow(a).x-safetyNow(b).x);body=L.map(pRow).join('')+(P.length>L.length?`<p class="hint">${P.length-L.length} נהגים בלי ציון סייפטי</p>`:'')}
   else if(k==='low'){title='מתחת ל־25 בסייפטי';body=P.filter(p=>{const s=safetyNow(p);return s&&s.x<25}).sort((a,b)=>safetyNow(a).x-safetyNow(b).x).map(pRow).join('')}
+  else if(k==='ann'){title='לא ביצעו השתלמות שנתית '+ANN_Y;const L=P.filter(annMiss);const g=['אופנוע','אמבולנס','רכב'];body=g.map(n=>{const G=L.filter(p=>annual(p).need===n);return G.length?`<h3 class="grp">${n} כביש ${ANN_Y} · ${G.length}</h3>`+G.map(p=>pRow(p)+`<div class="sub">${pill('bad','נדרש: '+annual(p).course)} ${p.ph?`<a class="btn wa sm" href="${waLink(p.ph,annMsg(p))}" target="_blank" rel="noopener">${WA_ICON}תזכורת להירשם</a>`:''}</div>`).join(''):''}).join('')}
   else if(k==='docs'){title='נהגים עם מסמך שפג';body=P.filter(p=>docStatus(p).some(d=>d.lvl==='bad')).map(p=>pRow(p)+`<div class="sub">${docStatus(p).filter(d=>d.lvl==='bad').map(d=>pill('bad',d.l+': '+d.t)).join(' ')}</div>`).join('')}
   const ov=document.createElement('div');ov.className='ov';ov.innerHTML=`<aside class="drawer"><header class="dh"><button class="x" aria-label="סגירה">${IC.x}</button><div><h2>${esc(title)}</h2><p>${esc(DATA.br)}</p></div></header><section class="panel" style="margin:0 16px"><div class="plist">${body||'<div class="empty">אין</div>'}</div></section></aside>`;
   ov.onclick=e=>{if(e.target===ov||e.target.closest('.x'))return ov.remove();const r=e.target.closest('.prow');if(r&&!e.target.closest('a'))personSheet(r.dataset.p)};
@@ -550,7 +578,7 @@ function hebBd(bd){const d=pd(bd);if(!d)return '';try{return new Intl.DateTimeFo
 function pbRow(p){const tel=(p.ph||'').replace(/\D/g,''),cars=p.cars||[];
   const vb=cars.map(c=>`<span class="bdg car">${/אופנוע|אופניים/.test(c.type||'')?'🏍️':/רכב|ג'יפ/.test(c.type||'')?'🚗':'🚑'} ${esc(c.num)}</span>`).join('');
   return `<div class="prow pb" role="button" tabindex="0" data-c="${esc(p.pv||p.n)}"><span class="av" style="background:${colorOf(p.n)}">${esc(ini(p.n))}</span>
-    <span class="pid"><b>${esc(p.n)}</b><span class="badges">${p.pv?`<span class="bdg">${esc(p.pv)}</span>`:''}${vb}</span><small>${esc([(p.perm||'').split(/;\s*/)[0],p.city].filter(Boolean).join(' · ')||DATA.br)}</small></span>
+    <span class="pid"><b>${esc(p.n)}</b><span class="badges">${p.pv?`<span class="bdg">${esc(p.pv)}</span>`:''}${vb}${annMiss(p)?`<span class="bdg bad">✗ השתלמות ${ANN_Y}</span>`:''}</span><small>${esc([(p.perm||'').split(/;\s*/)[0],p.city].filter(Boolean).join(' · ')||DATA.br)}</small></span>
     ${tel?`<a class="cb call" href="tel:${esc(tel)}" aria-label="חיוג">${IC.phone}</a><a class="cb wa" href="${waLink(tel,'')}" target="_blank" rel="noopener" aria-label="וואטסאפ">${WA_ICON}</a>`:''}</div>`}
 function phonebookView(){
   const q=st.q.trim(),L=DATA.people.filter(p=>!q||[p.n,p.pv,p.ph,p.city,(p.cars||[]).map(c=>c.num).join(' ')].some(x=>(x||'').includes(q)));
@@ -565,7 +593,7 @@ function contactSheet(key){
   const ov=document.createElement('div');ov.className='ov';ov.innerHTML=`<aside class="drawer pbs"><header class="dh"><button class="x" aria-label="סגירה">${IC.x}</button><span class="av lg" style="background:${colorOf(p.n)}">${esc(ini(p.n))}</span><div><h2>${esc(p.n)}</h2><p>${esc([p.pv&&'פרייבט '+p.pv,DATA.br].filter(Boolean).join(' · '))}</p></div></header>
     <div class="qa">${tel?`<a href="tel:${esc(tel)}"><i>📞</i>חיוג</a><a href="${waLink(tel,'')}" target="_blank" rel="noopener"><i>💬</i>וואטסאפ</a><a href="sms:${esc(tel)}"><i>✉️</i>הודעה</a>`:''}${p.em?`<a href="mailto:${esc(p.em)}"><i>📧</i>מייל</a>`:''}<button type="button" id="toSafety"><i>🛡️</i>תיק בטיחות</button></div>
     <section class="box"><h3>פרטי קשר</h3>${it('📱','טלפון נייד',esc(fmtPhone(p.ph)),tel?'tel:'+tel:'')}${it('📧','מייל',esc(p.em),p.em?'mailto:'+p.em:'')}${it('🏠','כתובת',esc(addr),addr?'https://waze.com/ul?q='+encodeURIComponent(addr)+'&navigate=yes':'')}</section>
-    <section class="box"><h3>ארגון</h3>${it('🏷️','פרייבט',esc(p.pv))}${it('🚦','הרשאות נהיגה',(p.perm||'').split(/;\s*/).filter(Boolean).map(x=>`<span class="tag">${esc(x)}</span>`).join(''))}${it('🏢','סניף',esc(DATA.br))}${it('🗺️','מחוז',esc(o.dist))}${it('👤','ראש סניף / מנהל אגף',esc(o.head))}${it('👥','סגן ראש סניף',esc(o.dep))}${it('🚗','רכז תחבורה סניפי',esc(DATA.coord))}${it('🦺','קצין בטיחות מחוזי',esc(o.officer))}</section>
+    <section class="box"><h3>ארגון</h3>${it('🏷️','פרייבט',esc(p.pv))}${it('🚦','הרשאות נהיגה',(p.perm||'').split(/;\s*/).filter(Boolean).map(x=>`<span class="tag">${esc(x)}</span>`).join(''))}${(p.crs||[]).length?it('🎓','קורסים והשתלמויות',p.crs.map(x=>`<span class="tag">${esc(x)}</span>`).join('')):''}${it('🏢','סניף',esc(DATA.br))}${it('🗺️','מחוז',esc(o.dist))}${it('👤','ראש סניף / מנהל אגף',esc(o.head))}${it('👥','סגן ראש סניף',esc(o.dep))}${it('🚗','רכז תחבורה סניפי',esc(DATA.coord))}${it('🦺','קצין בטיחות מחוזי',esc(o.officer))}</section>
     ${p.bd||(p.cars||[]).length?`<section class="box"><h3>פרטים נוספים</h3>${it('🎂','תאריך לידה',esc(p.bd+(a?` (גיל ${a})`:'')))}${it('✡️','יום הולדת עברי',esc(hb))}${(p.cars||[]).map(c=>it('🚑','כלי ארגוני',esc(`כלי ${c.num}${c.type?' · '+c.type:''}${c.plate?' · '+c.plate:''}`))).join('')}</section>`:''}
   </aside>`;
   ov.onclick=e=>{if(e.target===ov||e.target.closest('.x'))return ov.remove();if(e.target.closest('#toSafety')){ov.remove();personSheet(key)}};document.body.append(ov);
@@ -588,15 +616,25 @@ function gsearch(q){
 const TEST_P={n:'דני בן דוד (בדיקה)',pv:'',ph:'0508820408',em:'danny.b.d.20@gmail.com',perm:'אופנוע',cars:[],s:null,ride:[],alt:[],acc:[],lic:'31/12/2030',health:'31/12/2030',traffic:'',pp:1};
 
 /* ===== תאונות ===== */
+const fmtWA=t=>esc(t).replace(/^&gt;\s?/gm,'').replace(/\*([^*\n]+)\*/g,'<b>$1</b>').replace(/(^|\s)_([^_\n]+)_(?=\s|$)/g,'$1<i>$2</i>').replace(/\r?\n/g,'<br>');
+const _st=t=>String(t||'').replace(/[*_>\s]/g,'');
 function accCard(a){const dd=(k,l)=>a[k]?`<dt>${l}</dt><dd>${esc(a[k])}</dd>`:'';
+  const inv=/^\W*תחקיר/.test(a.drv||''),dup=a.off&&inv&&_st(a.drv).startsWith(_st(a.off).slice(0,120));
   return `<article class="acc"><header><span class="pill bad">${esc(a.kind||'תאונה')}</span><b>${esc(a.d)}${a.time?' · '+esc(a.time):''}</b></header>
   <h4>${esc(a.n)}${a.pv?` <small>פרייבט ${esc(a.pv)}</small>`:''}</h4>
   <dl>${dd('veh','כלי')}${dd('place','מיקום')}${dd('trip','סוג נסיעה')}${dd('cause','סיבה')}${dd('fault','אשמה')}${dd('ev','בדרך לאירוע')}${dd('inj','נפגעים')}${dd('other','צד נוסף')}</dl>
-  ${a.drv?`<p><b>גרסת הנהג:</b> ${esc(a.drv).replace(/\n/g,'<br>')}</p>`:''}${a.text&&!a.drv?`<p>${esc(a.text).replace(/\n/g,'<br>')}</p>`:''}
-  ${a.off?`<details><summary><b>תחקיר קצין הבטיחות</b></summary><p>${esc(a.off).replace(/\n/g,'<br>')}${a.off.length>=255?' …':''}</p></details>`:'<p class="pendi">⏳ התחקיר בטיפול קצין הבטיחות</p>'}
+  ${a.drv?`<div class="accx"><h5>${inv?'תחקיר קצין הבטיחות':'גרסת הנהג'}</h5><p>${fmtWA(a.drv)}</p></div>`:''}${a.text&&!a.drv?`<p>${fmtWA(a.text)}</p>`:''}
+  ${a.off&&!dup?`<div class="accx"><h5>תחקיר קצין הבטיחות</h5><p>${fmtWA(a.off)}${a.off.length>=255?' …':''}</p></div>`:a.off?'':'<p class="pendi">⏳ התחקיר בטיפול קצין הבטיחות</p>'}
   <footer>${a.acc?esc(a.acc)+' · ':''}${a.rep?'דווח ב־'+esc(a.rep):esc(a.d)}${a.al?ackLine(a):''}</footer></article>`}
+function accRow(a){return `<button type="button" class="arow" data-acc="${esc(a.id)}"><span class="ad"><b>${esc((a.d||'').slice(0,5))}</b><small>${esc((a.d||'').slice(6))}</small></span>
+  <span class="ai"><b>${esc(a.n)}</b><small>${esc([a.veh,a.kind||a.cause].filter(Boolean).join(' · '))}</small></span>
+  <span class="as">${a.off?pill('ok','תוחקר'):pill('warn','בתחקיר')}${/איחוד/.test(a.fault||'')?pill('bad','אשמת נהג'):''}</span><span class="kgo">${IC.chev}</span></button>`}
+function accOpen(id){const a=(DATA.acc||[]).find(x=>x.id===id);if(!a)return;const ov=document.createElement('div');ov.className='ov';
+  ov.innerHTML=`<aside class="drawer" role="dialog" aria-label="דוח תאונה"><header class="dh"><button class="x" aria-label="סגירה">${IC.x}</button><div><h2>דוח תאונה</h2><p>${esc(a.n)} · ${esc(a.d)}</p></div></header><div style="padding:0 16px 24px">${accCard(a)}${a.pv&&DATA.people.some(p=>p.pv===a.pv)?`<button class="btn ghost" type="button" id="accp" style="margin-top:10px">לתיק של ${esc(first(a.n))}</button>`:''}</div></aside>`;
+  ov.onclick=e=>{if(e.target===ov||e.target.closest('.x'))return ov.remove();if(e.target.closest('#accp')){ov.remove();personSheet(a.pv)}};document.body.append(ov)}
+document.addEventListener('click',e=>{const r=e.target.closest('.arow[data-acc]');if(r)accOpen(r.dataset.acc)});
 function accView(){const A=[...(DATA.acc||[])].sort((a,b)=>(pd(b.d)||0)-(pd(a.d)||0)),pend=A.filter(a=>!a.off).length;
-  return `<section class="panel"><header><h2>תאונות בסניף · 2025–2026</h2><span class="count">${A.length}</span></header>${pend?`<p class="hint">${pend} בתחקיר אצל קצין הבטיחות</p>`:''}<div class="accs">${A.map(accCard).join('')||'<div class="empty">לא דווחו תאונות בסניף</div>'}</div><p class="hint">תאונות חדשות מופיעות גם כהודעה קופצת בכניסה לאפליקציה.</p></section>`}
+  return `<section class="panel"><header><h2>תאונות בסניף · 2025–2026</h2><span class="count">${A.length}</span></header>${pend?`<p class="hint">${pend} בתחקיר אצל קצין הבטיחות</p>`:''}<div class="alist">${A.map(accRow).join('')||'<div class="empty">לא דווחו תאונות בסניף</div>'}</div><p class="hint">תאונות חדשות מופיעות גם כהודעה קופצת בכניסה לאפליקציה.</p></section>`}
 /* הודעה קופצת על תאונה חדשה – פעם אחת לכל תאונה, עד שהרכז מאשר שראה */
 function accAlerts(){
   if(ADMIN)return;const N=(DATA.acc||[]).filter(a=>a.al&&!ls('accseen:'+a.id));if(!N.length)return;
@@ -751,7 +789,7 @@ document.querySelectorAll('.tab[data-v]').forEach(b=>b.onclick=()=>{st.view=b.da
 function bind(){
   document.querySelectorAll('#app .prow:not(.pb)').forEach(c=>{c.onclick=e=>{if(!e.target.closest('a'))personSheet(c.dataset.p)};c.onkeydown=e=>{if(e.key==='Enter')personSheet(c.dataset.p)}});
   document.querySelectorAll('#app .prow.pb').forEach(c=>{c.onclick=e=>{if(!e.target.closest('a'))contactSheet(c.dataset.c)};c.onkeydown=e=>{if(e.key==='Enter')contactSheet(c.dataset.c)}});
-  document.querySelectorAll('.kpi[data-k]').forEach(b=>b.onclick=()=>drill(b.dataset.k));
+  document.querySelectorAll('.kpi[data-k],.annban[data-k]').forEach(b=>b.onclick=()=>drill(b.dataset.k));
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{st.flt=b.dataset.f;render()});
   const q=$('q');if(q)q.oninput=e=>{st.q=e.target.value;const pos=e.target.selectionStart;render();const n=$('q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}};
   const pb=$('pendB');if(pb)pb.onclick=pendingAlert;
