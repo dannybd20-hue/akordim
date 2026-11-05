@@ -337,7 +337,7 @@ function trendTxt(st){if(st.chg==null)return '<span class="trend eq">חודש ר
 
 /* ===== מצב ===== */
 let DATA=null;
-const state={view:'msg',m:null,cat:ls('sf_cat')||'low',q:'',br:''};
+const state={view:'msg',m:null,cat:ls('sf_cat')||'all',q:'',br:''};
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{state.view=b.dataset.v;document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===b));render()});
 function filt(v){if(state.br&&v.br!==state.br)return false;const q=state.q.trim();return !q||[v.n,v.pv,v.br,v.ph].some(x=>(x||'').includes(q))}
 function controls(){
@@ -359,7 +359,7 @@ function card(v,m){
   const cc=CIDX&&CIDX[v.br]&&CIDX[v.br].cem;
   const ml=`<a class="mail sm" href="mailto:${esc(v.em||'')}?${cc?'cc='+encodeURIComponent(cc)+'&':''}subject=${encodeURIComponent(SUBJ[c]+' – '+M)}&body=${encodeURIComponent(text.replace(/\*/g,''))}" data-sent="${esc(sk)}" ${cm}>מייל</a>`;
   const cp=`<button class="mail sm" type="button" data-copy="${esc(text)}">העתק</button>`;
-  return `<div class="card"><div class="who"><div class="name">${esc(v.n)}</div><div class="meta"><span>פרייבט ${esc(v.pv)}</span><span>${esc(v.br)}</span>${k>=2?`<span class="streak">${k} חודשים ברצף מתחת ל־25</span>`:''}</div>${spark(v,m)}${sinceRow(v,m)}${monRow(v,m)}${v.ev?`<div class="meta">${Object.entries(v.ev).sort((x,y)=>y[1][1]-x[1][1]).slice(0,4).map(([c,[n,pc]])=>`<span class="chip ${pc>=25?'bad':pc>=10?'warn':'miss'}">${esc(c)} ${Math.round(pc)}%</span>`).join('')}</div>`:''}<div class="meta">${trendTxt(st)}${st.fromPeak!=null&&st.fromPeak<0?`<span>${-st.fromPeak} מתחת לשיא (${st.peak})</span>`:''}${st.avg!=null?`<span>ממוצע ${st.avg}</span>`:''}</div></div>
+  return `<div class="card"><div class="who"><div class="name">${esc(v.n)}</div><div class="meta"><span>פרייבט ${esc(v.pv)}</span><span>${esc(v.br)}</span>${state.cat==='all'?(()=>{const C=CATS.find(x=>x[0]===c);return C?`<span style="color:${C[2]};font-weight:700">● ${esc(C[1])}</span>`:''})():''}${k>=2?`<span class="streak">${k} חודשים ברצף מתחת ל־25</span>`:''}</div>${spark(v,m)}${sinceRow(v,m)}${monRow(v,m)}${v.ev?`<div class="meta">${Object.entries(v.ev).sort((x,y)=>y[1][1]-x[1][1]).slice(0,4).map(([c,[n,pc]])=>`<span class="chip ${pc>=25?'bad':pc>=10?'warn':'miss'}">${esc(c)} ${Math.round(pc)}%</span>`).join('')}</div>`:''}<div class="meta">${trendTxt(st)}${st.fromPeak!=null&&st.fromPeak<0?`<span>${-st.fromPeak} מתחת לשיא (${st.peak})</span>`:''}${st.avg!=null?`<span>ממוצע ${st.avg}</span>`:''}</div></div>
     <div class="score ${scCls(x)}">${x}</div>
     <div class="issues"><div class="irow"><span class="tel">${v.ph?fmtPhone(v.ph):'אין טלפון'}${v.em?` · <span class="em">${esc(v.em)}</span>`:''}</span><span class="btns">${wa}${ml}${cp}</span></div>${v.rep?`<details class="anal"><summary>📄 ניתוח מלא מהדוח</summary><pre>${esc(analysis(v).replace(/\*/g,''))}</pre><div class="btns">${v.ph?`<a class="wa sm" href="${waLink(v.ph,`מה קורה ${first(v.n)},\nשלחתי לך גם את הפירוט המלא מהדוח, אם תרצה לראות בעצמך:\n\n${analysis(v)}\n\nאם משהו לא ברור – תכתוב לי.\n${ME}`)}" target="_blank" rel="noopener">${WA_ICON}שלח ניתוח</a>`:''}<button class="mail sm" type="button" data-copy="${esc(analysis(v))}">העתק ניתוח</button></div></details>`:''}</div></div>`;
 }
@@ -370,11 +370,13 @@ function render(){
   const cnt={};act.forEach(v=>{const c=catOf(v,m);if(!sentAny(v,m))cnt[c]=(cnt[c]||0)+1});
   $('n-msg').textContent=(cnt.low||0)+(cnt.drop||0)+(cnt.warn||0)+(cnt.demote||0)||'';
   if(state.view==='msg'){
-    const L0=act.filter(v=>catOf(v,m)===state.cat&&filt(v)).sort((a,b)=>a.s[m]-b.s[m]);
+    /* "הכל": כל המתנדבים עם ציון, לפי סדר עדיפות (חניכות → אזהרה → ירידה → מתחת ל־25 → השתפרו → ...), וההודעה של כל אחד לפי הציונים שלו */
+    const ORD=Object.fromEntries(CATS.map(([k],i)=>[k,i]));
+    const L0=act.filter(v=>(state.cat==='all'||catOf(v,m)===state.cat)&&filt(v)).sort((a,b)=>state.cat==='all'?(ORD[catOf(a,m)]-ORD[catOf(b,m)])||(a.s[m]-b.s[m]):a.s[m]-b.s[m]);
     /* מי שכבר נשלחה לו הודעה החודש יורד מהרשימה (חיפוש לפי שם מציג גם אותו) */
     const wasSent=v=>sentAny(v,m),hid=state.q.trim()?[]:L0.filter(wasSent),L=state.q.trim()?L0:L0.filter(v=>!wasSent(v));
     app.innerHTML=`${controls()}
-    <div class="cats" role="group" aria-label="קבוצה">${CATS.map(([k,l])=>`<button class="c-${k}" data-cat="${k}" aria-pressed="${state.cat===k}">${l}<span>${cnt[k]||0}</span></button>`).join('')}</div>
+    <div class="cats" role="group" aria-label="קבוצה"><button class="c-all" data-cat="all" aria-pressed="${state.cat==='all'}">הכל – לפי סדר<span>${Object.values(cnt).reduce((a,b)=>a+b,0)}</span></button>${CATS.map(([k,l])=>`<button class="c-${k}" data-cat="${k}" aria-pressed="${state.cat===k}">${l}<span>${cnt[k]||0}</span></button>`).join('')}</div>
     <div class="exp"><button class="mail sm" id="expOne" type="button">📤 קובץ מיילים לקבוצה הזאת (${L.filter(v=>v.em).length})</button><button class="mail sm" id="expAll" type="button">📤 קובץ מיילים לכולם (${act.filter(v=>v.em).length})</button></div>
     <div class="legend">ההודעה נבחרת לפי הציון בחודש ${esc(M)} ולפי כמה חודשים ברצף הציון מתחת ל־25. מתנדב בלי ציון בחודש הזה לא מופיע.</div>
     <div class="list">${L.map(v=>card(v,m)).join('')||`<div class="empty">${hid.length?'כל ההודעות בקבוצה הזאת נשלחו 👍':'אין מתנדבים בקבוצה הזאת.'}</div>`}</div>
