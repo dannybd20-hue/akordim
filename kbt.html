@@ -134,6 +134,15 @@ details.accq summary{cursor:pointer;color:var(--accent)}details.accq .pre{margin
 .invh .x{background:var(--bg);color:var(--fg)}
 #invt{flex:1;min-height:52vh;font:15px/1.5 var(--f-body);direction:rtl;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);color:var(--fg);resize:vertical}
 /*ACC-CSS-END*/
+/*CHG-CSS*/
+.chgr{display:flex;flex-wrap:wrap;gap:6px;align-items:baseline;padding:6px 10px;border-radius:8px;margin:4px 0;background:var(--bg);border-inline-start:4px solid var(--muted);font-size:.92rem}
+.chgr.good{border-color:var(--ok);background:var(--ok-bg)}.chgr.bad{border-color:var(--bad);background:var(--bad-bg)}
+.chgr .f{font-weight:700}.chgr .o{color:var(--muted);text-decoration:line-through}.chgr .ar{color:var(--muted)}.chgr.good .v{color:var(--ok);font-weight:700}.chgr.bad .v{color:var(--bad);font-weight:700}
+.chgk{padding:0 6px;border-radius:6px;font-weight:700}.chgk.good{background:var(--ok-bg);color:var(--ok)}.chgk.bad{background:var(--bad-bg);color:var(--bad)}.chgk.info{background:var(--bg);color:var(--muted)}
+.stat.ok b{color:var(--ok)}.chgc{display:inline-block;margin-top:6px}
+tr.chgrow td{background:var(--today-bg)}tr.chgrow td:first-child{box-shadow:inset -4px 0 0 var(--today)}
+.tab .n.fresh{background:var(--today);color:#fff}
+/*CHG-CSS-END*/
 </style>
 </head>
 <body>
@@ -147,6 +156,7 @@ details.accq summary{cursor:pointer;color:var(--accent)}details.accq .pre{margin
       <button class="tab" role="tab" id="t-route" aria-selected="false" data-v="route">מסלול בדיקות</button>
       <button class="tab" role="tab" id="t-insp" aria-selected="false" data-v="insp">בדיקות<span class="n" id="n-insp"></span></button>
       <button class="tab" role="tab" id="t-acc" aria-selected="false" data-v="acc">תאונות<span class="n" id="n-acc"></span></button>
+      <button class="tab" role="tab" id="t-chg" aria-selected="false" data-v="chg">מה השתנה<span class="n" id="n-chg"></span></button>
     </div>
   </div>
 </header>
@@ -256,7 +266,7 @@ async function unlock(saved){
   const pw=saved||(document.getElementById('pw')&&(s=>s.replace(/[א-ת]/g,c=>({'ק':'e','ר':'r','א':'t','ט':'y','ו':'u','ן':'i','ם':'o','פ':'p','ש':'a','ד':'s','ג':'d','כ':'f','ע':'g','י':'h','ח':'j','ל':'k','ך':'l','ז':'z','ס':'x','ב':'c','ה':'v','נ':'b','מ':'n','צ':'m'})[c]||c))(document.getElementById('pw').value.trim().toLowerCase()).replace(/\.$/,''));if(!pw)return;
   if(!saved){const b=document.getElementById('ub');b.disabled=true;b.textContent='פותח… (כמה שניות)'}
   else document.getElementById('app').innerHTML='<div class="empty">פותח את הנתונים…</div>';
-  try{DATA=await decrypt(pw);KPW=pw;setTimeout(loadAcc,300);setTimeout(()=>loadBd(true),900);if(!window._bdT)window._bdT=setInterval(()=>loadBd(true),180000);if(!saved)ls('kbt_pw',document.getElementById('rem').checked?pw:'');document.getElementById('lockB').hidden=false;document.getElementById('upd').textContent='עודכן: '+DATA.updated;render()}
+  try{DATA=await decrypt(pw);KPW=pw;setTimeout(chgBadge,50);setTimeout(loadAcc,300);setTimeout(()=>loadBd(true),900);if(!window._bdT)window._bdT=setInterval(()=>loadBd(true),180000);if(!saved)ls('kbt_pw',document.getElementById('rem').checked?pw:'');document.getElementById('lockB').hidden=false;document.getElementById('upd').textContent='עודכן: '+DATA.updated;render()}
   catch(e){if(saved&&e.message==='pw')ls('kbt_pw','');lockView(e.message==='pw'?'סיסמה שגויה':!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
 }
 function relock(){if(!confirm('לנעול ולשכוח את הסיסמה במכשיר הזה?'))return;ls('kbt_pw','');DATA=null;lockView()}
@@ -321,7 +331,7 @@ function card(r){
     const note=fr&&fr.due===i.dateStr?`<span class="chip miss">${is2?'🔁 תזכורת · ':''}הודעה ראשונה נשלחה ${fmt(new Date(fr.d))}</span>`:'';
     return `<div class="irow"><span class="chip ${i.lvl}">${esc(i.chip)}</span>${note}<span class="btns">${wa}${ml}${cp}</span></div>${dov}`;
   }).join('');
-  return `<div class="card"><div class="who"><div class="name">${esc(o.name)}</div><div class="meta">${isV?'<span>נהג</span>':''}${meta}</div>${veh}</div>${contact}<div class="issues">${rows}</div></div>`;
+  return `<div class="card"><div class="who"><div class="name">${esc(o.name)}</div><div class="meta">${isV?'<span>נהג</span>':''}${meta}</div>${veh}${isV?chgChip('veh',o.num):chgChip('p',o.priv)}</div>${contact}<div class="issues">${rows}</div></div>`;
 }
 
 const CATS=[['','הכל'],['test','טסט'],['service','טיפול שנתי'],['check','בדיקת תקינות'],['lic','רישיון נהיגה'],['health','הצהרת בריאות'],['traffic','מידע תעבורתי']];
@@ -347,6 +357,7 @@ function render(){
   document.getElementById('n-alerts').textContent=every.filter(r=>r.lvl==='today'||r.lvl==='bad').length||'';
   if(state.view==='route'){renderRoute();return}
   if(state.view==='acc'){renderAcc();return}
+  if(state.view==='chg'){renderChg();return}
   if(state.view==='insp'){renderInsp();return}
   if(state.view==='alerts'){
     const rows=all.filter(r=>(state.kind==='all'||r.type===state.kind)&&matches(r)&&(!state.only||r.lvl===state.only));
@@ -379,9 +390,9 @@ function render(){
     const head=isV?['רישוי','מס\' פנימי','סוג','נהג','סניף','טסט עד','טיפול אחרון','בדיקת תקינות','ביטוח עד','טלפון']
                   :['שם','פרייבט','סניף','רכב','רישיון נהיגה','הצהרת בריאות','מידע תעבורתי','הדרכה שנתית','טלפון'];
     const body=list.map(o=>isV
-      ?`<tr><td><span class="plate">${esc(o.plate)}</span></td><td>${esc(o.num)}</td><td>${esc(o.type)}</td><td>${esc(o.name)}</td><td>${esc(o.branch)}</td>${cell(pd(o.test))}${cell(pd(o.service)?addYear(pd(o.service)):null,pd(o.service))}${cell(pd(o.check))}${cell(pd(o.ins))}<td dir="ltr">${fmtPhone(o.phone)}</td></tr>`
-      :`<tr><td>${esc(o.name)}</td><td>${esc(o.priv)}</td><td>${esc(o.branch)}</td><td>${esc((o.cars||[]).map(c=>c.num+(c.type?' '+c.type:'')).join(', '))}</td>${cell(pd(o.lic))}${cell(pd(o.health))}${o.pp?'<td>דרכון</td>':cell(pd(o.traffic))}${cell(pd(o.train))}<td dir="ltr">${fmtPhone(o.phone)||'—'}</td></tr>`).join('');
-    app.innerHTML=`${controls(false)}<div class="legend">${list.length} רשומות · <span style="color:var(--bad)">אדום</span> = פג, <span style="color:var(--warn)">כתום</span> = יפוג בקרוב</div><div class="tbl-wrap"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
+      ?`<tr${chgOf('veh',o.num).length?` class="chgrow" title="${esc(chgTip(chgOf('veh',o.num)))}"`:''}><td><span class="plate">${esc(o.plate)}</span></td><td>${esc(o.num)}</td><td>${esc(o.type)}</td><td>${esc(o.name)}</td><td>${esc(o.branch)}</td>${cell(pd(o.test))}${cell(pd(o.service)?addYear(pd(o.service)):null,pd(o.service))}${cell(pd(o.check))}${cell(pd(o.ins))}<td dir="ltr">${fmtPhone(o.phone)}</td></tr>`
+      :`<tr${chgOf('p',o.priv).length?` class="chgrow" title="${esc(chgTip(chgOf('p',o.priv)))}"`:''}><td>${chgOf('p',o.priv).length?'🆕 ':''}${esc(o.name)}</td><td>${esc(o.priv)}</td><td>${esc(o.branch)}</td><td>${esc((o.cars||[]).map(c=>c.num+(c.type?' '+c.type:'')).join(', '))}</td>${cell(pd(o.lic))}${cell(pd(o.health))}${o.pp?'<td>דרכון</td>':cell(pd(o.traffic))}${cell(pd(o.train))}<td dir="ltr">${fmtPhone(o.phone)||'—'}</td></tr>`).join('');
+    app.innerHTML=`${controls(false)}<div class="legend">${list.length} רשומות · <span style="color:var(--bad)">אדום</span> = פג, <span style="color:var(--warn)">כתום</span> = יפוג בקרוב · <span style="background:var(--today-bg);padding:0 4px">רקע מודגש</span> = השתנה בעדכון האחרון (לחיצה ארוכה/ריחוף מראה מה)</div><div class="tbl-wrap"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
   }
   bind();
 }
@@ -653,6 +664,53 @@ function renderInsp(){
     const c=bdCoordOf(r);if(!yes&&c&&c.cph)window.open(`https://wa.me/972${c.cph.replace(/^0/,'')}?text=${encodeURIComponent(`*בדיקת קצב"ת – כלי ${r.num}*\nהבדיקה מ־${r.ts} הוחזרה לתיקון:\n${note}\n\nדני בן דוד · קצין בטיחות`)}`,'_blank')});
 }
 /*INSP-END*/
+/*CHG-START*/
+/* ===== מה השתנה בעדכון הנתונים (DATA.chg נבנה ב-ws/changes.py) ===== */
+const CHGS={d:null,t:'',g:''};
+function chgLog(){return (DATA&&DATA.chg)||[]}
+function chgLast(){const L=chgLog();return L[L.length-1]||null}
+let _chgIdx=null;
+function chgIdx(){const e=chgLast();if(!e)return {};if(_chgIdx&&_chgIdx.d===e.d)return _chgIdx.m;const m={};
+  e.items.forEach(i=>{const k=(i.t==='veh'?'veh:':'p:')+i.k;(m[k]=m[k]||[]).push(i)});_chgIdx={d:e.d,m};return m}
+function chgOf(t,k){if(!k)return [];return chgIdx()[(t==='veh'?'veh:':'p:')+k]||[]}
+function chgTip(L){return L.map(i=>i.f+': '+(i.o||'—')+' ← '+(i.v||'—')).join('\n')}
+function chgBadge(){const b=document.getElementById('n-chg');const e=chgLast();if(!b)return;
+  const n=e?e.items.length:0;b.textContent=n&&ls('chg_seen')!==e.d?n:'';b.classList.toggle('fresh',!!(n&&ls('chg_seen')!==e.d))}
+function chgChip(t,k){const L=chgOf(t,k);if(!L.length)return '';const g=L.some(i=>i.g==='bad')?'bad':L.some(i=>i.g==='good')?'ok':'today';
+  return `<span class="chip ${g} chgc" title="${esc(chgTip(L))}">🆕 עודכן ${esc(chgLast().d.slice(0,5))}: ${esc(L.map(i=>i.f.replace(/ – .*/,'')).filter((x,j,a)=>a.indexOf(x)===j).join(', '))}</span>`}
+function renderChg(){
+  const app=document.getElementById('app');const L=chgLog();
+  if(!L.length){app.innerHTML='<div class="empty">עדיין אין השוואה – היא תופיע מהעדכון הבא של הטבלאות.</div>';return}
+  const e=L.find(x=>x.d===CHGS.d)||L[L.length-1];CHGS.d=e.d;
+  if(e===L[L.length-1]){ls('chg_seen',e.d);chgBadge()}
+  const TN={veh:'כלים',drv:'נהגים (תוקפים)',pb:'אנשי קשר'},GN={good:'שיפור / חידוש',bad:'החמרה / הוסר',info:'מידע'};
+  const q=state.q.trim();
+  const it=e.items.filter(i=>(!CHGS.t||i.t===CHGS.t)&&(!CHGS.g||i.g===CHGS.g)&&(!state.branch||i.br===state.branch)&&(!q||(i.n+' '+i.k+' '+i.f+' '+i.v+' '+i.o).includes(q)));
+  const cnt=(f,v)=>e.items.filter(i=>i[f]===v).length;
+  const grp={};it.forEach(i=>{const k=i.t+':'+i.k;(grp[k]=grp[k]||{t:i.t,k:i.k,n:i.n,br:i.br,L:[]}).L.push(i)});
+  const G=Object.values(grp).sort((a,b)=>a.br.localeCompare(b.br,'he')||a.n.localeCompare(b.n,'he'));
+  const brs=[...new Set(e.items.map(i=>i.br).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'he'));
+  const cell=i=>`<div class="chgr ${i.g}"><span class="f">${esc(i.f)}</span>${i.o?`<span class="o">${esc(i.o)}</span><span class="ar">←</span>`:''}<span class="v">${esc(i.v||'(ריק)')}</span></div>`;
+  app.innerHTML=`<div class="summary">
+      <button class="stat ok${CHGS.g==='good'?' on':''}" data-cg="good"><b>${cnt('g','good')}</b><span>${GN.good}</span></button>
+      <button class="stat bad${CHGS.g==='bad'?' on':''}" data-cg="bad"><b>${cnt('g','bad')}</b><span>${GN.bad}</span></button>
+      <button class="stat${CHGS.g==='info'?' on':''}" data-cg="info"><b>${cnt('g','info')}</b><span>${GN.info} (טלפון, מייל…)</span></button>
+      <button class="stat"><b>${e.items.length}</b><span>שינויים מאז ${esc(e.since)}</span></button>
+    </div>
+    <div class="controls">
+      <select id="chgd" aria-label="עדכון">${L.slice().reverse().map(x=>`<option value="${esc(x.d)}"${x.d===e.d?' selected':''}>עדכון ${esc(x.d)} · ${x.items.length} שינויים</option>`).join('')}</select>
+      <input id="q" type="search" placeholder="חיפוש שם, פרייבט, מס' כלי…" value="${esc(state.q)}">
+      <select id="branch"><option value="">כל הסניפים</option>${brs.map(b=>`<option${b===state.branch?' selected':''}>${esc(b)}</option>`).join('')}</select>
+    </div>
+    <div class="cats">${[['','הכל',e.items.length],...['veh','drv','pb'].map(t=>[t,TN[t],cnt('t',t)])].map(([k,l,n])=>`<button data-ct="${k}" aria-pressed="${CHGS.t===k}">${l}<span>${n}</span></button>`).join('')}</div>
+    <div class="legend"><span class="chgk good">ירוק</span> = חודש / נוסף · <span class="chgk bad">אדום</span> = פג, הוסר או לא עבר · <span class="chgk info">אפור</span> = שינוי פרטים. השוואה בין העדכון של ${esc(e.since)} לעדכון של ${esc(e.d)}.</div>
+    ${G.length?`<div class="list">${G.map(g=>`<div class="card"><div class="who"><div class="name">${esc(g.n||'—')}</div><div class="meta"><span>${g.t==='veh'?'כלי '+esc(g.k):'פרייבט '+esc(g.k)}</span><span>${esc(g.br)}</span></div></div><div class="issues">${g.L.map(cell).join('')}</div></div>`).join('')}</div>`:'<div class="empty">אין שינויים לפי הסינון.</div>'}`;
+  bind();
+  const d=document.getElementById('chgd');if(d)d.onchange=x=>{CHGS.d=x.target.value;render()};
+  document.querySelectorAll('[data-ct]').forEach(b=>b.onclick=()=>{CHGS.t=b.dataset.ct;render()});
+  document.querySelectorAll('[data-cg]').forEach(b=>b.onclick=()=>{CHGS.g=CHGS.g===b.dataset.cg?'':b.dataset.cg;render()});
+}
+/*CHG-END*/
 </script>
 </body>
 </html>

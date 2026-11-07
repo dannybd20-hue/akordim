@@ -16,3 +16,8 @@
 - acc2/build.py – טבלת התאונות (ws/src/a8bbd08d-…xlsx) → kbt/acc.bin; acc2/ai.json – ממצאים/מסקנות שנוסחו.
 - kbt/acc.js + kbt/acc_inject.py – לשונית התאונות ב-kbt.html (מוזרק, לא דרך port.py – port.py ישן!).
 - coord/map.js – מפת אופנוענים. coord-script.gs (עם מפתחות) נמצא רק בגיבוי.
+
+עדכון 07/11/2026 – "מה השתנה":
+- אחרי kbt/build.py מריצים `python3 ws/changes.py` (לפני ההצפנה של data.json). הסקריפט משווה לצילום של העדכון הקודם
+  (ws/snap/DD-MM-YYYY.json), שומר היסטוריה ב-ws/chglog.json (30 עדכונים) ומכניס DATA.chg ל-kbt.bin.
+- kbt/chg.js + kbt/chg_inject.py – לשונית "מה השתנה" ב-kbt.html + סימון שורות/כרטיסים שהשתנו.
