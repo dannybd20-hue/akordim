@@ -56,7 +56,8 @@ details summary{cursor:pointer;font-weight:700;color:var(--uh2);padding:6px 0}
 .lock button{font:inherit;font-weight:800;font-size:17px;padding:10px 22px;border:0;border-radius:8px;background:var(--uh);color:#fff;cursor:pointer}
 .err{color:var(--bad);font-weight:700;min-height:1.3em;margin-top:6px}
 .out{position:fixed;top:10px;left:10px;font:inherit;font-weight:700;background:#fff;color:var(--char);border:0;border-radius:8px;padding:6px 12px;box-shadow:0 2px 6px #0004;cursor:pointer}
-@media print{body{background:#fff;padding:0}.frame{border:0;box-shadow:none}.out{display:none}.note{box-shadow:none;border:1px solid #ccc;transform:none!important}}
+.admin{max-width:760px;margin:-10px auto 26px;background:#fff;border-top:6px solid var(--char);font-size:14.5px;line-height:1.6}.admin .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.abtn{font:inherit;font-weight:700;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--char);text-decoration:none;cursor:pointer}.abtn.wa{background:#1fa855;border-color:#1fa855;color:#fff}
+@media print{.admin{display:none}body{background:#fff;padding:0}.frame{border:0;box-shadow:none}.out{display:none}.note{box-shadow:none;border:1px solid #ccc;transform:none!important}}
 </style>
 </head>
 <body>
@@ -95,6 +96,14 @@ async function unlock(saved){
     if(saved)ls('head_pw',null);lockView(e.message==='pw'?'סיסמה שגויה':!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
 }
 async function pick(b){const br=ADMIN[b]?b:Object.keys(ADMIN)[0];ls('head_adm_br',br);D=await dec(await fileOf(ADMIN[br].pw),ADMIN[br].pw);render()}
+
+/* מצב מנהל: שליחת הסיסמה לראש הסניף בוואטסאפ */
+function waLink(p,t){p=(p||'').replace(/\D/g,'');if(p.startsWith('0'))p='972'+p.slice(1);t=(t||'').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu,'');return 'https://wa.me/'+p+'?text='+encodeURIComponent(t)}
+const first=n=>(n||'').trim().split(/\s+/)[0]||'';
+function headMsg(b){const c=ADMIN[b];return `שלום ${first(c.head)},\n\nפתחתי לך *לוח ראש סניף* – תמונת מצב של הבטיחות בתעבורה בסניף ${b}: ציוני סייפטי, תאונות, נהגים בסיכון, השתלמות שנתית, מצב הכלים, מסמכי נהגים ומשמרות.\nהלוח מתעדכן אוטומטית והוא לצפייה בלבד.\n\nכניסה: https://dannybd20-hue.github.io/akordim/head.html\nהסיסמה שלך: *${c.pw}*\n\nהסיסמה אישית לך – נא לא להעביר הלאה.\nלכל שאלה או בקשה אני זמין.\n\nבברכה,\nדני בן דוד\nקצין בטיחות בתעבורה – מרחב ירושלים`}
+function adminBar(){const b=D.br,c=ADMIN[b],m=headMsg(b);
+  return `<div class="note admin"><b>מצב מנהל</b> · ראש סניף: <b>${esc(c.head||'—')}</b>${c.hph?' · <span dir="ltr">'+esc(c.hph)+'</span>':' · <span class="bad">אין טלפון</span>'} · סיסמה: <b dir="ltr">${esc(c.pw)}</b>
+   <div class="acts">${c.hph?`<a class="abtn wa" href="${waLink(c.hph,m)}" target="_blank" rel="noopener">שליחת סיסמה בוואטסאפ</a>`:''}<button class="abtn" type="button" onclick="navigator.clipboard.writeText(headMsg(D.br)).then(()=>this.textContent='הועתק ✓')">העתקת ההודעה</button></div></div>`}
 function logout(){ls('head_pw',null);D=null;ADMIN=null;lockView()}
 
 /* גרף ציון ממוצע לפי חודש: הסניף מול המרחב */
@@ -117,6 +126,7 @@ function render(){
   $('app').innerHTML=`${ADMIN?`<button class="out" onclick="logout()">יציאה</button>`:`<button class="out" onclick="logout()">יציאה</button>`}
   <div class="note title"><img class="logo" src="brand/uh-logo.png" alt="איחוד הצלה" width="690" height="428"><h1>${esc(d.br)}</h1><p>לוח ראש סניף${d.head?' · '+esc(d.head):''} · רכז תחבורה: ${esc(d.coord||'—')}<br>עודכן ${esc(d.upd)} · צפייה בלבד</p>
     ${ADMIN?`<select onchange="pick(this.value)">${Object.keys(ADMIN).map(b=>`<option${b===d.br?' selected':''}>${esc(b)}</option>`).join('')}</select>`:''}</div>
+  ${ADMIN?adminBar():''}
   <div class="stats">
     <div class="note stat"><span>נהגים פעילים</span><b>${d.n}</b><small>${d.trn?d.trn+' בהכשרה · ':''}${d.moto} אופנוענים</small></div>
     <div class="note stat"><span>ציון סייפטי · ${esc(last)}</span><b>${s.avg??'—'}</b>${cmp(s.avg,regLast,true)}</div>
