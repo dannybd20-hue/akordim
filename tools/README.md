@@ -35,3 +35,8 @@
 - תיקיית הדרייב לעדכונים: "קצבת – עדכונים" (id 1VOAMIIZBpSxfC3iBAxYkhBnXM2sc2w-6). דני מעלה לשם או ישירות לצ׳אט.
 
 - דשבורד ראש סניף (head.html, צפייה בלבד): python3 /home/claude/headdash/build.py <safety_full.json> אחרי coord/build.py. סיסמאות ראשי הסניפים ב-/home/claude/headdash/passwords.json (לא בריפו). סיסמת קצב"ת פותחת את כל הסניפים.
+
+- יציאות לאירועים: python3 ws/events.py <דוח יציאה לאירועים.xlsx> -> ws/events.json (ראש צוות באמבולנס/רכב, כל רוכב באופנוע/אופניים).
+- סייפטי מתחילת השנה: python3 ws/year.py <דוח תקופתי מרוכז 01/01-...> -> ws/year.json (ק"מ אמיתי + כלים חשודים).
+- סדר: kbt/build -> changes -> safety chain (add_extra) -> coord/build -> kbt_ann -> encrypt kbt -> profile_build -> headdash/build.
+- תאונה שלא בזמן נהיגה (לא בנסיעה / נפילה בחניה / מיטה / עובר אורח) לא נכנסת למדד הסיכון.

@@ -148,6 +148,7 @@ function render(){
       <div style="height:14px;background:#f1e8da;border-radius:8px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:${annP||0}%;background:var(--uh)"></div></div>
       ${d.ann.miss.length?`<details><summary>עוד לא ביצעו (${d.ann.miss.length})</summary>${['אופנוע','אמבולנס','רכב'].map(t=>{const g=d.ann.miss.filter(o=>o.t===t);return g.length?`<div class="row"><b>${t} (${g.length})</b></div><p class="sub">${g.map(o=>esc(o.n)).join(' · ')}</p>`:''}).join('')}</details>`:'<div class="empty">כולם ביצעו 👏</div>'}</div>
     <div class="note"><h2>🔧 כלי הסניף</h2><p class="sub">${Object.entries(d.veh.types).map(([t,n])=>`${n} ${esc(t)}`).join(' · ')||'אין כלים'}</p>
+      ${(d.susp||[]).map(v=>`<p class="sub" style="color:var(--warn);font-weight:700">⚠ כלי ${esc(v.num)} חשוד כתקול במערכת הסייפטי: ${v.worse} מתוך ${v.n} נהגים קיבלו עליו ציון נמוך בהרבה מהרגיל שלהם. נפתחת בדיקה מול איתורן.</p>`).join('')}
       ${L(d.veh.issues,v=>`<div class="row"><span><b>כלי ${esc(v.num)}</b> <small>${esc(v.t)} · ${esc(v.n||'')}</small></span><span>${v.r.map(x=>`<span class="tag ${/טסט|ביטוח/.test(x)?'bad':'warn'}">${esc(x)}</span>`).join('')}</span></div>`,'כל הכלים תקינים 👍')}</div>
     <div class="note b"><h2>📄 מסמכי נהגים</h2><p class="sub">נהגים שאחד המסמכים שלהם פג – אסור להם לנהוג בכלי הארגון עד להסדרה.</p>
       ${L(d.docs,o=>`<div class="row"><b>${esc(o.n)}</b><span>${o.b.map(x=>`<span class="tag bad">${esc(x)}</span>`).join('')}</span></div>`,'כל המסמכים בתוקף 👍')}</div>
@@ -155,6 +156,9 @@ function render(){
       ${sh?`<div class="row"><span>משמרות מלאות ינו–אוג 26</span><b>${sh.tot.toLocaleString('he-IL')}</b></div><div class="row"><span>ממוצע לחודש</span><b>${sh.mon}</b></div><div class="row"><span>משמרות לחודש לכלי</span><b>${sh.pv} ${d.reg.shPv?`<small>(מרחב ${d.reg.shPv})</small>`:''}</b></div><div class="row"><span>אוגוסט</span><b>${sh.aug}</b></div>`:'<p class="sub">אין נתוני משמרות לסניף</p>'}
       ${d.km.tot?`<div class="row"><span>ק"מ ב${esc(d.km.m)}</span><b>${d.km.tot.toLocaleString('he-IL')} <small>(${d.km.avg} לנהג)</small></b></div>`:''}
       ${d.sh.inact.length?`<details><summary>נהגי אמבולנס לא פעילים ביולי–אוגוסט (${d.sh.inact.length})</summary>${d.sh.inact.map(o=>`<div class="row"><b>${esc(o.n)}</b><small>${o.a} משמרות בינואר–אוגוסט</small></div>`).join('')}</details>`:''}</div>
+    ${d.ev&&d.ev.t?`<div class="note b"><h2>🚨 יציאות לאירועים</h2><p class="sub">${esc(d.ev.fr)}–${esc(d.ev.to)} · נספר ראש הצוות באמבולנס/רכב וכל רוכב באופנוע/אופניים</p>
+      <div class="big" style="text-align:center;margin:4px 0 8px">${d.ev.t.toLocaleString('he-IL')}</div><p class="sub" style="text-align:center">${Object.entries(d.ev.by).map(([k,n])=>`${esc(k)} ${n.toLocaleString('he-IL')}`).join(' · ')} · ${d.ev.n} מתנדבים</p>
+      <div class="row"><b>🏅 הכי פעילים</b></div>${d.ev.top.map(o=>`<div class="row"><span>${esc(o.n)}</span><b>${o.t}</b></div>`).join('')}</div>`:''}
     ${d.grads.length?`<div class="note g"><h2>🥳 נהגים חדשים</h2><p class="sub">עברו טסט וקיבלו אישור נהיגה מלא לאחרונה:</p>${d.grads.map(g=>`<div class="row"><b>${esc(g.n)}</b><small>${esc(g.to)} · ${esc(g.d)}</small></div>`).join('')}</div>`:''}
   </div>
   <div class="foot">דני בן דוד · קצין בטיחות בתעבורה – מרחב ירושלים · לשאלות ועדכונים – פנה אליי או לרכז התחבורה של הסניף</div>`;
