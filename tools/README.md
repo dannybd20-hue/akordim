@@ -25,3 +25,5 @@
 - ws/changes.py מזהה גם "בוגרים": משתלם X -> אישור נהיגה X רגיל, ושומר ב-ws/grads.json (45 יום). coord/build.py מוסיף DATA.grads, והרכז מקבל הודעה קופצת עם הודעת ברכה.
 
 - ק"מ חודשי: דו"ח פעילות תקופתית מאיתורן (xlsx) -> python3 ws/km.py <file> -> ws/kmhist.json (לפי חודש, רק נהגי מרחב ירושלים). add_extra.py ו-coord/build.py מוסיפים km.
+
+- פרופיל נהג (profile.html, רק לדני): coord/build.py כותב ws/people_all.json, ואז python3 ws/profile_build.py <safety_full.json> -> profile/profile.bin. מקור הקוד: /home/claude/profile/app.js + assemble.py.
