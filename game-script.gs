@@ -23,7 +23,7 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 28; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 29; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
 const CHANGE_SECONDS = 10; // ברירת מחדל: כמה שניות מהתשובה הראשונה שחקן יכול לשנות תשובה (המארח יכול לשנות במשחק)
 function chs_(g) { const n = Number(g.chs); return n > 0 ? n : CHANGE_SECONDS; }
 function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
@@ -437,6 +437,16 @@ function gnext_(pin, d, now, pids) {
     const ex = gget_('gx:' + pin) || { cor: {}, wr: {}, reg: {} }; // לכל שחקן: כמה נכונות ובאילו שאלות טעה או לא ענה (בשביל המבחן)
   pids.forEach(function (p) { const l = g.last[p]; if (l && l.ok) ex.cor[p] = (ex.cor[p] || 0) + 1; else (ex.wr[p] = ex.wr[p] || []).push(g.q); });
   gput_('gx:' + pin, ex);
+  /* סטטיסטיקת זמן תשובה לשאלה הזאת (בשניות): ממוצע, חציון, הכי מהיר/איטי, וזמן ממוצע של מי שענה נכון */
+  try {
+    const plN = gget_('gp:' + pin) || {}, ps = Object.keys(rec);
+    const sec = function (p) { return rec[p][2] / 1000; }, avg = function (a) { return a.length ? Math.round(10 * a.reduce(function (x, y) { return x + y; }, 0) / a.length) / 10 : null; };
+    const all = ps.map(sec).sort(function (x, y) { return x - y; }), okP = ps.filter(function (p) { return rec[p][0] === Q.right; });
+    const fast = okP.slice().sort(function (x, y) { return rec[x][2] - rec[y][2]; })[0];
+    g.ts = all.length ? { n: all.length, avg: avg(all), med: Math.round(10 * all[Math.floor((all.length - 1) / 2)]) / 10, min: Math.round(10 * all[0]) / 10, max: Math.round(10 * all[all.length - 1]) / 10,
+      okAvg: avg(okP.map(sec)), fast: fast ? { name: plN[fast] || '', s: Math.round(10 * sec(fast)) / 10 } : null } : null;
+    g.qst = g.qst || {}; g.qst[g.q] = { N: pids.length, ok: okP.length, n: all.length, avg: avg(all), okAvg: avg(okP.map(sec)) };
+  } catch (x) { g.ts = null; }
   g.phase = 'reveal'; g.dist = dist; g.right = Q.right;
   } else if (g.phase === 'reveal') {
     /* d.show: 'board' = להציג טבלה עכשיו, 'skip' = לדלג עליה; בלי = לפי ההגדרה (כל lb שאלות) */
@@ -452,6 +462,14 @@ function gnext_(pin, d, now, pids) {
   }
   if (g.phase === 'end' && !g.endDone) { // סוף המשחק: שאלות קשות + הודעת סיכום לקבוצת הוואטסאפ (אם חוברה)
     g.endDone = true;
+    /* על מה להתרכז: כל שאלה עם אחוז הטעויות וזמן התשובה הממוצע. ממוין מהשאלה שהכי צריך לחזק:
+       ציון = % שלא ענו נכון + חצי מ"כמה מהזמן לקח להם" (באחוזים) */
+    try {
+      const qs = g.qst || {};
+      g.focus = Object.keys(qs).map(function (i) { const x = qs[i], wp = x.N ? Math.round(100 * (x.N - x.ok) / x.N) : 0, tp = x.avg == null ? 100 : Math.min(100, Math.round(100 * x.avg / g.dur));
+        return { n: +i + 1, t: String(def.qs[i].t).slice(0, 140), wp: wp, avg: x.avg, okAvg: x.okAvg, sc: wp + tp / 2 }; })
+        .sort(function (a, b) { return b.sc - a.sc || a.n - b.n; });
+    } catch (x) {}
     try {
       const pl2 = gget_('gp:' + pin) || {}, hq = hardQs_(g, pin, pl2, def);
       g.hard = hq.slice(0, 5).filter(function (x) { return x.wp > 0; });
@@ -472,7 +490,8 @@ function hardQs_(g, pin, pl, def) {
     if (!rec) continue;
     let ok = 0;
     Object.keys(pl).forEach(function (p) { if (rec[p] && rec[p][0] === def.qs[i].right) ok++; });
-    out.push({ n: i + 1, t: def.qs[i].t, N: N, ok: ok, wp: Math.round(100 * (N - ok) / N) });
+    const st = (g.qst || {})[i] || {};
+    out.push({ n: i + 1, t: def.qs[i].t, N: N, ok: ok, wp: Math.round(100 * (N - ok) / N), avg: st.avg == null ? '' : st.avg, okAvg: st.okAvg == null ? '' : st.okAvg });
   }
   return out.sort(function (a, b) { return b.wp - a.wp || a.n - b.n; });
 }
@@ -486,8 +505,9 @@ function examHardRows_(g, pin, hq) {
     sh.getRange(1, 1, 1, 7).setValues([['תאריך', 'משחק', 'שאלה #', 'שאלה', 'משתתפים', 'ענו נכון', '% שלא ענו נכון']]).setFontWeight('bold').setBackground('#4f46e5').setFontColor('#ffffff');
     sh.setFrozenRows(1); sh.setColumnWidth(4, 420);
   }
+  if (!sh.getRange(1, 8).getValue()) sh.getRange(1, 8, 1, 2).setValues([['זמן תשובה ממוצע (שנ׳)', 'זמן ממוצע של מי שענה נכון']]).setFontWeight('bold').setBackground('#4f46e5').setFontColor('#ffffff');
   const date = Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd.MM.yyyy HH:mm');
-  sh.getRange(sh.getLastRow() + 1, 1, hq.length, 7).setValues(hq.map(function (x) { return [date, g.title, x.n, x.t, x.N, x.ok, x.wp]; }));
+  sh.getRange(sh.getLastRow() + 1, 1, hq.length, 9).setValues(hq.map(function (x) { return [date, g.title, x.n, x.t, x.N, x.ok, x.wp, x.avg, x.okAvg]; }));
 }
 /* הודעת סיכום לקבוצה: הפודיום, כמה עברו, והשאלה הכי קשה (בלי שמות של מי שנכשל) */
 function podiumText_(g, pl) {
