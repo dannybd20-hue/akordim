@@ -153,6 +153,7 @@ tr.chgrow td{background:var(--today-bg)}tr.chgrow td:first-child{box-shadow:inse
       <button class="tab" role="tab" id="t-alerts" aria-selected="true" data-v="alerts">חריגות<span class="n" id="n-alerts"></span></button>
       <button class="tab" role="tab" id="t-veh" aria-selected="false" data-v="veh">רכבים</button>
       <button class="tab" role="tab" id="t-drv" aria-selected="false" data-v="drv">נהגים</button>
+      <button class="tab" role="tab" id="t-ann" aria-selected="false" data-v="ann">השתלמות שנתית<span class="n" id="n-ann"></span></button>
       <button class="tab" role="tab" id="t-route" aria-selected="false" data-v="route">מסלול בדיקות</button>
       <button class="tab" role="tab" id="t-insp" aria-selected="false" data-v="insp">בדיקות<span class="n" id="n-insp"></span></button>
       <button class="tab" role="tab" id="t-acc" aria-selected="false" data-v="acc">תאונות<span class="n" id="n-acc"></span></button>
@@ -273,7 +274,7 @@ async function unlock(saved){
   const pw=saved||(document.getElementById('pw')&&(s=>s.replace(/[א-ת]/g,c=>({'ק':'e','ר':'r','א':'t','ט':'y','ו':'u','ן':'i','ם':'o','פ':'p','ש':'a','ד':'s','ג':'d','כ':'f','ע':'g','י':'h','ח':'j','ל':'k','ך':'l','ז':'z','ס':'x','ב':'c','ה':'v','נ':'b','מ':'n','צ':'m'})[c]||c))(document.getElementById('pw').value.trim().toLowerCase()).replace(/\.$/,''));if(!pw)return;
   if(!saved){const b=document.getElementById('ub');b.disabled=true;b.textContent='פותח… (כמה שניות)'}
   else document.getElementById('app').innerHTML='<div class="empty">פותח את הנתונים…</div>';
-  try{DATA=await decrypt(pw);KPW=pw;setTimeout(chgBadge,50);setTimeout(loadAcc,300);setTimeout(()=>loadBd(true),900);if(!window._bdT)window._bdT=setInterval(()=>loadBd(true),180000);if(!saved)ls('kbt_pw',document.getElementById('rem').checked?pw:'');document.getElementById('lockB').hidden=false;document.getElementById('upd').textContent='עודכן: '+DATA.updated;render()}
+  try{DATA=await decrypt(pw);KPW=pw;setTimeout(chgBadge,50);setTimeout(annBadge,60);setTimeout(loadAcc,300);setTimeout(()=>loadBd(true),900);if(!window._bdT)window._bdT=setInterval(()=>loadBd(true),180000);if(!saved)ls('kbt_pw',document.getElementById('rem').checked?pw:'');document.getElementById('lockB').hidden=false;document.getElementById('upd').textContent='עודכן: '+DATA.updated;render()}
   catch(e){if(saved&&e.message==='pw')ls('kbt_pw','');lockView(e.message==='pw'?'סיסמה שגויה':!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
 }
 function relock(){if(!confirm('לנעול ולשכוח את הסיסמה במכשיר הזה?'))return;ls('kbt_pw','');DATA=null;lockView()}
@@ -364,6 +365,7 @@ function render(){
   document.getElementById('n-alerts').textContent=every.filter(r=>r.lvl==='today'||r.lvl==='bad').length||'';
   if(state.view==='route'){renderRoute();return}
   if(state.view==='acc'){renderAcc();return}
+  if(state.view==='ann'){renderAnn();return}
   if(state.view==='chg'){renderChg();return}
   if(state.view==='insp'){renderInsp();return}
   if(state.view==='alerts'){
@@ -718,6 +720,37 @@ function renderChg(){
   document.querySelectorAll('[data-cg]').forEach(b=>b.onclick=()=>{CHGS.g=CHGS.g===b.dataset.cg?'':b.dataset.cg;render()});
 }
 /*CHG-END*/
+/*ANN-START*/
+/* ===== השתלמות שנתית: מי שלא ביצע (DATA.ann נבנה ב-ws/kbt_ann.py לפי הכללים של אפליקציית הרכזים) ===== */
+const ANNS={t:''};
+const annKey=o=>'ann:'+(o.pv||o.name)+':'+new Date().toISOString().slice(0,7);
+function annMsgK(o){return `היי ${first(o.name)},\nלפי המערכת עדיין לא ביצעת את ההשתלמות השנתית לשנת ${DATA.ann.y} (*${o.course}*).\n\nההשתלמות היא חובה לכל מי שנוהג בכלי הארגון, וחשוב להשלים אותה עד סוף השנה.\n*יש להירשם בהקדם${o.coord?` דרך רכז התחבורה בסניף – ${o.coord}`:''}.*\n\nאם כבר ביצעת השתלמות והיא לא מופיעה במערכת – תעדכן אותי ואבדוק.\n\nבברכה,\nדני בן דוד\nקצין בטיחות בתעבורה – מרחב ירושלים`}
+function annBadge(){const b=document.getElementById('n-ann');if(b&&DATA&&DATA.ann)b.textContent=DATA.ann.L.filter(o=>!ls(annKey(o))).length||''}
+function renderAnn(){
+  const app=document.getElementById('app');if(!DATA.ann){app.innerHTML='<div class="empty">אין נתונים</div>';return}
+  const q=state.q.trim(),A=DATA.ann.L;
+  const L=A.filter(o=>(!state.branch||o.branch===state.branch)&&(!ANNS.t||o.need===ANNS.t)&&(!q||[o.name,o.pv,o.phone,o.branch].some(x=>(x||'').includes(q))));
+  const brs=[...new Set(A.map(o=>o.branch))].sort((a,b)=>a.localeCompare(b,'he'));
+  const n=t=>A.filter(o=>(!state.branch||o.branch===state.branch)&&(!t||o.need===t)).length;
+  const sent=L.filter(o=>ls(annKey(o))).length;
+  const row=o=>{const t=uTxt(o,annMsgK(o)),k=annKey(o),s=ls(k),ph=uPh(o);
+    return `<div class="card"><div class="who"><div class="name">${esc(o.name)}</div><div class="meta">${o.pv?`<span>פרייבט ${esc(o.pv)}</span>`:''}<span>${esc(o.branch)}</span>${o.coord?`<span>רכז: ${esc(o.coord)}</span>`:''}</div>
+      <div class="veh">חסר: ${esc(o.course)}${o.crs.length?` · <span style="color:var(--muted)">קורסים קודמים: ${esc(o.crs.slice(-3).join(', '))}</span>`:''}</div></div>
+      <div class="tel">${unitOf(o)?`<b style="color:var(--accent)">↪ דרך הרכז ${esc(unitOf(o).n)}</b><br>`:''}${ph?fmtPhone(ph):'אין טלפון'}</div>
+      <div class="issues"><div class="irow"><span class="chip ${s?'ok':'bad'}">${s?'✓ נשלחה תזכורת החודש':'לא ביצע השתלמות '+DATA.ann.y}</span><span class="btns">${ph?`<a class="wa sm${s?' done':''}" href="${waLink(ph,t)}" target="_blank" rel="noopener" data-ak="${esc(k)}">${WA_ICON}${s?'נשלח':unitOf(o)?'לרכז '+first(unitOf(o).n):'וואטסאפ'}</a>`:''}<a class="mail sm" href="mailto:${esc(uMail(o))}?subject=${encodeURIComponent('השתלמות שנתית '+DATA.ann.y)}&body=${encodeURIComponent(t.replace(/\*/g,''))}" data-ak="${esc(k)}">מייל</a><button class="mail sm" type="button" data-copy="${esc(t)}">העתק</button></span></div></div></div>`};
+  const G=['אופנוע','אמבולנס','רכב'].map(t=>[t,L.filter(o=>o.need===t).sort((a,b)=>(!!ls(annKey(a)))-(!!ls(annKey(b)))||a.branch.localeCompare(b.branch,'he')||a.name.localeCompare(b.name,'he'))]).filter(g=>g[1].length);
+  app.innerHTML=`<div class="summary">
+      <div class="stat bad"><b>${n('')}</b><span>לא ביצעו השתלמות ${DATA.ann.y}${state.branch?' בסניף':' במרחב'}</span></div>
+      <div class="stat"><b>${n('אופנוע')}</b><span>אופנוע</span></div><div class="stat"><b>${n('אמבולנס')}</b><span>אמבולנס</span></div><div class="stat"><b>${n('רכב')}</b><span>רכב</span></div></div>
+    <div class="controls"><input id="q" type="search" placeholder="חיפוש שם, פרייבט, טלפון…" value="${esc(state.q)}"><select id="branch"><option value="">כל הסניפים</option>${brs.map(b=>`<option${b===state.branch?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
+    <div class="cats">${[['','הכל'],['אופנוע','אופנוע'],['אמבולנס','אמבולנס'],['רכב','רכב']].map(([k,l])=>`<button data-at="${k}" aria-pressed="${ANNS.t===k}">${l}<span>${n(k)}</span></button>`).join('')}</div>
+    <div class="legend">אותם כללים כמו אצל הרכזים: אופנוע > אמבולנס > רכב – השתלמות של הדרגה הגבוהה פוטרת מהנמוכות. פטורים גם: חיים בדרכים / אלטרנטיב / טסט השנה / יום א׳ של השתלמות רכיבה / משתלם אמבולנס-רכב. ${sent?`✓ ${sent} קיבלו תזכורת החודש (מופיעים בסוף).`:''}</div>
+    ${G.map(([t,g])=>`<h2>${t}<span class="cnt">${g.length}</span></h2><div class="list">${g.map(row).join('')}</div>`).join('')||'<div class="empty">כולם ביצעו 👍</div>'}`;
+  bind();
+  document.querySelectorAll('[data-at]').forEach(b=>b.onclick=()=>{ANNS.t=b.dataset.at;render()});
+  document.querySelectorAll('a[data-ak]').forEach(a=>a.addEventListener('click',()=>{ls(a.dataset.ak,'1');annBadge();setTimeout(render,300)}));
+}
+/*ANN-END*/
 </script>
 </body>
 </html>
