@@ -129,6 +129,7 @@ td.d-bad{color:var(--bad);font-weight:700} td.d-warn{color:var(--warn);font-weig
 .mc.sc-good,.mc.sc-top{background:#e3f4ea;border-color:#bfe3cd}.mc.sc-good b,.mc.sc-top b{color:#1d7a46}
 .mc.cur{outline:2px solid var(--accent);outline-offset:1px}
 @media (max-width:520px){.mrow{grid-template-columns:repeat(6,1fr)}}
+.rwhy{margin:6px 0 2px;padding-inline-start:18px;font-size:.9rem;color:var(--fg)}.rwhy li{margin:2px 0}
 </style>
 <style>
 .cats button.c-demote[aria-pressed="true"]{background:var(--bad);border-color:var(--bad)}
@@ -161,6 +162,7 @@ td.s.low{background:var(--bad-bg);color:var(--bad)}td.s.mid{background:var(--war
     <div class="top"><div class="brand"><span class="logo"><img src="brand/uh-logo.png" alt="איחוד הצלה" width="440" height="273"></span><h1>דוח סייפטי</h1></div><span class="hbs"><span class="upd" id="upd"></span><button class="hb" id="lockB" hidden onclick="relock()" title="נעילה ושכחת הסיסמה במכשיר">🔒</button><button class="hb" onclick="goHome()">→ אפליקציות</button></span></div>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" aria-selected="true" data-v="msg">הודעות<span class="n" id="n-msg"></span></button>
+      <button class="tab" role="tab" aria-selected="false" data-v="risk">בסיכון<span class="n" id="n-risk"></span></button>
       <button class="tab" role="tab" aria-selected="false" data-v="br">סניפים</button>
       <button class="tab" role="tab" aria-selected="false" data-v="vol">מתנדבים</button>
       <button class="tab" role="tab" aria-selected="false" data-v="stat">סטטיסטיקה</button>
@@ -380,12 +382,39 @@ function card(v,m){
   const cc=CIDX&&CIDX[v.br]&&CIDX[v.br].cem;
   const ml=`<a class="mail sm" href="mailto:${esc(v.em||'')}?${cc?'cc='+encodeURIComponent(cc)+'&':''}subject=${encodeURIComponent(SUBJ[c]+' – '+M)}&body=${encodeURIComponent(text.replace(/\*/g,''))}" data-sent="${esc(sk)}" ${cm}>מייל</a>`;
   const cp=`<button class="mail sm" type="button" data-copy="${esc(text)}">העתק</button>`+(c==='demote'?trainMail(v,m):'');
-  return `<div class="card"><div class="who"><div class="name">${esc(v.n)}</div><div class="meta"><span>פרייבט ${esc(v.pv)}</span><span>${esc(v.br)}</span>${state.cat==='all'?(()=>{const C=CATS.find(x=>x[0]===c);return C?`<span style="color:${C[2]};font-weight:700">● ${esc(C[1])}</span>`:''})():''}${k>=2?`<span class="streak">${k} חודשים ברצף מתחת ל־25</span>`:''}</div>${spark(v,m)}${v.doubt?`<div class="meta" style="margin-top:4px;color:var(--bad);font-weight:700">❓ לבדוק לפני שליחה: ${esc(v.doubt)} (${esc(v.ph?fmtPhone(v.ph):'')})</div>`:''}${v.pvItu!=null&&!v.doubt?`<div class="meta" style="margin-top:4px;color:var(--warn)">⚠ ${v.nomatch?`לא נמצא במערכת לפי הפרייבט "${esc(v.pvItu)}" שבאיתורן – אין טלפון ומייל`:`באיתורן רשום פרייבט "${esc(v.pvItu)}"${v.owner?` (שייך במערכת ל${esc(v.owner)})`:''} – הפרטים נלקחו לפי השם`}</div>`:''}${sinceRow(v,m)}${monRow(v,m)}${v.ev?`<div class="meta">${Object.entries(v.ev).sort((x,y)=>y[1][1]-x[1][1]).slice(0,4).map(([c,[n,pc]])=>`<span class="chip ${pc>=25?'bad':pc>=10?'warn':'miss'}">${esc(c)} ${Math.round(pc)}%</span>`).join('')}</div>`:''}<div class="meta">${trendTxt(st)}${st.fromPeak!=null&&st.fromPeak<0?`<span>${-st.fromPeak} מתחת לשיא (${st.peak})</span>`:''}${st.avg!=null?`<span>ממוצע ${st.avg}</span>`:''}</div></div>
+  return `<div class="card"><div class="who"><div class="name">${esc(v.n)}</div><div class="meta"><span>פרייבט ${esc(v.pv)}</span><span>${esc(v.br)}</span>${state.cat==='all'?(()=>{const C=CATS.find(x=>x[0]===c);return C?`<span style="color:${C[2]};font-weight:700">● ${esc(C[1])}</span>`:''})():''}${k>=2?`<span class="streak">${k} חודשים ברצף מתחת ל־25</span>`:''}${riskChip(v)}</div>${spark(v,m)}${v.doubt?`<div class="meta" style="margin-top:4px;color:var(--bad);font-weight:700">❓ לבדוק לפני שליחה: ${esc(v.doubt)} (${esc(v.ph?fmtPhone(v.ph):'')})</div>`:''}${v.pvItu!=null&&!v.doubt?`<div class="meta" style="margin-top:4px;color:var(--warn)">⚠ ${v.nomatch?`לא נמצא במערכת לפי הפרייבט "${esc(v.pvItu)}" שבאיתורן – אין טלפון ומייל`:`באיתורן רשום פרייבט "${esc(v.pvItu)}"${v.owner?` (שייך במערכת ל${esc(v.owner)})`:''} – הפרטים נלקחו לפי השם`}</div>`:''}${sinceRow(v,m)}${monRow(v,m)}${v.ev?`<div class="meta">${Object.entries(v.ev).sort((x,y)=>y[1][1]-x[1][1]).slice(0,4).map(([c,[n,pc]])=>`<span class="chip ${pc>=25?'bad':pc>=10?'warn':'miss'}">${esc(c)} ${Math.round(pc)}%</span>`).join('')}</div>`:''}<div class="meta">${trendTxt(st)}${st.fromPeak!=null&&st.fromPeak<0?`<span>${-st.fromPeak} מתחת לשיא (${st.peak})</span>`:''}${st.avg!=null?`<span>ממוצע ${st.avg}</span>`:''}</div></div>
     <div class="score ${scCls(x)}">${x}</div>
     <div class="issues"><div class="irow"><span class="tel">${v.ph?fmtPhone(v.ph):'אין טלפון'}${v.em?` · <span class="em">${esc(v.em)}</span>`:''}</span><span class="btns">${wa}${ml}${cp}</span></div>${v.rep?`<details class="anal"><summary>📄 ניתוח מלא מהדוח</summary><pre>${esc(analysis(v).replace(/\*/g,''))}</pre><div class="btns">${v.ph?`<a class="wa sm" href="${waLink(v.ph,`מה קורה ${first(v.n)},\nשלחתי לך גם את הפירוט המלא מהדוח, אם תרצה לראות בעצמך:\n\n${analysis(v)}\n\nאם משהו לא ברור – תכתוב לי.\n${ME}`)}" target="_blank" rel="noopener">${WA_ICON}שלח ניתוח</a>`:''}<button class="mail sm" type="button" data-copy="${esc(analysis(v))}">העתק ניתוח</button></div></details>`:''}</div></div>`;
 }
+/* ===== מדד סיכון (מחושב ב-add_extra.py) ===== */
+const RISKL={high:['סיכון גבוה','var(--bad)'],mid:['סיכון בינוני','var(--warn)']};
+const rkKey=v=>'rk:'+v.pv+':'+DATA.months[DATA.months.length-1];
+function riskChip(v){const r=v.risk;if(!r)return '';const [l,c]=RISKL[r.lvl];return `<span style="color:${c};font-weight:700" title="${esc(r.why.join('\n'))}">🎯 ${l} (${r.p})</span>`}
+function riskMsg(v){return `מה קורה ${first(v.n)},\n\nאני עובר באופן קבוע על נתוני הבטיחות של הכוננים במרחב, ורציתי לקבוע איתך שיחה קצרה על הנהיגה. זו לא ביקורת, אלא דרך לעזור לך לנהוג בטוח יותר ולהגיע הביתה בשלום.\n\nאשמח שנדבר השבוע, או שנקבע רכיבה או נסיעה משותפת. מתי נוח לך?\n\n${SIGN}`}
+function riskBadge(){const b=$('n-risk');if(b)b.textContent=DATA.v.filter(v=>v.risk&&v.risk.lvl==='high'&&!ls(rkKey(v))).length||''}
+function renderRisk(){
+  const app=$('app'),lv=state.rl||'high';
+  const all=DATA.v.filter(v=>v.risk&&filt(v));
+  const L0=all.filter(v=>lv==='all'||v.risk.lvl===lv).sort((a,b)=>b.risk.p-a.risk.p||((a.s[state.m]??999)-(b.s[state.m]??999)));
+  const q=state.q.trim(),hid=q?[]:L0.filter(v=>ls(rkKey(v))),L=q?L0:L0.filter(v=>!ls(rkKey(v)));
+  const n=k=>all.filter(v=>(k==='all'||v.risk.lvl===k)&&!ls(rkKey(v))).length;
+  const card=v=>{const t=riskMsg(v),x=v.s[state.m],k=rkKey(v),done=ls(k);
+    return `<div class="card"><div class="who"><div class="name">${esc(v.n)}</div><div class="meta"><span>פרייבט ${esc(v.pv)}</span><span>${esc(v.br)}</span>${riskChip(v)}</div>
+      <ul class="rwhy">${v.risk.why.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>${monRow(v,state.m)}</div>
+      <div class="score ${scCls(x)}">${x??'—'}</div>
+      <div class="issues"><div class="irow"><span class="tel">${v.ph?fmtPhone(v.ph):'אין טלפון'}</span><span class="btns">${v.ph?`<a class="wa sm" href="${waLink(v.ph,t)}" target="_blank" rel="noopener">${WA_ICON}הזמנה לשיחה${v.doubt?' ?':''}</a>`:''}<button class="mail sm" type="button" data-copy="${esc(t)}">העתק</button><button class="mail sm${done?' done':''}" type="button" data-rk="${esc(k)}">${done?'✓ טופל':'סמן כטופל'}</button></span></div></div></div>`};
+  app.innerHTML=`${controls()}
+  <div class="cats" role="group" aria-label="רמת סיכון">${[['high','סיכון גבוה'],['mid','סיכון בינוני'],['all','הכל']].map(([k,l])=>`<button data-rl="${k}" aria-pressed="${lv===k}">${l}<span>${n(k)}</span></button>`).join('')}</div>
+  <div class="legend"><b>איך מחושב:</b> תאונה באשמתו בשנה האחרונה +3 (שתיים ומעלה +4) · תאונה בלי אשמה +1 · ציון אחרון מתחת ל־35 +2, מתחת ל־50 +1 · 3 חודשים מתחת ל־35 +1 · נהג חדש +1 · אין השתלמות שנתית +1 · השתלמות רכיבה מתחת ל־8 או אלטרנטיב מתחת ל־7 +1. <b>5 ומעלה = גבוה, 3–4 = בינוני.</b><br>לפי הנתונים שלנו, מי שהייתה לו תאונה באשמתו וגם ציון מתחת ל־35 – הסיכוי שלו לתאונה באשמתו בחודשיים הבאים גבוה פי 2.3 מנהג רגיל. זה כלי לתעדוף, לא תחזית.</div>
+  <div class="list">${L.map(card).join('')||`<div class="empty">${hid.length?'כולם בקבוצה הזאת סומנו כטופלו 👍':'אין מתנדבים בקבוצה הזאת.'}</div>`}</div>
+  ${hid.length?`<p class="legend">✓ ${hid.length} שסומנו כטופלו הוסתרו (${hid.map(v=>esc(v.n)).join(', ')}). לצפייה – חיפוש לפי השם.</p>`:''}`;
+  bind();
+  document.querySelectorAll('[data-rl]').forEach(b=>b.onclick=()=>{state.rl=b.dataset.rl;render()});
+  document.querySelectorAll('[data-rk]').forEach(b=>b.onclick=()=>{const k=b.dataset.rk;if(ls(k))try{localStorage.removeItem(k)}catch(_){}else ls(k,TODAY_KEY);riskBadge();render()});
+}
 function render(){
-  if(!DATA)return;
+  if(!DATA)return;riskBadge();
+  if(state.view==='risk'){renderRisk();return}
   if(state.view==='br'){renderBranches();return}const app=$('app'),m=state.m,M=DATA.months[m];
   const act=DATA.v.filter(v=>v.s[m]!=null);
   const cnt={};act.forEach(v=>{const c=catOf(v,m);if(!doneAny(v,m))cnt[c]=(cnt[c]||0)+1});
