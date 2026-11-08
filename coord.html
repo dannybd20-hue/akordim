@@ -814,6 +814,22 @@ function msgAlerts(){if(ADMIN||!MSGS||document.querySelector('.ov.center'))retur
 }
 function msgSection(p){const L=(MSGS||[]).filter(x=>x.pv===p.pv);return L.length?`<section class="card wide"><h3>💬 הודעות מקצין הבטיחות</h3>${L.map(x=>`<details><summary>${esc(x.m||'')} · ${esc(new Date(x.ts).toLocaleDateString('he-IL'))}</summary><div class="msgtxt">${fmtWA(x.text)}</div></details>`).join('')}</section>`:''}
 
+/* נהג שעבר טסט (משתלם → אישור נהיגה רגיל) – הודעה קופצת לרכז עם הודעת ברכה מוכנה */
+function gradMsg(g,p){const c=DATA.coord||'';return `מה קורה ${first(g.n)},\n\n*מזל טוב על מעבר הטסט!* ברוך הבא לנהגי סניף ${DATA.br}.\n\n► מהיום אתה נוהג בכלי הארגון באופן עצמאי. תקפיד ליישם בכל נסיעה את מה שלמדת בקורס ובתקופת החניכה.\n\n► הנהיגה בכלי הארגון נמצאת במעקב: מערכת הסייפטי נותנת ציון חודשי על אופן הנהיגה, ומוקד רואה הצופה עוקב אחרי הנסיעות לצורכי בקרה.\n\n► נהיגה רגועה ושקולה, במהירות שמתאימה לתנאי הדרך – גם בנסיעת חירום. להגיע בשלום זה חלק מההצלה.\n\n*דגשים חשובים:*\n◆ צומת באור אדום – עצירה מלאה לפני הכניסה לצומת, ועצירה נוספת בתוך הצומת לפני שממשיכים.\n◆ לפני כל יציאה – סיבוב קצר סביב הכלי ובדיקה שהכול תקין.\n◆ כל תקלה, שריטה או אירוע בדרך – מעדכנים אותי מיד.\n\nאני כאן לכל שאלה, בעיה בכלי או סתם התייעצות.\nבהצלחה, סע בדרכים בטוחות והמשך להציל חיים!\n\n*${c}*\n*רכז תחבורה – ${DATA.br}*`}
+function gradAlerts(){if(ADMIN||document.querySelector('.ov.center'))return;const N=(DATA.grads||[]).filter(g=>!ls('gradseen:'+g.pv+':'+g.to));if(!N.length)return;
+  const g=N[0],p=DATA.people.find(x=>x.pv===g.pv)||{},ph=p.ph||'',t=gradMsg(g,p),ov=document.createElement('div');ov.className='ov center';
+  ov.innerHTML=`<div class="alertbox" role="alertdialog" aria-label="נהג חדש בסניף"><div class="ah ok"><span>🎉</span><div><small>עדכון מהמערכת${N.length>1?` · 1 מתוך ${N.length}`:''}</small><h2>מזל טוב! נהג נוסף הצטרף לנהגי הסניף</h2></div></div>
+    <p style="margin:0"><b>${esc(g.n)}</b>${g.pv?' · פרייבט '+esc(g.pv):''} עבר מ"${esc(g.fr)}" לאישור נהיגה <b>${esc(g.to)}</b> (עודכן ${esc(g.d)}).${g.test?`<br><span class="hint" style="padding:0">טסט: ${esc(g.test)}</span>`:''}</p>
+    <p class="hint" style="padding:0">שלח לו הודעת ברכה – אפשר לערוך לפני השליחה:</p>
+    <textarea id="gtx" rows="12" style="width:100%;font:inherit;direction:rtl;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);color:var(--fg)">${esc(t)}</textarea>
+    <div class="acts">${ph?`<a class="btn wa" id="gwa" target="_blank" rel="noopener">${WA_ICON}שליחה בוואטסאפ</a>`:''}<button class="btn ghost" id="gcp">העתקה</button><button class="btn ghost" id="glater">אחר כך</button><button class="btn ghost" id="gok">כבר שלחתי</button></div></div>`;
+  document.body.append(ov);const tx=ov.querySelector('#gtx');
+  const done=()=>{ls('gradseen:'+g.pv+':'+g.to,String(Date.now()));ov.remove();setTimeout(gradAlerts,200)};
+  const wa=ov.querySelector('#gwa');if(wa){const upd=()=>wa.href=waLink(ph,tx.value);upd();tx.oninput=upd;wa.addEventListener('click',()=>setTimeout(done,300))}
+  ov.querySelector('#gcp').onclick=async e=>{try{await navigator.clipboard.writeText(tx.value);e.target.textContent='הועתק ✓'}catch(_){e.target.textContent='לא הועתק'}};
+  ov.querySelector('#glater').onclick=()=>ov.remove();ov.querySelector('#gok').onclick=done;
+}
+
 /* ===== מפת מתנדבים – לפי כתובת המגורים ===== */
 const MAP={el:null,map:null,layer:null,br:null,run:0,done:0,total:0,miss:[],flt:'all'};
 const GEO_V='geo2:';
@@ -940,7 +956,7 @@ document.addEventListener('visibilitychange',()=>document.body.classList.toggle(
 window.addEventListener('blur',()=>document.body.classList.add('hide-all'));window.addEventListener('focus',()=>document.body.classList.remove('hide-all'));
 document.addEventListener('copy',e=>{if(document.body.classList.contains('secure')&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||''))e.preventDefault()});
 document.addEventListener('contextmenu',e=>{if(document.body.classList.contains('secure'))e.preventDefault()});
-function show(){setTimeout(accAlerts,600);ACKS=null;setTimeout(loadAcks,100);INVS=null;setTimeout(loadInvs,150);FU=null;setTimeout(loadFu,200);MSGS=null;setTimeout(loadMsgs,250);setTimeout(fuAlerts,1500);if(ADMIN){setTimeout(loadPending,300);if(!window._pendT)window._pendT=setInterval(loadPending,120000)}$('gsw').hidden=false;const gi=$('gs');gi.oninput=()=>gsearch(gi.value);document.documentElement.style.setProperty('--hh',document.querySelector('.appbar').offsetHeight+'px');watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
+function show(){setTimeout(accAlerts,600);setTimeout(gradAlerts,2600);ACKS=null;setTimeout(loadAcks,100);INVS=null;setTimeout(loadInvs,150);FU=null;setTimeout(loadFu,200);MSGS=null;setTimeout(loadMsgs,250);setTimeout(fuAlerts,1500);if(ADMIN){setTimeout(loadPending,300);if(!window._pendT)window._pendT=setInterval(loadPending,120000)}$('gsw').hidden=false;const gi=$('gs');gi.oninput=()=>gsearch(gi.value);document.documentElement.style.setProperty('--hh',document.querySelector('.appbar').offsetHeight+'px');watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
 
 /* ===== כניסה ===== */
 function lockView(err){

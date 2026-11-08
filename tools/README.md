@@ -21,3 +21,5 @@
 - אחרי kbt/build.py מריצים `python3 ws/changes.py` (לפני ההצפנה של data.json). הסקריפט משווה לצילום של העדכון הקודם
   (ws/snap/DD-MM-YYYY.json), שומר היסטוריה ב-ws/chglog.json (30 עדכונים) ומכניס DATA.chg ל-kbt.bin.
 - kbt/chg.js + kbt/chg_inject.py – לשונית "מה השתנה" ב-kbt.html + סימון שורות/כרטיסים שהשתנו.
+
+- ws/changes.py מזהה גם "בוגרים": משתלם X -> אישור נהיגה X רגיל, ושומר ב-ws/grads.json (45 יום). coord/build.py מוסיף DATA.grads, והרכז מקבל הודעה קופצת עם הודעת ברכה.
