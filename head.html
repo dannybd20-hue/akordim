@@ -123,7 +123,7 @@ function render(){
   const cmp=(v,ref,hi)=>v==null||ref==null?'':(hi?v>=ref:v<=ref)?`<small class="ok">▲ ממוצע המרחב ${ref}</small>`:`<small class="bad">▼ ממוצע המרחב ${ref}</small>`;
   const L=(arr,fn,empty)=>arr.length?`<div class="list">${arr.map(fn).join('')}</div>`:`<div class="empty">${empty}</div>`;
   const sh=d.sh.br;
-  $('app').innerHTML=`${ADMIN?`<button class="out" onclick="logout()">יציאה</button>`:`<button class="out" onclick="logout()">יציאה</button>`}
+  $('app').innerHTML=`${ADMIN?`<a class="out" style="right:10px;left:auto;text-decoration:none" href="index.html">→ אפליקציות</a>`:''}<button class="out" onclick="logout()">יציאה</button>
   <div class="note title"><img class="logo" src="brand/uh-logo.png" alt="איחוד הצלה" width="690" height="428"><h1>${esc(d.br)}</h1><p>לוח ראש סניף${d.head?' · '+esc(d.head):''} · רכז תחבורה: ${esc(d.coord||'—')}<br>עודכן ${esc(d.upd)} · צפייה בלבד</p>
     ${ADMIN?`<select onchange="pick(this.value)">${Object.keys(ADMIN).map(b=>`<option${b===d.br?' selected':''}>${esc(b)}</option>`).join('')}</select>`:''}</div>
   ${ADMIN?adminBar():''}
