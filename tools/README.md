@@ -31,3 +31,5 @@
 - השתלמות שנתית בקצב"ת: אחרי coord/build.py מריצים python3 ws/kbt_ann.py ואז מצפינים שוב את kbt/data.json. הכללים ב-ws/annual.py = העתק של annual() ב-coord/logic.js (לעדכן את שניהם יחד).
 
 - תעודות משוב חודשיות (zip של DriverEvaluation PDF): מחלצים רק את נהגי המרחב, מפענחים עם safety/pdfparse.py ושומרים ב-ws/evhist.json לפי חודש. add_extra.py מוסיף v.evm; safety.html מציג פילוח לפי החודש שנבחר; פרופיל נהג מציג את כל החודשים.
+
+- תיקיית הדרייב לעדכונים: "קצבת – עדכונים" (id 1VOAMIIZBpSxfC3iBAxYkhBnXM2sc2w-6). דני מעלה לשם או ישירות לצ׳אט.
