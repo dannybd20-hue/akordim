@@ -148,7 +148,6 @@ function render(){
       <div style="height:14px;background:#f1e8da;border-radius:8px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:${annP||0}%;background:var(--uh)"></div></div>
       ${d.ann.miss.length?`<details><summary>עוד לא ביצעו (${d.ann.miss.length})</summary>${['אופנוע','אמבולנס','רכב'].map(t=>{const g=d.ann.miss.filter(o=>o.t===t);return g.length?`<div class="row"><b>${t} (${g.length})</b></div><p class="sub">${g.map(o=>esc(o.n)).join(' · ')}</p>`:''}).join('')}</details>`:'<div class="empty">כולם ביצעו 👏</div>'}</div>
     <div class="note"><h2>🔧 כלי הסניף</h2><p class="sub">${Object.entries(d.veh.types).map(([t,n])=>`${n} ${esc(t)}`).join(' · ')||'אין כלים'}</p>
-      ${(d.susp||[]).map(v=>`<p class="sub" style="color:var(--warn);font-weight:700">⚠ כלי ${esc(v.num)} חשוד כתקול במערכת הסייפטי: ${v.worse} מתוך ${v.n} נהגים קיבלו עליו ציון נמוך בהרבה מהרגיל שלהם. נפתחת בדיקה מול איתורן.</p>`).join('')}
       ${L(d.veh.issues,v=>`<div class="row"><span><b>כלי ${esc(v.num)}</b> <small>${esc(v.t)} · ${esc(v.n||'')}</small></span><span>${v.r.map(x=>`<span class="tag ${/טסט|ביטוח/.test(x)?'bad':'warn'}">${esc(x)}</span>`).join('')}</span></div>`,'כל הכלים תקינים 👍')}</div>
     <div class="note b"><h2>📄 מסמכי נהגים</h2><p class="sub">נהגים שאחד המסמכים שלהם פג – אסור להם לנהוג בכלי הארגון עד להסדרה.</p>
       ${L(d.docs,o=>`<div class="row"><b>${esc(o.n)}</b><span>${o.b.map(x=>`<span class="tag bad">${esc(x)}</span>`).join('')}</span></div>`,'כל המסמכים בתוקף 👍')}</div>
