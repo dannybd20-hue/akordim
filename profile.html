@@ -206,12 +206,13 @@ function calc(p){
   const est=kms.length?kms.reduce((a,b)=>a+b,0)/kms.length*12:null;
   const A12=(p.acc||[]).filter(a=>{const d=pd(a.d);return d&&(TODAY-d)/864e5<=365});
   const F12=A12.filter(a=>/איחוד/.test(a.fault||''));
-  const evN=p.ev?Object.values(p.ev).reduce((a,b)=>a+b[0],0):null;
-  const ev100=p.rep&&p.rep.km>0&&evN!=null?evN/p.rep.km*100:null;
-  return {sc,kmMon,est,kmN:kms.length,a12:A12.length,f12:F12.length,kmAcc:est&&A12.length?est/A12.length:null,kmF:est&&F12.length?est/F12.length:null,ev100};
+  const EM=p.evm?DATA.months.filter(M=>p.evm[M]):[],evM=EM[EM.length-1]||null,E=evM?p.evm[evM]:null;
+  const evN=E?Object.values(E.ev).reduce((a,b)=>a+b[0],0):null;
+  const ev100=E&&E.rep.km>0?evN/E.rep.km*100:null;
+  return {evM,sc,kmMon,est,kmN:kms.length,a12:A12.length,f12:F12.length,kmAcc:est&&A12.length?est/A12.length:null,kmF:est&&F12.length?est/F12.length:null,ev100};
 }
 function grp(L){const C=L.map(p=>p._c),wk=C.filter(c=>c.est);
-  return {n:L.length,sc:avg(C.map(c=>c.sc)),kmMon:avg(C.map(c=>c.kmMon).filter(x=>x>0)),est:avg(wk.map(c=>c.est)),ev100:avg(C.map(c=>c.ev100)),
+  return {n:L.length,sc:avg(C.map(c=>c.sc)),kmMon:avg(C.map(c=>c.kmMon).filter(x=>x>0)),est:avg(wk.map(c=>c.est)),ev100m:(()=>{const o={};C.forEach(c=>{if(c.ev100!=null)(o[c.evM]=o[c.evM]||[]).push(c.ev100)});for(const k in o)o[k]=avg(o[k]);return o})(),
     kmAcc:(()=>{const a=wk.reduce((s,c)=>s+c.a12,0);return a?wk.reduce((s,c)=>s+c.est,0)/a:null})(),
     kmF:(()=>{const a=wk.reduce((s,c)=>s+c.f12,0);return a?wk.reduce((s,c)=>s+c.est,0)/a:null})()}}
 function prep(){DATA.people.forEach(p=>p._c=calc(p));REG=grp(DATA.people);const by={};DATA.people.forEach(p=>(by[p.br]=by[p.br]||[]).push(p));for(const b in by)BR[b]=grp(by[b])}
@@ -250,7 +251,7 @@ function profView(key){
   const sc=x=>x==null?'—':Math.round(x),km=x=>fmtN(x)+' ק"מ';
   const ext=p.ext||{},since=p.since;
   const A=(p.acc||[]).slice().sort((a,b)=>(pd(b.d)||0)-(pd(a.d)||0));
-  const ev=p.ev?Object.entries(p.ev).sort((a,b)=>b[1][0]-a[1][0]):[];
+  const EVL=p.evm?DATA.months.filter(M=>p.evm[M]).reverse():[];
   const kmRows=p.km?Object.entries(p.km):[];
   $('app').innerHTML=`<button class="back" onclick="location.hash=''">→ חזרה לרשימה</button>
   <section class="ph"><div><h2>${esc(p.n)}</h2><p>${esc([p.pv&&'פרייבט '+p.pv,p.br,age&&'גיל '+age,p.city].filter(Boolean).join(' · '))}</p>
@@ -265,12 +266,12 @@ function profView(key){
     ${tile('תאונות ב־12 חודשים',c.a12,c.a12?`<small class="ref ${c.f12?'b':''}">${c.f12} באשמתו</small>`:'<small class="ref g">אין</small>',c.f12?'bad':'')}
     ${tile('תאונה כל',c.kmAcc?km(c.kmAcc):c.a12?'—':'אין תאונות',c.kmAcc?both(c.kmAcc,'kmAcc',1,fmtN):'')}
     ${tile('תאונה באשמתו כל',c.kmF?km(c.kmF):c.f12?'—':'אין',c.kmF?both(c.kmF,'kmF',1,fmtN):'')}
-    ${tile('התראות ל־100 ק"מ',c.ev100!=null?c.ev100.toFixed(1):'—',c.ev100!=null?both(c.ev100,'ev100',-1,x=>x.toFixed(1)):'<small class="ref">אין דוח סייפטי מפורט</small>')}
+    ${tile('התראות ל־100 ק"מ'+(c.evM?' · '+esc(c.evM):''),c.ev100!=null?c.ev100.toFixed(1):'—',c.ev100!=null?`${cmp(c.ev100,B.ev100m[c.evM],-1,x=>x.toFixed(1)).replace('ממוצע','סניף')}${cmp(c.ev100,REG.ev100m[c.evM],-1,x=>x.toFixed(1)).replace('ממוצע','מרחב')}`:'<small class="ref">אין תעודת משוב</small>')}
     ${tile('משמרות',p.sh?p.sh.a:'—',p.sh?`<small class="ref b">ינו–אוג 26 · 0 ביול–אוג</small>`:'<small class="ref">יתווסף בהמשך</small>',p.sh?'warn':'')}
   </div>
   <div class="pgrid">
   <section class="box"><h3>סייפטי – 12 חודשים</h3>${p.s?`<div class="mrow">${DATA.months.map((M,i)=>`<span class="mc ${scCls(p.s[i])}"><small>${esc(M.split(' ')[0].slice(0,3))}</small><b>${p.s[i]??'—'}</b></span>`).join('')}</div>`:'<p class="mu">אין ציוני סייפטי</p>'}
-    ${ev.length?`<h4>פילוח התראות${p.rep?` · ${esc(p.rep.to||'')} · ${fmtN(p.rep.km)} ק"מ, ${p.rep.trips} נסיעות`:''}</h4><div class="bars">${ev.map(([k,[n,pc]])=>`<div class="bar"><span>${esc(k)}</span><i style="width:${Math.min(100,pc)}%"></i><b>${n} · ${Math.round(pc)}%</b></div>`).join('')}</div>`:''}</section>
+    ${EVL.map(M=>{const E=p.evm[M],ev=Object.entries(E.ev).sort((a,b)=>b[1][0]-a[1][0]);return `<h4>פילוח התראות · ${esc(M)} · ציון ${E.rep.score??'—'} · ${fmtN(E.rep.km)} ק"מ, ${E.rep.trips??'—'} נסיעות${E.rep.rank?` · מקום ${E.rep.rank[0]} מתוך ${E.rep.rank[1]}`:''}</h4><div class="bars">${ev.map(([k,[n,pc]])=>`<div class="bar"><span>${esc(k)}</span><i style="width:${Math.min(100,pc)}%"></i><b>${n} · ${Math.round(pc)}%</b></div>`).join('')}</div>`}).join('')}</section>
   <section class="box"><h3>תאונות (${A.length})</h3>${A.length?`<ol class="tl">${A.map(a=>`<li class="${/איחוד/.test(a.fault||'')?'bad':''}"><b>${esc(a.d)}</b> · ${esc(a.kind||'תאונה')} · ${esc(a.veh||'')}<br><small>${esc([a.fault&&'אשמה: '+a.fault,a.cause,a.trip,a.place].filter(Boolean).join(' · '))}</small></li>`).join('')}</ol>`:'<p class="mu">אין תאונות רשומות</p>'}</section>
   <section class="box"><h3>ק"מ לפי חודש (איתורן)</h3>${kmRows.length?`<table class="t"><tr><th>חודש</th><th>ק"מ</th><th>ימי נהיגה</th><th>כלים</th></tr>${kmRows.map(([M,x])=>`<tr><td>${esc(M)}</td><td>${fmtN(x.km)}</td><td>${x.days}</td><td>${x.v.filter(v=>v.km>0).map(v=>esc((v.type||'')+' '+(v.num||(v.plate||"").replace(/,\s*/g," · ")))+': '+fmtN(v.km)).join('<br>')}</td></tr>`).join('')}</table>`:'<p class="mu">אין נתוני ק"מ</p>'}</section>
   <section class="box"><h3>מסמכים ותוקפים</h3><div class="docs">${docCell('רישיון נהיגה',p.lic)}${docCell('הצהרת בריאות',p.health)}${p.pp?'<div class="doc"><span>מידע תעבורתי</span><b>דרכון</b></div>':docCell('מידע תעבורתי',p.traffic)}${docCell('הדרכה שנתית',p.train)}</div>

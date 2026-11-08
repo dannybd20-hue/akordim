@@ -29,3 +29,5 @@
 - פרופיל נהג (profile.html, רק לדני): coord/build.py כותב ws/people_all.json, ואז python3 ws/profile_build.py <safety_full.json> -> profile/profile.bin. מקור הקוד: /home/claude/profile/app.js + assemble.py.
 
 - השתלמות שנתית בקצב"ת: אחרי coord/build.py מריצים python3 ws/kbt_ann.py ואז מצפינים שוב את kbt/data.json. הכללים ב-ws/annual.py = העתק של annual() ב-coord/logic.js (לעדכן את שניהם יחד).
+
+- תעודות משוב חודשיות (zip של DriverEvaluation PDF): מחלצים רק את נהגי המרחב, מפענחים עם safety/pdfparse.py ושומרים ב-ws/evhist.json לפי חודש. add_extra.py מוסיף v.evm; safety.html מציג פילוח לפי החודש שנבחר; פרופיל נהג מציג את כל החודשים.

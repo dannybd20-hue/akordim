@@ -374,7 +374,9 @@ function trainMail(v,m){
   return `<a class="mail sm${ms?' done':''}" style="border-color:var(--bad);color:var(--bad)" data-sent="${esc(mk)}" href="mailto:AsherB@1221.org.il?cc=${encodeURIComponent(cc.join(','))}&subject=${encodeURIComponent('הפניה לחניכות – '+v.n+' ('+v.pv+'), '+v.br)}&body=${encodeURIComponent(body)}">📧 ${ms?'✓ נשלחה הפניה לאשר':'הפניה לחניכות – אשר ביתן'}</a>${ms?'':(sentAny(v,m)?'<div class="meta" style="color:var(--bad);font-weight:700;margin-top:4px">⏳ הוואטסאפ נשלח – נשאר לשלוח מייל הפניה לאשר</div>':'')}`}
 function sentAny(v,m){return Object.keys(MSG).some(c=>ls('sf:'+v.pv+':'+m+':'+c))}
 function doneAny(v,m){return sentAny(v,m)&&(catOf(v,m)!=='demote'||!!ls('sfm:'+v.pv+':'+m))}
-function card(v,m){
+/* פילוח האירועים של החודש שנבחר (מתעודות המשוב החודשיות). בחודש אחר בלי תעודה – בלי פילוח */
+function evAt(v,m){const M=DATA.months[m],E=v.evm&&v.evm[M];if(E)return Object.assign({},v,{ev:E.ev,rep:E.rep});if(m===DATA.months.length-1)return v;const o=Object.assign({},v);delete o.ev;delete o.rep;return o}
+function card(v,m){v=evAt(v,m);
   const c=catOf(v,m),x=v.s[m],st=statsOf(v,m),M=DATA.months[m],k=streakAt(v,m);
   const text=MSG[c](v,x,M.split(' ')[0],k,st.prev);
   const sk='sf:'+v.pv+':'+m+':'+c,sent=ls(sk)||sentAny(v,m);
