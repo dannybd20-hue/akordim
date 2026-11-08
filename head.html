@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>לוח ראש סניף</title>
+<meta name="description" content="תמונת מצב בטיחות בתעבורה לראש הסניף – צפייה בלבד">
+<meta name="theme-color" content="#6b4528">
+<link rel="icon" href="icons/apps-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&family=Suez+One&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#3b2a1e;--mut:#7d6656;--paper:#fffdf6;--yel:#fff3b0;--grn:#dff3d6;--pnk:#ffe0e0;--blu:#dceefe;--org:#ffe7c7;--line:#e9dcc9;--bad:#b3261e;--ok:#2e7d32;--warn:#a15c00}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--ink);font-family:Heebo,system-ui,sans-serif;
+  background-color:#b98a5e;
+  background-image:radial-gradient(#a57549 1px,transparent 1.4px),radial-gradient(#c99a6c 1px,transparent 1.6px),radial-gradient(#9a6a40 .8px,transparent 1.2px);
+  background-size:13px 13px,19px 19px,7px 7px;background-position:0 0,6px 9px,3px 2px;padding:18px 12px 50px}
+.frame{max-width:1100px;margin:0 auto;border:14px solid #6b4528;border-radius:10px;box-shadow:inset 0 0 30px #00000040,0 10px 30px #0006;padding:26px 16px 30px}
+.note{position:relative;background:var(--paper);border-radius:3px;padding:20px 18px 16px;box-shadow:0 8px 16px #0003,0 2px 3px #0002;min-width:0}
+.note::before{content:"";position:absolute;top:-9px;left:50%;width:20px;height:20px;margin-left:-10px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#ff8a80,#d32f2f 60%,#8e1b1b);box-shadow:0 3px 4px #0005}
+.note.g::before{background:radial-gradient(circle at 35% 35%,#a5d6a7,#2e7d32 60%,#1b4d1e)}
+.note.b::before{background:radial-gradient(circle at 35% 35%,#90caf9,#1565c0 60%,#0d3c73)}
+.note.y::before{background:radial-gradient(circle at 35% 35%,#fff59d,#f9a825 60%,#8d6000)}
+.title{text-align:center;transform:rotate(-1deg);background:var(--yel);margin:4px auto 28px;max-width:600px}
+.title h1{margin:0;font-family:'Suez One',serif;font-size:30px;font-weight:400}
+.title p{margin:6px 0 0;color:var(--mut);font-size:14px}
+.title select{margin-top:8px;font:inherit;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:#fff}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:28px}
+.stat{text-align:center;padding:16px 10px 12px}
+.stat:nth-child(5n+1){background:var(--grn);transform:rotate(1.2deg)}.stat:nth-child(5n+2){background:var(--blu);transform:rotate(-1.4deg)}
+.stat:nth-child(5n+3){background:var(--pnk);transform:rotate(.8deg)}.stat:nth-child(5n+4){background:var(--org);transform:rotate(-.6deg)}.stat:nth-child(5n+5){background:var(--yel);transform:rotate(1deg)}
+.stat span{display:block;font-weight:700;color:var(--mut);font-size:13.5px}
+.stat b{display:block;font-weight:900;font-size:32px;margin-top:2px;direction:ltr;line-height:1.1}
+.stat small{display:block;font-size:12.5px;color:var(--mut);margin-top:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(330px,100%),1fr));gap:26px 20px}
+.grid .note:nth-child(3n+1){transform:rotate(.4deg)}.grid .note:nth-child(3n+2){transform:rotate(-.5deg)}.grid .note:nth-child(3n){transform:rotate(.2deg)}
+.note h2{margin:0 0 6px;font-family:'Suez One',serif;font-weight:400;font-size:21px}
+.sub{color:var(--mut);font-size:13.5px;margin:0 0 8px;line-height:1.5}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px dashed var(--line);font-size:15px}
+.row:last-child{border-bottom:0}.row b{font-weight:700}.row small{color:var(--mut)}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;background:#f1e8da;color:var(--mut);margin:1px}
+.tag.bad{background:#fde2e0;color:var(--bad)}.tag.ok{background:#e1f2e2;color:var(--ok)}.tag.warn{background:#fff0d6;color:var(--warn)}
+.big{font-size:40px;font-weight:900;line-height:1}.bad{color:var(--bad)}.ok{color:var(--ok)}.warn{color:var(--warn)}
+.chart{width:100%;height:auto;display:block}.chart text{font:11px Heebo,sans-serif;fill:var(--mut)}
+.dist{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}
+.dist div{text-align:center;border-radius:6px;padding:6px 2px}.dist b{display:block;font-size:22px;font-weight:900}.dist span{font-size:11.5px;color:var(--mut)}
+details summary{cursor:pointer;font-weight:700;color:#7a5536;padding:6px 0}
+.list{max-height:260px;overflow:auto}
+.empty{color:var(--mut);font-size:14px;padding:6px 0}
+.foot{text-align:center;color:#fff8e7;margin-top:22px;font-size:13px;text-shadow:0 1px 2px #0008}
+.lock{max-width:380px;margin:40px auto;text-align:center;background:var(--yel);transform:rotate(-1deg)}
+.lock h1{font-family:'Suez One',serif;font-weight:400;margin:0 0 6px;font-size:26px}
+.lock input{width:100%;font:inherit;font-size:18px;padding:10px;border:1px solid var(--line);border-radius:8px;text-align:center;margin:10px 0;direction:ltr}
+.lock button{font:inherit;font-weight:800;font-size:17px;padding:10px 22px;border:0;border-radius:8px;background:#6b4528;color:#fff;cursor:pointer}
+.err{color:var(--bad);font-weight:700;min-height:1.3em;margin-top:6px}
+.out{position:fixed;top:10px;left:10px;font:inherit;font-weight:700;background:#fff8e7;border:0;border-radius:8px;padding:6px 12px;box-shadow:0 2px 6px #0004;cursor:pointer}
+@media print{body{background:#fff;padding:0}.frame{border:0;box-shadow:none}.out{display:none}.note{box-shadow:none;border:1px solid #ccc;transform:none!important}}
+</style>
+</head>
+<body>
+<div class="frame" id="app"><div class="note lock"><h1>טוען…</h1></div></div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){return null}}
+async function sha(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+async function dec(path,pw){
+  const r=await fetch(path,{cache:'no-cache'});if(!r.ok)throw new Error('pw');const buf=new Uint8Array(await r.arrayBuffer());
+  if(String.fromCharCode(buf[0],buf[1],buf[2])!=='KB1')throw new Error('pw');
+  const salt=buf.slice(3,19),iv=buf.slice(19,31),ct=buf.slice(31);
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:600000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['decrypt']);
+  let gz;try{gz=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct)}catch(e){throw new Error('pw')}
+  return JSON.parse(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
+}
+const fileOf=async pw=>'head/'+(await sha('dbd-head:'+pw)).slice(0,24)+'.bin';
+let D=null,ADMIN=null;
+
+function lockView(err){
+  $('app').innerHTML=`<div class="note lock"><h1>📌 לוח ראש סניף</h1><p class="sub">תמונת מצב בטיחות בתעבורה של הסניף · צפייה בלבד<br>הקלד את הסיסמה שקיבלת</p>
+  <input id="pw" type="password" autocomplete="current-password" placeholder="סיסמה" onkeydown="if(event.key==='Enter')unlock()">
+  <label class="sub"><input type="checkbox" id="rem" checked> לזכור במכשיר הזה</label><br>
+  <button id="ub" onclick="unlock()">כניסה</button><div class="err">${esc(err||'')}</div></div>`;
+  setTimeout(()=>{const i=$('pw');if(i)i.focus()},50);
+}
+async function unlock(saved){
+  let pw=saved||$('pw').value.trim().replace(/[.\s]+$/,'');
+  {const d=pw.replace(/[\s\-–—_.]/g,'');if(/^\d{8}$/.test(d))pw=d.slice(0,4)+'-'+d.slice(4)}
+  if(!saved){$('ub').disabled=true;$('ub').textContent='פותח…'}
+  try{D=await dec(await fileOf(pw),pw);if(!saved&&$('rem').checked)ls('head_pw',pw);render()}
+  catch(e){
+    if(!saved){try{ADMIN=await dec('head/index.bin',pw);if($('rem').checked)ls('kbt_pw',pw);await pick(ls('head_adm_br'));return}catch(_){ADMIN=null}}
+    if(saved)ls('head_pw',null);lockView(e.message==='pw'?'סיסמה שגויה':!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
+}
+async function pick(b){const br=ADMIN[b]?b:Object.keys(ADMIN)[0];ls('head_adm_br',br);D=await dec(await fileOf(ADMIN[br].pw),ADMIN[br].pw);render()}
+function logout(){ls('head_pw',null);D=null;ADMIN=null;lockView()}
+
+/* גרף ציון ממוצע לפי חודש: הסניף מול המרחב */
+function chart(){
+  const M=D.months,a=D.saf.m,r=D.reg.m,W=640,H=170,P=26,n=M.length,bw=(W-2*P)/n,y=v=>H-v/100*(H-P);
+  const line=r.map((v,i)=>v==null?null:`${P+i*bw+bw/2},${y(v)}`).filter(Boolean).join(' ');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H+30}" role="img" aria-label="ציון סייפטי ממוצע לפי חודש">
+  ${[0,25,50,75,100].map(v=>`<line x1="${P}" x2="${W-P}" y1="${y(v)}" y2="${y(v)}" stroke="#e9dcc9"/><text x="${P-5}" y="${y(v)+4}" text-anchor="end">${v}</text>`).join('')}
+  ${a.map((v,i)=>v==null?'':`<rect x="${P+i*bw+bw*.2}" y="${y(v)}" width="${bw*.6}" height="${H-y(v)}" rx="3" fill="${i===n-1?'#6b4528':'#c9a27c'}"/><text x="${P+i*bw+bw/2}" y="${y(v)-4}" text-anchor="middle" style="font-weight:700;fill:#3b2a1e">${Math.round(v)}</text>`).join('')}
+  <polyline points="${line}" fill="none" stroke="#1565c0" stroke-width="2" stroke-dasharray="5 4"/>
+  ${M.map((m,i)=>`<text x="${P+i*bw+bw/2}" y="${H+16}" text-anchor="middle">${esc(m.split(' ')[0].slice(0,3))}</text>`).join('')}</svg>
+  <p class="sub" style="margin:2px 0 0">עמודות: ממוצע הסניף · קו מקווקו כחול: ממוצע המרחב</p>`;
+}
+const pct=(a,b)=>b?Math.round(100*a/b):null;
+function render(){
+  const d=D,s=d.saf,last=d.months[d.months.length-1],annDone=d.ann.need-d.ann.miss.length,annP=pct(annDone,d.ann.need),regLast=d.reg.m[d.reg.m.length-1];
+  const cmp=(v,ref,hi)=>v==null||ref==null?'':(hi?v>=ref:v<=ref)?`<small class="ok">▲ ממוצע המרחב ${ref}</small>`:`<small class="bad">▼ ממוצע המרחב ${ref}</small>`;
+  const L=(arr,fn,empty)=>arr.length?`<div class="list">${arr.map(fn).join('')}</div>`:`<div class="empty">${empty}</div>`;
+  const sh=d.sh.br;
+  $('app').innerHTML=`${ADMIN?`<button class="out" onclick="logout()">יציאה</button>`:`<button class="out" onclick="logout()">יציאה</button>`}
+  <div class="note title"><h1>📌 ${esc(d.br)}</h1><p>לוח ראש סניף${d.head?' · '+esc(d.head):''} · רכז תחבורה: ${esc(d.coord||'—')}<br>עודכן ${esc(d.upd)} · צפייה בלבד</p>
+    ${ADMIN?`<select onchange="pick(this.value)">${Object.keys(ADMIN).map(b=>`<option${b===d.br?' selected':''}>${esc(b)}</option>`).join('')}</select>`:''}</div>
+  <div class="stats">
+    <div class="note stat"><span>נהגים פעילים</span><b>${d.n}</b><small>${d.trn?d.trn+' בהכשרה · ':''}${d.moto} אופנוענים</small></div>
+    <div class="note stat"><span>ציון סייפטי · ${esc(last)}</span><b>${s.avg??'—'}</b>${cmp(s.avg,regLast,true)}</div>
+    <div class="note stat"><span>תאונות ב־12 חודשים</span><b>${d.acc.length}</b><small>${d.accF} באשמת הנהג שלנו</small></div>
+    <div class="note stat"><span>השתלמות שנתית ${2026}</span><b>${annP==null?'—':annP+'%'}</b>${cmp(annP,d.reg.annPct,true)}</div>
+    <div class="note stat"><span>כלים בסניף</span><b>${d.veh.n}</b><small>${d.veh.issues.length?d.veh.issues.length+' דורשים טיפול':'הכל תקין'}</small></div>
+  </div>
+  <div class="grid">
+    <div class="note b"><h2>🛡️ ציוני סייפטי</h2><p class="sub">${s.n} נהגים עם ציון ב${esc(last)}. ציון 70 ומעלה – נהיגה בטוחה; מתחת ל־25 – נדרש טיפול.</p>${chart()}
+      <div class="dist"><div style="background:#fde2e0"><b class="bad">${s.dist.a}</b><span>מתחת ל־25</span></div><div style="background:#fff0d6"><b class="warn">${s.dist.b}</b><span>25–49</span></div><div style="background:#eef3fb"><b>${s.dist.c}</b><span>50–69</span></div><div style="background:#e1f2e2"><b class="ok">${s.dist.d}</b><span>70 ומעלה</span></div></div>
+      ${s.top.length?`<p class="sub" style="margin:6px 0 0">🏆 הכי בטוחים החודש: ${s.top.map(t=>`<b>${esc(t.n)}</b> (${t.x})`).join(', ')}</p>`:''}
+      ${s.up.length?`<p class="sub" style="margin:4px 0 0">📈 השתפרו מאוד: ${s.up.map(t=>`${esc(t.n)} (+${t.d})`).join(', ')}</p>`:''}
+      ${s.low.length?`<details><summary>מתחת ל־25 (${s.low.length})</summary>${s.low.map(o=>`<div class="row"><b>${esc(o.n)}</b><span>${o.x}${o.k>=2?` <span class="tag bad">${o.k} חודשים ברצף</span>`:''}</span></div>`).join('')}</details>`:''}</div>
+    <div class="note"><h2>🚑 תאונות – 12 חודשים</h2><p class="sub">${d.acc.length?`${d.acc.length} תאונות, ${d.accF} מהן באשמת הנהג שלנו.`:'אין תאונות רשומות בשנה האחרונה 👏'}</p>
+      ${L(d.acc,a=>`<div class="row"><span><b>${esc(a.n)}</b><br><small>${esc(a.k)}${a.v?' · '+esc(a.v):''}${a.c?' · '+esc(a.c):''}</small></span><span><small>${esc(a.d)}</small><br>${a.f?'<span class="tag bad">באשמתנו</span>':'<span class="tag">צד ג׳ / לא ידוע</span>'}</span></div>`,'')}</div>
+    <div class="note y"><h2>🎯 נהגים בסיכון גבוה</h2><p class="sub">לפי שילוב של תאונות, ציוני סייפטי נמוכים לאורך זמן, ותק והשתלמויות. כדאי לוודא שהרכז בקשר איתם.</p>
+      ${L(d.risk,o=>`<div class="row"><span><b>${esc(o.n)}</b><br><small>${o.why.map(esc).join(' · ')}</small></span><span class="tag bad">${o.p}</span></div>`,'אין נהגים בסיכון גבוה 👍')}</div>
+    <div class="note g"><h2>🎓 השתלמות שנתית 2026</h2><p class="sub">${annDone} מתוך ${d.ann.need} ביצעו (${annP??0}%). ממוצע המרחב: ${d.reg.annPct}%.</p>
+      <div style="height:14px;background:#f1e8da;border-radius:8px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:${annP||0}%;background:#2e7d32"></div></div>
+      ${d.ann.miss.length?`<details><summary>עוד לא ביצעו (${d.ann.miss.length})</summary>${['אופנוע','אמבולנס','רכב'].map(t=>{const g=d.ann.miss.filter(o=>o.t===t);return g.length?`<div class="row"><b>${t} (${g.length})</b></div><p class="sub">${g.map(o=>esc(o.n)).join(' · ')}</p>`:''}).join('')}</details>`:'<div class="empty">כולם ביצעו 👏</div>'}</div>
+    <div class="note"><h2>🔧 כלי הסניף</h2><p class="sub">${Object.entries(d.veh.types).map(([t,n])=>`${n} ${esc(t)}`).join(' · ')||'אין כלים'}</p>
+      ${L(d.veh.issues,v=>`<div class="row"><span><b>כלי ${esc(v.num)}</b> <small>${esc(v.t)} · ${esc(v.n||'')}</small></span><span>${v.r.map(x=>`<span class="tag ${/טסט|ביטוח/.test(x)?'bad':'warn'}">${esc(x)}</span>`).join('')}</span></div>`,'כל הכלים תקינים 👍')}</div>
+    <div class="note b"><h2>📄 מסמכי נהגים</h2><p class="sub">נהגים שאחד המסמכים שלהם פג – אסור להם לנהוג בכלי הארגון עד להסדרה.</p>
+      ${L(d.docs,o=>`<div class="row"><b>${esc(o.n)}</b><span>${o.b.map(x=>`<span class="tag bad">${esc(x)}</span>`).join('')}</span></div>`,'כל המסמכים בתוקף 👍')}</div>
+    <div class="note y"><h2>⏱️ משמרות ופעילות</h2>
+      ${sh?`<div class="row"><span>משמרות מלאות ינו–אוג 26</span><b>${sh.tot.toLocaleString('he-IL')}</b></div><div class="row"><span>ממוצע לחודש</span><b>${sh.mon}</b></div><div class="row"><span>משמרות לחודש לכלי</span><b>${sh.pv} ${d.reg.shPv?`<small>(מרחב ${d.reg.shPv})</small>`:''}</b></div><div class="row"><span>אוגוסט</span><b>${sh.aug}</b></div>`:'<p class="sub">אין נתוני משמרות לסניף</p>'}
+      ${d.km.tot?`<div class="row"><span>ק"מ ב${esc(d.km.m)}</span><b>${d.km.tot.toLocaleString('he-IL')} <small>(${d.km.avg} לנהג)</small></b></div>`:''}
+      ${d.sh.inact.length?`<details><summary>נהגי אמבולנס לא פעילים ביולי–אוגוסט (${d.sh.inact.length})</summary>${d.sh.inact.map(o=>`<div class="row"><b>${esc(o.n)}</b><small>${o.a} משמרות בינואר–אוגוסט</small></div>`).join('')}</details>`:''}</div>
+    ${d.grads.length?`<div class="note g"><h2>🥳 נהגים חדשים</h2><p class="sub">עברו טסט וקיבלו אישור נהיגה מלא לאחרונה:</p>${d.grads.map(g=>`<div class="row"><b>${esc(g.n)}</b><small>${esc(g.to)} · ${esc(g.d)}</small></div>`).join('')}</div>`:''}
+  </div>
+  <div class="foot">דני בן דוד · קצין בטיחות בתעבורה – מרחב ירושלים · לשאלות ועדכונים – פנה אליי או לרכז התחבורה של הסניף</div>`;
+}
+(async()=>{
+  const k=ls('kbt_pw');if(k){try{ADMIN=await dec('head/index.bin',k);await pick(ls('head_adm_br'));return}catch(e){ADMIN=null}}
+  const p=ls('head_pw');p?unlock(p):lockView();
+})();
+</script>
+</body>
+</html>
