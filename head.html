@@ -102,7 +102,7 @@ function waLink(p,t){p=(p||'').replace(/\D/g,'');if(p.startsWith('0'))p='972'+p.
 const first=n=>(n||'').trim().split(/\s+/)[0]||'';
 function headMsg(b){const c=ADMIN[b];return `שלום ${first(c.head)},\n\nפתחתי לך *לוח ראש סניף* – תמונת מצב של הבטיחות בתעבורה בסניף ${b}: ציוני סייפטי, תאונות, נהגים בסיכון, השתלמות שנתית, מצב הכלים, מסמכי נהגים ומשמרות.\nהלוח מתעדכן אוטומטית והוא לצפייה בלבד.\n\nכניסה: https://dannybd20-hue.github.io/akordim/head.html\nהסיסמה שלך: *${c.pw}*\n\nהסיסמה אישית לך – נא לא להעביר הלאה.\nלכל שאלה או בקשה אני זמין.\n\nבברכה,\nדני בן דוד\nקצין בטיחות בתעבורה – מרחב ירושלים`}
 function adminBar(){const b=D.br,c=ADMIN[b],m=headMsg(b);
-  return `<div class="note admin"><b>מצב מנהל</b> · ראש סניף: <b>${esc(c.head||'—')}</b>${c.hph?' · <span dir="ltr">'+esc(c.hph)+'</span>':' · <span class="bad">אין טלפון</span>'} · סיסמה: <b dir="ltr">${esc(c.pw)}</b>
+  return `<div class="note admin"><b>מצב מנהל</b> · ראש סניף: <b>${esc(c.head||'—')}</b>${c.hpv?' ('+esc(c.hpv)+')':''}${c.hph?' · <span dir="ltr">'+esc(c.hph)+'</span>':' · <span class="bad">אין טלפון</span>'} · סיסמה: <b dir="ltr">${esc(c.pw)}</b>
    <div class="acts">${c.hph?`<a class="abtn wa" href="${waLink(c.hph,m)}" target="_blank" rel="noopener">שליחת סיסמה בוואטסאפ</a>`:''}<button class="abtn" type="button" onclick="navigator.clipboard.writeText(headMsg(D.br)).then(()=>this.textContent='הועתק ✓')">העתקת ההודעה</button></div></div>`}
 function logout(){ls('head_pw',null);D=null;ADMIN=null;lockView()}
 
