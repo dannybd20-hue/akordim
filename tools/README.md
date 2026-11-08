@@ -23,3 +23,5 @@
 - kbt/chg.js + kbt/chg_inject.py – לשונית "מה השתנה" ב-kbt.html + סימון שורות/כרטיסים שהשתנו.
 
 - ws/changes.py מזהה גם "בוגרים": משתלם X -> אישור נהיגה X רגיל, ושומר ב-ws/grads.json (45 יום). coord/build.py מוסיף DATA.grads, והרכז מקבל הודעה קופצת עם הודעת ברכה.
+
+- ק"מ חודשי: דו"ח פעילות תקופתית מאיתורן (xlsx) -> python3 ws/km.py <file> -> ws/kmhist.json (לפי חודש, רק נהגי מרחב ירושלים). add_extra.py ו-coord/build.py מוסיפים km.
