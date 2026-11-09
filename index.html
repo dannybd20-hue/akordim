@@ -50,6 +50,7 @@ body::after{width:380px;height:380px;bottom:-160px;left:-120px;background:radial
 .ic.hd{background:linear-gradient(135deg,#fdba74,#f26b21)}
 .ic.kb{background:linear-gradient(135deg,#3b82c4,#1f4f8f)}
 .ic.md{background:linear-gradient(135deg,#2dd4bf,#0f766e)}
+.ordering .app{outline:2px dashed var(--c);cursor:default}.ordering .app .go{display:none}.mv{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:6px;z-index:2}.mv i{font-style:normal;width:36px;height:30px;border-radius:10px;background:var(--c);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer}
 .app b{display:block;font:800 18px Rubik,Heebo,sans-serif;margin-bottom:4px}
 .app span{font-size:13px;color:var(--mut);line-height:1.4}
 .lock{margin-top:auto;padding-top:12px;font-size:11.5px;font-weight:700;color:var(--mut)}
@@ -153,6 +154,7 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
   <button class="app" data-app="head" onclick="enter('head')"><i class="go" aria-hidden="true">←</i><div class="ic hd">📌</div><b>לוח ראש סניף</b><span>תמונת מצב לכל סניף · צפייה ושליחת סיסמאות לראשי הסניפים</span></button>
   <button class="app" data-app="coord" onclick="enter('coord')"><i class="go" aria-hidden="true">←</i><div class="ic co">🧭</div><b>בטיחות סניף</b><span>מערכת לרכזי תחבורה · צפייה ויציאה מגזרה</span></button>
 </div>
+<button class="link" id="ordBtn" onclick="ordToggle()">↕ סידור האפליקציות</button>
 <label class="nm">📛 השם שלך: <input id="devName" maxlength="30" placeholder="לדוגמה: הטלפון של דני" onchange="setDevName(this.value)"></label>
 <button class="link bioset" id="bioSet" hidden onclick="bioToggle()"></button>
 <button class="b out" onclick="logout()">🔒 יציאה</button>
@@ -189,7 +191,16 @@ async function hash(s){
   return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 function access(){try{return JSON.parse(sget('hub_access'))||[]}catch(e){return[]}}
-function enter(a){if(access().includes(a))location.href=PAGES[a]}
+function enter(a){if(ORD_EDIT)return;if(access().includes(a))location.href=PAGES[a]}
+/* סידור האפליקציות: נשמר במכשיר. ברירת מחדל – ניהול הבטיחות למעלה */
+const ORD_DEF=['kbt','safety','coord','head','profile','phonebook','forms','chords','maaser','tromot','shopping','game','meds'];
+let ORD_EDIT=false;
+function ordGet(){let o=[];try{o=JSON.parse(get('hub_order'))||[]}catch(e){}const all=[...document.querySelectorAll('.app')].map(b=>b.dataset.app);return [...o.filter(x=>all.includes(x)),...ORD_DEF.filter(x=>all.includes(x)&&!o.includes(x)),...all.filter(x=>!o.includes(x)&&!ORD_DEF.includes(x))]}
+function ordApply(){const box=document.querySelector('.apps');ordGet().forEach(a=>{const b=box.querySelector(`.app[data-app="${a}"]`);if(b)box.append(b)})}
+function ordMove(a,d,ev){ev.stopPropagation();const vis=[...document.querySelectorAll('.app')].filter(b=>!b.hidden).map(b=>b.dataset.app);const i=vis.indexOf(a),j=i+d;if(j<0||j>=vis.length)return;
+  const o=ordGet(),ai=o.indexOf(a),bi=o.indexOf(vis[j]);[o[ai],o[bi]]=[o[bi],o[ai]];lput('hub_order',JSON.stringify(o));ordApply()}
+function ordToggle(){ORD_EDIT=!ORD_EDIT;document.body.classList.toggle('ordering',ORD_EDIT);$('ordBtn').textContent=ORD_EDIT?'✓ סיום סידור':'↕ סידור האפליקציות';
+  document.querySelectorAll('.app').forEach(b=>{let m=b.querySelector('.mv');if(ORD_EDIT&&!m){m=document.createElement('span');m.className='mv';m.innerHTML=`<i role="button" aria-label="למעלה" onclick="ordMove('${b.dataset.app}',-1,event)">▲</i><i role="button" aria-label="למטה" onclick="ordMove('${b.dataset.app}',1,event)">▼</i>`;b.append(m)}if(!ORD_EDIT&&m)m.remove()})}
 /* קישור ישיר: ‎?open=forms&f=2‎ פותח אחרי הכניסה את הטופס השני */
 const QS=new URLSearchParams(location.search),WANT=QS.get('open'),WF=QS.get('f');
 const WK=QS.get('k');
@@ -215,7 +226,7 @@ function show(){
   const A=access();
   $('lockv').hidden=A.length>0;$('appsv').hidden=!A.length;$('biov').hidden=true;$('biolock').hidden=true;$('namev').hidden=true;
   if(A.length){bioUi();boardReq()}else if(bioData()){only('biolock')}
-  document.querySelectorAll('.app').forEach(b=>b.hidden=!A.includes(b.dataset.app));
+  document.querySelectorAll('.app').forEach(b=>b.hidden=!A.includes(b.dataset.app));ordApply();
   if(!A.length)setTimeout(()=>$('p1').focus(),50);
 }
 async function submit(){
