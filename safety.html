@@ -343,7 +343,8 @@ function sinceRow(v){if(!v.since)return '';const [d,src]=v.since,m=/(\d{1,2})\/(
   const mo=Math.max(1,Math.round(y*12)),t=y<1?(mo===1?'חודש אחד':mo+' חודשים'):(Math.floor(y*10)/10+' שנים');return `<div class="meta" style="margin-top:4px"><span class="chip ${y<1?'warn':'ok'}">🚗 נוהג אצלנו ${t}</span><span>מ־${esc(d)} · לפי ${esc(src)}</span></div>`}
 /* יציאות לאירועים (דוח האירועים – ws/events.json) */
 const HEBM={'ינואר':1,'פברואר':2,'מרץ':3,'אפריל':4,'מאי':5,'יוני':6,'יולי':7,'אוגוסט':8,'ספטמבר':9,'אוקטובר':10,'נובמבר':11,'דצמבר':12};
-function evRow(v,m){const R=DATA.evr||{};const per=R.fr?` (${esc(R.fr.slice(0,5))}–${esc((R.to||'').slice(0,5))})`:'';
+function evRow(v,m){return (v.mt?`<div class="meta" style="margin-top:4px"><span>🏍️ טסט פנימי אופנוע: <b>${esc(v.mt)}</b></span></div>`:'')+evRow0(v,m)}
+function evRow0(v,m){const R=DATA.evr||{};const per=R.fr?` (${esc(R.fr.slice(0,5))}–${esc((R.to||'').slice(0,5))})`:'';
   if(!v.evc)return `<div class="meta" style="margin-top:4px"><span>🚑 לא מופיע בדוח האירועים${per}</span></div>`;
   const [mn,yy]=DATA.months[m].split(' '),k='20'+yy+'-'+String(HEBM[mn]||0).padStart(2,'0'),n=v.evc.m&&v.evc.m[k];
   const fk=R.fr?R.fr.slice(6)+'-'+R.fr.slice(3,5):'';const x=v.km&&v.km[DATA.months[m]];
