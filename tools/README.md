@@ -40,3 +40,11 @@
 - סייפטי מתחילת השנה: python3 ws/year.py <דוח תקופתי מרוכז 01/01-...> -> ws/year.json (ק"מ אמיתי + כלים חשודים).
 - סדר: kbt/build -> changes -> safety chain (add_extra) -> coord/build -> kbt_ann -> encrypt kbt -> profile_build -> headdash/build.
 - תאונה שלא בזמן נהיגה (לא בנסיעה / נפילה בחניה / מיטה / עובר אורח) לא נכנסת למדד הסיכון.
+
+עדכון 09/11/2026 – שחזור ובנייה מחדש:
+- שחזור: לפענח tools/workspace.bin (סיסמת קצב"ת) → gunzip → tar -xzf בתוך /home/claude.
+- בנייה מלאה מהמקורות הקיימים: bash /home/claude/ws/rebuild_all.sh (שלבי הסייפטי ב-safety/stage/s0..s3.json).
+- טפסי הקורסים בדרייב (Google Sheets, להוריד כ-xlsx):
+  * "חיים בדרכים 2026 (תגובות)" id 1-jTtkI07Fmv3B1_rDp-5-vNbwMM5oJmuAo0zBntKo74 → /home/claude/acc/raw/ride.xlsx
+  * "אלטרנתיבי - איחוד הצלה (תגובות)" id 1Q9JlDEvGKecOEdof_nCLOtGbbJYPRFxZy4_bDdnNt5A → /home/claude/acc/raw/alt_new.xlsx
+- ws/pvfix.py מתקן פרייבט שהוקלד בטעות בטפסים (לפי השם בספר הטלפונים).
