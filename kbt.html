@@ -721,11 +721,17 @@ function renderChg(){
 }
 /*CHG-END*/
 /*ANN-START*/
-(()=>{const s=document.createElement('style');s.textContent='.perms{display:flex;flex-wrap:wrap;gap:4px;margin:3px 0 2px}.perm{font-size:.76rem;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--fg)}.perm.tr{color:var(--warn);border-color:var(--warn)}.crsl{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:6px;font-size:.85rem}.crs{font-size:.76rem;padding:1px 8px;border-radius:6px;background:var(--bg);border:1px dashed var(--line)}.crs.y{border-style:solid;border-color:var(--ok);color:var(--ok);font-weight:700}';document.head.append(s)})();
+(()=>{const s=document.createElement('style');s.textContent='.perms{display:flex;flex-wrap:wrap;gap:4px;margin:3px 0 2px}.perm{font-size:.76rem;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--fg)}.perm.tr{color:var(--warn);border-color:var(--warn)}.gmail{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}.gmail .hint{font-size:.8rem;color:var(--muted)}.crsl{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:6px;font-size:.85rem}.crs{font-size:.76rem;padding:1px 8px;border-radius:6px;background:var(--bg);border:1px dashed var(--line)}.crs.y{border-style:solid;border-color:var(--ok);color:var(--ok);font-weight:700}';document.head.append(s)})();
 /* ===== השתלמות שנתית: מי שלא ביצע (DATA.ann נבנה ב-ws/kbt_ann.py לפי הכללים של אפליקציית הרכזים) ===== */
 const ANNS={t:''};
 const annKey=o=>'ann:'+(o.pv||o.name)+':'+new Date().toISOString().slice(0,7);
 function annMsgK(o){return `היי ${first(o.name)},\nלפי המערכת עדיין לא ביצעת את ההשתלמות השנתית לשנת ${DATA.ann.y} (*${o.course}*).\n\nההשתלמות היא חובה לכל מי שנוהג בכלי הארגון, וחשוב להשלים אותה עד סוף השנה.\n*יש להירשם בהקדם${o.coord?` דרך רכז התחבורה בסניף – ${o.coord}`:''}.*\n\nאם כבר ביצעת השתלמות והיא לא מופיעה במערכת – תעדכן אותי ואבדוק.\n\nבברכה,\nדני בן דוד\nקצין בטיחות בתעבורה – מרחב ירושלים`}
+const ANN_CC='YehudaLv@1221.org.il';
+function annGroupMail(t,L){const ride=t==='אופנוע',v=ride?'לרכוב':'לנהוג',kli=t==='אופנוע'?'באופנועי':t==='אמבולנס'?'באמבולנסים של':'ברכבי';
+  const subj=`חובה להירשם להשתלמות השנתית ${DATA.ann.y} – ${t}`;
+  const body=`שלום רב,\n\nלפי הרישומים שלנו טרם השתתפת בהשתלמות השנתית לשנת ${DATA.ann.y} – השתלמות ${t} כביש ${DATA.ann.y}.\n\nההשתלמות היא תנאי להמשך ה${ride?'רכיבה':'נהיגה'} בכלי הארגון. מי שלא יירשם וישלים את ההשתלמות עד סוף השנה, לא יוכל להמשיך ${v} ${kli} הארגון בשנה הבאה.\n\nחשוב מאוד להירשם כמה שיותר מהר – ההרשמה דרך רכז התחבורה בסניף.\n\nאם כבר ביצעת השתלמות והיא לא מופיעה במערכת – עדכן אותי ואבדוק.\n\nבברכה,\nדני בן דוד\nקצין בטיחות בתעבורה – מרחב ירושלים`;
+  const em=[...new Set(L.map(o=>(o.email||'').trim()).filter(x=>/@/.test(x)))];
+  return {em,miss:L.filter(o=>!/@/.test(o.email||'')).length,href:`mailto:?cc=${encodeURIComponent(ANN_CC)}&bcc=${encodeURIComponent(em.join(','))}&subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`}}
 function annBadge(){const b=document.getElementById('n-ann');if(b&&DATA&&DATA.ann)b.textContent=DATA.ann.L.filter(o=>!ls(annKey(o))).length||''}
 function renderAnn(){
   const app=document.getElementById('app');if(!DATA.ann){app.innerHTML='<div class="empty">אין נתונים</div>';return}
@@ -747,9 +753,12 @@ function renderAnn(){
     <div class="controls"><input id="q" type="search" placeholder="חיפוש שם, פרייבט, טלפון…" value="${esc(state.q)}"><select id="branch"><option value="">כל הסניפים</option>${brs.map(b=>`<option${b===state.branch?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
     <div class="cats">${[['','הכל'],['אופנוע','אופנוע'],['אמבולנס','אמבולנס'],['רכב','רכב']].map(([k,l])=>`<button data-at="${k}" aria-pressed="${ANNS.t===k}">${l}<span>${n(k)}</span></button>`).join('')}</div>
     <div class="legend">אותם כללים כמו אצל הרכזים: אופנוע > אמבולנס > רכב – השתלמות של הדרגה הגבוהה פוטרת מהנמוכות. פטורים גם: חיים בדרכים / אלטרנטיב / טסט השנה / יום א׳ של השתלמות רכיבה / משתלם אמבולנס-רכב. ${sent?`✓ ${sent} קיבלו תזכורת החודש (מופיעים בסוף).`:''}</div>
-    ${G.map(([t,g])=>`<h2>${t}<span class="cnt">${g.length}</span></h2><div class="list">${g.map(row).join('')}</div>`).join('')||'<div class="empty">כולם ביצעו 👍</div>'}`;
+    ${G.map(([t,g])=>{const M=annGroupMail(t,g);return `<h2>${t}<span class="cnt">${g.length}</span></h2>
+      <div class="gmail"><a class="mail sm" href="${M.href}" data-gm="${esc(t)}">📧 מייל לכל ה־${M.em.length} (${esc(t)})</a><button class="mail sm" type="button" data-copy="${esc(M.em.join(', '))}">העתק כתובות</button><span class="hint">הנמענים בעותק מוסתר (BCC), יהודה לוין בעותק${M.miss?` · ל־${M.miss} אין מייל במערכת`:''}${state.branch?' · רק סניף '+esc(state.branch):''}</span></div>
+      <div class="list">${g.map(row).join('')}</div>`}).join('')||'<div class="empty">כולם ביצעו 👍</div>'}`;
   bind();
   document.querySelectorAll('[data-at]').forEach(b=>b.onclick=()=>{ANNS.t=b.dataset.at;render()});
+  document.querySelectorAll('a[data-gm]').forEach(a=>a.addEventListener('click',()=>{const t=a.dataset.gm;L.filter(o=>o.need===t&&/@/.test(o.email||'')).forEach(o=>ls(annKey(o),'1'));annBadge();setTimeout(render,400)}));
   document.querySelectorAll('a[data-ak]').forEach(a=>a.addEventListener('click',()=>{ls(a.dataset.ak,'1');annBadge();setTimeout(render,300)}));
 }
 /*ANN-END*/
