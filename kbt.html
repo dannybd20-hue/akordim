@@ -721,6 +721,7 @@ function renderChg(){
 }
 /*CHG-END*/
 /*ANN-START*/
+(()=>{const s=document.createElement('style');s.textContent='.perms{display:flex;flex-wrap:wrap;gap:4px;margin:3px 0 2px}.perm{font-size:.76rem;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--fg)}.perm.tr{color:var(--warn);border-color:var(--warn)}';document.head.append(s)})();
 /* ===== השתלמות שנתית: מי שלא ביצע (DATA.ann נבנה ב-ws/kbt_ann.py לפי הכללים של אפליקציית הרכזים) ===== */
 const ANNS={t:''};
 const annKey=o=>'ann:'+(o.pv||o.name)+':'+new Date().toISOString().slice(0,7);
@@ -734,7 +735,7 @@ function renderAnn(){
   const n=t=>A.filter(o=>(!state.branch||o.branch===state.branch)&&(!t||o.need===t)).length;
   const sent=L.filter(o=>ls(annKey(o))).length;
   const row=o=>{const t=uTxt(o,annMsgK(o)),k=annKey(o),s=ls(k),ph=uPh(o);
-    return `<div class="card"><div class="who"><div class="name">${esc(o.name)}</div><div class="meta">${o.pv?`<span>פרייבט ${esc(o.pv)}</span>`:''}<span>${esc(o.branch)}</span>${o.coord?`<span>רכז: ${esc(o.coord)}</span>`:''}</div>
+    return `<div class="card"><div class="who"><div class="name">${esc(o.name)}</div>${(o.perm||[]).length?`<div class="perms">${o.perm.map(x=>`<span class="perm${/משתלם/.test(x)?' tr':''}">${esc(x)}</span>`).join('')}</div>`:''}<div class="meta">${o.pv?`<span>פרייבט ${esc(o.pv)}</span>`:''}<span>${esc(o.branch)}</span>${o.coord?`<span>רכז: ${esc(o.coord)}</span>`:''}</div>
       <div class="veh">חסר: ${esc(o.course)}${o.crs.length?` · <span style="color:var(--muted)">קורסים קודמים: ${esc(o.crs.slice(-3).join(', '))}</span>`:''}</div></div>
       <div class="tel">${unitOf(o)?`<b style="color:var(--accent)">↪ דרך הרכז ${esc(unitOf(o).n)}</b><br>`:''}${ph?fmtPhone(ph):'אין טלפון'}</div>
       <div class="issues"><div class="irow"><span class="chip ${s?'ok':'bad'}">${s?'✓ נשלחה תזכורת החודש':'לא ביצע השתלמות '+DATA.ann.y}</span><span class="btns">${ph?`<a class="wa sm${s?' done':''}" href="${waLink(ph,t)}" target="_blank" rel="noopener" data-ak="${esc(k)}">${WA_ICON}${s?'נשלח':unitOf(o)?'לרכז '+first(unitOf(o).n):'וואטסאפ'}</a>`:''}<a class="mail sm" href="mailto:${esc(uMail(o))}?subject=${encodeURIComponent('השתלמות שנתית '+DATA.ann.y)}&body=${encodeURIComponent(t.replace(/\*/g,''))}" data-ak="${esc(k)}">מייל</a><button class="mail sm" type="button" data-copy="${esc(t)}">העתק</button></span></div></div></div>`};
