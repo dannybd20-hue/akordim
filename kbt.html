@@ -731,7 +731,7 @@ function annGroupMail(t,L){const ride=t==='אופנוע',v=ride?'לרכוב':'ל
   const subj=`חובה להירשם להשתלמות השנתית ${DATA.ann.y} – ${t}`;
   const body=`שלום רב,\n\nלפי הרישומים שלנו טרם השתתפת בהשתלמות השנתית לשנת ${DATA.ann.y} – השתלמות ${t} כביש ${DATA.ann.y}.\n\nההשתלמות היא תנאי להמשך ה${ride?'רכיבה':'נהיגה'} בכלי הארגון. מי שלא יירשם וישלים את ההשתלמות עד סוף השנה, לא יוכל להמשיך ${v} ${kli} הארגון בשנה הבאה.\n\nחשוב מאוד להירשם כמה שיותר מהר – ההרשמה דרך רכז התחבורה בסניף.\n\nאם כבר ביצעת השתלמות והיא לא מופיעה במערכת – עדכן אותי ואבדוק.\n\nבברכה,\nדני בן דוד\nקצין בטיחות בתעבורה – מרחב ירושלים`;
   const em=[...new Set(L.map(o=>(o.email||'').trim()).filter(x=>/@/.test(x)))];
-  return {em,miss:L.filter(o=>!/@/.test(o.email||'')).length,href:`mailto:?cc=${encodeURIComponent([ANN_CC,...em].join(','))}&subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`}}
+  return {em,miss:L.filter(o=>!/@/.test(o.email||'')).length,href:`mailto:${em.map(encodeURIComponent).join(',')}?cc=${encodeURIComponent(ANN_CC)}&subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`}}
 function annBadge(){const b=document.getElementById('n-ann');if(b&&DATA&&DATA.ann)b.textContent=DATA.ann.L.filter(o=>!ls(annKey(o))).length||''}
 function renderAnn(){
   const app=document.getElementById('app');if(!DATA.ann){app.innerHTML='<div class="empty">אין נתונים</div>';return}
@@ -754,7 +754,7 @@ function renderAnn(){
     <div class="cats">${[['','הכל'],['אופנוע','אופנוע'],['אמבולנס','אמבולנס'],['רכב','רכב']].map(([k,l])=>`<button data-at="${k}" aria-pressed="${ANNS.t===k}">${l}<span>${n(k)}</span></button>`).join('')}</div>
     <div class="legend">אותם כללים כמו אצל הרכזים: אופנוע > אמבולנס > רכב – השתלמות של הדרגה הגבוהה פוטרת מהנמוכות. פטורים גם: חיים בדרכים / אלטרנטיב / טסט השנה / יום א׳ של השתלמות רכיבה / משתלם אמבולנס-רכב. ${sent?`✓ ${sent} קיבלו תזכורת החודש (מופיעים בסוף).`:''}</div>
     ${G.map(([t,g])=>{const M=annGroupMail(t,g);return `<h2>${t}<span class="cnt">${g.length}</span></h2>
-      <div class="gmail"><a class="mail sm" href="${M.href}" data-gm="${esc(t)}">📧 מייל לכל ה־${M.em.length} (${esc(t)})</a><button class="mail sm" type="button" data-copy="${esc(M.em.join(', '))}">העתק כתובות</button><span class="hint">כל הנמענים ויהודה לוין בעותק (CC)${M.miss?` · ל־${M.miss} אין מייל במערכת`:''}${state.branch?' · רק סניף '+esc(state.branch):''}</span></div>
+      <div class="gmail"><a class="mail sm" href="${M.href}" data-gm="${esc(t)}">📧 מייל לכל ה־${M.em.length} (${esc(t)})</a><button class="mail sm" type="button" data-copy="${esc(M.em.join(', '))}">העתק כתובות</button><span class="hint">כל המתנדבים בנמען, יהודה לוין בעותק${M.miss?` · ל־${M.miss} אין מייל במערכת`:''}${state.branch?' · רק סניף '+esc(state.branch):''}</span></div>
       <div class="list">${g.map(row).join('')}</div>`}).join('')||'<div class="empty">כולם ביצעו 👍</div>'}`;
   bind();
   document.querySelectorAll('[data-at]').forEach(b=>b.onclick=()=>{ANNS.t=b.dataset.at;render()});
