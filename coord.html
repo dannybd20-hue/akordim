@@ -483,6 +483,8 @@ function pRow(p){
 }
 function kpi(icon,label,val,sub,lvl,k){return `<button type="button" class="kpi ${lvl||''}" data-k="${k||''}"><span class="ki">${icon}</span><div><small>${label}</small><b>${val}</b>${sub?`<em>${sub}</em>`:''}</div><span class="kgo">${IC.chev}</span></button>`}
 function render(){
+  /* בזמן שבוחרים סניף מהרשימה (מצב מנהל) – לא מרעננים את המסך, אחרת הרשימה נסגרת. מרעננים כשסוגרים אותה */
+  const ae=document.activeElement;if(ae&&ae.id==='adm'){if(!ae._defer){ae._defer=1;ae.addEventListener('blur',()=>{ae._defer=0;setTimeout(render,50)},{once:true})}return}
   const app=$('app');if(!DATA)return;
   const P=DATA.people,M=DATA.months[DATA.months.length-1];
   let h=ADMIN?adminBar():'';
