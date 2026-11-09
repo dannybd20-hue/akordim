@@ -940,7 +940,7 @@ function bind(){
   document.querySelectorAll('.kpi[data-k],.annban[data-k]').forEach(b=>b.onclick=()=>drill(b.dataset.k));
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{st.flt=b.dataset.f;render()});
   document.querySelectorAll('[data-dr]').forEach(b=>b.onclick=()=>{st.dr=b.dataset.dr;render()});
-  const q=$('q');if(q)q.oninput=e=>{st.q=e.target.value;const pos=e.target.selectionStart;render();const n=$('q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}};
+  const q=$('q');if(q)q.oninput=()=>{clearTimeout(window._qt);window._qt=setTimeout(()=>{const o=$('q');if(!o)return;st.q=o.value;const pos=o.selectionStart;render();const n=$('q');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}},350)};
   const pb=$('pendB');if(pb)pb.onclick=pendingAlert;
   const cp=$('cpm');if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(coordMsg(DATA.br));cp.textContent='הועתק'}catch(e){cp.textContent='לא הועתק'}};
   const a=$('adm');if(a)a.onchange=async e=>{const b=e.target.value;$('app').innerHTML='<div class="empty">פותח…</div>';DATA=await dec(await fileOf(ADMIN[b].pw),ADMIN[b].pw);ls('coord_adm_br',b);st.sel=null;st.f={};show()};

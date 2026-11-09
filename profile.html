@@ -242,7 +242,7 @@ function listView(){
     <div class="legend">${L.length} נהגים · לחיצה על נהג פותחת את הפרופיל המלא</div>
     <div class="plist">${L.slice(0,300).map(p=>{const c=p._c;return `<button class="prow" data-p="${esc(p.pv||p.n+'|'+p.br)}"><span class="pn"><b>${esc(p.n)}</b><small>${esc([p.pv&&'פרייבט '+p.pv,p.br].filter(Boolean).join(' · '))}</small></span>
       <span class="chips">${c.sc!=null?`<i class="ch ${scCls(c.sc)}">סייפטי ${c.sc}</i>`:''}${c.kmMon?`<i class="ch">${fmtN(c.kmMon)} ק"מ</i>`:''}${c.a12?`<i class="ch ${c.f12?'sc-low':''}">${c.a12} תאונות${c.f12?` (${c.f12} באשמתו)`:''}</i>`:''}${p.risk?`<i class="ch ${p.risk.lvl==='high'?'sc-low':'sc-mid'}">🎯 ${RISK[p.risk.lvl][0]}</i>`:''}${p.sh?`<i class="ch sc-mid">🚑 לא פעיל</i>`:''}</span></button>`}).join('')}</div>${L.length>300?'<p class="legend">מוצגים 300 ראשונים – צמצם בחיפוש</p>':''}`;
-  const qi=$('q');qi.oninput=e=>{st.q=e.target.value;const pos=e.target.selectionStart;listView();const n=$('q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}};
+  const qi=$('q');qi.oninput=()=>{clearTimeout(window._qt);window._qt=setTimeout(()=>{const o=$('q');if(!o)return;st.q=o.value;const pos=o.selectionStart;listView();const n=$('q');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}},350)};
   $('br').onchange=e=>{st.br=e.target.value;listView()};$('sort').onchange=e=>{st.sort=e.target.value;listView()};
   document.querySelectorAll('.prow').forEach(b=>b.onclick=()=>{location.hash='p='+encodeURIComponent(b.dataset.p)});
 }

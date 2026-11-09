@@ -518,7 +518,7 @@ function bind(){
   const e2=$('expAll');if(e2)e2.onclick=()=>exportMails(DATA.v.filter(v=>v.s[state.m]!=null&&filt(v)));
   const mon=$('mon');if(mon)mon.onchange=e=>{state.m=+e.target.value;render()};
   const br=$('br');if(br)br.onchange=e=>{state.br=e.target.value;render()};
-  const q=$('q');if(q)q.oninput=e=>{state.q=e.target.value;const pos=e.target.selectionStart;render();const n=$('q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}};
+  const q=$('q');if(q)q.oninput=()=>{clearTimeout(window._qt);window._qt=setTimeout(()=>{const o=$('q');if(!o)return;state.q=o.value;const pos=o.selectionStart;render();const n=$('q');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}},350)};
   document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{if(b.dataset.gocat){state.cat=b.dataset.gocat;ls('sf_cat',state.cat)}document.querySelector(`.tab[data-v="${b.dataset.go}"]`).click()});
   document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{state.cat=b.dataset.cat;ls('sf_cat',state.cat);render()});
   document.querySelectorAll('a[data-sent]').forEach(a=>a.addEventListener('click',()=>{ls(a.dataset.sent,TODAY_KEY);setTimeout(render,300)}));

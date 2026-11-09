@@ -472,7 +472,7 @@ function stopCard(x,k,off){
 }
 function bind(){
   const q=document.getElementById('q');
-  if(q){q.oninput=e=>{state.q=e.target.value;state.limit=60;const pos=e.target.selectionStart;render();const n=document.getElementById('q');n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}}
+  if(q){q.oninput=()=>{clearTimeout(window._qt);window._qt=setTimeout(()=>{const o=document.getElementById('q');if(!o)return;state.q=o.value;const pos=o.selectionStart;state.limit=60;render();const n=document.getElementById('q');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}},350)}}
   const b=document.getElementById('branch');if(b)b.onchange=e=>{state.branch=e.target.value;render()};
   const w=document.getElementById('win');if(w)w.onchange=e=>{state.win=+e.target.value;ls('win3',state.win);render()};
   const m=document.getElementById('miss');if(m)m.onchange=e=>{state.showMiss=e.target.checked;ls('miss',e.target.checked?'1':'0');render()};
@@ -593,7 +593,7 @@ function renderAcc(){
   <p class="legend">מקור: ייצוא "תאונות דני בן דוד" (${esc(ACCD.upd)}). תאונה בלי "תיאור המקרה ע"פ קצין בטיחות" נחשבת ממתינה לתחקיר.</p>`;
   app.innerHTML=h;
   app.querySelectorAll('[data-af]').forEach(b=>b.onclick=()=>{AST.f=b.dataset.af;AST.lim=40;render()});
-  const qi=document.getElementById('aq');qi.oninput=()=>{AST.q=qi.value;const pos=qi.selectionStart;render();const n=document.getElementById('aq');n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}};
+  const qi=document.getElementById('aq');qi.oninput=()=>{clearTimeout(window._qt);window._qt=setTimeout(()=>{const o=document.getElementById('aq');if(!o)return;AST.q=o.value;const pos=o.selectionStart;render();const n=document.getElementById('aq');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}},350)};
   document.getElementById('avt').onchange=e=>{AST.vt=e.target.value;render()};document.getElementById('abr').onchange=e=>{AST.br=e.target.value;render()};
   const m=document.getElementById('amore');if(m)m.onclick=()=>{AST.lim+=40;render()};
   app.querySelectorAll('[data-inv]').forEach(b=>b.onclick=()=>invOpen(b.dataset.inv));
