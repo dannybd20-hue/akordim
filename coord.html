@@ -394,13 +394,22 @@ function evaluate(p,f){
   const bad=[],warn=[],good=[];
   docStatus(p).forEach(d=>{if(d.lvl==='bad')bad.push(`${d.l}: ${d.t}`);else if(d.lvl==='miss')warn.push(`${d.l}: אין תאריך במערכת`);else if(f.from&&d.n!=null&&d.n<days(new Date(f.from+'T00:00')))warn.push(`${d.l} פג לפני תאריך היציאה (${d.t.replace('בתוקף עד ','')})`)});
   const sn=safetyNow(p);
-  if(sn){const M=DATA.months[sn.m];if(sn.x<25&&sn.streak>=2)bad.push(`ציון סייפטי ${sn.x} ב${M} – ${sn.streak} חודשים ברצף מתחת ל־25`);else if(sn.x<25)warn.push(`ציון סייפטי ${sn.x} ב${M} – מתחת לרף`);else if(sn.prev!=null&&sn.prev-sn.x>=20)warn.push(`ציון סייפטי ירד מ־${sn.prev} ל־${sn.x}`);else if(sn.x>=50)good.push(`ציון סייפטי טוב: ${sn.x}`);else good.push(`ציון סייפטי ${sn.x}`)}
+  if(sn){const M=DATA.months[sn.m];if(sn.x<25){}else if(sn.prev!=null&&sn.prev-sn.x>=20)warn.push(`ציון סייפטי ירד מ־${sn.prev} ל־${sn.x}`);else if(sn.x>=50)good.push(`ציון סייפטי טוב: ${sn.x}`);else good.push(`ציון סייפטי ${sn.x}`)}
   else warn.push('אין ציון סייפטי במערכת');
   const r=lastRide(p),rs=r&&num(r.sc);
-  /* ציון הדרכת רכיבה מתחת ל־8 (או לא עבר): הרכז לא מאשר לבד – הבקשה עוברת לקצין הבטיחות */
-  const off=!!r&&(/לא עבר/.test(r.sc)||(rs!=null&&rs<8));
-  if(isMoto(p)||r){if(!r)warn.push('אין הדרכת רכיבה ב־2025–2026');else if(/לא עבר/.test(r.sc))bad.push(`הדרכת רכיבה אחרונה (${r.d}): לא עבר`);else if(rs!=null&&rs<8)bad.push(`ציון הדרכת רכיבה ${rs} (${r.d}) – מתחת ל־8`);else if(rs!=null)good.push(`ציון הדרכת רכיבה ${rs} (${r.d})`)}
-  {const an=annMiss(p);if(an&&an.need==='אופנוע')warn.push(`לא ביצע השתלמות שנתית (${an.course})`)}
+  /* כללי קצין הבטיחות:
+     סירוב (הרכז לא מאשר, המתנדב מופנה לקצין הבטיחות): ציון הדרכת רכיבה מתחת ל־7.5 / לא עבר, ציון סייפטי אחרון מתחת ל־25.
+     הפניה (הבקשה עוברת לאישור קצין הבטיחות): אין הדרכת רכיבה בשנה האחרונה, לא ביצע השתלמות שנתית 2026. */
+  const refuse=[],refer=[];
+  if(r&&/לא עבר/.test(r.sc))refuse.push(`הדרכת רכיבה אחרונה (${r.d}): לא עבר`);
+  else if(rs!=null&&rs<7.5)refuse.push(`ציון הדרכת רכיבה ${rs} (${r.d}) – מתחת ל־7.5`);
+  if(sn&&sn.x<25&&sn.m>=DATA.months.length-3)refuse.push(`ציון סייפטי ${sn.x} ב${DATA.months[sn.m]} – מתחת ל־25`);
+  const rd=r&&pd(r.d),ago=rd?-days(rd):null;
+  if(isMoto(p)&&(!r||ago>365))refer.push(r?`לא רכב בהדרכת רכיבה שנה – אחרונה ב־${r.d}`:'אין הדרכת רכיבה בשנה האחרונה');
+  {const an=annMiss(p);if(an)refer.push(`לא ביצע השתלמות שנתית 2026 (${an.course})`)}
+  const off=!!(refuse.length||refer.length);
+  refuse.forEach(t=>bad.push(t));refer.forEach(t=>bad.push(t));
+  if(r&&!refuse.some(t=>/רכיבה/.test(t))&&rs!=null)(rs<8?warn:good).push(`ציון הדרכת רכיבה ${rs} (${r.d})`);
   /* אלטרנתיבי: כרגע בלי ציונים (יסודר בהמשך) */
   if((p.acc||[]).length>=2)warn.push(`${p.acc.length} תאונות בעבר`);
   const v=f.veh?DATA.veh.find(x=>x.num===f.veh):null;
@@ -408,7 +417,7 @@ function evaluate(p,f){
   const H=hist().filter(h=>h.pv===p.pv&&h.dec==='yes'),recent=H.filter(h=>(Date.now()-h.ts)/864e5<=30);
   if(recent.length>=3)warn.push(`${recent.length} יציאות מהגזרה ב־30 הימים האחרונים`);
   const lvl=bad.length?'bad':warn.length?'warn':'ok';
-  return {lvl,bad,warn,good,off,rs:r?(/לא עבר/.test(r.sc)?'לא עבר':rs):null,title:off?'נדרש אישור קצין בטיחות':lvl==='bad'?'לא מומלץ לאשר':lvl==='warn'?'אפשר לאשר – לשים לב':'מומלץ לאשר'};
+  return {lvl,bad,warn,good,off,refuse,refer,rs:r?(/לא עבר/.test(r.sc)?'לא עבר':rs):null,title:refuse.length?'מסורב – מפנים לקצין הבטיחות':off?'נדרש אישור קצין בטיחות':lvl==='bad'?'לא מומלץ לאשר':lvl==='warn'?'אפשר לאשר – לשים לב':'מומלץ לאשר'};
 }
 function safetyMsg(p,f){
   /* בלי אימוג'י: בחלק מהטלפונים הם מגיעים כסימני שאלה */
@@ -581,8 +590,9 @@ function exitView(){
     const row=(cls,ic,t)=>`<li class="${cls}"><span>${ic}</span>${esc(t)}</li>`;
     h+=`<section class="verdict ${e.lvl}"><div class="vh"><span class="vi">${e.lvl==='ok'?IC.check:e.lvl==='warn'?IC.warn:IC.x}</span><div><small>המלצת המערכת</small><h2>${e.title}</h2><p>${esc(p.n)} · ${H.length} בקשות קודמות · ${yes} יציאות</p></div></div>
       <ul class="vlist2">${e.bad.map(t=>row('bad',IC.x,t)).join('')}${e.warn.map(t=>row('warn',IC.warn,t)).join('')}${e.good.map(t=>row('ok',IC.check,t)).join('')}</ul>
-      <p class="hint">${p===TEST_P?'🧪 מצב בדיקה: ההודעה תישלח לדני בן דוד, ולא תירשם בהיסטוריה.':e.off&&!ADMIN?'<b>ציון הדרכת הרכיבה מתחת ל־8 – אי אפשר לאשר יציאה ברמת הסניף.</b> הבקשה תעבור לקצין הבטיחות, ותקבל הודעה כשהוא יחליט.':'ההחלטה שלך. ההמלצה היא כלי עזר בלבד.'}</p>
-      <div class="acts">${e.off&&!ADMIN?`<button class="btn" id="xreq">${IC.out}שליחת בקשה לקצין הבטיחות</button>`:`<button class="btn ok" id="xyes">${IC.check}מאשר יציאה</button>`}<button class="btn bad" id="xno">${IC.x}לא מאשר</button><button class="btn ghost" id="xcard">תיק המתנדב</button></div><div id="xout"></div></section>`;
+      ${e.refuse.length?`<div class="done bad"><b>${IC.x}היציאה מסורבת – הסיבה:</b><ul>${e.refuse.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>${e.refer.length?`<p>בנוסף: ${esc(e.refer.join(' · '))}</p>`:''}<p>${ADMIN?'במצב מנהל אפשר לאשר בכל זאת.':'הרכז לא יכול לאשר. יש להפנות את המתנדב לקצין הבטיחות – דני בן דוד, '+fmtPhone(OFFICER_PH)+'.'}</p></div>`:e.refer.length?`<div class="done warn"><b>${IC.out}נדרשת הפניה לקצין הבטיחות – הסיבה:</b><ul>${e.refer.map(t=>`<li>${esc(t)}</li>`).join('')}</ul><p>${ADMIN?'במצב מנהל אפשר לאשר ישירות.':'אי אפשר לאשר ברמת הסניף. הבקשה תעבור לקצין הבטיחות, ותקבל הודעה כשהוא יחליט.'}</p></div>`:''}
+      <p class="hint">${p===TEST_P?'🧪 מצב בדיקה: ההודעה תישלח לדני בן דוד, ולא תירשם בהיסטוריה.':e.off&&!ADMIN?'':'ההחלטה שלך. ההמלצה היא כלי עזר בלבד.'}</p>
+      <div class="acts">${e.refuse.length&&!ADMIN?`<button class="btn bad" id="xref">${IC.x}מסרב ומפנה לקצין הבטיחות</button>`:e.off&&!ADMIN?`<button class="btn" id="xreq">${IC.out}שליחת בקשה לקצין הבטיחות</button><button class="btn bad" id="xno">${IC.x}לא מאשר</button>`:`<button class="btn ok" id="xyes">${IC.check}מאשר יציאה</button><button class="btn bad" id="xno">${IC.x}לא מאשר</button>`}<button class="btn ghost" id="xcard">תיק המתנדב</button></div><div id="xout"></div></section>`;
   }
   h+='</div>';
   const H=hist();
@@ -597,10 +607,12 @@ function exitView(){
     const e=evaluate(p,f);
     $('xcard').onclick=()=>personSheet(p.pv||p.n);
     if($('xreq'))$('xreq').onclick=()=>{sync();const h={pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'pending',ts:Date.now()};addHist(h);const m=offReqMsg(h,e);
-      render();$('xout').innerHTML=`<div class="done warn"><b>${IC.out}הבקשה נשלחה לקצין הבטיחות</b><p>${SYNC_URL?'דני יקבל אותה באפליקציה. כשהוא יחליט – תקפוץ לך הודעה, ואז אפשר לשלוח לאופנוען את הודעת הבטיחות.':'כדי שהבקשה תגיע לדני עכשיו – שלח לו אותה בוואטסאפ:'}</p><div class="acts"><a class="btn wa" href="${waLink(OFFICER_PH,m)}" target="_blank" rel="noopener">${WA_ICON}${SYNC_URL?'לזרז בוואטסאפ לדני':'שליחה לדני בן דוד'}</a></div></div>`};
+      render();$('xout').innerHTML=`<div class="done warn"><b>${IC.out}הבקשה נשלחה לקצין הבטיחות</b><p>${SYNC_URL?'דני יקבל אותה באפליקציה. כשהוא יחליט – תקפוץ לך הודעה, ואז אפשר לשלוח לאופנוען את הודעת הבטיחות.':'כדי שהבקשה תגיע לדני עכשיו – שלח לו אותה בוואטסאפ:'}</p><div class="acts"><a class="btn wa" href="${waLink(OFFICER_PH,m)}" target="_blank" rel="noopener">${WA_ICON}${SYNC_URL?'לזרז בוואטסאפ לדני':'שליחה לדני בן דוד'}</a>${p.ph?`<a class="btn wa" href="${waLink(p.ph,volRefMsg(p,e))}" target="_blank" rel="noopener">${WA_ICON}עדכון ${esc(first(p.n))}</a>`:''}</div></div>`};
+    if($('xref'))$('xref').onclick=()=>{sync();if(p!==TEST_P)addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'no',ts:Date.now()});const vm=volRefMsg(p,e);
+      render();$('xout').innerHTML=`<div class="done bad"><b>${IC.x}היציאה נרשמה כמסורבת</b><p>הודעה למתנדב – מסורב ומופנה לקצין הבטיחות:</p><pre>${esc(vm.replace(/\*/g,''))}</pre><div class="acts">${p.ph?`<a class="btn wa" href="${waLink(p.ph,vm)}" target="_blank" rel="noopener">${WA_ICON}שליחה ל${esc(first(p.n))}</a>`:''}<a class="btn ghost" href="${waLink(OFFICER_PH,offReqMsg({pv:p.pv,n:p.n,dest:f.dest,from:f.from,why:e.refuse.join('; '),note:f.note},e).replace('לאישור קצין בטיחות','סורבה בסניף – לידיעה'))}" target="_blank" rel="noopener">עדכון דני בן דוד</a></div></div>`};
     if($('xyes'))$('xyes').onclick=()=>{sync();if(p!==TEST_P)addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'yes',ts:Date.now()});const m=safetyMsg(p,f);
       render();$('xout').innerHTML=`<div class="done ok"><b>${IC.check}היציאה נרשמה כמאושרת</b>${ADMIN&&p!==TEST_P?`<p>${SYNC_URL?'לרכז הסניף תקפוץ הודעה באפליקציה.':''}</p>${ADMIN[DATA.br]&&ADMIN[DATA.br].cph?`<div class="acts"><a class="btn wa" href="${waLink(ADMIN[DATA.br].cph,`*יציאה מהגזרה – אישור קצין בטיחות*\n\nאישרתי את היציאה של ${p.n}${f.dest?' ל'+f.dest:''}${f.from?' בתאריך '+fmt(new Date(f.from)):''}.\nהודעת הבטיחות נשלחת אליו ממני.\n\nדני בן דוד · קצין בטיחות`)}" target="_blank" rel="noopener">${WA_ICON}עדכון הרכז בוואטסאפ</a></div>`:''}`:''}<p>הודעת הבטיחות מוכנה – רק לשלוח:</p><pre>${esc(m.replace(/\*/g,''))}</pre><div class="acts">${p.ph?`<a class="btn wa" href="${waLink(p.ph,m)}" target="_blank" rel="noopener">${WA_ICON}שליחה ל${esc(first(p.n))}</a>`:''}<a class="btn ghost" href="mailto:${esc(p.em||'')}?${ADMIN&&ADMIN[DATA.br]&&ADMIN[DATA.br].cem?'cc='+encodeURIComponent(ADMIN[DATA.br].cem)+'&':''}subject=${encodeURIComponent('אישור יציאה מהגזרה')}&body=${encodeURIComponent((s=>s.split('\n').map(l=>l?'\u200F'+l:l).join('\n'))(m.replace(/\*/g,'')))}">מייל</a></div></div>`};
-    $('xno').onclick=()=>{sync();if(p!==TEST_P)addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'no',ts:Date.now()});render();$('xout').innerHTML=`<div class="done bad"><b>${IC.x}הבקשה נרשמה כלא מאושרת</b></div>`};
+    if($('xno'))$('xno').onclick=()=>{sync();if(p!==TEST_P)addHist({pv:p.pv,n:p.n,dest:f.dest,from:f.from,to:f.to,note:f.note,rec:e.lvl,why:[...e.bad,...e.warn].join('; '),dec:'no',ts:Date.now()});render();$('xout').innerHTML=`<div class="done bad"><b>${IC.x}הבקשה נרשמה כלא מאושרת</b></div>`};
   }
 }
 
@@ -712,6 +724,9 @@ function ackLine(a){
 
 /* ===== בקשות יציאה שמחכות לקצין הבטיחות ===== */
 const OFFICER_PH='0508820408';
+function volRefMsg(p,e){const ph=fmtPhone(OFFICER_PH);
+  if(e.refuse.length)return `שלום ${first(p.n)},\n\nבקשת היציאה שלך מהגזרה *מסורבת*.\n\nהסיבה:\n${e.refuse.map(t=>'• '+t).join('\n')}${e.refer.length?'\n'+e.refer.map(t=>'• '+t).join('\n'):''}\n\nלהמשך – יש לפנות לדני בן דוד, קצין הבטיחות בתעבורה: ${ph}\n\n${DATA.coord||'רכז התחבורה'} · רכז תחבורה – ${DATA.br}`;
+  return `שלום ${first(p.n)},\n\nאת בקשת היציאה שלך מהגזרה אי אפשר לאשר ברמת הסניף, והיא הועברה לקצין הבטיחות.\n\nהסיבה:\n${e.refer.map(t=>'• '+t).join('\n')}\n\nאפשר לפנות ישירות לדני בן דוד, קצין הבטיחות בתעבורה: ${ph}\n\n${DATA.coord||'רכז התחבורה'} · רכז תחבורה – ${DATA.br}`}
 function offReqMsg(h,e){return `*בקשת יציאה מהגזרה – לאישור קצין בטיחות*\n\nסניף: ${DATA.br}\nרכז: ${DATA.coord||'—'}\nאופנוען: ${h.n}${h.pv?' ('+h.pv+')':''}\nיעד: ${h.dest||'—'}\nתאריך: ${h.from?fmt(new Date(h.from)):'—'}\nציון הדרכת רכיבה: ${e.rs??'—'}${h.why?`\n\nלתשומת לב: ${h.why}`:''}${h.note?`\n\nהערות הרכז: ${h.note}`:''}`}
 /* אצל הרכז: קופצת הודעה כשהקצין החליט */
 function offDecAlerts(){

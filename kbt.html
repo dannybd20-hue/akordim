@@ -573,6 +573,31 @@ function accCardK(a){
     ${full?`<details class="accq"><summary><b>תחקיר מלא (נשמר ${esc(new Date(full.ts).toLocaleDateString('he-IL'))})</b></summary><div class="pre">${esc(full.text).replace(/\*([^*\n]+)\*/g,'<b>$1</b>')}</div></details>`:pend?'<p class="accq pendt"><b>⏳ ממתין לתחקיר קצין בטיחות</b></p>':`<details class="accq"><summary><b>תחקיר קצין בטיחות</b></summary><div class="pre">${esc(a.off).replace(/\*([^*\n]+)\*/g,'<b>$1</b>')}${a.off.length>=255?'\n…(הייצוא מהמערכת מקצר ל־255 תווים)':''}</div></details>`}
   </div><div class="acts"><button class="wa sm" style="background:var(--accent);border:0;cursor:pointer;font:inherit;font-weight:700" data-inv="${esc(a.id)}">${pend?'הכנת תחקיר':full?'עריכת התחקיר':'תחקיר מחדש'}</button>${p&&p.ph?`<a class="wa sm" href="https://wa.me/972${esc(p.ph.replace(/^0/,''))}" target="_blank" rel="noopener">${WA_ICON}לנהג</a>`:''}</div></div>`;
 }
+/* סיכום תאונות לפי סניף: בלי סניף – דירוג הסניפים; עם סניף – כמות, מתי, סוגי כלים, אשמה, נהגים חוזרים */
+function accBrBox(A){
+  const yr=a=>{const d=pdh(a.d);return d&&d.getFullYear?d.getFullYear():null};
+  if(!AST.br){const c={};A.forEach(a=>{if(a.br)c[a.br]=(c[a.br]||0)+1});const L=Object.entries(c).sort((x,y)=>y[1]-x[1]);
+    return `<details class="abrk"><summary>תאונות לפי סניף · ${L.length} סניפים (לחיצה על סניף מציגה את התאונות שלו)</summary><div class="abrl">${L.map(([b,n])=>`<button data-abr="${esc(b)}">${esc(b)} <b>${n}</b></button>`).join('')}</div></details>`}
+  const B=A.filter(a=>a.br===AST.br).sort((x,y)=>(pdh(y.d)||0)-(pdh(x.d)||0));if(!B.length)return '';
+  const grp=f=>{const c={};B.forEach(a=>{const k=f(a);if(k)c[k]=(c[k]||0)+1});return Object.entries(c).sort((x,y)=>y[1]-x[1])};
+  const ys=grp(a=>yr(a)),vt=grp(a=>a.vt),mine=B.filter(a=>/איחוד/.test(a.fault)).length;
+  const per={};B.forEach(a=>{const k=a.pv||a.n;if(k)(per[k]=per[k]||{n:a.n,pv:a.pv,L:[]}).L.push(a)});const rep=Object.values(per).filter(x=>x.L.length>1).sort((x,y)=>y.L.length-x.L.length);
+  const mons={};B.forEach(a=>{const d=pdh(a.d);if(!d||!d.getMonth)return;const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');mons[k]=(mons[k]||0)+1});
+  const MK=Object.keys(mons).sort(),mx=Math.max(...Object.values(mons),1),HM=['ינו','פבר','מרץ','אפר','מאי','יוני','יולי','אוג','ספט','אוק','נוב','דצמ'];
+  return `<section class="abrs"><h2 style="margin:0 0 8px">${esc(AST.br)} – סיכום תאונות</h2>
+    <div class="abrn"><div><b>${B.length}</b><span>תאונות סה"כ</span></div>${ys.sort((x,y)=>y[0]-x[0]).map(([y,n])=>`<div><b>${n}</b><span>ב־${y}</span></div>`).join('')}<div class="w"><b>${mine}</b><span>אשמת נהג איחוד הצלה</span></div></div>
+    ${vt.length?`<p><b>לפי סוג כלי:</b> ${vt.map(([k,n])=>esc(k)+' '+n).join(' · ')}</p>`:''}
+    <p><b>מתי (לפי חודש):</b></p>${[...new Set(MK.map(k=>k.slice(0,4)))].sort().reverse().map(y=>`<div class="abrm"><em>${y}</em>${HM.map((h,i)=>{const n=mons[y+'-'+String(i+1).padStart(2,'0')]||0;return `<div title="${n} תאונות"><i style="height:${n?Math.round(n/mx*40)+4:0}px"></i><b>${n||''}</b><span>${h}</span></div>`}).join('')}</div>`).join('')}
+    <p><b>התאריכים:</b> ${B.map(a=>`<span class="abrd${/איחוד/.test(a.fault)?' w':''}" title="${esc(a.n||'')}${a.vt?' · '+esc(a.vt):''}">${esc(a.d)}</span>`).join(' ')}</p>
+    ${rep.length?`<p><b>נהגים עם יותר מתאונה אחת:</b> ${rep.map(x=>`${esc(x.n||x.pv)} (${x.L.length}: ${x.L.map(a=>esc(a.d)).join(', ')})`).join(' · ')}</p>`:''}
+    <p class="legend" style="margin:6px 0 0">בכתום – תאונה באשמת נהג איחוד הצלה. הרשימה המלאה של התאונות מופיעה למטה. <button class="lnk" data-abr="">חזרה לכל הסניפים</button></p></section>`}
+(()=>{const st=document.createElement('style');st.textContent=`.abrk{background:var(--surface,#fff);border:1px solid var(--line,#ddd);border-radius:12px;padding:8px 12px;margin:8px 0}.abrk summary{cursor:pointer;font-weight:700}
+.abrl{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.abrl button{font:inherit;border:1px solid var(--line,#ccc);background:transparent;color:inherit;border-radius:999px;padding:4px 10px;cursor:pointer}
+.abrs{background:var(--surface,#fff);border:1px solid var(--line,#ddd);border-radius:14px;padding:12px 14px;margin:8px 0}.abrs p{margin:6px 0;line-height:1.7}
+.abrn{display:flex;flex-wrap:wrap;gap:8px}.abrn div{flex:1 1 90px;border-radius:10px;padding:8px;background:rgba(127,127,127,.08);text-align:center}.abrn b{display:block;font-size:1.5em}.abrn span{font-size:.85em}.abrn .w b{color:#c2410c}
+.abrm{display:flex;gap:2px;align-items:flex-end;padding:4px 0;border-bottom:1px solid var(--line,#ddd)}.abrm em{font-style:normal;font-weight:700;font-size:.8em;min-width:34px}.abrm div{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0;font-size:.7em}.abrm i{display:block;width:18px;background:#c62828;border-radius:4px 4px 0 0}
+.abrd{display:inline-block;border:1px solid var(--line,#ccc);border-radius:6px;padding:0 6px;margin:2px 0;font-size:.9em;white-space:nowrap}.abrd.w{border-color:#c2410c;color:#c2410c}
+.lnk{font:inherit;background:none;border:0;color:var(--accent,#1d4ed8);text-decoration:underline;cursor:pointer;padding:0}`;document.head.appendChild(st)})();
 function renderAcc(){
   const app=document.getElementById('app');
   if(!ACCD){app.innerHTML='<div class="empty">טוען תאונות…</div>';loadAcc();return}
@@ -587,14 +612,16 @@ function renderAcc(){
   <div class="controls"><input id="aq" type="search" placeholder="חיפוש: שם, פרייבט, מס' כלי, ACC" value="${esc(AST.q)}">
     <select id="avt"><option value="">כל סוגי הכלים</option>${vts.map(v=>`<option${v===AST.vt?' selected':''}>${esc(v)}</option>`).join('')}</select>
     <select id="abr"><option value="">כל הסניפים</option>${brs.map(v=>`<option${v===AST.br?' selected':''}>${esc(v)}</option>`).join('')}</select></div>
+  ${accBrBox(A)}
   <h2>${AST.f==='pend'?'ממתינות לתחקיר':AST.f==='mine'?'אשמת נהג איחוד הצלה':'כל התאונות'} <span class="cnt">${F.length}</span></h2>
   <div class="list">${F.slice(0,AST.lim).map(accCardK).join('')||`<div class="empty">${AST.f==='pend'?'אין תאונות שממתינות לתחקיר 👍':'לא נמצאו תאונות'}</div>`}</div>
   ${F.length>AST.lim?`<button class="more" id="amore">עוד ${F.length-AST.lim}</button>`:''}
   <p class="legend">מקור: ייצוא "תאונות דני בן דוד" (${esc(ACCD.upd)}). תאונה בלי "תיאור המקרה ע"פ קצין בטיחות" נחשבת ממתינה לתחקיר.</p>`;
   app.innerHTML=h;
   app.querySelectorAll('[data-af]').forEach(b=>b.onclick=()=>{AST.f=b.dataset.af;AST.lim=40;render()});
-  const qi=document.getElementById('aq');qi.oninput=()=>{clearTimeout(window._qt);window._qt=setTimeout(()=>{const o=document.getElementById('aq');if(!o)return;AST.q=o.value;const pos=o.selectionStart;render();const n=document.getElementById('aq');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}},350)};
-  document.getElementById('avt').onchange=e=>{AST.vt=e.target.value;render()};document.getElementById('abr').onchange=e=>{AST.br=e.target.value;render()};
+  const qi=document.getElementById('aq');qi.oninput=()=>{AST.q=qi.value;const pos=qi.selectionStart;render();const n=document.getElementById('aq');n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}};
+  document.getElementById('avt').onchange=e=>{AST.vt=e.target.value;render()};document.getElementById('abr').onchange=e=>{AST.br=e.target.value;if(AST.br)AST.f='all';AST.lim=40;render()};
+  app.querySelectorAll('[data-abr]').forEach(b=>b.onclick=()=>{AST.br=b.dataset.abr;AST.f='all';AST.lim=40;render();window.scrollTo(0,0)});
   const m=document.getElementById('amore');if(m)m.onclick=()=>{AST.lim+=40;render()};
   app.querySelectorAll('[data-inv]').forEach(b=>b.onclick=()=>invOpen(b.dataset.inv));
 }
