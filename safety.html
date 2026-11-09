@@ -563,6 +563,12 @@ let SPW='';const COORD_SYNC='https://script.google.com/macros/s/AKfycbw03x21xEa5
 document.addEventListener('click',async e=>{const a=e.target.closest('a[data-ct]');if(!a||!SPW)return;
   try{const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('dbd-coord-api:'+SPW)),tk=[...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
     fetch(COORD_SYNC,{method:'POST',body:JSON.stringify({action:'msg_add',t:tk,pv:a.dataset.cpv,mbr:a.dataset.cbr,n:a.dataset.cn,m:a.dataset.cm,kind:a.dataset.ck,text:a.dataset.ct}),keepalive:true}).catch(()=>{})}catch(_){}},true);
+/*CCY*/(()=>{/* כל מייל שנפתח מהאפליקציה – יהודה לוין בעותק */const Y='YehudaLv@1221.org.il';
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href^="mailto:"]');if(!a)return;if(typeof CCY_ON==='function'&&!CCY_ON())return;
+ let h=a.getAttribute('href');if(h.toLowerCase().includes(Y.toLowerCase()))return;const i=h.indexOf('?');
+ if(i<0)h+='?cc='+Y;else if(/[?&]cc=/i.test(h))h=h.replace(/([?&]cc=)/i,'$1'+Y+',');else h=h.slice(0,i+1)+'cc='+Y+'&'+h.slice(i+1);
+ a.setAttribute('href',h)},true)})();/*CCY-END*/
+
 </script>
 </body>
 </html>

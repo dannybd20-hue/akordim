@@ -764,6 +764,12 @@ function renderAnn(){
   document.querySelectorAll('a[data-ak]').forEach(a=>a.addEventListener('click',()=>{ls(a.dataset.ak,'1');annBadge();setTimeout(render,300)}));
 }
 /*ANN-END*/
+/*CCY*/(()=>{/* כל מייל שנפתח מהאפליקציה – יהודה לוין בעותק */const Y='YehudaLv@1221.org.il';
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href^="mailto:"]');if(!a)return;if(typeof CCY_ON==='function'&&!CCY_ON())return;
+ let h=a.getAttribute('href');if(h.toLowerCase().includes(Y.toLowerCase()))return;const i=h.indexOf('?');
+ if(i<0)h+='?cc='+Y;else if(/[?&]cc=/i.test(h))h=h.replace(/([?&]cc=)/i,'$1'+Y+',');else h=h.slice(0,i+1)+'cc='+Y+'&'+h.slice(i+1);
+ a.setAttribute('href',h)},true)})();/*CCY-END*/
+
 </script>
 </body>
 </html>

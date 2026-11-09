@@ -958,6 +958,13 @@ document.addEventListener('visibilitychange',()=>document.body.classList.toggle(
 window.addEventListener('blur',()=>document.body.classList.add('hide-all'));window.addEventListener('focus',()=>document.body.classList.remove('hide-all'));
 document.addEventListener('copy',e=>{if(document.body.classList.contains('secure')&&!/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||''))e.preventDefault()});
 document.addEventListener('contextmenu',e=>{if(document.body.classList.contains('secure'))e.preventDefault()});
+const CCY_ON=()=>!!ADMIN;
+/*CCY*/(()=>{/* כל מייל שנפתח מהאפליקציה – יהודה לוין בעותק */const Y='YehudaLv@1221.org.il';
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href^="mailto:"]');if(!a)return;if(typeof CCY_ON==='function'&&!CCY_ON())return;
+ let h=a.getAttribute('href');if(h.toLowerCase().includes(Y.toLowerCase()))return;const i=h.indexOf('?');
+ if(i<0)h+='?cc='+Y;else if(/[?&]cc=/i.test(h))h=h.replace(/([?&]cc=)/i,'$1'+Y+',');else h=h.slice(0,i+1)+'cc='+Y+'&'+h.slice(i+1);
+ a.setAttribute('href',h)},true)})();/*CCY-END*/
+
 function show(){setTimeout(accAlerts,600);setTimeout(gradAlerts,2600);ACKS=null;setTimeout(loadAcks,100);INVS=null;setTimeout(loadInvs,150);FU=null;setTimeout(loadFu,200);MSGS=null;setTimeout(loadMsgs,250);setTimeout(fuAlerts,1500);if(ADMIN){setTimeout(loadPending,300);if(!window._pendT)window._pendT=setInterval(loadPending,120000)}$('gsw').hidden=false;const gi=$('gs');gi.oninput=()=>gsearch(gi.value);document.documentElement.style.setProperty('--hh',document.querySelector('.appbar').offsetHeight+'px');watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
 
 /* ===== כניסה ===== */
