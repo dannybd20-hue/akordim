@@ -783,8 +783,25 @@ function invClean_(x) {
       const q = n(i.qty || 1), p = n(i.unitPrice);
       return { name: s(i.name, 120), qty: q, unit: s(i.unit, 20), unitPrice: p, total: i.total == null || i.total === '' ? n(q * p) : n(i.total) };
     }),
+    fileId: s(x.fileId, 80), fileName: s(x.fileName, 120), docUrl: /^https:\/\//.test(String(x.docUrl || '')) ? s(x.docUrl, 500) : '',
+    mailUrl: /^https:\/\/mail\.google\.com\//.test(String(x.mailUrl || '')) ? s(x.mailUrl, 300) : '',
     added: x.added || Date.now()
   };
+}
+/* מסמך המקור של חשבונית (PDF או תמונה) נשמר בדרייב בתיקייה INVOICES_FOLDER */
+const INVOICES_FOLDER = 'חשבוניות - מסמכים';
+function invFolder_() {
+  const it = DriveApp.getFoldersByName(INVOICES_FOLDER);
+  return it.hasNext() ? it.next() : DriveApp.createFolder(INVOICES_FOLDER);
+}
+function invUpload_(inv, dataUrl, name) {
+  const m = /^data:([\w\/+.-]+);base64,(.+)$/.exec(String(dataUrl || ''));
+  if (!m) return;
+  const ext = m[1] === 'application/pdf' ? '.pdf' : m[1] === 'image/png' ? '.png' : '.jpg';
+  const fn = (name || ('חשבונית ' + (inv.supplier || '') + ' ' + (inv.invoiceNo || inv.id) + ' ' + (inv.date || ''))).replace(/[\\/:*?"<>|]/g, '-').slice(0, 100) + ext;
+  if (inv.fileId) { try { DriveApp.getFileById(inv.fileId).setTrashed(true); } catch (x) {} }
+  const f = invFolder_().createFile(Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], fn));
+  inv.fileId = f.getId(); inv.fileName = fn;
 }
 function invQuote_(x) {
   const s = function (v, k) { return String(v == null ? '' : v).slice(0, k || 120); };
@@ -799,6 +816,13 @@ function invoicesPost_(d) {
   }
   passed_('inv');
   if (d.op === 'scan') return invScan_(d);
+  if (d.op === 'file') {
+    try {
+      const f = DriveApp.getFileById(String(d.fileId)), b = f.getBlob();
+      if (f.getParents().hasNext() && f.getParents().next().getName() !== INVOICES_FOLDER) return out_({ ok: false, error: 'nofile' });
+      return out_({ ok: true, name: f.getName(), mime: b.getContentType(), data: Utilities.base64Encode(b.getBytes()) });
+    } catch (x) { return out_({ ok: false, error: 'nofile' }); }
+  }
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   let st;
@@ -841,12 +865,25 @@ function invApply_(st, o) {
   [o].forEach(function (o) {
       if (o.type === 'inv' && o.inv) {
         const c = invClean_(o.inv), i = st.invoices.findIndex(function (x) { return x.id === c.id; });
+        if (i >= 0 && !c.fileId && st.invoices[i].fileId) { c.fileId = st.invoices[i].fileId; c.fileName = st.invoices[i].fileName; }
+        if (o.inv.upload) invUpload_(c, o.inv.upload);
         if (i >= 0) st.invoices[i] = c; else st.invoices.push(c);
         changed = true;
       } else if (o.type === 'q' && o.q) {
         const c = invQuote_(o.q), i = st.quotes.findIndex(function (x) { return x.id === c.id; });
         if (i >= 0) st.quotes[i] = c; else st.quotes.push(c);
         changed = true;
+      } else if (o.type === 'attach') {
+        /* מצמיד לחשבונית קיימת מסמך מקור: fileId של קובץ בדרייב, או קישור למסמך / למייל */
+        const inv = st.invoices.filter(function (x) { return x.id === String(o.id); })[0];
+        if (inv) {
+          if (o.fileId) {
+            try { const f = DriveApp.getFileById(String(o.fileId)); f.moveTo(invFolder_()); inv.fileId = f.getId(); inv.fileName = f.getName(); } catch (x) {}
+          }
+          if (o.docUrl && /^https:\/\//.test(o.docUrl)) inv.docUrl = String(o.docUrl).slice(0, 500);
+          if (o.mailUrl && /^https:\/\/mail\.google\.com\//.test(o.mailUrl)) inv.mailUrl = String(o.mailUrl).slice(0, 300);
+          changed = true;
+        }
       } else if (o.type === 'del') {
         const k = o.kind === 'q' ? 'quotes' : 'invoices', n = st[k].length;
         st[k] = st[k].filter(function (x) { return x.id !== String(o.id); });
