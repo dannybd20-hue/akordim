@@ -76,7 +76,12 @@ async function dec(path,pw){
   let gz;try{gz=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct)}catch(e){throw new Error('pw')}
   return JSON.parse(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
 }
-const fileOf=async pw=>'head/'+(await sha('dbd-head:'+pw)).slice(0,24)+'.bin';
+/* שם הקובץ נגזר מהסיסמה בגזירה איטית (כמו בבנייה) */
+const fileOf=async pw=>{const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
+  const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode('dbd-head-file-v2'),iterations:300000,hash:'SHA-256'},base,96);
+  return 'head/'+[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')+'.bin'};
+/* הקלדה נוחה: אותיות קטנות/גדולות, עם או בלי מקפים ורווחים */
+const normPw=p=>{const d=(p||'').toUpperCase().replace(/[^A-Z0-9]/g,'');return d.length===12?d.match(/.{4}/g).join('-'):(p||'').trim()};
 let D=null,ADMIN=null;
 
 function lockView(err){
@@ -88,22 +93,27 @@ function lockView(err){
 }
 async function unlock(saved){
   let pw=saved||$('pw').value.trim().replace(/[.\s]+$/,'');
-  {const d=pw.replace(/[\s\-–—_.]/g,'');if(/^\d{8}$/.test(d))pw=d.slice(0,4)+'-'+d.slice(4)}
+  const raw=pw;pw=normPw(pw);
   if(!saved){$('ub').disabled=true;$('ub').textContent='פותח…'}
   try{D=await dec(await fileOf(pw),pw);if(!saved&&$('rem').checked)ls('head_pw',pw);render()}
   catch(e){
-    if(!saved){try{ADMIN=await dec('head/index.bin',pw);if($('rem').checked)ls('kbt_pw',pw);await pick(ls('head_adm_br'));return}catch(_){ADMIN=null}}
-    if(saved)ls('head_pw',null);lockView(e.message==='pw'?'סיסמה שגויה':!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
+    if(!saved){try{ADMIN=await dec('head/index.bin',raw);if($('rem').checked)ls('kbt_pw',raw);await pick(ls('head_adm_br'));return}catch(_){ADMIN=null}}
+    if(saved)ls('head_pw',null);lockView(e.message==='pw'?(saved?'הסיסמה הוחלפה בסיסמה חזקה יותר – הקלד את הסיסמה החדשה שקיבלת בוואטסאפ':'סיסמה שגויה'):!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
 }
 async function pick(b){const br=ADMIN[b]?b:Object.keys(ADMIN)[0];ls('head_adm_br',br);D=await dec(await fileOf(ADMIN[br].pw),ADMIN[br].pw);render()}
 
 /* מצב מנהל: שליחת הסיסמה לראש הסניף בוואטסאפ */
 function waLink(p,t){p=(p||'').replace(/\D/g,'');if(p.startsWith('0'))p='972'+p.slice(1);t=(t||'').replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu,'');return 'https://wa.me/'+p+'?text='+encodeURIComponent(t)}
 const first=n=>(n||'').trim().split(/\s+/)[0]||'';
-function headMsg(b){const c=ADMIN[b];return `שלום ${first(c.head)},\n\nפתחתי לך *לוח ראש סניף* – תמונת מצב של הבטיחות בתעבורה בסניף ${b}: ציוני סייפטי, תאונות, נהגים בסיכון, השתלמות שנתית, מצב הכלים, מסמכי נהגים ומשמרות.\nהלוח מתעדכן אוטומטית והוא לצפייה בלבד.\n\nכניסה: https://dannybd20-hue.github.io/akordim/head.html\nהסיסמה שלך: *${c.pw}*\n\nהסיסמה אישית לך – נא לא להעביר הלאה.\nלכל שאלה או בקשה אני זמין.\n\nבברכה,\nדני בן דוד\nקצין בטיחות בתעבורה – מרחב ירושלים`}
+function headMsg(b){const c=ADMIN[b];return `שלום ${first(c.head)},\n\nפתחתי לך *לוח ראש סניף* – תמונת מצב של הבטיחות בתעבורה בסניף ${b}: ציוני סייפטי, תאונות, נהגים בסיכון, השתלמות שנתית, מצב הכלים, מסמכי נהגים ומשמרות.\nהלוח מתעדכן אוטומטית והוא לצפייה בלבד.\n\nכניסה: https://dannybd20-hue.github.io/akordim/head.html\nהסיסמה שלך: *${c.pw}*\n(לטובת אבטחת המידע הוחלפה הסיסמה לסיסמה חזקה יותר. סיסמה קודמת, אם קיבלת, כבר לא פעילה. אפשר להקליד באותיות קטנות ובלי המקפים.)\n\nהסיסמה אישית לך – נא לא להעביר הלאה.\nלכל שאלה או בקשה אני זמין.\n\nבברכה,\nדני בן דוד\nקצין בטיחות בתעבורה – מרחב ירושלים`}
 function adminBar(){const b=D.br,c=ADMIN[b],m=headMsg(b);
   return `<div class="note admin"><b>מצב מנהל</b> · ראש סניף: <b>${esc(c.head||'—')}</b>${c.hpv?' ('+esc(c.hpv)+')':''}${c.hph?' · <span dir="ltr">'+esc(c.hph)+'</span>':' · <span class="bad">אין טלפון</span>'} · סיסמה: <b dir="ltr">${esc(c.pw)}</b>
-   <div class="acts">${c.hph?`<a class="abtn wa" href="${waLink(c.hph,m)}" target="_blank" rel="noopener">שליחת סיסמה בוואטסאפ</a>`:''}<button class="abtn" type="button" onclick="navigator.clipboard.writeText(headMsg(D.br)).then(()=>this.textContent='הועתק ✓')">העתקת ההודעה</button></div></div>`}
+   <div class="acts">${c.hph?`<a class="abtn wa" href="${waLink(c.hph,m)}" target="_blank" rel="noopener">שליחת סיסמה בוואטסאפ</a>`:''}<button class="abtn" type="button" onclick="navigator.clipboard.writeText(headMsg(D.br)).then(()=>this.textContent='הועתק ✓')">העתקת ההודעה</button></div>${allHeads()}</div>`}
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-hsent]');if(a){ls(a.dataset.hsent,'1');setTimeout(()=>render(),400)}});
+/* כל ראשי הסניפים במקום אחד: שליחת הסיסמה + סימון מי כבר קיבל את הסיסמה הנוכחית */
+function allHeads(){const B=Object.keys(ADMIN).sort((a,b)=>a.localeCompare(b,'he')),k=b=>'hpw_sent:'+b+':'+ADMIN[b].pw,left=B.filter(b=>!ls(k(b))).length;
+  return `<details style="margin-top:8px"${left?' open':''}><summary><b>שליחת הסיסמאות לכל ראשי הסניפים</b> · ${left?left+' עוד לא נשלחו':'✓ נשלח לכולם'}</summary>${B.map(b=>{const c=ADMIN[b],sent=ls(k(b));
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 0;border-bottom:1px dashed #ccc"><span><b>${esc(b)}</b> · ${esc(c.head||'—')} <span dir="ltr" style="font-family:monospace;white-space:nowrap">${esc(c.pw)}</span></span>${c.hph?`<a class="abtn wa" style="white-space:nowrap" href="${waLink(c.hph,headMsg(b))}" target="_blank" rel="noopener" data-hsent="${esc(k(b))}">${sent?'✓ נשלח':'שליחה'}</a>`:'<span class="bad">אין טלפון</span>'}</div>`}).join('')}</details>`}
 function logout(){ls('head_pw',null);D=null;ADMIN=null;lockView()}
 
 /* גרף ציון ממוצע לפי חודש: הסניף מול המרחב */
