@@ -968,6 +968,41 @@ function brrText(br){
   t+=`\nאודה לך אם תעבור על הרשימה עם רכז התחבורה ותדאג שהמתנדבים יסדירו את מה שחסר. נהג עם חריגה פתוחה אינו מורשה לנהוג בכלי הארגון.\nאני זמין לכל שאלה.\n\nתודה,\n${NOSIGN}`;
   return t;
 }
+/* גרסת המייל: טקסט נקי ומסודר בסעיפים ממוספרים (מייל מקישור לא יכול להכיל עיצוב) */
+function brrMail(br){
+  const {B,bad,warn,ann,acc,Y}=brrData(br),h=B.h||{},M=(B.m||'').replace(/ (\d\d)$/,' 20$1'),SEP='────────────────────';
+  const who=r=>r.type==='vehicle'?`כלי ${r.rec.num}${r.rec.plate?' ('+r.rec.plate+')':''}${r.rec.name?', נהג: '+r.rec.name:''}`:`${r.rec.name}${r.rec.priv?', פרייבט '+r.rec.priv:''}`;
+  const it=(r,L)=>`   - ${who(r)}: ${L.map(i=>`${i.label} ${i.lvl==='warn'?'בתוקף עד':'פג ב־'}${i.lvl==='warn'?' ':''}${i.dateStr}`).join('; ')}`;
+  const nAcc=acc?acc.length:null,fA=acc?acc.filter(a=>/איחוד/.test(a.fault)).length:0;
+  const sum=[B.n?`ציון סייפטי ${B.cur}`:'',`${B.low.length} מתחת ל־25`,(bad.length===1?'חריגה פתוחה אחת':`${bad.length} חריגות פתוחות`),`${ann.length} ללא השתלמות שנתית`,B.ina&&B.ina.length?`${B.ina.length} לא פעילים`:'',nAcc!=null?`${nAcc} תאונות ב־${Y}`:''].filter(Boolean).join(' | ');
+  const S=[];let k=0;const sec=(title,lines)=>{k++;S.push(`${k}. ${title}\n${lines.join('\n')}`)};
+  if(B.n)sec(`ציוני סייפטי – ${M}`,[`   ציון ממוצע בסניף: ${B.cur}${B.prev!=null?` (בחודש הקודם: ${B.prev})`:''}`,`   ממוצע המרחב: ${B.R}`,`   מתנדבים עם ציון: ${B.n}`,
+    ...(B.low.length?[`   מתחת ל־25 (${B.low.length}):`,...B.low.map(([n,pv,x])=>`   - ${n}, פרייבט ${pv}: ציון ${x}`)]:['   אין מתנדבים מתחת ל־25.'])]);
+  sec(`חריגות פתוחות – פג תוקף (${bad.length})`,bad.length?bad.map(([r,L])=>it(r,L)):['   אין חריגות פתוחות.']);
+  if(warn.length)sec(`יפוג בימים הקרובים (${warn.length})`,warn.map(([r,L])=>it(r,L)));
+  sec(`לא ביצעו השתלמות שנתית ${DATA.ann?DATA.ann.y:Y} (${ann.length})`,ann.length?ann.map(o=>`   - ${o.name}${o.pv?', פרייבט '+o.pv:''}: ${o.need}`):['   כל הנהגים ביצעו השתלמות.']);
+  if(B.ina&&B.ina.length)sec(`לא פעילים במשמרות (${B.ina.length})`,['   ללא משמרות ביולי–אוגוסט 2026:',...B.ina.map(([n,pv,a])=>`   - ${n}, פרייבט ${pv}: ${a?(a===1?'משמרת אחת':a+' משמרות')+' בינואר–יוני':'ללא משמרות מתחילת השנה'}`)]);
+  if(acc)sec(`תאונות מתחילת ${Y}`,[`   ${nAcc} תאונות${fA?`, מתוכן ${fA} באשמת נהג איחוד הצלה`:''}.`]);
+  return [`דוח בטיחות ומצב נהגים`,`סניף ${br} | ${fmt(T0)}`,SEP,'',`שלום ${first(h.n)||''},`,'',`להלן דוח הבטיחות ומצב הנהגים בסניף, לטיפולך.`,'',`בקצרה: ${sum}`,'',SEP,'',S.join('\n\n'),'',SEP,'',
+    `לטיפולך:`,`- לעבור על הרשימה יחד עם רכז התחבורה של הסניף.`,`- לוודא שהמתנדבים מסדירים את החריגות הפתוחות. נהג עם חריגה פתוחה אינו מורשה לנהוג בכלי הארגון.`,`- לעודד את מי שלא ביצע השתלמות שנתית להירשם עד סוף השנה (דרך האפליקציה או מחלקת הדרכה בתעבורה).`,'',
+    `אשמח לעמוד לרשותך בכל שאלה.`,'',`בברכה,`,`דני בן דוד`,`קצין בטיחות בתעבורה – מרחב ירושלים`,`איחוד הצלה`].join('\n');
+}
+/* אותו דוח כמסמך מעוצב (HTML) – להדבקה במייל באאוטלוק */
+function brrHtml(br){const L=brrMail(br).split('\n');let h='',ul=false;const cl=()=>{if(ul){h+='</ul>';ul=false}};
+  L.forEach((l,i)=>{const t=esc(l.trim());
+    if(i===0){h+=`<div style="background:#1f3f6e;color:#fff;padding:14px 18px;border-radius:8px 8px 0 0"><div style="font-size:20px;font-weight:700">${t}</div>`;return}
+    if(i===1){h+=`<div style="font-size:14px;opacity:.85">${t}</div></div>`;return}
+    if(/^─+$/.test(l)){cl();h+=i<4?'':'<hr style="border:0;border-top:1px solid #d7dde6;margin:14px 0">';return}
+    if(/^\d+\. /.test(l)){cl();h+=`<h3 style="margin:14px 0 6px;color:#1f3f6e;font-size:16px;border-bottom:2px solid #f26b21;padding-bottom:3px">${t}</h3>`;return}
+    if(/^\s*- /.test(l)){if(!ul){h+='<ul style="margin:4px 0;padding-inline-start:22px">';ul=true}h+=`<li style="margin:2px 0">${t.replace(/^- /,'')}</li>`;return}
+    cl();if(!t){return}
+    if(/^בקצרה:/.test(l)){h+=`<p style="background:#fff4ec;border-right:4px solid #f26b21;padding:8px 12px;margin:10px 0"><b>בקצרה:</b> ${t.slice(6)}</p>`;return}
+    if(/^לטיפולך:/.test(l)){h+=`<p style="margin:10px 0 4px"><b>${t}</b></p>`;return}
+    h+=`<p style="margin:3px 0">${/^(ציון ממוצע|ממוצע המרחב|מתנדבים עם ציון|מתחת ל|ללא משמרות|\d+ תאונות)/.test(l.trim())?t.replace(/^([^:]+:)/,'<b>$1</b>'):t}</p>`});
+  cl();return `<div dir="rtl" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1b2430;max-width:680px;text-align:right">${h}</div>`}
+async function brrCopyHtml(br,b){const html=brrHtml(br),txt=brrMail(br);
+  try{await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([txt],{type:'text/plain'})})]);b.textContent='✓ הועתק – מדביקים בגוף המייל'}
+  catch(e){try{await navigator.clipboard.writeText(txt);b.textContent='✓ הועתק (טקסט)'}catch(_){b.textContent='ההעתקה נכשלה'}}setTimeout(()=>b.textContent='📋 העתק דוח מעוצב',3000)}
 function renderBrr(){
   const app=document.getElementById('app');
   if(!DATA.brrep){app.innerHTML='<div class="empty">אין נתונים</div>';return}
@@ -977,16 +1012,17 @@ function renderBrr(){
   const cards=brs.map(br=>{const d=brrData(br),h=d.B.h||{},t=brrText(br),sk='sent:brr:'+br+':'+TODAY_KEY,sent=ls(sk);
     const last=(()=>{for(let i=0;i<60;i++){const k=new Date(T0.getTime()-i*DAY+12*3600000).toISOString().slice(0,10);if(ls('sent:brr:'+br+':'+k))return i}return null})();
     const subj=`דוח בטיחות ומצב נהגים – סניף ${br} – ${fmt(T0)}`;
-    const body=t.replace(/\*/g,'').split('\n').map(l=>l?'‏'+l:l).join('\n');
+    const body=brrMail(br).split('\n').map(l=>l?'‏'+l:l).join('\n');
     return `<div class="card"><div class="who"><div class="name">${esc(br)}</div>
       <div class="meta"><span>ראש סניף: ${esc(h.n||'—')}</span>${h.ph?`<span>${fmtPhone(h.ph)}</span>`:''}${h.em?`<span class="em">${esc(h.em)}</span>`:''}</div>
       <div class="meta" style="margin-top:4px">${d.B.n?`<span class="chip ${d.B.cur<25?'bad':d.B.cur<d.B.R?'warn':'ok'}">סייפטי ${esc(d.B.cur)}</span>`:''}${d.B.low.length?`<span class="chip bad">${d.B.low.length} מתחת ל־25</span>`:''}<span class="chip ${d.bad.length?'bad':'ok'}">${d.bad.length} פג תוקף</span>${d.warn.length?`<span class="chip warn">${d.warn.length} יפוג בקרוב</span>`:''}<span class="chip ${d.ann.length?'warn':'ok'}">${d.ann.length} בלי השתלמות</span>${d.B.ina&&d.B.ina.length?`<span class="chip warn">${d.B.ina.length} לא פעילים</span>`:''}${last!=null?`<span class="chip ok">✓ נשלח ${last===0?'היום':`לפני ${last} ימים`}</span>`:''}</div>
       <details class="accq" style="margin-top:6px"><summary><b>תצוגה מקדימה של הדוח</b></summary><div class="pre">${esc(t.replace(/\*/g,''))}</div></details></div>
-      <div class="issues"><div class="irow"><span class="btns">${h.em?`<a class="mail sm${sent?' done':''}" href="mailto:${esc(h.em)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}" data-sent="${esc(sk)}">✉️ מייל לראש הסניף</a>`:'<span class="chip miss">אין מייל לראש הסניף</span>'}${h.ph?`<a class="wa sm" href="${waLink(h.ph,t)}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}וואטסאפ</a>`:''}<button class="mail sm" type="button" data-copy="${esc(t)}">העתק</button></span></div></div></div>`}).join('');
+      <div class="issues"><div class="irow"><span class="btns">${h.em?`<a class="mail sm${sent?' done':''}" href="mailto:${esc(h.em)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}" data-sent="${esc(sk)}">✉️ מייל לראש הסניף</a>`:'<span class="chip miss">אין מייל לראש הסניף</span>'}${h.ph?`<a class="wa sm" href="${waLink(h.ph,t)}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}וואטסאפ</a>`:''}<button class="mail sm" type="button" data-brrh="${esc(br)}">📋 העתק דוח מעוצב</button><button class="mail sm" type="button" data-copy="${esc(t)}">העתק</button></span></div></div></div>`}).join('');
   app.innerHTML=`<div class="controls"><select id="branch"><option value="">כל הסניפים</option>${Object.keys(DATA.brrep.B).map(b=>`<option${b===state.branch?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
     <div class="legend">דוח לכל סניף: סייפטי של ${esc(Object.values(DATA.brrep.B)[0].m||'')}, חריגות פתוחות (בלי בדיקות תקינות קצב"ת), מי שלא ביצע השתלמות שנתית, לא פעילים במשמרות ותאונות מתחילת השנה. המייל נפתח באפליקציית המייל שתבחר, עם יהודה לוין בעותק.</div>
     <div class="list">${cards}</div>`;
   bind();
+  app.querySelectorAll('[data-brrh]').forEach(b=>b.onclick=()=>brrCopyHtml(b.dataset.brrh,b));
 }
 /*BRR-END*/
 </script>
