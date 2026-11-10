@@ -901,7 +901,6 @@ function ofcView(){
   let h=OFC.err?`<div class="annban"><b>${esc(OFC.err)}</b></div>`:'';
   if(ADMIN)h+=`<section class="panel"><header><h2>קביעת מועד לסניף (קצין בטיחות)</h2></header><div class="ofcf">
       <label>תאריך<input type="date" id="of-d" min="${T}"></label><label>משעה<input type="time" id="of-f" value="16:00"></label><label>עד שעה<input type="time" id="of-t" value="19:00"></label>
-      <label>דקות לכל בדיקה<select id="of-s">${[10,15,20,30].map(x=>`<option${x===15?' selected':''}>${x}</option>`).join('')}</select></label>
       <label class="w">מקום<input id="of-p" value="בית המתנדב של הסניף"></label><button class="btn ok" id="of-add" type="button">הוספת מועד</button></div></section>`;
   h+=`<section class="panel"><header><h2>🛡️ בדיקת קצין בטיחות בסניף</h2><span class="count">${S.length} מועדים</span></header>`;
   if(!S.length)h+=`<div class="empty">קצין הבטיחות עוד לא קבע מועד לבדיקה בסניף. כשייקבע – הוא יופיע כאן.</div>`;
@@ -923,7 +922,7 @@ function ofcView(){
   return h;
 }
 function ofcBind(){
-  const add=$('of-add');if(add)add.onclick=async()=>{const o={action:'insp_slot_add',date:$('of-d').value,from:$('of-f').value,to:$('of-t').value,step:+$('of-s').value,place:$('of-p').value.trim()};
+  const add=$('of-add');if(add)add.onclick=async()=>{const o={action:'insp_slot_add',date:$('of-d').value,from:$('of-f').value,to:$('of-t').value,step:15,place:$('of-p').value.trim()};
     if(!o.date||!o.from||!o.to||o.to<=o.from){alert('יש לבחור תאריך ושעות');return}add.disabled=true;add.textContent='שומר…';const r=await api(o);if(!r){add.disabled=false;add.textContent='הוספת מועד';alert('השמירה נכשלה');return}OFC.slots=null;ofcLoad()};
   document.querySelectorAll('[data-ofdel]').forEach(b=>b.onclick=async()=>{if(!confirm('למחוק את המועד ואת כל ההרשמות אליו?'))return;await api({action:'insp_slot_del',id:b.dataset.ofdel});OFC.slots=null;ofcLoad()});
   document.querySelectorAll('[data-ofun]').forEach(b=>b.onclick=async()=>{if(!confirm('לבטל את ההרשמה?'))return;await api({action:'insp_unbook',id:b.dataset.ofun});ofcLoad()});
