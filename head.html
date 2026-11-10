@@ -152,6 +152,7 @@ function render(){
     ${ADMIN?`<select onchange="pick(this.value)">${Object.keys(ADMIN).map(b=>`<option${b===d.br?' selected':''}>${esc(b)}</option>`).join('')}</select>`:''}</div>
   ${ADMIN?adminBar():''}
   <div class="note" style="padding:0;background:none;box-shadow:none;border:0">${newsBox(d.news)}</div>
+  ${inspBox()}
   <div class="stats">
     <div class="note stat"><span>נהגים פעילים</span><b>${d.n}</b><small>${d.trn?d.trn+' בהכשרה · ':''}${d.moto} אופנוענים</small></div>
     <div class="note stat"><span>ציון סייפטי · ${esc(last)}</span><b>${s.avg??'—'}</b>${cmp(s.avg,regLast,true)}</div>
@@ -193,6 +194,22 @@ function render(){
   const p=ls('head_pw');p?unlock(p):lockView();
 })();
 (()=>{const st=document.createElement('style');st.textContent='.wabox>summary{cursor:pointer;display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border:1px solid #d7dde6;border-radius:10px;background:#fff;font-weight:700;list-style:none}.wabox>summary::-webkit-details-marker{display:none}.wabox>summary small{font-weight:400;color:#6b7480}.wabox[open]>summary{margin-bottom:6px;background:#fff4ec;border-color:#f26b21}';document.head.appendChild(st)})();
+/* בדיקת קצין בטיחות: המועד שהרכז אישר ומי אישר הגעה (מהסקריפט של הרכזים) */
+let HINSP=null,HINSP_BR=null;
+async function inspLoad(){if(!D||!CUR_PW)return;const br=D.br;HINSP_BR=br;try{const t=(await sha((ADMIN?'dbd-coord-api:':'dbd-head-api:')+CUR_PW)).slice(0,32);
+  const r=await fetch(SYNC_URL,{method:'POST',body:JSON.stringify(ADMIN?{t,action:'insp_list',br}:{t,action:'insp_heads'})}).then(r=>r.json());
+  if(D.br!==br)return;HINSP=r&&r.ok?{slots:(r.slots||[]).filter(x=>x.st==='ok'),books:r.books||[]}:{slots:[],books:[],err:1}}catch(e){HINSP={slots:[],books:[],err:1}}
+  const el=document.getElementById('hinsp');if(el)el.outerHTML=inspBox()}
+function inspBox(){if(!D)return '';if(HINSP_BR!==D.br){HINSP=null;setTimeout(inspLoad,400)}
+  const T=new Date().toISOString().slice(0,10),S=HINSP?HINSP.slots.filter(s=>s.date>=T).sort((a,b)=>(a.date+a.from).localeCompare(b.date+b.from)):[];
+  if(HINSP&&!S.length)return '<div id="hinsp"></div>';
+  const DN=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'],dn=x=>{const [y,m,dd]=x.split('-').map(Number);return `יום ${DN[new Date(y,m-1,dd).getDay()]} ${String(dd).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`};
+  const when=ts=>{const t=new Date(ts);return t.toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit'})+' '+t.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})};
+  return `<div class="note" id="hinsp"><h2>🛡️ בדיקת קצין בטיחות בסניף</h2>${HINSP==null?'<p class="sub">טוען…</p>':S.map(sl=>{const L=HINSP.books.filter(b=>b.slot===sl.id).sort((a,b)=>a.ts-b.ts);
+    return `<p><b>${dn(sl.date)}</b> · <bdi dir="ltr" style="white-space:nowrap">${esc(sl.from)}–${esc(sl.to)}</bdi>${sl.place?' · '+esc(sl.place):''}</p><p class="sub">${L.length?`✓ ${L.length} אישרו הגעה:`:'עוד אף אחד לא אישר הגעה.'}</p>${L.map(b=>`<div class="row"><b>${esc(b.n||'—')}</b><small>${b.veh?'כלי '+esc(b.veh)+' · ':''}אישר ${when(b.ts)}${b.by&&b.by!=='מתנדב'?' · ע"י '+esc(b.by):''}</small></div>`).join('')}`}).join('<hr style="border:0;border-top:1px dashed #ccc">')}${HINSP&&S.length?inspMissing():''}</div>`}
+/* כלים בסניף (בלי אופניים) שהנהג שלהם עוד לא אישר הגעה לאף מועד */
+function inspMissing(){const V=(D.veh&&D.veh.L)||[],B=HINSP.books,ok=v=>B.some(b=>(b.veh&&String(b.veh)===String(v.num))||(v.n&&b.n&&b.n.trim()===v.n.trim()));const M=V.filter(v=>!ok(v));
+  if(!V.length)return '';return `<hr style="border:0;border-top:1px dashed #ccc"><p class="sub">${M.length?`⏳ ${M.length} מתוך ${V.length} כלים – הנהג עוד לא אישר הגעה:`:'✓ כל הכלים בסניף אישרו הגעה'}</p>${M.map(v=>`<div class="row"><span>${esc(v.n||'—')}</span><small>כלי ${esc(v.num)}${v.t?' · '+esc(v.t):''}</small></div>`).join('')}`}
 /*NEWS-START*/
 /* ===== מה חדש בסניף (שינויים מ־14 הימים האחרונים) – קוביות לפי נושא, לחיצה פותחת את הרשימה ===== */
 const NEWS_C=[['new','🆕','מתנדבים חדשים'],['perm','🚑','אישורי נהיגה'],['course','🎓','קורסים והשתלמויות'],['docs','📄','מסמכי נהגים'],['veh','🚗','כלים'],['move','🔀','עברו סניף']];

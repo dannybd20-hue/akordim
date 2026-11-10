@@ -906,7 +906,7 @@ function ofcView(){
       <label>תאריך<input type="date" id="of-d" min="${T}"></label><label>משעה<input type="time" id="of-f" value="16:00"></label><label>עד שעה<input type="time" id="of-t" value="19:00"></label>
       <label class="w">מקום<input id="of-p" value="בית המתנדב של הסניף"></label></div>
       <details class="ofbr"><summary>לאילו סניפים · <b id="of-bn">1</b> נבחרו</summary><label class="all"><input type="checkbox" id="of-all"> כל הסניפים</label>${B.map(b=>`<label><input type="checkbox" class="of-b" value="${esc(b)}"${b===DATA.br?' checked':''}> ${esc(b)}</label>`).join('')}</details>
-      <button class="btn ok" id="of-add" type="button">שליחת המועד לאישור הרכזים</button></section>
+      <button class="btn ok" id="of-add" type="button">שליחת המועד לאישור הרכזים</button></section>${ofcNotifyBox(OFC.notify||[])}
       <section class="panel"><header><h2>סטטוס בכל הסניפים</h2></header><div id="of-allst">${OFC.all?ofcAllHtml():'<div class="empty">טוען…</div>'}</div></section>`;
     if(!OFC.all&&!OFC.allBusy){OFC.allBusy=true;api({action:'insp_list',all:true}).then(r=>{OFC.allBusy=false;OFC.all=r||{slots:[],books:[]};const e=$('of-allst');if(e)e.innerHTML=ofcAllHtml()})}}
   h+=`<section class="panel"><header><h2>🛡️ בדיקת קצין בטיחות בסניף</h2><span class="count">${S.length} מועדים</span></header>`;
@@ -933,10 +933,19 @@ function ofcView(){
   if(old.length)h+=`<details class="panel" style="padding:10px 14px"><summary>מועדים שעברו (${old.length})</summary>${old.map(sl=>`<p>${ofcDate(sl.date)} · <bdi dir="ltr" style="white-space:nowrap">${sl.from}–${sl.to}</bdi> · ${OFC.books.filter(b=>b.slot===sl.id).length} נבדקו/נרשמו</p>`).join('')}</details>`;
   return h;
 }
+/* הודעת וואטסאפ לרכז: הוצע מועד – לאשר במערכת */
+const COORD_APP='https://dannybd20-hue.github.io/akordim/coord.html';
+function ofcCoordMsg(b,sl){const c=ADMIN&&ADMIN[b]||{};return `שלום ${first(c.coord||'')},\n\nאני מגיע לסניף ${b} לבדיקת קצין בטיחות לכלים (אמבולנס, רכב ואופנוע).\n\n*המועד המוצע:* ${ofcDate(sl.date)}, ${sl.from}–${sl.to}\n*מקום:* ${sl.place||'בית המתנדב של הסניף'} (אפשר לשנות)\n\nנא לאשר את המועד במערכת הרכזים (לשונית "בדיקת קצין"), ואם לא מתאים – לסמן "לא מתאים" ולכתוב מה כן מתאים:\n${COORD_APP}\n\nאחרי האישור תוכל לשלוח לנהגים הודעה לאישור הגעה.\n\nתודה,\nדני בן דוד\nקצין בטיחות בתעבורה – מרחב ירושלים`}
+function ofcNotifyBox(L){/* L = [[branch,slot]] */if(!L.length)return '';
+  return `<section class="panel" id="of-notify"><header><h2>📣 הודעה לרכזים על המועד</h2></header><p class="hint">המועד נשמר. שלח לכל רכז הודעה בוואטסאפ שיאשר אותו (או העתק לקבוצת הרכזים).</p>
+    ${L.map(([b,sl])=>{const c=ADMIN[b]||{},k='ofn:'+sl.id,sent=ls(k);return `<div class="ofcr"><span><b>${esc(b)}</b> · ${esc(c.coord||'—')}<small>${ofcDate(sl.date)} <bdi dir="ltr" style="white-space:nowrap">${sl.from}–${sl.to}</bdi></small></span>${c.cph?`<a class="btn wa sm" style="margin-inline-start:auto" href="${waLink(c.cph,ofcCoordMsg(b,sl))}" target="_blank" rel="noopener" data-ofn="${esc(k)}">${sent?'✓ נשלח':'וואטסאפ לרכז'}</a>`:'<span class="bad" style="margin-inline-start:auto">אין טלפון</span>'}</div>`}).join('')}
+    <div class="acts" style="margin-top:8px"><a class="btn ghost sm" href="https://wa.me/?text=${encodeURIComponent(ofcGroupCoordMsg(L))}" target="_blank" rel="noopener">הודעה אחת לקבוצת הרכזים</a></div></section>`}
+function ofcGroupCoordMsg(L){return `שלום לכל הרכזים,\n\nקבעתי מועדים לבדיקת קצין בטיחות לכלים בסניפים:\n${L.map(([b,sl])=>`• ${b}: ${ofcDate(sl.date)}, ${sl.from}–${sl.to}`).join('\n')}\n\nנא לאשר את המועד במערכת הרכזים (לשונית "בדיקת קצין"), אפשר לעדכן שם את המקום. אם לא מתאים – לסמן "לא מתאים" ולכתוב מה כן מתאים:\n${COORD_APP}\n\nתודה,\nדני בן דוד\nקצין בטיחות בתעבורה – מרחב ירושלים`}
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-ofn]');if(a){ls(a.dataset.ofn,'1');setTimeout(()=>{a.textContent='✓ נשלח'},300)}});
 /* מנהל: כל המועדים בכל הסניפים */
 function ofcAllHtml(){const T=ofcToday(),S=(OFC.all.slots||[]).filter(s=>s.date>=T).sort((a,b)=>(a.date+a.from+a.br).localeCompare(b.date+b.from+b.br));
   if(!S.length)return '<div class="empty">אין מועדים עתידיים.</div>';
-  return S.map(sl=>{const n=(OFC.all.books||[]).filter(b=>b.slot===sl.id).length;return `<div class="ofcr"><span><b>${esc(sl.br)}</b> · ${ofcDate(sl.date)} <bdi dir="ltr" style="white-space:nowrap">${sl.from}–${sl.to}</bdi>${sl.note?`<small>הערת הרכז: ${esc(sl.note)}</small>`:''}</span>${ofcChip(sl)}${sl.st==='ok'?`<small>${n} נרשמו</small>`:''}</div>`}).join('')}
+  return S.map(sl=>{const n=(OFC.all.books||[]).filter(b=>b.slot===sl.id).length;return `<div class="ofcr"><span><b>${esc(sl.br)}</b> · ${ofcDate(sl.date)} <bdi dir="ltr" style="white-space:nowrap">${sl.from}–${sl.to}</bdi>${sl.note?`<small>הערת הרכז: ${esc(sl.note)}</small>`:''}</span>${ofcChip(sl)}${sl.st==='ok'?`<small>${n} נרשמו</small>`:''}${sl.st==='new'&&ADMIN[sl.br]&&ADMIN[sl.br].cph?`<a class="btn wa sm" href="${waLink(ADMIN[sl.br].cph,ofcCoordMsg(sl.br,sl))}" target="_blank" rel="noopener">תזכורת לרכז</a>`:''}</div>`}).join('')}
 /* הודעה קופצת לרכז: מועד חדש שממתין לאישור */
 async function ofcPopup(){if(ADMIN||!DATA)return;if(OFC.br!==DATA.br||OFC.slots===null)await ofcLoad();const T=ofcToday(),P=(OFC.slots||[]).filter(s=>s.date>=T&&s.st==='new');if(!P.length||document.getElementById('ofpop'))return;
   const d=document.createElement('div');d.id='ofpop';d.className='ofpop';
@@ -956,7 +965,8 @@ function ofcBind(){
     if(!o.date){alert('יש לבחור תאריך');return}if(!o.from||!o.to){alert('יש לבחור משעה ועד שעה');return}
     if(o.to<o.from){const t=o.from;o.from=o.to;o.to=t;$('of-f').value=o.from;$('of-t').value=o.to}/* הוקלד הפוך – מסדרים לבד */
     if(o.to===o.from){alert('שעת הסיום צריכה להיות אחרי שעת ההתחלה');return}if(!brs.length){alert('יש לבחור לפחות סניף אחד');return}
-    add.disabled=true;add.textContent='שולח…';const r=await api(o);if(!r){add.disabled=false;add.textContent='שליחת המועד לאישור הרכזים';alert('השמירה נכשלה');return}OFC.slots=null;OFC.all=null;ofcLoad()};
+    add.disabled=true;add.textContent='שולח…';const r=await api(o);if(!r){add.disabled=false;add.textContent='שליחת המועד לאישור הרכזים';alert('השמירה נכשלה');return}
+    OFC.notify=brs.map((b,i)=>[b,{id:(r.ids||[])[i]||String(i),date:o.date,from:o.from,to:o.to,place:o.place}]);OFC.slots=null;OFC.all=null;ofcLoad()};
   document.querySelectorAll('[data-ofdel]').forEach(b=>b.onclick=async()=>{if(!confirm('למחוק את המועד ואת כל ההרשמות אליו?'))return;await api({action:'insp_slot_del',id:b.dataset.ofdel});OFC.slots=null;OFC.all=null;ofcLoad()});
   document.querySelectorAll('[data-ofun]').forEach(b=>b.onclick=async()=>{if(!confirm('לבטל את ההרשמה?'))return;await api({action:'insp_unbook',id:b.dataset.ofun});ofcLoad()});
   document.querySelectorAll('[data-ofcopy]').forEach(b=>b.onclick=()=>navigator.clipboard.writeText(b.dataset.ofcopy==='g'?ofcGroupMsg():ofcLink()).then(()=>b.textContent='הועתק ✓'));
