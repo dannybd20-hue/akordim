@@ -132,7 +132,8 @@ const norm=s=>String(s||'').trim().toLowerCase().replace(/["'׳״]/g,'').replace
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 
-let st=JSON.parse(lg('inv_state')||'null')||{invoices:[],quotes:[],rev:-1}, pw=lg('inv_pw')||sg('hub_admin')||lg('hub_admin')||'', ai=lg('inv_ai')==='1';
+function okSt(x){x=(x&&typeof x==='object')?x:{};return{invoices:Array.isArray(x.invoices)?x.invoices:[],quotes:Array.isArray(x.quotes)?x.quotes:[],rev:typeof x.rev==='number'?x.rev:-1}}
+let st=(()=>{try{return okSt(JSON.parse(lg('invoices_state')||'null'))}catch(e){return okSt()}})(), pw=lg('inv_pw')||sg('hub_admin')||lg('hub_admin')||'', ai=lg('inv_ai')==='1';
 let view='sum', draft=null, delId=null, busy=false;
 
 /* ---------- ענן ---------- */
@@ -144,7 +145,7 @@ async function sync(ops){
   try{
     const r=await call({ops:ops||[],rev:ops&&ops.length?-1:st.rev});
     if(!r.ok){if(r.error==='password'){pw='';lp('inv_pw',null);$('login').hidden=false;$('pwErr').textContent='צריך להזין סיסמה';cloud('')}else if(r.error==='locked'){cloud('🔒 יותר מדי ניסיונות. נסה שוב בעוד רבע שעה','#c0392b')}else cloud('⚠️ שגיאה: '+r.error,'#c0392b');return false}
-    if(r.state){st=r.state;ai=!!r.ai;lp('inv_state',JSON.stringify(st));lp('inv_ai',ai?'1':null)}
+    if(r.state){st=okSt(r.state);ai=!!r.ai;lp('invoices_state',JSON.stringify(st));lp('inv_ai',ai?'1':null)}
     $('login').hidden=true;cloud('☁️ מסונכרן בענן','#1e7e48');fill();render();return true;
   }catch(e){cloud('📴 אין חיבור לשרת. אם זו הפעם הראשונה, צריך לעדכן את הסקריפט בגוגל','#b4610e');return false}
 }
