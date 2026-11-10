@@ -557,7 +557,8 @@ function vRow(v){
 function personSheet(key){
   const p=DATA.people.find(x=>(x.pv||x.n)===key);if(!p)return;
   const m=metrics(p),ds=docStatus(p),V=vehOf(p),H=hist().filter(h=>h.pv===p.pv);
-  const scores=p.s?`<div class="strip">${p.s.map((x,i)=>`<div class="sc ${lvlSafety(x)}"><small>${esc(DATA.months[i].split(' ')[0].slice(0,3))}</small><b>${x??'—'}</b></div>`).join('')}</div>${p.ev?`<div class="tags">${Object.entries(p.ev).sort((a,b)=>b[1][1]-a[1][1]).slice(0,5).map(([c,[n,pc]])=>pill(pc>=25?'bad':pc>=10?'warn':'na',`${c} · ${Math.round(pc)}%`)).join('')}</div>`:''}`:'<p class="muted">אין ציוני סייפטי</p>';
+  const sm=p.s?p.s.map((x,i)=>[x,i]).filter(([x])=>x!=null).reverse():[];
+  const scores=p.s?`${sm.length?`<div class="strip">${sm.map(([x,i])=>{const [mn,yy]=DATA.months[i].split(' ');return `<div class="sc ${lvlSafety(x)}"><small>${esc(mn.slice(0,3))} ${esc(yy||'')}</small><b>${x}</b></div>`}).join('')}</div><p class="muted" style="margin:6px 0 0;font-size:.85em">מהחודש האחרון לראשון · מוצגים רק חודשים שיש בהם ציון</p>`:'<p class="muted">אין ציוני סייפטי ב־12 החודשים האחרונים</p>'}${p.ev?`<div class="tags">${Object.entries(p.ev).sort((a,b)=>b[1][1]-a[1][1]).slice(0,5).map(([c,[n,pc]])=>pill(pc>=25?'bad':pc>=10?'warn':'na',`${c} · ${Math.round(pc)}%`)).join('')}</div>`:''}`:'<p class="muted">אין ציוני סייפטי</p>';
   const tl=(L,fn)=>L.length?`<ol class="tl">${L.map(fn).join('')}</ol>`:'<p class="muted">אין רשומות</p>';
   const ov=document.createElement('div');ov.className='ov';ov.innerHTML=`<aside class="drawer" role="dialog" aria-label="${esc(p.n)}">
     <header class="dh"><button class="x" aria-label="סגירה">${IC.x}</button><span class="av lg">${esc(ini(p.n))}</span><div><h2>${esc(p.n)}</h2><p>${p.pv?'פרייבט '+esc(p.pv)+' · ':''}${esc(DATA.br)}</p></div></header>
