@@ -323,7 +323,7 @@ function suspMail(o){const x=o.susp,L=[
 `ממוצע בכלי: ${x.t} פניות ל־100 ק"מ, לעומת ${x.te} פניות ל־100 ק"מ אצל אותם נהגים בכלים אחרים.`,'',
 `הציונים שהכלי מייצר לא משקפים את הנהיגה בפועל ומורידים את ציוני הנהגים. אבקש לפתוח קריאה באיתוראן לבדיקת היחידה והחיישנים (כיול / התקנה), ולעדכן אותי בתוצאה.`,'',
 `תודה,`,`דני בן דוד`,`קצין בטיחות בתעבורה – מרחב ירושלים`];
-  return 'mailto:YehudaLv@1221.org.il?subject='+encodeURIComponent(`בקשה לבדיקה מול איתוראן – כלי ${o.num}${o.plate?' ('+o.plate+')':''} חשוד כתקול בסייפטי`)+'&body='+encodeURIComponent(L.map(l=>'\u200F'+l).join('\n'))}
+  return 'https://outlook.office.com/mail/deeplink/compose?to=YehudaLv%401221.org.il&subject='+encodeURIComponent(`בקשה לבדיקה מול איתוראן – כלי ${o.num}${o.plate?' ('+o.plate+')':''} חשוד כתקול בסייפטי`)+'&body='+encodeURIComponent(L.map(l=>'\u200F'+l).join('\n'))}
 function card(r){
   const o=r.rec,isV=r.type==='vehicle';
   const meta=isV
@@ -351,7 +351,7 @@ function card(r){
     const note=fr&&fr.due===i.dateStr?`<span class="chip miss">${is2?'🔁 תזכורת · ':''}הודעה ראשונה נשלחה ${fmt(new Date(fr.d))}</span>`:'';
     return `<div class="irow"><span class="chip ${i.lvl}">${esc(i.chip)}</span>${note}<span class="btns">${wa}${ml}${cp}</span></div>${dov}`;
   }).join('');
-  return `<div class="card"><div class="who"><div class="name">${esc(o.name)}</div><div class="meta">${isV?'<span>נהג</span>':''}${meta}</div>${veh}${isV&&o.susp?`<span class="chip warn chgc">⚠ חשוד כתקול בסייפטי: ${o.susp.worse} מתוך ${o.susp.n} נהגים מקבלים עליו ציון נמוך מהרגיל (${o.susp.t} פניות ל־100 ק״מ מול ${o.susp.te}) – לפתוח קריאה באיתורן</span><a class="mail sm" style="margin-top:6px" href="${suspMail(o)}">✉️ מייל ליהודה לוין – בדיקה מול איתוראן</a>`:''}${isV?chgChip('veh',o.num):chgChip('p',o.priv)}${!isV&&o.mt?`<span class="chip ok chgc">🏍️ טסט פנימי אופנוע: ${esc(o.mt)}</span>`:''}${!isV&&o.sh?`<span class="chip ${o.sh.a?'warn':'bad'} chgc">🚑 לא פעיל במשמרות · ${o.sh.a} משמרות ינו–אוג, 0 ביול–אוג</span>`:''}</div>${contact}<div class="issues">${rows}</div></div>`;
+  return `<div class="card"><div class="who"><div class="name">${esc(o.name)}</div><div class="meta">${isV?'<span>נהג</span>':''}${meta}</div>${veh}${isV&&o.susp?`<span class="chip warn chgc">⚠ חשוד כתקול בסייפטי: ${o.susp.worse} מתוך ${o.susp.n} נהגים מקבלים עליו ציון נמוך מהרגיל (${o.susp.t} פניות ל־100 ק״מ מול ${o.susp.te}) – לפתוח קריאה באיתורן</span><a class="mail sm" style="margin-top:6px" href="${suspMail(o)}" target="_blank" rel="noopener">✉️ מייל באאוטלוק ליהודה לוין – בדיקה מול איתוראן</a>`:''}${isV?chgChip('veh',o.num):chgChip('p',o.priv)}${!isV&&o.mt?`<span class="chip ok chgc">🏍️ טסט פנימי אופנוע: ${esc(o.mt)}</span>`:''}${!isV&&o.sh?`<span class="chip ${o.sh.a?'warn':'bad'} chgc">🚑 לא פעיל במשמרות · ${o.sh.a} משמרות ינו–אוג, 0 ביול–אוג</span>`:''}</div>${contact}<div class="issues">${rows}</div></div>`;
 }
 
 const CATS=[['','הכל'],['test','טסט'],['service','טיפול שנתי'],['check','בדיקת תקינות'],['lic','רישיון נהיגה'],['health','הצהרת בריאות'],['traffic','מידע תעבורתי']];
