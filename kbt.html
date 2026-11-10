@@ -872,6 +872,17 @@ function tdData(){
 function tdBadge(){const b=document.getElementById('n-today');if(!b||!DATA)return;try{b.textContent=tdData().open||''}catch(e){}}
 
 const TDS={};
+/* בדיקות קצין בטיחות בסניפים (מהסקריפט של הרכזים): מועדים קרובים – מאושרים / ממתינים לאישור הרכז / לא מתאים */
+let TD_INSP=null,TD_INSP_BUSY=false;
+function tdInspLoad(){if(TD_INSP_BUSY)return;TD_INSP_BUSY=true;kapi({action:'insp_list',all:true}).then(r=>{TD_INSP_BUSY=false;TD_INSP=r||{err:1,slots:[],books:[]};if(state.view==='today')render()})}
+function tdInspHtml(){if(TD_INSP===null){tdInspLoad();return '<div class="tde">טוען מועדים…</div>'}
+  if(TD_INSP.err)return '<div class="tde">לא הצלחתי לטעון את המועדים מהסקריפט של הרכזים.</div>';
+  const T=new Date().toISOString().slice(0,10),S=(TD_INSP.slots||[]).filter(s=>s.date>=T).sort((a,b)=>(a.date+a.from).localeCompare(b.date+b.from));
+  if(!S.length)return '<div class="tde">אין מועדים קרובים. מוסיפים מועד במערכת הרכזים (מצב מנהל) ← לשונית "בדיקת קצין".</div>';
+  const D=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'],dn=s=>{const [y,m,d]=s.split('-').map(Number);return `יום ${D[new Date(y,m-1,d).getDay()]} ${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}`};
+  const ST={ok:['✓ אושר','ok'],new:['ממתין לאישור הרכז','warn'],no:['✗ לא מתאים','bad']};
+  return `<div class="tde">${S.map(s=>{const n=(TD_INSP.books||[]).filter(b=>b.slot===s.id).length,[t,c]=ST[s.st]||ST.new;
+    return `<div class="tdg"><span><b>${esc(s.br)}</b> · ${dn(s.date)} <bdi dir="ltr" style="white-space:nowrap">${esc(s.from)}–${esc(s.to)}</bdi>${s.place?' · '+esc(s.place):''}${s.st==='no'&&s.note?`<br><small>הערת הרכז: ${esc(s.note)}</small>`:''}</span><span class="chip ${c}">${t}${s.st==='ok'?` · ${n} אישרו הגעה`:''}</span></div>`}).join('')}</div>`}
 function renderToday(){
   const app=document.getElementById('app'),D=tdData();
   const dl=new Intl.DateTimeFormat('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(T0);
@@ -915,6 +926,8 @@ function renderToday(){
   if(D.grads.length)html+=sec('gr','🎉','עברו טסט ועברו מ"משתלם" לאישור מלא (14 יום אחרונים)',D.grads.length,'var(--ok)',
     `<div class="tde">${D.grads.map(g=>`<div class="tdg"><span><b>${esc(g.n)}</b> · ${esc(g.br)} · ${esc(g.to)} (${esc(g.d)})</span><button class="mail sm" data-tdgr="${esc(g.pv+':'+g.to)}">✓ ראיתי</button></div>`).join('')}<small>הרכזים מקבלים הודעה קופצת לברך אותם.</small></div>`);
 
+  /* 🛡️ בדיקות קצין בטיחות */
+  {const S=TD_INSP&&TD_INSP.slots?TD_INSP.slots.filter(s=>s.date>=new Date().toISOString().slice(0,10)):[];html+=sec('insp2','🛡️','בדיקות קצין בטיחות בסניפים',S.length||'','var(--ok)',tdInspHtml())}
   /* 🎓 השתלמות שנתית + 🆕 מה השתנה */
   html+=sec('ann','🎓',`השתלמות שנתית ${DATA.ann?DATA.ann.y:''} – עוד לא נשלחה תזכורת החודש`,D.ann.length,'var(--muted)',
     `<div class="tde">${D.ann.length?`${D.ann.length} נהגים עוד לא קיבלו תזכורת אישית החודש.`:'✓ כולם קיבלו תזכורת החודש.'}</div>`,go('ann','להשתלמות השנתית'));
