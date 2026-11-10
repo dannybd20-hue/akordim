@@ -114,6 +114,10 @@ details.inv summary::-webkit-details-marker{display:none}
 </div>
 
 <script>
+window.addEventListener('error',function(e){var c=document.getElementById('cloud');if(c){c.style.color='#c0392b';c.textContent='שגיאה: '+(e.message||'')+' (שורה '+(e.lineno||'?')+')';}});
+window.addEventListener('unhandledrejection',function(e){var c=document.getElementById('cloud');if(c){c.style.color='#c0392b';c.textContent='שגיאה: '+((e.reason&&e.reason.message)||e.reason);}});
+</script>
+<script>
 const API='https://script.google.com/macros/s/AKfycbw_ZAnKnbqY_G0pRA186ylvFoUOpEVtL9rHYEDJGtfmcX2eYlAzIIamDschjgnKCXtuXw/exec';
 const VAT=0.18, MONTHS=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 const $=id=>document.getElementById(id);
