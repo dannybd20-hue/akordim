@@ -104,6 +104,7 @@ details.inv summary::-webkit-details-marker{display:none}
   <div id="filters" class="bar">
     <select id="fy" aria-label="שנה"></select>
     <select id="fm" aria-label="חודש"></select>
+    <select id="fc" aria-label="תיקייה"></select>
     <input id="fs" placeholder="חיפוש ספק או מוצר" aria-label="חיפוש" style="flex:1">
   </div>
   <main id="app"></main>
@@ -149,13 +150,16 @@ function tot(i){
   const total=num(i.total)||s;const vat=i.vat!=null&&i.vat!==''?num(i.vat):(i.vatExempt?0:total-total/(1+VAT));
   return{total,vat,net:total-vat};
 }
+function inC(i){const c=$('fc').value;return c==='all'?true:c==='__biz'?(i.category||'')!=='תרומות':(i.category||'כללי')===c}
 function inP(d){const y=$('fy').value,m=$('fm').value;if(y!=='all'&&(d||'').slice(0,4)!==y)return false;if(m!=='all'&&(d||'').slice(5,7)!==m)return false;return true}
 function q(){return norm($('fs').value)}
 function match(i){const s=q();if(!s)return true;return norm(i.supplier).includes(s)||(i.items||[]).some(x=>norm(x.name).includes(s))||norm(i.invoiceNo).includes(s)||norm(i.category).includes(s)}
-function period(){return st.invoices.filter(i=>inP(i.date)&&match(i)).sort((a,b)=>(b.date||'').localeCompare(a.date||''))}
+function period(){return st.invoices.filter(i=>inP(i.date)&&inC(i)&&match(i)).sort((a,b)=>(b.date||'').localeCompare(a.date||''))}
 function fill(){
   const ys=[...new Set([...st.invoices,...st.quotes].map(x=>(x.date||'').slice(0,4)).filter(Boolean))];const cy=String(new Date().getFullYear());if(!ys.includes(cy))ys.push(cy);ys.sort().reverse();
   const fy=$('fy'),v=fy.value||cy;fy.innerHTML='<option value="all">כל השנים</option>'+ys.map(y=>`<option>${y}</option>`).join('');fy.value=[...fy.options].some(o=>o.value===v)?v:cy;
+  const fc=$('fc'),cv=fc.value||'all',cats=[...new Set(st.invoices.map(i=>i.category||'כללי'))].sort((a,b)=>a.localeCompare(b,'he'));
+  fc.innerHTML='<option value="all">📁 הכל</option><option value="__biz">📁 בלי תרומות</option>'+cats.map(c=>`<option value="${esc(c)}">📁 ${esc(c)}</option>`).join('');fc.value=[...fc.options].some(o=>o.value===cv)?cv:'all';
   if(!$('fm').options.length)$('fm').innerHTML='<option value="all">כל החודשים</option>'+MONTHS.map((n,i)=>`<option value="${String(i+1).padStart(2,'0')}">${n}</option>`).join('');
 }
 
@@ -277,7 +281,7 @@ function exportX(){
   const y=$('fy').value,mo=$('fm').value;XLSX.writeFile(wb,`חשבוניות-${y==='all'?'הכל':y}${mo==='all'?'':'-'+mo}.xlsx`);
 }
 $('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;view=b.dataset.v;delId=null;if(view!=='add')draft=null;render()};
-['fy','fm'].forEach(id=>$(id).onchange=render);$('fs').oninput=render;
+['fy','fm','fc'].forEach(id=>$(id).onchange=render);$('fs').oninput=render;
 fill();render();sync();
 </script>
 <script src="presence.js"></script><script>dbdPresence('invoices')</script>
