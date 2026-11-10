@@ -22,6 +22,8 @@ function goHome(){try{sessionStorage.removeItem('gate_invoices')}catch(e){}locat
   --num:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
 }
 [hidden]{display:none!important}
+.ac{position:relative}.acl{position:absolute;inset-inline:0;top:100%;z-index:30;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.15);max-height:300px;overflow:auto;margin-top:4px}
+.acl .pick{padding:10px 12px;font-size:.92rem}
 .pick{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;border:0;border-bottom:1px solid var(--line);background:none;padding:12px 14px;text-align:right;cursor:pointer;font:inherit;color:var(--ink)}
 .pick:last-child{border-bottom:0}.pick span:first-child{display:flex;flex-direction:column;min-width:0}.pick small{color:var(--muted);font-size:.85rem}.pick:active{background:var(--acc-soft)}
 .cubes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0 0}
@@ -262,8 +264,8 @@ function vPrices(){
   if(T.length)P=P.filter(p=>T.some(t=>norm(p.name).includes(t)||norm(p.key).includes(t)||p.r.some(r=>norm(r.sup).includes(t))));
   P.forEach(p=>{const pr=p.r.map(r=>r.p).filter(x=>x>0);p.lo=pr.length?Math.min(...pr):0;p.hi=pr.length?Math.max(...pr):0;p.last=p.r.filter(r=>r.k==='inv').sort((a,b)=>(b.d||'').localeCompare(a.d||''))[0]});
   P.sort((a,b)=>a.name.localeCompare(b.name,'he'));
-  const addQ=`<details class="card"><summary style="cursor:pointer;font-weight:800">➕ הוספת הצעת מחיר שקיבלתי</summary><div class="grid" style="margin-top:10px"><label>מוצר<input id="qP" list="prodList"></label><label>ספק<input id="qS"></label><label>מחיר ליחידה (כולל מע״מ)<input id="qV" inputmode="decimal"></label><label>יחידה<input id="qU" placeholder="יח׳, ק״ג, מטר"></label><label>תאריך<input id="qD" type="date" value="${today()}"></label><label>הערה<input id="qN"></label></div>
-    <datalist id="prodList">${Object.values(m).map(p=>`<option value="${esc(p.name)}">`).join('')}</datalist><div class="acts"><span class="msg" id="qMsg"></span><button class="btn p" onclick="addQuote()">שמירה</button></div></details>`;
+  const addQ=`<details class="card"><summary style="cursor:pointer;font-weight:800">➕ הוספת הצעת מחיר שקיבלתי</summary><div class="grid" style="margin-top:10px"><label>מוצר<div class="ac"><input id="qP" autocomplete="off" placeholder="הקלד, למשל מצלמה" oninput="acP()" onfocus="acP()" onblur="setTimeout(()=>{const l=$('qPl');if(l)l.hidden=true},350)"><div id="qPl" class="acl" hidden></div></div></label><label>ספק<input id="qS"></label><label>מחיר ליחידה (כולל מע״מ)<input id="qV" inputmode="decimal"></label><label>יחידה<input id="qU" placeholder="יח׳, ק״ג, מטר"></label><label>תאריך<input id="qD" type="date" value="${today()}"></label><label>הערה<input id="qN"></label></div>
+    <div class="acts"><span class="msg" id="qMsg"></span><button class="btn p" onclick="addQuote()">שמירה</button></div></details>`;
   if(pick&&m[pick])return detail(m[pick])+addQ;
   pick=null;
   const head=`<p class="muted" style="margin:0 0 8px">${T.length?`נמצאו ${P.length} סוגים. בחר את המוצר שאתה מחפש:`:'הקלד בחיפוש למעלה, למשל "מצלמה", "רמקול" או "כבל", ובחר את הסוג.'}</p>`;
@@ -319,6 +321,16 @@ async function saveDraft(){
   if(await sync([{type:'inv',inv:d}])){draft=null;view='list';render()}else{m.className='msg err';m.textContent='השמירה נכשלה. בדוק חיבור ונסה שוב.'}
 }
 async function delInv(id,kind){delId=null;await sync([{type:'del',id,kind:kind==='q'?'q':'inv'}])}
+function acP(){
+  const inp=$('qP'),l=$('qPl');if(!inp||!l)return;const T=terms(inp.value);
+  let P=Object.values(priceMap());if(T.length)P=P.filter(p=>T.some(t=>norm(p.name).includes(t)||norm(p.key).includes(t)));
+  P=P.sort((a,b)=>a.name.localeCompare(b.name,'he')).slice(0,12);
+  if(!P.length){l.hidden=true;return}
+  l.innerHTML=P.map((p,k)=>{const pr=p.r.map(r=>r.p).filter(x=>x>0),lo=pr.length?Math.min(...pr):0,hi=pr.length?Math.max(...pr):0;
+    return `<button type="button" class="pick" data-k="${k}"><span><b>${esc(p.name)}</b><small>${p.r.length} מחירים</small></span><span class="n">${hi-lo<1?money(lo):money(lo)+' – '+money(hi)}</span></button>`}).join('');
+  l.querySelectorAll('.pick').forEach(b=>b.onclick=e=>{e.preventDefault();inp.value=P[+b.dataset.k].name;l.hidden=true;$('qS').focus()});
+  l.hidden=false;
+}
 async function addQuote(){
   const m=$('qMsg'),p=$('qP').value.trim(),v=num($('qV').value);
   if(!p||!v){m.className='msg err';m.textContent='צריך מוצר ומחיר';return}
