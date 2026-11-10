@@ -34,6 +34,7 @@ header p{opacity:.85;font-size:.95rem}
 .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 select,input,textarea{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0}
 textarea{width:100%;min-height:120px;font-family:var(--num);font-size:.85rem;direction:ltr}
+a.btn{text-decoration:none;display:inline-block}
 .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:.95rem}
 .btn.p{background:var(--acc);border-color:var(--acc);color:#fff}
 .btn.g{background:var(--good);border-color:var(--good);color:#fff}
@@ -188,7 +189,26 @@ function vList(){
     return `<details class="inv" id="d_${i.id}" ${delId===i.id?'open':''}><summary><span class="sup">${esc(i.supplier||'ספק לא ידוע')}</span><span class="amt n">${money(x.total)}</span><span class="muted">${fd(i.date)}${i.invoiceNo?' · מס׳ '+esc(i.invoiceNo):''}${i.category?' · <span class="pill">'+esc(i.category)+'</span>':''}</span></summary>
     <div class="body">${rows?`<div class="scroll"><table><thead><tr><th>מוצר</th><th class="l">כמות</th><th class="l">מחיר ליח׳</th><th class="l">סה״כ</th></tr></thead><tbody>${rows}</tbody></table></div>`:''}
     <p class="muted" style="margin-top:6px">לפני מע״מ <span class="n">${money(x.net)}</span> · מע״מ <span class="n">${money(x.vat)}</span>${i.supplierId?' · ח.פ '+esc(i.supplierId):''}${i.payMethod?' · '+esc(i.payMethod):''}${i.notes?' · '+esc(i.notes):''}</p>
-    <div class="acts">${del}</div></div></details>`}).join('');
+    <div class="acts" style="justify-content:flex-start">${docBtns(i)}</div><div class="msg" id="fm_${i.id}"></div><div class="acts">${del}</div></div></details>`}).join('');
+}
+function docBtns(i){
+  const b=[];
+  if(i.fileId)b.push(`<button class="btn sm" onclick="getDoc('${i.id}',0)">📄 צפייה במסמך</button><button class="btn sm" onclick="getDoc('${i.id}',1)">⬇ הורדה</button>`);
+  if(i.docUrl)b.push(`<a class="btn sm" href="${esc(i.docUrl)}" target="_blank" rel="noopener">📄 מסמך מקורי</a>`);
+  if(i.mailUrl)b.push(`<a class="btn sm" href="${esc(i.mailUrl)}" target="_blank" rel="noopener">✉️ במייל</a>`);
+  return b.join('')||'<span class="muted">אין מסמך מקור מצורף</span>';
+}
+const docCache={};
+async function getDoc(id,dl){
+  const i=st.invoices.find(x=>x.id===id),m=$('fm_'+id);if(!i)return;
+  let d=docCache[id];
+  if(!d){m.className='msg';m.textContent='⏳ טוען את המסמך…';
+    try{const r=await call({op:'file',fileId:i.fileId});if(!r.ok){m.className='msg err';m.textContent='המסמך לא נמצא בדרייב';return}
+      const bin=atob(r.data),u=new Uint8Array(bin.length);for(let k=0;k<bin.length;k++)u[k]=bin.charCodeAt(k);
+      d=docCache[id]={url:URL.createObjectURL(new Blob([u],{type:r.mime})),name:r.name};}
+    catch(e){m.className='msg err';m.textContent='אין חיבור לשרת';return}}
+  m.className='msg';m.innerHTML=`<a class="btn sm p" href="${d.url}" ${dl?`download="${esc(d.name)}"`:'target="_blank" rel="noopener"'}>${dl?'⬇ לחץ לשמירת הקובץ':'📄 לחץ לפתיחה'}</a> <span class="muted">${esc(d.name)}</span>`;
+  const a=m.querySelector('a');try{a.click()}catch(e){}
 }
 function vPrices(){
   const m={},s=q();
@@ -226,11 +246,13 @@ function vDraft(){
   </tbody></table></div><div class="acts" style="justify-content:flex-start"><button class="btn sm" onclick="draft.items.push({name:'',qty:1,unit:'',unitPrice:'',total:''});render()">+ שורה</button></div>
   <div class="grid" style="margin-top:10px"><label>סה״כ לתשלום כולל מע״מ<input id="d_total" inputmode="decimal" value="${esc(d.total)}" placeholder="אוטומטי מהשורות" oninput="draft.total=this.value;dSum()"></label><label>מע״מ<input id="d_vat" inputmode="decimal" value="${esc(d.vat??'')}" placeholder="אוטומטי 18%" oninput="draft.vat=this.value;dSum()"></label><label>הערות<input value="${esc(d.notes)}" oninput="draft.notes=this.value"></label></div>
   <label class="chk" style="margin-top:8px"><input type="checkbox" ${d.vatExempt?'checked':''} onchange="draft.vatExempt=this.checked;dSum()"> ספק פטור / בלי מע״מ (קבלה)</label>
+  <div class="acts" style="justify-content:flex-start;margin-top:8px"><label class="btn sm" for="dFile">📎 ${d.upload?'הוחלף מסמך מקור ✓':d.fileId?'החלפת מסמך מקור':'צירוף מסמך מקור'}</label><input type="file" id="dFile" accept="image/*,application/pdf" hidden onchange="attachDraft(this.files[0])"></div>
   <p class="muted" id="dSum" style="margin-top:8px"></p>
   <div class="acts"><span class="msg" id="dMsg"></span><button class="btn" onclick="draft=null;render()">ביטול</button><button class="btn g" onclick="saveDraft()">שמירה</button></div></div>`;
 }
 function lineT(k){const it=draft.items[k];if(it.unitPrice!==''){it.total=r2(num(it.qty||1)*num(it.unitPrice));const e=$('lt'+k);if(e)e.value=it.total}dSum()}
 function dSum(){const e=$('dSum');if(!e||!draft)return;const x=tot(draft);e.innerHTML=`סה״כ <b class="n">${money(x.total)}</b> · לפני מע״מ <span class="n">${money(x.net)}</span> · מע״מ <span class="n">${money(x.vat)}</span>`}
+async function attachDraft(f){if(!f)return;try{draft.upload=await shrink(f);render()}catch(e){alert('הקובץ גדול מדי (עד 8MB)')}}
 async function saveDraft(){
   const d=draft,m=$('dMsg');d.items=d.items.filter(x=>String(x.name).trim()||num(x.unitPrice)||num(x.total));
   if(!String(d.supplier).trim()){m.className='msg err';m.textContent='חסר שם ספק';return}
@@ -263,9 +285,9 @@ async function scan(file){
   const m=$('scanMsg');if(!file)return;if(!pw){$('login').hidden=false;return}
   m.className='msg';m.textContent='⏳ קורא את החשבונית…';
   try{
-    const r=await call({op:'scan',file:await shrink(file)});
+    const up=await shrink(file);const r=await call({op:'scan',file:up});
     if(!r.ok){m.className='msg err';m.textContent=r.error==='nokey'?'הסריקה צריכה את מפתח Claude בסקריפט (ANTHROPIC_KEY), כמו בתרופות.':r.error==='password'?'צריך להתחבר מחדש':'לא הצלחתי לקרוא את החשבונית. נסה צילום ישר וברור יותר, או הקלד ידנית.';return}
-    const i=r.inv||{};newDraft({...i,items:(i.items||[]).map(x=>({name:x.name||'',qty:x.qty??1,unit:x.unit||'',unitPrice:x.unitPrice??'',total:x.total??''})),vat:i.vat??'',total:i.total??''});
+    const i=r.inv||{};newDraft({...i,upload:up,items:(i.items||[]).map(x=>({name:x.name||'',qty:x.qty??1,unit:x.unit||'',unitPrice:x.unitPrice??'',total:x.total??''})),vat:i.vat??'',total:i.total??''});
   }catch(e){m.className='msg err';m.textContent=e.message==='big'?'הקובץ גדול מדי (עד 8MB)':'אין חיבור לשרת'}
 }
 function exportX(){
