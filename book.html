@@ -45,7 +45,8 @@ function render(){
   if(!INFO.slots.length){$('app').innerHTML='<div class="card empty">אין כרגע מועד פתוח לבדיקה בסניף.</div>';return}
   if(INFO.slots.length===1)SEL=INFO.slots[0].id;
   const me=mine&&INFO.slots.find(s=>s.id===mine.slot);
-  $('app').innerHTML=`${me?`<div class="card"><h2>✓ אישרת הגעה</h2><p><b>${dname(me.date)}, <bdi dir="ltr">${esc(me.from)}–${esc(me.to)}</bdi></b><br>${esc(me.place||'')}</p><p style="color:var(--muted);font-size:.9em">אפשר לעדכן פרטים${INFO.slots.length>1?' או להחליף מועד':''} ולשלוח שוב.</p></div>`:''}
+  $('app').innerHTML=`${me?`<div class="card"><h2>✓ אישרת הגעה</h2><p><b>${dname(me.date)}, <bdi dir="ltr">${esc(me.from)}–${esc(me.to)}</bdi></b><br>${esc(me.place||'')}</p><a class="go" style="display:block;text-align:center;text-decoration:none;background:var(--navy)" target="_blank" rel="noopener" href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('בדיקת קצין בטיחות – סניף '+INFO.br)}&dates=${me.date.replace(/-/g,'')}T${me.from.replace(':','')}00/${me.date.replace(/-/g,'')}T${me.to.replace(':','')}00&ctz=Asia/Jerusalem&location=${encodeURIComponent(me.place||'')}&details=${encodeURIComponent('להגיע עם הכלי לבדיקת קצין הבטיחות')}">📅 הוספה ליומן</a>
+      <p style="color:var(--muted);font-size:.9em">אפשר לעדכן פרטים${INFO.slots.length>1?' או להחליף מועד':''} ולשלוח שוב.</p></div>`:''}
     <div class="card"><h2>${INFO.slots.length>1?'בחירת מועד':'המועד'}</h2>${INFO.slots.map(sl=>`<button class="t day${SEL===sl.id?' on':''}" data-k="${esc(sl.id)}" style="width:100%;text-align:right;padding:10px 12px;margin:4px 0">${dname(sl.date)} · <bdi dir="ltr">${esc(sl.from)}–${esc(sl.to)}</bdi><br><small>${esc(sl.place||'')}</small></button>`).join('')}</div>
     <div class="card"><h2>הפרטים שלך</h2>
       <label for="n">שם מלא</label><input id="n" autocomplete="name" value="${esc(mine&&mine.n||ls('book_n')||'')}">
