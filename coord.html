@@ -913,13 +913,14 @@ function ofcView(){
   if(!S.length)h+=`<div class="empty">קצין הבטיחות עוד לא הציע מועד לבדיקה בסניף. כשיוצע – תקבל הודעה לאשר אותו.</div>`;
   S.filter(s=>s.st!=='ok').forEach(sl=>{h+=`<div class="ofcs"><div class="ofch"><b>${ofcDate(sl.date)} · <bdi dir="ltr">${sl.from}–${sl.to}</bdi></b>${ofcChip(sl)}<span>${esc(sl.place||'')}</span>${ADMIN?`<button class="btn ghost sm" type="button" data-ofdel="${esc(sl.id)}">מחיקה</button>`:''}</div>
       ${sl.st==='no'&&sl.note?`<p class="hint" style="padding:0 12px">הערת הרכז: ${esc(sl.note)}</p>`:''}
+      <label class="ofpl">מקום הבדיקה (אפשר לשנות לפני האישור)<input data-ofpl="${esc(sl.id)}" value="${esc(sl.place||'')}"></label>
       ${!ADMIN||true?`<div class="acts" style="padding:8px 12px"><button class="btn ok sm" type="button" data-ofst="${esc(sl.id)}|ok">מאשר את המועד</button>${sl.st!=='no'?`<button class="btn ghost sm" type="button" data-ofst="${esc(sl.id)}|no">לא מתאים</button>`:''}</div>`:''}</div>`});
   if(S.length&&!SOK.length)h+=`<p class="hint">אין עדיין מועד מאושר – ההודעות לנהגים ייפתחו אחרי אישור המועד.</p>`;
   if(SOK.length){
     const m=ofcGroupMsg();
     h+=`<p class="hint">שולחים לקבוצת הנהגים הודעה עם קישור – כל נהג מאשר הגעה, ואתה רואה כאן מי אישר ומתי.</p><div class="acts"><a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(m.replace(/[\u{1F000}-\u{1FAFF}]/gu,''))}" target="_blank" rel="noopener">${WA_ICON||''}הודעה לקבוצה בוואטסאפ</a><button class="btn ghost" type="button" data-ofcopy="g">העתקת ההודעה</button><button class="btn ghost" type="button" data-ofcopy="l">העתקת הקישור</button></div>`;
     h+=SOK.map(sl=>{const L=OFC.books.filter(b=>b.slot===sl.id).sort((a,b)=>a.ts-b.ts);
-      return `<div class="ofcs"><div class="ofch"><b>${ofcDate(sl.date)} · <bdi dir="ltr">${sl.from}–${sl.to}</bdi></b>${ofcChip(sl)}<span>${esc(sl.place||'')} · ${L.length} אישרו הגעה</span>${ADMIN?`<button class="btn ghost sm" type="button" data-ofdel="${esc(sl.id)}">מחיקה</button>`:''}</div>
+      return `<div class="ofcs"><div class="ofch"><b>${ofcDate(sl.date)} · <bdi dir="ltr">${sl.from}–${sl.to}</bdi></b>${ofcChip(sl)}<span>${esc(sl.place||'')} · ${L.length} אישרו הגעה</span><button class="lnk" style="color:inherit" type="button" data-ofedpl="${esc(sl.id)}">שינוי מקום</button>${ADMIN?`<button class="btn ghost sm" type="button" data-ofdel="${esc(sl.id)}">מחיקה</button>`:''}</div>
         <div class="ofct">${L.length?L.map(b=>`<div class="ofcr on"><span><b>${esc(b.n||'—')}</b>${b.pv?' · '+esc(b.pv):''}${b.veh?' · כלי '+esc(b.veh):''}<small>אישר ${ofcWhen(b.ts)} · ע"י ${esc(b.by)}${b.ph?' · '+fmtPhone(b.ph):''}</small></span><button class="lnk" type="button" data-ofun="${esc(b.id)}">ביטול</button></div>`).join(''):'<div class="ofcr"><span class="free">עוד אף אחד לא אישר הגעה</span></div>'}</div></div>`}).join('');
   }
   h+=`</section>`;
@@ -940,12 +941,13 @@ function ofcAllHtml(){const T=ofcToday(),S=(OFC.all.slots||[]).filter(s=>s.date>
 async function ofcPopup(){if(ADMIN||!DATA)return;if(OFC.br!==DATA.br||OFC.slots===null)await ofcLoad();const T=ofcToday(),P=(OFC.slots||[]).filter(s=>s.date>=T&&s.st==='new');if(!P.length||document.getElementById('ofpop'))return;
   const d=document.createElement('div');d.id='ofpop';d.className='ofpop';
   d.innerHTML=`<div class="ofbox"><h3>🛡️ קצין הבטיחות מגיע לסניף</h3><p>דני בן דוד, קצין הבטיחות בתעבורה, הציע ${P.length>1?'מועדים':'מועד'} לבדיקת הכלים בסניף. נא לאשר:</p>
-    ${P.map(sl=>`<div class="ofpr"><b>${ofcDate(sl.date)}</b> · <bdi dir="ltr">${sl.from}–${sl.to}</bdi><br><small>${esc(sl.place||'')}</small><div class="acts"><button class="btn ok sm" data-ofst="${esc(sl.id)}|ok">מאשר</button><button class="btn ghost sm" data-ofst="${esc(sl.id)}|no">לא מתאים</button></div></div>`).join('')}
+    ${P.map(sl=>`<div class="ofpr"><b>${ofcDate(sl.date)}</b> · <bdi dir="ltr">${sl.from}–${sl.to}</bdi><br><label class="ofpl">מקום הבדיקה (אפשר לשנות)<input data-ofpl="${esc(sl.id)}" value="${esc(sl.place||'')}"></label><div class="acts"><button class="btn ok sm" data-ofst="${esc(sl.id)}|ok">מאשר</button><button class="btn ghost sm" data-ofst="${esc(sl.id)}|no">לא מתאים</button></div></div>`).join('')}
     <p class="hint">אחרי האישור – בלשונית "בדיקת קצין" תוכל לשלוח לנהגים הודעה עם המועד.</p><button class="btn ghost" id="ofpx">אחר כך</button></div>`;
   document.body.appendChild(d);$('ofpx').onclick=()=>d.remove()}
 async function ofcSetSt(id,st){let note='';if(st==='no'){note=prompt('מה לא מתאים? (למשל: מועד אחר שנוח לסניף)')||'';}
-  const r=await api({action:'insp_slot_status',id,st,note});if(!r){alert('השמירה נכשלה');return}
+  const sel=`[data-ofpl="${CSS.escape(id)}"]`,pp=document.getElementById('ofpop'),pi=(pp&&pp.querySelector(sel))||document.querySelector(sel),place=pi?pi.value.trim():null;const r=await api({action:'insp_slot_status',id,st,note,place});if(!r){alert('השמירה נכשלה');return}
   const p=$('ofpop');if(p)p.remove();OFC.all=null;await ofcLoad();if(st==='ok'&&!ADMIN){st.view='ofc'}if(document.querySelector('.tab[data-v="ofc"]')&&st==='ok')document.querySelector('.tab[data-v="ofc"]').click()}
+document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.closest('[data-ofedpl]');if(!b)return;const sl=ofcSlot(b.dataset.ofedpl);const p=prompt('מקום הבדיקה:',sl&&sl.place||'');if(p==null||!p.trim())return;const r=await api({action:'insp_slot_status',id:b.dataset.ofedpl,place:p.trim()});if(!r){alert('השמירה נכשלה');return}ofcLoad()});
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-ofst]');if(!b)return;const [id,s2]=b.dataset.ofst.split('|');b.disabled=true;ofcSetSt(id,s2)});
 function ofcBind(){
   const upd=()=>{const n=document.querySelectorAll('.of-b:checked').length,e=$('of-bn');if(e)e.textContent=n};
@@ -965,6 +967,7 @@ function ofcBind(){
 .ofcs{border:1px solid var(--line,#e3e7ee);border-radius:12px;margin:10px 0;overflow:hidden}.ofch{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 12px;background:rgba(127,127,127,.06)}.ofch span{color:var(--muted,#667);font-size:.9em}.ofch .btn{margin-inline-start:auto}
 .ofcr{display:flex;gap:10px;align-items:center;padding:6px 12px;border-top:1px dashed var(--line,#e3e7ee);font-size:.92em}.ofcr .tm{font-weight:700;min-width:44px;font-variant-numeric:tabular-nums}.ofcr.on{background:#effaf2}.ofcr small{display:block;color:var(--muted,#667)}.ofcr .free{color:var(--muted,#99a)}.ofcr .lnk{margin-inline-start:auto}
 .ofcv{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;padding:10px 4px;border-bottom:1px solid var(--line,#eee)}.ofcv .ok{color:#1f8a4c;font-weight:700}.ofcv .warn{color:#b45309}.ofcv select{font:inherit;padding:6px;border-radius:8px;border:1px solid var(--line,#dde);max-width:200px}
+.ofpl{display:block;padding:0 12px;font-size:.85em;color:var(--muted,#667)}.ofpl input{display:block;width:100%;font:inherit;padding:7px 10px;margin-top:3px;border:1px solid var(--line,#dde);border-radius:8px;color:var(--fg,#1b2430)}.ofbox .ofpl{padding:6px 0}
 .ofst{font-size:.8em;font-weight:700;padding:2px 8px;border-radius:999px}.ofbr{padding:4px 0 10px}.ofbr summary{cursor:pointer}.ofbr label{display:inline-flex;gap:4px;margin:4px 10px 0 0;font-size:.9em}.ofbr label.all{font-weight:700;display:flex}
 .ofpop{position:fixed;inset:0;z-index:200;background:rgba(10,20,40,.5);display:flex;align-items:center;justify-content:center;padding:16px}.ofbox{background:#fff;color:#1b2430;border-radius:16px;max-width:440px;width:100%;padding:16px;max-height:90vh;overflow:auto}.ofbox h3{margin:0 0 6px}.ofpr{border:1px solid #e3e7ee;border-radius:12px;padding:10px;margin:8px 0}
 .lnk{font:inherit;background:none;border:0;color:#b42318;text-decoration:underline;cursor:pointer}`;document.head.appendChild(st)})();
