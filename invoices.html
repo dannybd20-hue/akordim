@@ -38,8 +38,8 @@ header{background:linear-gradient(135deg,var(--head),var(--head2));color:#fff;pa
 header h1{font-family:'Assistant',sans-serif;font-size:1.7rem;font-weight:700}
 header p{opacity:.85;font-size:.95rem}
 .wrap{max-width:900px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:14px 0}
-.tab{min-width:0;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:700;font-size:.92rem;padding:11px 4px;line-height:1.2;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.06);cursor:pointer}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:14px 0}
+.tab{min-width:0;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:700;font-size:.86rem;padding:11px 4px;line-height:1.2;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.06);cursor:pointer}
 .tab.on{background:var(--acc);color:#fff}
 .bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
 .bar #fs{grid-column:1/-1}
@@ -89,6 +89,21 @@ details.inv summary::-webkit-details-marker{display:none}
 .login{background:var(--acc-soft);border:1px solid #9fcfdd;border-radius:14px;padding:14px;margin-bottom:14px}
 .drop{display:block;border:2px dashed #9fcfdd;background:var(--acc-soft);border-radius:14px;padding:18px;text-align:center;cursor:pointer}
 .drop b{display:block;font-size:1.05rem;color:var(--acc)}
+.ol{display:flex;flex-direction:column;gap:8px}
+.oline{border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;align-items:end}
+.oline .nm{grid-column:1/-1}
+.oline label{display:flex;flex-direction:column;gap:2px;font-size:.78rem;color:var(--muted);font-weight:600;min-width:0}
+.oline input{width:100%;padding:8px 8px}
+.oline .res{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.9rem}
+.osum{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:1rem}
+.osum .big{font-size:1.3rem;font-weight:800}
+.prof{background:var(--good-soft);color:var(--good);border-radius:10px;padding:8px 12px;font-weight:700;margin-top:8px}
+#pr{display:none}
+@media print{body>*:not(#pr){display:none!important}#pr{display:block!important;padding:0 8mm}body{background:#fff;padding:0}}
+.doc{background:#fff;color:#111;max-width:760px;margin:0 auto;font-size:15px}
+.doc h1{font-size:1.6rem;margin-bottom:2px}.doc .hd{display:flex;justify-content:space-between;gap:16px;border-bottom:2px solid #123d4f;padding-bottom:10px;margin-bottom:12px}
+.doc table td,.doc table th{border-bottom:1px solid #ccc;color:#111}.doc .tt{margin-top:10px;margin-inline-start:auto;width:260px}
+.doc .tt div{display:flex;justify-content:space-between;padding:3px 0}.doc .tt .g{font-weight:800;font-size:1.15rem;border-top:2px solid #111;margin-top:4px;padding-top:6px}
 .chk{display:inline-flex;gap:6px;align-items:center;font-size:.9rem}
 </style>
 </head>
@@ -105,6 +120,7 @@ details.inv summary::-webkit-details-marker{display:none}
     <button class="tab on" data-v="sum">סיכום</button>
     <button class="tab" data-v="list">חשבוניות</button>
     <button class="tab" data-v="prices">השוואת מחירים</button>
+    <button class="tab" data-v="offer">הצעת מחיר</button>
     <button class="tab" data-v="add">+ הוספה</button>
   </nav>
   <div id="cloud">טוען…</div>
@@ -171,14 +187,14 @@ let mode=lg('inv_mode')==='don'?'don':'biz';
 const isDon=i=>(i.category||'')==='תרומות';
 function inM(i){return mode==='don'?isDon(i):!isDon(i)}
 function inC(i){if(!inM(i))return false;const c=$('fc').value;return c==='all'||!c?true:(i.category||'כללי')===c}
-function setMode(m){mode=m;lp('inv_mode',m);if(m==='don'&&view==='prices')view='sum';$('fc').value='all';fill();render()}
+function setMode(m){mode=m;lp('inv_mode',m);if(m==='don'&&(view==='prices'||view==='offer'))view='sum';$('fc').value='all';fill();render()}
 function cubes(){
   const y=$('fy').value,inY=i=>y==='all'||(i.date||'').slice(0,4)===y,yl=y==='all'?'כל השנים':y;
   const B=st.invoices.filter(i=>!isDon(i)&&inY(i)),D=st.invoices.filter(i=>isDon(i)&&inY(i));
   const sum=L=>L.reduce((a,i)=>a+tot(i).total,0);
   $('cubes').innerHTML=`<button class="cube ${mode==='biz'?'on':''}" onclick="setMode('biz')"><b>🧾 חשבוניות העסק</b><span class="n">${money(sum(B))}</span><small>${B.length} חשבוניות · ${yl}</small></button>
   <button class="cube don ${mode==='don'?'on':''}" onclick="setMode('don')"><b>💝 תרומות</b><span class="n">${money(sum(D))}</span><small>${D.length} תרומות · ${yl}</small></button>`;
-  document.querySelector('.tab[data-v="prices"]').hidden=mode==='don';
+  document.querySelector('.tab[data-v="prices"]').hidden=mode==='don';document.querySelector('.tab[data-v="offer"]').hidden=mode==='don';
   $('tabs').style.gridTemplateColumns=mode==='don'?'repeat(3,1fr)':'';
 }
 function inP(d){const y=$('fy').value,m=$('fm').value;if(y!=='all'&&(d||'').slice(0,4)!==y)return false;if(m!=='all'&&(d||'').slice(5,7)!==m)return false;return true}
@@ -197,9 +213,9 @@ function fill(){
 function render(){
   cubes();
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
-  $('filters').hidden=view==='add';
+  $('filters').hidden=view==='add'||view==='offer';
   const a=$('app');
-  a.innerHTML=view==='sum'?vSum():view==='list'?vList():view==='prices'?vPrices():vAdd();
+  a.innerHTML=view==='sum'?vSum():view==='list'?vList():view==='prices'?vPrices():view==='offer'?vOffer():vAdd();
 }
 const emptyAll=()=>`<div class="empty">עוד אין חשבוניות.<br>לחץ ״+ הוספה״ כדי לסרוק צילום של חשבונית, או שלח את החשבונית ל-Claude בצ׳אט וקבל קוד להדבקה.</div>`;
 function vSum(){
@@ -378,7 +394,81 @@ async function exportX(){
   wb.Workbook={Views:[{RTL:true}]};XLSX.utils.book_append_sheet(wb,sa,'ריכוז חשבוניות');XLSX.utils.book_append_sheet(wb,sb,'פירוט מוצרים');
   const y=$('fy').value,mo=$('fm').value;XLSX.writeFile(wb,`חשבוניות-${y==='all'?'הכל':y}${mo==='all'?'':'-'+mo}.xlsx`);
 }
-$('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;view=b.dataset.v;delId=null;if(view!=='add')draft=null;render()};
+
+/* ---------- הצעת מחיר ללקוח ---------- */
+const OK='inv_offers',OB='inv_biz';
+let offers=(()=>{try{const x=JSON.parse(lg(OK)||'[]');return Array.isArray(x)?x:[]}catch(e){return[]}})();
+let biz=(()=>{try{return Object.assign({name:'דני בן דוד',phone:'',bid:'',terms:'ההצעה בתוקף ל-14 יום. המחירים כוללים התקנה אלא אם צוין אחרת.'},JSON.parse(lg(OB)||'{}'))}catch(e){return{name:'דני בן דוד',phone:'',bid:'',terms:''}}})();
+let of=null,ofList=false;
+function newOffer(){const y=new Date().getFullYear(),n=offers.filter(o=>(o.no||'').startsWith(y+'-')).length+1;return{id:uid(),no:y+'-'+String(n).padStart(3,'0'),date:today(),cust:'',custPhone:'',title:'',m:30,notes:'',lines:[{name:'',qty:1,cost:'',m:'',price:''}]}}
+function saveOffers(){lp(OK,JSON.stringify(offers))}
+function oCalc(o){
+  let cost=0,net=0;
+  const L=o.lines.map(l=>{const q=num(l.qty)||0,c=num(l.cost),m=l.m===''||l.m==null?num(o.m):num(l.m);
+    const p=l.price!==''&&l.price!=null?num(l.price):Math.round(c*(1+m/100));
+    const mm=c>0?(p/c-1)*100:null;cost+=c*q;net+=p*q;return{q,c,p,mm,t:p*q}});
+  const vat=r2(net*VAT);return{L,cost,net,vat,total:net+vat,profit:net-cost,pct:cost>0?(net-cost)/cost*100:null};
+}
+function costOf(p){const b=p.r.filter(r=>r.k==='inv'&&r.p>0).sort((a,b)=>(b.d||'').localeCompare(a.d||''))[0];const src=b||p.r.filter(r=>r.p>0).sort((a,b)=>a.p-b.p)[0];return src?{c:r2(src.p/(1+VAT)),d:src.d,sup:src.sup,k:src.k}:null}
+function vOffer(){
+  if(ofList||!of)return vOfferList();
+  const o=of,x=oCalc(o);
+  const lines=o.lines.map((l,k)=>`<div class="oline">
+    <label class="nm">מוצר / שירות<div class="ac"><input value="${esc(l.name)}" autocomplete="off" placeholder="הקלד, למשל מצלמה, או עבודה" oninput="oSet(${k},'name',this.value);acL(${k},this)" onfocus="acL(${k},this)" onblur="setTimeout(()=>{const e=$('ol${k}');if(e)e.hidden=true},350)"><div id="ol${k}" class="acl" hidden></div></div></label>
+    <label>כמות<input inputmode="decimal" value="${esc(l.qty)}" oninput="oSet(${k},'qty',this.value)"></label>
+    <label>עלות ליח׳ <small>לפני מע״מ</small><input id="oc${k}" inputmode="decimal" value="${esc(l.cost)}" oninput="oSet(${k},'cost',this.value)"></label>
+    <label>רווח %<input id="om${k}" inputmode="decimal" placeholder="${esc(o.m)}" value="${esc(l.m)}" oninput="oSet(${k},'m',this.value)"></label>
+    <label>מחיר ללקוח<input id="op${k}" inputmode="decimal" placeholder="${x.L[k].p}" value="${esc(l.price)}" oninput="oSet(${k},'price',this.value)"></label>
+    <div class="res"><span class="muted" id="oi${k}">${oInfo(x.L[k])}</span><span><b class="n" id="ot${k}">${money(x.L[k].t)}</b> <button class="btn sm" style="color:var(--bad)" onclick="oDel(${k})" aria-label="מחיקת שורה">✕</button></span></div></div>`).join('');
+  return `<div class="acts" style="justify-content:space-between;margin:0 0 10px"><button class="btn sm" onclick="ofList=true;render()">← כל ההצעות (${offers.length})</button><span class="muted">הצעה מס׳ ${esc(o.no)}</span></div>
+  <div class="card"><h2>פרטי הלקוח</h2><div class="grid"><label>שם הלקוח<input value="${esc(o.cust)}" oninput="of.cust=this.value;oSave()"></label><label>טלפון<input inputmode="tel" value="${esc(o.custPhone)}" oninput="of.custPhone=this.value;oSave()"></label><label>נושא העבודה<input value="${esc(o.title)}" placeholder="למשל: התקנת 4 מצלמות" oninput="of.title=this.value;oSave()"></label><label>תאריך<input type="date" value="${esc(o.date)}" oninput="of.date=this.value;oSave()"></label><label>רווח ברירת מחדל %<input inputmode="decimal" value="${esc(o.m)}" oninput="of.m=this.value;oUpd(1)"></label></div></div>
+  <div class="card"><h2>מוצרים ועבודה</h2><p class="muted" style="margin-bottom:8px">בחר מוצר מהרשימה והעלות תתמלא לפי המחיר האחרון ששילמת. המחיר ללקוח מחושב לפי אחוז הרווח, ואפשר לשנות אותו ידנית.</p>
+  <div class="ol" id="olines">${lines}</div><div class="acts" style="justify-content:flex-start"><button class="btn" onclick="oAdd()">➕ שורה</button><button class="btn" onclick="oAdd('עבודה והתקנה')">🔧 עבודה</button></div></div>
+  <div class="card"><h2>סיכום</h2><div class="osum" id="osum">${oSum(x)}</div><div class="prof" id="oprof">${oProf(x)}</div>
+  <label class="muted" style="display:block;margin-top:10px">הערות ללקוח<textarea style="direction:rtl;font-family:inherit;font-size:16px;min-height:70px" oninput="of.notes=this.value;oSave()">${esc(o.notes)}</textarea></label>
+  <div class="acts"><button class="btn" onclick="oShare()">📲 שליחה בוואטסאפ</button><button class="btn" onclick="oCopy()">📋 העתקה</button><button class="btn p" onclick="oPrint()">🖨️ הדפסה / PDF</button></div><div class="msg" id="oMsg"></div></div>`;
+}
+function oInfo(r){return r.c>0?`עלות ${money(r.c)} · רווח ${r.mm==null?'':Math.round(r.mm)+'%'} (${money((r.p-r.c)*r.q)})`:(r.p>0?'ללא עלות (עבודה)':'')}
+function oSum(x){return `<span>עלות שלך</span><span class="n">${money(x.cost)}</span><span>מחיר ללקוח לפני מע״מ</span><span class="n">${money(x.net)}</span><span>מע״מ 18%</span><span class="n">${money(x.vat)}</span><span class="big">סה״כ ללקוח</span><span class="n big">${money(x.total)}</span>`}
+function oProf(x){return `💰 רווח: <span class="n">${money(x.profit)}</span>${x.pct!=null?` · ${Math.round(x.pct)}% על העלות`:''}`}
+function oSave(){if(!of)return;of.updated=Date.now();const k=offers.findIndex(o=>o.id===of.id);if(k<0)offers.unshift(of);else offers[k]=of;saveOffers()}
+function oUpd(all){const x=oCalc(of);x.L.forEach((r,k)=>{const p=$('op'+k);if(p)p.placeholder=r.p;const i=$('oi'+k);if(i)i.textContent=oInfo(r);const t=$('ot'+k);if(t)t.textContent=money(r.t);if(all){const m=$('om'+k);if(m)m.placeholder=of.m}});const s=$('osum');if(s)s.innerHTML=oSum(x);const pf=$('oprof');if(pf)pf.innerHTML=oProf(x);oSave()}
+function oSet(k,f,v){const l=of.lines[k];l[f]=v;if(f==='cost'||f==='m'){if(l.price!==''){l.price='';const p=$('op'+k);if(p)p.value=''}}oUpd()}
+function oAdd(n){of.lines.push({name:n||'',qty:1,cost:n?0:'',m:'',price:''});oSave();render();const e=document.querySelectorAll('.oline input');}
+function oDel(k){of.lines.splice(k,1);if(!of.lines.length)of.lines.push({name:'',qty:1,cost:'',m:'',price:''});oSave();render()}
+function acL(k,inp){
+  const l=$('ol'+k);if(!l)return;const T=terms(inp.value);if(!T.length){l.hidden=true;return}
+  let P=Object.values(priceMap()).filter(p=>T.some(t=>norm(p.name).includes(t)||norm(p.key).includes(t))).sort((a,b)=>a.name.localeCompare(b.name,'he')).slice(0,12);
+  if(!P.length){l.hidden=true;return}
+  l.innerHTML=P.map((p,j)=>{const c=costOf(p);return `<button type="button" class="pick" data-j="${j}"><span><b>${esc(p.name)}</b><small>${c?(c.k==='inv'?'קנית ':'הצעה ')+fd(c.d)+' · '+esc(c.sup||''):''}</small></span><span class="n">${c?money(c.c):''}</span></button>`}).join('');
+  l.querySelectorAll('.pick').forEach(b=>b.onclick=e=>{e.preventDefault();const p=P[+b.dataset.j],c=costOf(p);of.lines[k].name=p.name;of.lines[k].cost=c?c.c:'';of.lines[k].price='';l.hidden=true;oSave();render()});
+  l.hidden=false;
+}
+function vOfferList(){
+  const L=offers.slice().sort((a,b)=>(b.updated||0)-(a.updated||0));
+  return `<div class="acts" style="justify-content:flex-start;margin:0 0 10px"><button class="btn p" onclick="of=newOffer();ofList=false;render()">➕ הצעת מחיר חדשה</button></div>
+  ${L.length?`<div class="card" style="padding:4px 0">${L.map(o=>{const x=oCalc(o);return `<button class="pick" onclick="of=offers.find(z=>z.id==='${o.id}');ofList=false;render()"><span><b>${esc(o.cust||'ללא שם לקוח')}${o.title?' · '+esc(o.title):''}</b><small>מס׳ ${esc(o.no)} · ${fd(o.date)} · רווח ${money(x.profit)}</small></span><span class="n" style="font-weight:800">${money(x.total)}</span></button>`}).join('')}</div>`:'<div class="empty">עוד אין הצעות מחיר. לחץ ״הצעת מחיר חדשה״.</div>'}
+  ${of&&offers.some(z=>z.id===of.id)?`<div class="acts"><button class="btn sm" onclick="oDup()">שכפול ההצעה האחרונה שפתחת</button><button class="btn sm" style="color:var(--bad)" onclick="if(delId==='of'){offers=offers.filter(z=>z.id!==of.id);saveOffers();of=null;delId=null}else delId='of';render()">${delId==='of'?'כן, למחוק את '+esc(of.no):'מחיקת ההצעה האחרונה שפתחת'}</button></div>`:''}
+  <div class="card" style="margin-top:12px"><h2>פרטי העסק שלך בהצעה</h2><div class="grid"><label>שם העסק<input value="${esc(biz.name)}" oninput="biz.name=this.value;lp(OB,JSON.stringify(biz))"></label><label>טלפון<input inputmode="tel" value="${esc(biz.phone)}" oninput="biz.phone=this.value;lp(OB,JSON.stringify(biz))"></label><label>ע.מ / ח.פ<input value="${esc(biz.bid)}" oninput="biz.bid=this.value;lp(OB,JSON.stringify(biz))"></label></div>
+  <label class="muted" style="display:block;margin-top:8px">תנאים קבועים בתחתית ההצעה<textarea style="direction:rtl;font-family:inherit;font-size:16px;min-height:60px" oninput="biz.terms=this.value;lp(OB,JSON.stringify(biz))">${esc(biz.terms)}</textarea></label>
+  <p class="muted" style="margin-top:6px">ההצעות נשמרות בטלפון הזה.</p></div>`;
+}
+function oDup(){const c=JSON.parse(JSON.stringify(of)),n=newOffer();c.id=n.id;c.no=n.no;c.date=today();c.cust='';c.custPhone='';of=c;ofList=false;oSave();render()}
+function oText(){const o=of,x=oCalc(o);const rows=o.lines.map((l,k)=>({l,r:x.L[k]})).filter(z=>z.l.name||z.r.t);
+  return `*הצעת מחיר ${o.no}*${o.title?'\n'+o.title:''}\n${o.cust?'לכבוד: '+o.cust+'\n':''}תאריך: ${fd(o.date)}\n\n`+rows.map(({l,r})=>`• ${l.name}${r.q!==1?` × ${r.q}`:''} — ${money(r.t)}`).join('\n')+`\n\nסה״כ לפני מע״מ: ${money(x.net)}\nמע״מ 18%: ${money(x.vat)}\n*סה״כ לתשלום: ${money(x.total)}*${o.notes?'\n\n'+o.notes:''}${biz.terms?'\n\n'+biz.terms:''}\n\n${biz.name}${biz.phone?' · '+biz.phone:''}`}
+function oShare(){const t=oText(),ph=String(of.custPhone||'').replace(/\D/g,'').replace(/^0/,'972');window.open('https://wa.me/'+(ph.length>=11?ph:'')+'?text='+encodeURIComponent(t),'_blank')}
+async function oCopy(){const m=$('oMsg');try{await navigator.clipboard.writeText(oText());m.className='msg ok';m.textContent='✓ הועתק. אפשר להדביק בכל מקום'}catch(e){m.className='msg err';m.textContent='לא הצלחתי להעתיק'}}
+function oPrint(){const o=of,x=oCalc(o);const rows=o.lines.map((l,k)=>({l,r:x.L[k]})).filter(z=>z.l.name||z.r.t);
+  let pr=$('pr');if(!pr){pr=document.createElement('div');pr.id='pr';document.body.appendChild(pr)}
+  pr.innerHTML=`<div class="doc"><div class="hd"><div><h1>הצעת מחיר</h1><div>מס׳ ${esc(o.no)} · ${fd(o.date)}</div>${o.title?`<div><b>${esc(o.title)}</b></div>`:''}</div><div style="text-align:left"><b>${esc(biz.name)}</b>${biz.bid?'<div>ע.מ '+esc(biz.bid)+'</div>':''}${biz.phone?'<div>'+esc(biz.phone)+'</div>':''}</div></div>
+  ${o.cust?`<p style="margin-bottom:10px">לכבוד: <b>${esc(o.cust)}</b>${o.custPhone?' · '+esc(o.custPhone):''}</p>`:''}
+  <table><thead><tr><th>#</th><th>תיאור</th><th class="l">כמות</th><th class="l">מחיר ליח׳</th><th class="l">סה״כ</th></tr></thead><tbody>${rows.map(({l,r},i)=>`<tr><td>${i+1}</td><td>${esc(l.name)}</td><td class="l n">${r.q}</td><td class="l n">${money(r.p)}</td><td class="l n">${money(r.t)}</td></tr>`).join('')}</tbody></table>
+  <div class="tt"><div><span>סה״כ לפני מע״מ</span><span class="n">${money(x.net)}</span></div><div><span>מע״מ 18%</span><span class="n">${money(x.vat)}</span></div><div class="g"><span>סה״כ לתשלום</span><span class="n">${money(x.total)}</span></div></div>
+  ${o.notes?`<p style="margin-top:14px;white-space:pre-wrap">${esc(o.notes)}</p>`:''}${biz.terms?`<p style="margin-top:10px;font-size:13px;color:#444;white-space:pre-wrap">${esc(biz.terms)}</p>`:''}</div>`;
+  window.print();
+}
+
+$('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;view=b.dataset.v;delId=null;if(view==='offer'&&!of)ofList=true;if(view!=='add')draft=null;render()};
 ['fy','fm','fc'].forEach(id=>$(id).onchange=render);$('fs').oninput=()=>{pick=null;render()};
 fill();render();sync();
 </script>
