@@ -300,7 +300,7 @@ h3.grp{margin:14px 4px 6px;font-size:.95rem;color:var(--muted)}
     <button class="tab" role="tab" aria-selected="false" data-v="veh">רכבים</button>
     <button class="tab" role="tab" aria-selected="false" data-v="map">מפה</button>
     <button class="tab" role="tab" aria-selected="false" data-v="exit">יציאה מגזרה</button>
-    <button class="tab" role="tab" aria-selected="false" data-v="acc">תאונות</button>
+    <button class="tab" role="tab" aria-selected="false" data-v="acc">תאונות</button><button class="tab" role="tab" aria-selected="false" data-v="ofc">בדיקת קצין</button>
     <span class="tab" style="margin-inline-start:auto;cursor:default;font-weight:400;font-size:.8rem" id="upd"></span>
   </div>
 </div></header>
@@ -331,7 +331,10 @@ async function dec(path,pw){
   let gz;try{gz=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct)}catch(e){throw new Error('pw')}
   return JSON.parse(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
 }
-const fileOf=async pw=>'coord/'+(await sha('dbd-coord:'+pw)).slice(0,24)+'.bin';
+/* שם הקובץ נגזר מהסיסמה בגזירה איטית (כמו בבנייה) */
+const fileOf=async pw=>{const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
+  const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode('dbd-coord-file-v2'),iterations:300000,hash:'SHA-256'},base,96);
+  return 'coord/'+[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')+'.bin'};
 
 /* ===== מצב תקינות של נהג ===== */
 function docStatus(p){
@@ -529,12 +532,15 @@ function render(){
     h+=mapView();
 } else if(st.view==='acc'){
     h+=accView();
+  } else if(st.view==='ofc'){
+    h+=ofcView();
   } else if(st.view==='pb'){
     h+=phonebookView();
   } else if(st.view==='veh'){
     h+=`<section class="panel"><header><h2>כלים בסניף</h2><span class="count">${DATA.veh.length}</span></header><div class="vlist">${DATA.veh.map(vRow).join('')}</div></section>`;
   } else {app.innerHTML=h;exitView();bind();return}
   app.innerHTML=h+`<p class="foot">צפייה בלבד · עודכן ${esc(DATA.upd)} · קצב"ת ירושלים</p>`;bind();
+  if(st.view==='ofc')ofcBind();
   if(st.view==='map'){document.querySelectorAll('[data-mf]').forEach(b=>b.onclick=()=>{MAP.flt=b.dataset.mf;MAP.fitN=0;MAP.fitted=false;render()});mountMap()}
 }
 function dstate(label,dateStr,due,kind){
@@ -864,6 +870,72 @@ document.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.clos
 .nwl{margin-top:8px;max-height:340px;overflow:auto}.nwr{display:flex;gap:8px;padding:6px 2px;border-bottom:1px dashed #e3e7ee;font-size:.9em;line-height:1.45}.nwd{color:#6b7480;font-size:.85em;min-width:38px}`;document.head.appendChild(st)})();
 
 const NEWS_SRC=()=>DATA&&DATA.news;
+/* ===== בדיקת קצין בטיחות בסניף =====
+   קצין הבטיחות (מצב מנהל) קובע מועדים; הרכז שולח הודעה לקבוצה עם קישור להרשמה (book.html) או הודעה אישית לכל נהג,
+   ורואה מי נרשם, לאיזו שעה ומתי נרשם. אפשר גם לקבוע לנהג שעה ידנית. */
+const OFC={slots:null,books:[],br:null,busy:false,err:''};
+const BOOK_URL='https://dannybd20-hue.github.io/akordim/book.html';
+const OFC_DAYS=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+function ofcDate(s){const [y,m,d]=s.split('-').map(Number),dt=new Date(y,m-1,d);return `יום ${OFC_DAYS[dt.getDay()]} ${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`}
+function ofcTimes(sl){const m=x=>{const [h,mi]=x.split(':').map(Number);return h*60+mi},o=[];for(let t=m(sl.from);t<m(sl.to);t+=sl.step)o.push(String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0'));return o}
+const ofcToday=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+async function ofcLoad(){const br=DATA.br;OFC.br=br;OFC.busy=true;const r=await api({action:'insp_list'});OFC.busy=false;if(DATA.br!==br)return;
+  if(r){OFC.slots=r.slots.sort((a,b)=>(a.date+a.from).localeCompare(b.date+b.from));OFC.books=r.books;OFC.err=''}else{OFC.slots=OFC.slots||[];OFC.err='לא הצלחתי לטעון מהשרת – ייתכן שהסקריפט עוד לא עודכן.'}
+  if(st.view==='ofc')render()}
+/* הכלים שנבדקים: אמבולנס, רכב, אופנוע (בלי אופניים) */
+function ofcVeh(){return DATA.veh.filter(v=>!/אופניים/.test(v.type||''))}
+function ofcBookOf(v){const L=OFC.books.filter(b=>(b.veh&&b.veh===v.num)||(v.phone&&b.ph&&b.ph.replace(/\D/g,'').slice(-9)===v.phone.replace(/\D/g,'').slice(-9)));return L.sort((a,b)=>b.ts-a.ts)[0]}
+function ofcSlot(id){return (OFC.slots||[]).find(s=>s.id===id)}
+const ofcLink=()=>BOOK_URL+'?k='+encodeURIComponent(DATA.bookk||'');
+function ofcGroupMsg(){const S=(OFC.slots||[]).filter(s=>s.date>=ofcToday());
+  return `שלום לכולם,\n\nקצין הבטיחות בתעבורה, דני בן דוד, מגיע לסניף לבדיקת הכלים (אמבולנס, רכב ואופנוע).\n\n*המועדים:*\n${S.map(s=>`• ${ofcDate(s.date)}, ${s.from}–${s.to}${s.place?' · '+s.place:''}`).join('\n')}\n\nכל נהג עם כלי צמוד מתבקש לבחור שעה לבדיקה בקישור:\n${ofcLink()}\n\nיש להגיע עם הכלי בשעה שנבחרה. תודה!\n\n${DATA.coord||'רכז התחבורה'} · רכז תחבורה – ${DATA.br}`}
+function ofcPersonalMsg(v,b){const sl=b&&ofcSlot(b.slot),nm=first(v.name||b&&b.n||'');
+  if(sl)return `שלום ${nm},\n\n*שים לב:* בתאריך ${ofcDate(sl.date)} בשעה ${b.time} נקבעה בדיקת קצין בטיחות לכלי ${v.num}${v.type?' ('+v.type+')':''}.\nמקום: ${sl.place||'בית המתנדב של הסניף'}.\n\nיש להגיע בזמן עם הכלי. אם השעה לא מתאימה – אפשר לבחור שעה אחרת בקישור:\n${ofcLink()}\n\nתודה,\n${DATA.coord||'רכז התחבורה'} · רכז תחבורה – ${DATA.br}`;
+  return `שלום ${nm},\n\nקצין הבטיחות בתעבורה מגיע לסניף לבדיקת הכלים, ויש לבחור שעה לבדיקת כלי ${v.num}${v.type?' ('+v.type+')':''}.\nלבחירת שעה:\n${ofcLink()}\n\nתודה,\n${DATA.coord||'רכז התחבורה'} · רכז תחבורה – ${DATA.br}`}
+function ofcView(){
+  if(OFC.br!==DATA.br){OFC.slots=null;OFC.books=[]}
+  if(OFC.slots===null){if(!OFC.busy)ofcLoad();return `<section class="panel"><div class="empty">טוען מועדים…</div></section>`}
+  const T=ofcToday(),S=OFC.slots.filter(s=>s.date>=T),old=OFC.slots.filter(s=>s.date<T),V=ofcVeh();
+  const taken=(sl,t)=>OFC.books.find(b=>b.slot===sl.id&&b.time===t);
+  const when=b=>{const d=new Date(b.ts);return d.toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})};
+  let h=OFC.err?`<div class="annban"><b>${esc(OFC.err)}</b></div>`:'';
+  if(ADMIN)h+=`<section class="panel"><header><h2>קביעת מועד לסניף (קצין בטיחות)</h2></header><div class="ofcf">
+      <label>תאריך<input type="date" id="of-d" min="${T}"></label><label>משעה<input type="time" id="of-f" value="16:00"></label><label>עד שעה<input type="time" id="of-t" value="19:00"></label>
+      <label>דקות לכל בדיקה<select id="of-s">${[10,15,20,30].map(x=>`<option${x===15?' selected':''}>${x}</option>`).join('')}</select></label>
+      <label class="w">מקום<input id="of-p" value="בית המתנדב של הסניף"></label><button class="btn ok" id="of-add" type="button">הוספת מועד</button></div></section>`;
+  h+=`<section class="panel"><header><h2>🛡️ בדיקת קצין בטיחות בסניף</h2><span class="count">${S.length} מועדים</span></header>`;
+  if(!S.length)h+=`<div class="empty">קצין הבטיחות עוד לא קבע מועד לבדיקה בסניף. כשייקבע – הוא יופיע כאן.</div>`;
+  else{
+    const m=ofcGroupMsg();
+    h+=`<p class="hint">שולחים לקבוצת הנהגים הודעה עם קישור – כל נהג בוחר שעה, ואתה רואה כאן מי נרשם ומתי.</p><div class="acts"><a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(m.replace(/[\u{1F000}-\u{1FAFF}]/gu,''))}" target="_blank" rel="noopener">${WA_ICON||''}הודעה לקבוצה בוואטסאפ</a><button class="btn ghost" type="button" data-ofcopy="g">העתקת ההודעה</button><button class="btn ghost" type="button" data-ofcopy="l">העתקת הקישור</button></div>`;
+    h+=S.map(sl=>{const ts=ofcTimes(sl),n=ts.filter(t=>taken(sl,t)).length;
+      return `<div class="ofcs"><div class="ofch"><b>${ofcDate(sl.date)} · <bdi dir="ltr">${sl.from}–${sl.to}</bdi></b><span>${esc(sl.place||'')} · ${n}/${ts.length} נרשמו</span>${ADMIN?`<button class="btn ghost sm" type="button" data-ofdel="${esc(sl.id)}">מחיקת המועד</button>`:''}</div>
+        <div class="ofct">${ts.map(t=>{const b=taken(sl,t);return `<div class="ofcr${b?' on':''}"><span class="tm">${t}</span>${b?`<span><b>${esc(b.n||'—')}</b>${b.pv?' · '+esc(b.pv):''}${b.veh?' · כלי '+esc(b.veh):''}<small>נרשם ${when(b)} · ע"י ${esc(b.by)}${b.ph?' · '+fmtPhone(b.ph):''}</small></span><button class="lnk" type="button" data-ofun="${esc(b.id)}">ביטול</button>`:'<span class="free">פנוי</span>'}</div>`}).join('')}</div></div>`}).join('');
+  }
+  h+=`</section>`;
+  if(S.length){
+    const free=S.flatMap(sl=>ofcTimes(sl).filter(t=>!taken(sl,t)).map(t=>[sl,t]));
+    h+=`<section class="panel"><header><h2>הכלים בסניף – מי קבע</h2><span class="count">${V.filter(v=>ofcBookOf(v)).length}/${V.length}</span></header><p class="hint">אמבולנס, רכב ואופנוע (בלי אופניים). אפשר לשלוח לכל נהג הודעה אישית, או לקבוע לו שעה בעצמך ואז לשלוח לו את השעה שנקבעה.</p><div class="vlist">${V.map(v=>{const b=ofcBookOf(v),sl=b&&ofcSlot(b.slot);
+      return `<div class="ofcv"><div><b>כלי ${esc(v.num)}</b> · ${esc(v.type||'')}${v.name?' · '+esc(v.name):''}<br>${sl?`<span class="ok">✓ ${ofcDate(sl.date)} בשעה ${esc(b.time)}</span> <small>(נרשם ${when(b)})</small>`:'<span class="warn">עוד לא נקבעה שעה</span>'}</div>
+        <div class="acts">${v.phone?`<a class="btn wa sm" href="${waLink(v.phone,ofcPersonalMsg(v,b))}" target="_blank" rel="noopener">${sl?'שליחת השעה לנהג':'הודעה אישית'}</a>`:''}${free.length?`<select data-ofset="${esc(v.num)}"><option value="">${sl?'החלפת שעה…':'קביעת שעה…'}</option>${free.map(([s2,t])=>`<option value="${esc(s2.id)}|${t}">${ofcDate(s2.date).replace('יום ','')} ${t}</option>`).join('')}</select>`:''}</div></div>`}).join('')}</div></section>`;
+  }
+  if(old.length)h+=`<details class="panel" style="padding:10px 14px"><summary>מועדים שעברו (${old.length})</summary>${old.map(sl=>`<p>${ofcDate(sl.date)} · <bdi dir="ltr">${sl.from}–${sl.to}</bdi> · ${OFC.books.filter(b=>b.slot===sl.id).length} נבדקו/נרשמו</p>`).join('')}</details>`;
+  return h;
+}
+function ofcBind(){
+  const add=$('of-add');if(add)add.onclick=async()=>{const o={action:'insp_slot_add',date:$('of-d').value,from:$('of-f').value,to:$('of-t').value,step:+$('of-s').value,place:$('of-p').value.trim()};
+    if(!o.date||!o.from||!o.to||o.to<=o.from){alert('יש לבחור תאריך ושעות');return}add.disabled=true;add.textContent='שומר…';const r=await api(o);if(!r){add.disabled=false;add.textContent='הוספת מועד';alert('השמירה נכשלה');return}OFC.slots=null;ofcLoad()};
+  document.querySelectorAll('[data-ofdel]').forEach(b=>b.onclick=async()=>{if(!confirm('למחוק את המועד ואת כל ההרשמות אליו?'))return;await api({action:'insp_slot_del',id:b.dataset.ofdel});OFC.slots=null;ofcLoad()});
+  document.querySelectorAll('[data-ofun]').forEach(b=>b.onclick=async()=>{if(!confirm('לבטל את ההרשמה?'))return;await api({action:'insp_unbook',id:b.dataset.ofun});ofcLoad()});
+  document.querySelectorAll('[data-ofcopy]').forEach(b=>b.onclick=()=>navigator.clipboard.writeText(b.dataset.ofcopy==='g'?ofcGroupMsg():ofcLink()).then(()=>b.textContent='הועתק ✓'));
+  document.querySelectorAll('[data-ofset]').forEach(s=>s.onchange=async()=>{if(!s.value)return;const [slot,time]=s.value.split('|'),v=DATA.veh.find(x=>x.num===s.dataset.ofset);s.disabled=true;
+    const r=await api({action:'insp_book',slot,time,pv:'',n:v.name||'',ph:v.phone||'',veh:v.num});if(!r){alert('השעה כבר נתפסה או שהשמירה נכשלה');s.disabled=false;return}await ofcLoad()});
+}
+(()=>{const st=document.createElement('style');st.textContent=`.ofcf{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:8px 0}.ofcf label{display:flex;flex-direction:column;font-size:.85em;gap:2px}.ofcf label.w{flex:1 1 200px}.ofcf input,.ofcf select{font:inherit;padding:6px 8px;border:1px solid var(--line,#dde);border-radius:8px}
+.ofcs{border:1px solid var(--line,#e3e7ee);border-radius:12px;margin:10px 0;overflow:hidden}.ofch{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 12px;background:rgba(127,127,127,.06)}.ofch span{color:var(--muted,#667);font-size:.9em}.ofch .btn{margin-inline-start:auto}
+.ofcr{display:flex;gap:10px;align-items:center;padding:6px 12px;border-top:1px dashed var(--line,#e3e7ee);font-size:.92em}.ofcr .tm{font-weight:700;min-width:44px;font-variant-numeric:tabular-nums}.ofcr.on{background:#effaf2}.ofcr small{display:block;color:var(--muted,#667)}.ofcr .free{color:var(--muted,#99a)}.ofcr .lnk{margin-inline-start:auto}
+.ofcv{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;padding:10px 4px;border-bottom:1px solid var(--line,#eee)}.ofcv .ok{color:#1f8a4c;font-weight:700}.ofcv .warn{color:#b45309}.ofcv select{font:inherit;padding:6px;border-radius:8px;border:1px solid var(--line,#dde);max-width:200px}
+.lnk{font:inherit;background:none;border:0;color:#b42318;text-decoration:underline;cursor:pointer}`;document.head.appendChild(st)})();
 
 /* ===== מפת מתנדבים – לפי כתובת המגורים ===== */
 const MAP={el:null,map:null,layer:null,br:null,run:0,done:0,total:0,miss:[],flt:'all'};
@@ -963,11 +1035,17 @@ async function mountMap(){
     if(run!==MAP.run)return;MAP.busy=false;if(st.view==='map'&&$('mapslot')){MAP.done=cnt();mapStatus(drawPins())}}
 }
 
-function coordMsg(b){const c=ADMIN[b];return `שלום ${first(c.coord)||''},\n\nפתחתי לך מערכת חדשה לניהול הבטיחות של סניף *${b}* 🚑\n\nבמערכת תוכל לראות:\n• את כל הנהגים בסניף – פרטים, מסמכים ותוקף רישיונות\n• ציוני סייפטי לכל חודש\n• ציוני הדרכות רכיבה (חיים בדרכים) והדרכות נהיגה (אלטרנתיבי)\n• את כל הכלים של הסניף ומצב הטסטים, הטיפולים והבדיקות\n• *טופס יציאה מגזרה* – בוחרים מתנדב, המערכת בודקת את כל הנתונים שלו ונותנת המלצה, ואם מאשרים – יש הודעת בטיחות מוכנה לשליחה\n\nכניסה:\n🔗 https://dannybd20-hue.github.io/akordim/coord.html\n🔑 סיסמה: *${c.pw}*\n\nהמערכת לצפייה בלבד, ורואים בה רק את הסניף שלך. כדאי להוסיף את הקישור למסך הבית בטלפון.\nהסיסמה אישית לך – לא להעביר הלאה.\n\nאם יש שאלה, אני זמין.\nדני בן דוד\nקצב"ת ירושלים`}
+function coordMsg(b){const c=ADMIN[b];return `שלום ${first(c.coord)||''},\n\nפתחתי לך מערכת חדשה לניהול הבטיחות של סניף *${b}* 🚑\n\nבמערכת תוכל לראות:\n• את כל הנהגים בסניף – פרטים, מסמכים ותוקף רישיונות\n• ציוני סייפטי לכל חודש\n• ציוני הדרכות רכיבה (חיים בדרכים) והדרכות נהיגה (אלטרנתיבי)\n• את כל הכלים של הסניף ומצב הטסטים, הטיפולים והבדיקות\n• *טופס יציאה מגזרה* – בוחרים מתנדב, המערכת בודקת את כל הנתונים שלו ונותנת המלצה, ואם מאשרים – יש הודעת בטיחות מוכנה לשליחה\n\nכניסה:\n🔗 https://dannybd20-hue.github.io/akordim/coord.html\n🔑 סיסמה: *${c.pw}*\n(לטובת אבטחת המידע הוחלפה הסיסמה לסיסמה חזקה יותר. הסיסמה הקודמת כבר לא פעילה. אפשר להקליד באותיות קטנות ובלי המקפים.)\n\nהמערכת לצפייה בלבד, ורואים בה רק את הסניף שלך. כדאי להוסיף את הקישור למסך הבית בטלפון.\nהסיסמה אישית לך – לא להעביר הלאה.\n\nאם יש שאלה, אני זמין.\nדני בן דוד\nקצב"ת ירושלים`}
 
 function onlineBox(){if(!SYNC_URL)return '<div id="onl"></div>';const L=ONLINE||[];const ago=t=>{const m=Math.max(0,Math.round((Date.now()-t)/60000));return m<1?'עכשיו':m<60?m+' דק׳':Math.floor(m/60)+' שע׳'};
   return `<div id="onl" class="online"><b><span class="dot${L.length?' on':''}"></span>${ONLINE==null?'בודק מי מחובר…':L.length?(L.length===1?'רכז אחד מחובר עכשיו':`${L.length} רכזים מחוברים עכשיו`):'אף רכז לא מחובר כרגע'}</b>${L.map(x=>`<span class="who">${esc(x.n||'רכז')} · ${esc(x.br)}<small>${esc(x.dev||'')} · מחובר ${ago(x.s)}</small></span>`).join('')}</div>`}
-function adminBar(){const c=ADMIN[DATA.br],m=coordMsg(DATA.br);const on=new Set((ONLINE||[]).map(x=>x.br));return onlineBox()+`<div class="admin"><select id="adm" aria-label="סניף">${Object.keys(ADMIN).map(b=>`<option value="${esc(b)}"${b===DATA.br?' selected':''}>${on.has(b)?'🟢 ':''}${esc(b)}</option>`).join('')}</select><span class="info">מצב מנהל · רכז: <b>${esc(c.coord||'—')}</b>${c.cph?' · '+fmtPhone(c.cph):''} · סיסמה: <b>${esc(c.pw)}</b></span><span class="acts"><button class="btn" type="button" id="pendB"${PENDING.length?'':' hidden'}>🔔 ${PENDING.length} בקשות יציאה ממתינות</button>${c.cph?`<a class="btn wa" href="${waLink(c.cph,m)}" target="_blank" rel="noopener">${WA_ICON}שליחת סיסמה לרכז</a>`:''}<button class="btn ghost" type="button" id="cpm">העתקת ההודעה</button></span></div>`}
+function adminBar(){const c=ADMIN[DATA.br],m=coordMsg(DATA.br);const on=new Set((ONLINE||[]).map(x=>x.br));return onlineBox()+`<div class="admin"><select id="adm" aria-label="סניף">${Object.keys(ADMIN).map(b=>`<option value="${esc(b)}"${b===DATA.br?' selected':''}>${on.has(b)?'🟢 ':''}${esc(b)}</option>`).join('')}</select><span class="info">מצב מנהל · רכז: <b>${esc(c.coord||'—')}</b>${c.cph?' · '+fmtPhone(c.cph):''} · סיסמה: <b>${esc(c.pw)}</b></span><span class="acts"><button class="btn" type="button" id="pendB"${PENDING.length?'':' hidden'}>🔔 ${PENDING.length} בקשות יציאה ממתינות</button>${c.cph?`<a class="btn wa" href="${waLink(c.cph,m)}" target="_blank" rel="noopener">${WA_ICON}שליחת סיסמה לרכז</a>`:''}<button class="btn ghost" type="button" id="cpm">העתקת ההודעה</button></span>${allCoords()}</div>`}
+/* כל הרכזים במקום אחד: שליחת הסיסמה + סימון מי כבר קיבל את הסיסמה הנוכחית */
+function allCoords(){const B=Object.keys(ADMIN).sort((a,b)=>a.localeCompare(b,'he')),k=b=>'cpw_sent:'+b+':'+ADMIN[b].pw,left=B.filter(b=>ADMIN[b].cph&&!ls(k(b))).length,on=new Set((ONLINE||[]).map(x=>x.br));
+  return `<details class="cpwbox"><summary>🔑 שליחת הסיסמאות לכל הרכזים · ${left?left+' עוד לא נשלחו':'✓ נשלח לכולם'}</summary>${B.map(b=>{const c=ADMIN[b],sent=ls(k(b));
+    return `<div class="cpwr"><span>${on.has(b)?'🟢 ':''}<b>${esc(b)}</b> · ${esc(c.coord||'—')} <span dir="ltr" class="pwm">${esc(c.pw)}</span></span>${c.cph?`<a class="btn wa sm" href="${waLink(c.cph,coordMsg(b))}" target="_blank" rel="noopener" data-cpws="${esc(k(b))}">${sent?'✓ נשלח':'שליחה'}</a>`:'<span class="bad">אין טלפון</span>'}</div>`}).join('')}</details>`}
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-cpws]');if(a){ls(a.dataset.cpws,'1');setTimeout(()=>render(),400)}});
+(()=>{const st=document.createElement('style');st.textContent='.cpwbox{flex-basis:100%;margin-top:8px}.cpwbox>summary{cursor:pointer;font-weight:700;padding:6px 0}.cpwr{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:5px 0;border-bottom:1px dashed var(--line,#ddd)}.pwm{font-family:monospace;white-space:nowrap}';document.head.appendChild(st)})();
 document.querySelectorAll('.tab[data-v]').forEach(b=>b.onclick=()=>{st.view=b.dataset.v;document.querySelectorAll('.tab[data-v]').forEach(x=>x.setAttribute('aria-selected',x===b));render()});
 function bind(){
   document.querySelectorAll('#app .prow:not(.pb)').forEach(c=>{c.onclick=e=>{if(!e.target.closest('a'))personSheet(c.dataset.p)};c.onkeydown=e=>{if(e.key==='Enter')personSheet(c.dataset.p)}});
@@ -1011,14 +1089,14 @@ function lockView(err){
 }
 async function unlock(saved){
   let pw=saved||($('pw')&&(s=>s.replace(/[א-ת]/g,c=>({'ק':'e','ר':'r','א':'t','ט':'y','ו':'u','ן':'i','ם':'o','פ':'p','ש':'a','ד':'s','ג':'d','כ':'f','ע':'g','י':'h','ח':'j','ל':'k','ך':'l','ז':'z','ס':'x','ב':'c','ה':'v','נ':'b','מ':'n','צ':'m'})[c]||c))($('pw').value.trim().toLowerCase()).replace(/\.$/,''));if(!pw)return;
-  /* סיסמת סניף בלי מקף / עם רווחים / מקף אחר – מתקנים לפורמט 1234-5678 */
-  {const d=pw.replace(/[\s\-–—_.]/g,'');if(/^\d{8}$/.test(d))pw=d.slice(0,4)+'-'+d.slice(4)}
+  /* סיסמת רכז: 12 תווים – אפשר באותיות קטנות, עם או בלי מקפים/רווחים. raw נשמר לסיסמת המנהל */
+  const raw=pw;{const d=pw.toUpperCase().replace(/[^A-Z0-9]/g,'');if(d.length===12)pw=d.match(/.{4}/g).join('-')}
   if(!saved){$('ub').disabled=true;$('ub').textContent='פותח…'}else $('app').innerHTML='<div class="empty">פותח…</div>';
   try{DATA=await dec(await fileOf(pw),pw);CUR_PW=pw;if(!saved)ls('coord_pw',$('rem').checked?pw:null);show()}
   catch(e){
     /* סיסמת מנהל (קצב"ת) בכניסה מהמחשב: פותח מצב מנהל ושומר אותה במכשיר */
-    if(!saved){try{ADMIN=await dec('coord/index.bin',pw);CUR_PW=pw;if($('rem').checked)ls('kbt_pw',pw);const b=ls('coord_adm_br');const br=ADMIN[b]?b:Object.keys(ADMIN)[0];DATA=await dec(await fileOf(ADMIN[br].pw),ADMIN[br].pw);show();return}catch(_){ADMIN=null}}
-    if(saved)ls('coord_pw',null);lockView(e.message==='pw'?'סיסמה שגויה':!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
+    if(!saved){try{ADMIN=await dec('coord/index.bin',raw);CUR_PW=raw;if($('rem').checked)ls('kbt_pw',raw);const b=ls('coord_adm_br');const br=ADMIN[b]?b:Object.keys(ADMIN)[0];DATA=await dec(await fileOf(ADMIN[br].pw),ADMIN[br].pw);show();return}catch(_){ADMIN=null}}
+    if(saved)ls('coord_pw',null);lockView(e.message==='pw'?(saved?'הסיסמה הוחלפה בסיסמה חזקה יותר – הקלד את הסיסמה החדשה שקיבלת בוואטסאפ':'סיסמה שגויה'):!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
 }
 function relock(){ls('coord_pw',null);DATA=null;ADMIN=null;lockView()}
 (async()=>{
