@@ -81,7 +81,8 @@ const fileOf=async pw=>{const base=await crypto.subtle.importKey('raw',new TextE
   const b=await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode('dbd-head-file-v2'),iterations:300000,hash:'SHA-256'},base,96);
   return 'head/'+[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')+'.bin'};
 /* הקלדה נוחה: אותיות קטנות/גדולות, עם או בלי מקפים ורווחים */
-const normPw=p=>{const d=(p||'').toUpperCase().replace(/[^A-Z0-9]/g,'');return d.length===12?d.match(/.{4}/g).join('-'):(p||'').trim()};
+const HEBK={'ק':'e','ר':'r','א':'t','ט':'y','ו':'u','ן':'i','ם':'o','פ':'p','ש':'a','ד':'s','ג':'d','כ':'f','ע':'g','י':'h','ח':'j','ל':'k','ך':'l','ז':'z','ס':'x','ב':'c','ה':'v','נ':'b','מ':'n','צ':'m'};
+const normPw=p=>{const U=(p||'').replace(/[א-ת]/g,c=>HEBK[c]||c).toUpperCase(),d=U.replace(/[^A-Z0-9]/g,''),m=U.match(/([A-Z0-9]{4})[^A-Z0-9]{0,3}([A-Z0-9]{4})[^A-Z0-9]{0,3}([A-Z0-9]{4})/);return d.length===12?d.match(/.{4}/g).join('-'):m?m.slice(1).join('-'):(p||'').trim()};
 let D=null,ADMIN=null,CUR_PW='',ONLINE=null;
 /* "מחובר עכשיו": הלוח מדווח לסקריפט של הרכזים פעם ב־45 שניות. ראש סניף רק מדווח; במצב מנהל מקבלים את הרשימה */
 const SYNC_URL='https://script.google.com/macros/s/AKfycbw03x21xEa5N4bP6REQthkOJWN85UUsVX3sBgSUvgyhl3fMKdhydg3rLcSvHsj-ke2q2A/exec';

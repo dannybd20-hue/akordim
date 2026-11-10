@@ -1120,7 +1120,7 @@ function lockView(err){
 async function unlock(saved){
   let pw=saved||($('pw')&&(s=>s.replace(/[א-ת]/g,c=>({'ק':'e','ר':'r','א':'t','ט':'y','ו':'u','ן':'i','ם':'o','פ':'p','ש':'a','ד':'s','ג':'d','כ':'f','ע':'g','י':'h','ח':'j','ל':'k','ך':'l','ז':'z','ס':'x','ב':'c','ה':'v','נ':'b','מ':'n','צ':'m'})[c]||c))($('pw').value.trim().toLowerCase()).replace(/\.$/,''));if(!pw)return;
   /* סיסמת רכז: 12 תווים – אפשר באותיות קטנות, עם או בלי מקפים/רווחים. raw נשמר לסיסמת המנהל */
-  const raw=pw;{const d=pw.toUpperCase().replace(/[^A-Z0-9]/g,'');if(d.length===12)pw=d.match(/.{4}/g).join('-')}
+  const raw=pw;{const U=pw.toUpperCase(),m=U.match(/([A-Z0-9]{4})[^A-Z0-9]{0,3}([A-Z0-9]{4})[^A-Z0-9]{0,3}([A-Z0-9]{4})/),d=U.replace(/[^A-Z0-9]/g,'');if(d.length===12)pw=d.match(/.{4}/g).join('-');else if(m)pw=m.slice(1).join('-')}
   if(!saved){$('ub').disabled=true;$('ub').textContent='פותח…'}else $('app').innerHTML='<div class="empty">פותח…</div>';
   try{DATA=await dec(await fileOf(pw),pw);CUR_PW=pw;if(!saved)ls('coord_pw',$('rem').checked?pw:null);show()}
   catch(e){
