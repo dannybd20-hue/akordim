@@ -248,7 +248,7 @@ async function getDoc(id,dl){
   m.className='msg';m.innerHTML=`<a class="btn sm p" href="${d.url}" ${dl?`download="${esc(d.name)}"`:'target="_blank" rel="noopener"'}>${dl?'⬇ לחץ לשמירת הקובץ':'📄 לחץ לפתיחה'}</a> <span class="muted">${esc(d.name)}</span>`;
   const a=m.querySelector('a');try{a.click()}catch(e){}
 }
-const SYN={'מצלמ':['מצלמ','מצלמה','כיפה','דום','dome','bullet','ipc','קאם','cam'],'רמקול':['רמקול','speaker','סאב','וופר'],'כבל':['כבל','cable','cat6','rg59'],'ספק':['ספק כח','psu','power'],'סוויץ':['סוויץ','סוויצ','switch','מתג','poe'],'מקלט':['nvr','dvr','מקליט','מקלט'],'מגבר':['מגבר','amp','רסיבר'],'לינק':['לינק','link','אקסס','access point','wifi'],'מנעול':['מנעול','מגנט','אלקטרו']};
+const SYN={'מצלמ':['מצלמ','מצלמה','כיפה','דום','dome','bullet','ipc','קאם','cam'],'רמקול':['רמקול','speaker','סאב','וופר'],'כבל':['כבל','cable','cat6','rg59'],'ספק':['ספק כח','psu','power'],'סוויץ':['סוויץ','סוויצ','switch','מתג','poe'],'מקלט':['nvr','dvr','מקליט','מקלט'],'מגבר':['מגבר','amp','רסיבר'],'לינק':['לינק','link','אקסס','access point','wifi'],'מנעול':['מנעול','מגנט','אלקטרו'],'גולד':['גולד','pg-','pg '],'צינור':['צינור','pg-','מירון','גולד'],'מאז':['מא"ז','מאז','מנתק','צ׳ינט','צינט','פחת']};
 function terms(s){s=norm(s);if(!s)return[];const out=[s];Object.entries(SYN).forEach(([k,v])=>{if(s.includes(k)||v.some(w=>s.includes(w)))out.push(...v)});return[...new Set(out)]}
 const modelOf=n=>{const m=String(n||'').toUpperCase().match(/\b([A-Z]{1,5}[0-9]*-[A-Z0-9][A-Z0-9-]{2,})\b/);return m?m[1]:''};
 let pick=null;
