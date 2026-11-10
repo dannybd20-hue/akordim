@@ -150,7 +150,8 @@ tr.chgrow td{background:var(--today-bg)}tr.chgrow td:first-child{box-shadow:inse
   <div class="wrap">
     <div class="top"><div class="brand"><span class="logo"><img src="brand/uh-logo.png" alt="איחוד הצלה" width="440" height="273"></span><h1>ניהול קצב"ת י"ם</h1></div><span class="hbs"><span class="upd" id="upd"></span><button class="hb" id="lockB" hidden onclick="relock()" title="נעילה ושכחת הסיסמה במכשיר">🔒</button><button class="hb" onclick="goHome()">→ אפליקציות</button></span></div>
     <div class="tabs" role="tablist">
-      <button class="tab" role="tab" id="t-alerts" aria-selected="true" data-v="alerts">חריגות<span class="n" id="n-alerts"></span></button>
+      <button class="tab" role="tab" id="t-today" aria-selected="true" data-v="today">☀️ היום<span class="n" id="n-today"></span></button>
+      <button class="tab" role="tab" id="t-alerts" aria-selected="false" data-v="alerts">חריגות<span class="n" id="n-alerts"></span></button>
       <button class="tab" role="tab" id="t-veh" aria-selected="false" data-v="veh">רכבים</button>
       <button class="tab" role="tab" id="t-drv" aria-selected="false" data-v="drv">נהגים</button>
       <button class="tab" role="tab" id="t-ann" aria-selected="false" data-v="ann">השתלמות שנתית<span class="n" id="n-ann"></span></button>
@@ -236,7 +237,7 @@ const RANK={today:0,bad:1,warn:2,miss:3};
 
 /* ===== אחסון מקומי ===== */
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
-const state={only:null,view:'alerts',cat:ls('cat')||'',kind:ls('kind')||'all',win:+(ls('win3')||3),q:'',branch:'',showMiss:ls('miss')==='1',limit:60};
+const state={only:null,view:'today',cat:ls('cat')||'',kind:ls('kind')||'all',win:+(ls('win3')||3),q:'',branch:'',showMiss:ls('miss')==='1',limit:60};
 
 /*UNIT*/
 // יחידות שכל ההודעות שלהן עוברות דרך הרכז ולא ישירות למתנדב
@@ -274,7 +275,7 @@ async function unlock(saved){
   const pw=saved||(document.getElementById('pw')&&(s=>s.replace(/[א-ת]/g,c=>({'ק':'e','ר':'r','א':'t','ט':'y','ו':'u','ן':'i','ם':'o','פ':'p','ש':'a','ד':'s','ג':'d','כ':'f','ע':'g','י':'h','ח':'j','ל':'k','ך':'l','ז':'z','ס':'x','ב':'c','ה':'v','נ':'b','מ':'n','צ':'m'})[c]||c))(document.getElementById('pw').value.trim().toLowerCase()).replace(/\.$/,''));if(!pw)return;
   if(!saved){const b=document.getElementById('ub');b.disabled=true;b.textContent='פותח… (כמה שניות)'}
   else document.getElementById('app').innerHTML='<div class="empty">פותח את הנתונים…</div>';
-  try{DATA=await decrypt(pw);KPW=pw;setTimeout(chgBadge,50);setTimeout(annBadge,60);setTimeout(loadAcc,300);setTimeout(()=>loadBd(true),900);if(!window._bdT)window._bdT=setInterval(()=>loadBd(true),180000);if(!saved)ls('kbt_pw',document.getElementById('rem').checked?pw:'');document.getElementById('lockB').hidden=false;document.getElementById('upd').textContent='עודכן: '+DATA.updated;render()}
+  try{DATA=await decrypt(pw);KPW=pw;setTimeout(chgBadge,50);setTimeout(tdBadge,80);setTimeout(annBadge,60);setTimeout(loadAcc,300);setTimeout(()=>loadBd(true),900);if(!window._bdT)window._bdT=setInterval(()=>loadBd(true),180000);if(!saved)ls('kbt_pw',document.getElementById('rem').checked?pw:'');document.getElementById('lockB').hidden=false;document.getElementById('upd').textContent='עודכן: '+DATA.updated;render()}
   catch(e){if(saved&&e.message==='pw')ls('kbt_pw','');lockView(e.message==='pw'?'סיסמה שגויה':!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
 }
 function relock(){if(!confirm('לנעול ולשכוח את הסיסמה במכשיר הזה?'))return;ls('kbt_pw','');DATA=null;lockView()}
@@ -364,6 +365,7 @@ function render(){
   const all=buildAlerts(),every=buildAlerts(true);
   document.getElementById('n-alerts').textContent=every.filter(r=>r.lvl==='today'||r.lvl==='bad').length||'';
   if(state.view==='route'){renderRoute();return}
+  if(state.view==='today'){renderToday();return}
   if(state.view==='acc'){renderAcc();return}
   if(state.view==='ann'){renderAnn();return}
   if(state.view==='chg'){renderChg();return}
@@ -797,6 +799,132 @@ document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest
  if(i<0)h+='?cc='+Y;else if(/[?&]cc=/i.test(h))h=h.replace(/([?&]cc=)/i,'$1'+Y+',');else h=h.slice(0,i+1)+'cc='+Y+'&'+h.slice(i+1);
  a.setAttribute('href',h)},true)})();/*CCY-END*/
 
+/*TODAY-START*/
+/* ===== תדריך יומי: כל מה שפתוח היום במקום אחד =====
+   ימי הולדת עבריים, חריגות שצריך לשלוח עליהן הודעה (ראשונה / תזכורת / לפני פקיעה), בדיקות ממתינות,
+   תאונות לתחקיר, השתלמות שנתית, שינויים מהעדכון האחרון ונהגים שסיימו הכשרה. */
+const TD_HM={Tishri:'תשרי',Heshvan:'חשוון',Kislev:'כסלו',Tevet:'טבת',Shevat:'שבט',Adar:'אדר','Adar I':'אדר א׳','Adar II':'אדר ב׳',Nisan:'ניסן',Iyar:'אייר',Sivan:'סיוון',Tamuz:'תמוז',Av:'אב',Elul:'אלול'};
+const TD_HF=new Intl.DateTimeFormat('en-u-ca-hebrew',{day:'numeric',month:'long',year:'numeric'});
+function tdHp(dt){const p={};TD_HF.formatToParts(dt).forEach(x=>p[x.type]=x.value);return {m:p.month,d:+p.day,y:+p.year}}
+function tdGem(n){n%=1000;let s='';while(n>=400){s+='ת';n-=400}for(const [v,c] of [[300,'ש'],[200,'ר'],[100,'ק']])if(n>=v){s+=c;n-=v}
+  if(n===15)s+='טו';else if(n===16)s+='טז';else s+=['','י','כ','ל','מ','נ','ס','ע','פ','צ'][Math.floor(n/10)]+['','א','ב','ג','ד','ה','ו','ז','ח','ט'][n%10];
+  return s.length>1?s.slice(0,-1)+'״'+s.slice(-1):s+'׳'}
+const TD_KC={};
+/* אותם כללים כמו בספר הטלפונים: אדר בשנה פשוטה = גם אדר א׳/ב׳; מי שנולד בל׳ בחודש של 29 יום חוגג בא׳ בחודש הבא */
+function tdKeys(dt){const id=dt.toDateString();if(TD_KC[id])return TD_KC[id];const h=tdHp(dt),ks=[h.m+'|'+h.d];
+  if(h.m==='Adar')ks.push('Adar I|'+h.d,'Adar II|'+h.d);if(h.m==='Adar II')ks.push('Adar|'+h.d);
+  if(h.d===1){const pv=tdHp(new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()-1,12));if(pv.d===29){ks.push(pv.m+'|30');if(pv.m==='Adar')ks.push('Adar I|30','Adar II|30')}}
+  return TD_KC[id]=ks}
+function tdBdOf(bd){const d=pd(bd);return d?tdHp(new Date(d.getFullYear(),d.getMonth(),d.getDate(),12)):null}
+function tdBirthdays(off){const t=new Date(T0.getFullYear(),T0.getMonth(),T0.getDate()+off,12),W=new Set(tdKeys(t));
+  return (DATA.bd||[]).filter(x=>{const k=tdBdOf(x[4]);return k&&W.has(k.m+'|'+k.d)}).map(([pv,n,br,ph,bd])=>({pv,n,br,ph,bd}))}
+function tdAge(bd){const d=pd(bd);if(!d)return '';let a=T0.getFullYear()-d.getFullYear();if(T0<new Date(T0.getFullYear(),d.getMonth(),d.getDate()))a--;return a>0&&a<120?a:''}
+/* אותה הודעה ואותו סימון "נשלח" כמו בספר הטלפונים – מה שנשלח מכאן מסומן גם שם */
+const tdMzKey=o=>'pb_mz_'+new Date().getFullYear()+'_'+(o.pv||o.ph||o.n);
+function tdMazal(){return `מזל טוב אח שלי היקר 🎉🎂\nמאחל לך שנה של בריאות, שמחה, הצלחה וברכה בכל מעשיך, והמשך בהצלת חיים בכוח ובשמחה! 🚑💪\n\nדני בן דוד`}
+
+/* חריגות: מה צריך לשלוח היום */
+function tdSentRecently(key,k,days){for(let i=0;i<days;i++){const d=new Date(T0.getTime()-i*DAY+12*3600000).toISOString().slice(0,10);if(ls('sent:'+key+':'+k+':'+d))return true}return false}
+function tdAlerts(){
+  const G={today:[],first:[],remind:[],pre:[]};let done=0;
+  for(const r of buildAlerts(true)){
+    const add={today:[],first:[],remind:[],pre:[]};
+    for(const i of r.is){
+      if(i.lvl==='miss'||!MSG[i.k])continue;
+      if(ls('sent:'+r.key+':'+i.k+':'+TODAY_KEY)){done++;continue}
+      const fr=firstRec(r.key+':'+i.k),same=fr&&fr.due===i.dateStr;
+      if(i.lvl==='today')add.today.push(i);
+      else if(i.lvl==='bad'){if(!same)add.first.push(i);else if(!tdSentRecently(r.key,i.k,7))add.remind.push(i)}
+      else if(i.lvl==='warn'&&!same)add.pre.push(i);
+    }
+    for(const g in add)if(add[g].length)G[g].push({...r,is:add[g],lvl:add[g][0].lvl});
+  }
+  for(const g in G)G[g].sort((a,b)=>Math.abs(a.is[0].n??999)-Math.abs(b.is[0].n??999));
+  return {G,done};
+}
+function tdData(){
+  const bd=tdBirthdays(0),bdLeft=bd.filter(o=>!ls(tdMzKey(o))),bdTom=tdBirthdays(1);
+  const {G,done}=tdAlerts();
+  const insp=Array.isArray(BDR)?BDR.filter(bdPend):null;
+  const acc=ACCD?ACCD.acc.filter(a=>!accDoneK(a)):null;
+  const ann=DATA.ann?DATA.ann.L.filter(o=>!ls(annKey(o))):[];
+  const ce=chgLast(),chg=ce&&ls('chg_seen')!==ce.d?ce:null;
+  const grads=(DATA.grads||[]).filter(g=>!ls('tdgrad:'+g.pv+':'+g.to));
+  const nAl=G.today.length+G.first.length+G.remind.length+G.pre.length;
+  return {bd,bdLeft,bdTom,G,done,insp,acc,ann,chg,grads,nAl,open:bdLeft.length+nAl+(insp?insp.length:0)+(acc?acc.length:0)+grads.length};
+}
+function tdBadge(){const b=document.getElementById('n-today');if(!b||!DATA)return;try{b.textContent=tdData().open||''}catch(e){}}
+
+const TDS={};
+function renderToday(){
+  const app=document.getElementById('app'),D=tdData();
+  const dl=new Intl.DateTimeFormat('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(T0);
+  const h=tdHp(new Date(T0.getTime()+12*3600000)),hd=tdGem(h.d)+' ב'+(TD_HM[h.m]||h.m)+' '+tdGem(h.y);
+  const sec=(id,ic,t,n,col,body,extra)=>`<section class="tds" id="td-${id}"><h2><span class="dot" style="background:${col}"></span>${ic} ${t}<span class="cnt">${n}</span>${extra||''}</h2>${body}</section>`;
+  const go=(v,t)=>`<button class="more tdgo" data-tdgo="${v}">${t} ←</button>`;
+  const chip=(id,ic,n,t,cl)=>`<a class="stat ${n?cl:'ok'}" href="#td-${id}"><b>${n}</b><span>${ic} ${t}</span></a>`;
+  let html=`<div class="tdh"><div><b>☀️ תדריך יומי</b><span>${esc(dl)} · ${esc(hd)}</span></div><span class="tdn">${D.open?`${D.open} פריטים פתוחים`:'🎉 אין משהו פתוח היום'}${D.done?` · ${D.done} הודעות נשלחו היום`:''}</span></div>
+    <div class="summary">
+      ${chip('bd','🎂',D.bdLeft.length,'ימי הולדת לשלוח','today')}
+      ${chip('al','🚨',D.nAl,'הודעות חריגה לשלוח','bad')}
+      ${chip('insp','📋',D.insp?D.insp.length:'…','בדיקות ממתינות','warn')}
+      ${chip('acc','🚗',D.acc?D.acc.length:'…','תאונות לתחקיר','warn')}
+    </div>`;
+
+  /* 🎂 ימי הולדת */
+  const bdCard=o=>{const sent=!!ls(tdMzKey(o)),a=tdAge(o.bd);
+    return `<div class="card"><div class="who"><div class="name">${esc(o.n)}</div><div class="meta">${o.pv?`<span>פרייבט ${esc(o.pv)}</span>`:''}<span>${esc(o.br)}</span>${a?`<span>גיל ${a}</span>`:''}</div></div>
+      <div class="issues"><div class="irow"><span class="chip ${sent?'ok':'today'}">${sent?'✓ נשלח':'🎂 יום הולדת עברי היום'}</span><span class="btns">${o.ph?`<a class="wa sm${sent?' done':''}" href="${waLink(o.ph,tdMazal())}" target="_blank" rel="noopener" data-mz="${esc(tdMzKey(o))}">${WA_ICON}${sent?'נשלח':'מזל טוב'}</a>`:'<span class="chip miss">אין טלפון</span>'}${sent?'':`<button class="mail sm" data-mzok="${esc(tdMzKey(o))}">כבר שלחתי</button>`}</span></div></div></div>`};
+  html+=sec('bd','🎂','ימי הולדת עבריים היום',D.bd.length,'var(--today)',
+    D.bd.length?`<div class="list">${[...D.bdLeft,...D.bd.filter(o=>!D.bdLeft.includes(o))].map(bdCard).join('')}</div>`:'<div class="tde">אין היום ימי הולדת לנהגים במרחב.</div>')
+    +(D.bdTom.length?`<p class="legend">מחר: ${D.bdTom.map(o=>esc(o.n)+' ('+esc(o.br)+')').join(' · ')}</p>`:'');
+
+  /* 🚨 חריגות */
+  const GT=[['today','נכנסו לחריגה היום','var(--today)','הודעה ראשונה'],['first','בחריגה – עוד לא נשלחה הודעה','var(--bad)','הודעה ראשונה'],
+    ['remind','תזכורת – נשלחה הודעה לפני שבוע ויותר והחריגה עדיין פתוחה','var(--bad)','תזכורת'],['pre',`יפוג ב־${state.win} הימים הקרובים – עוד לא נשלחה הודעה`,'var(--warn)','הודעה מקדימה']];
+  let al='';for(const [g,t,col] of GT){const L=D.G[g];if(!L.length)continue;
+    al+=`<h3 class="tdsub"><span class="dot" style="background:${col}"></span>${t}<span class="cnt">${L.reduce((s,r)=>s+r.is.length,0)}</span></h3><div class="list">${L.slice(0,TDS[g]?999:15).map(card).join('')}</div>${L.length>15&&!TDS[g]?`<button class="more" data-tdmore="${g}">הצג עוד ${L.length-15}</button>`:''}`}
+  html+=sec('al','🚨','הודעות חריגה לשלוח היום',D.nAl,'var(--bad)',al||'<div class="tde">✓ אין חריגות שמחכות להודעה היום.</div>',go('alerts','לכל החריגות'));
+
+  /* 📋 בדיקות */
+  html+=sec('insp','📋','טופסי בדיקה שממתינים לטיפול',D.insp?D.insp.length:'…','var(--warn)',
+    D.insp===null?`<div class="tde">${BDR==='err'?'לא הצלחתי לקרוא את גיליון הבדיקות.':'טוען מהגיליון…'}</div>`:D.insp.length?`<div class="tde">${D.insp.slice(0,8).map(r=>`${r.stop==='כן'?'⛔ ':''}כלי ${esc(r.num||'')} · ${esc(r.type||'')} · ${esc(r.ts||'')}${r.stop==='כן'?' · <b>תקלה שמונעת נסיעה</b>':r.bad?' · לא תקין: '+esc(r.bad):''}`).join('<br>')}${D.insp.length>8?`<br>ועוד ${D.insp.length-8}`:''}</div>`:'<div class="tde">✓ אין בדיקות ממתינות.</div>',go('insp','לבדיקות'));
+
+  /* 🚗 תאונות */
+  const nw=D.acc?D.acc.filter(a=>{const d=pdh(a.d);return d&&(T0-d)/DAY<=7}):[];
+  html+=sec('acc','🚗','תאונות שממתינות לתחקיר',D.acc?D.acc.length:'…','var(--warn)',
+    D.acc===null?'<div class="tde">טוען תאונות…</div>':D.acc.length?`<div class="tde">${nw.length?`<b>חדשות מהשבוע האחרון (${nw.length}):</b><br>${nw.map(a=>`${esc(a.d)} · ${esc(a.n||'')} · ${esc(a.br||'')}`).join('<br>')}<br>`:''}סה"כ ${D.acc.length} תאונות עדיין בלי תחקיר.</div>`:'<div class="tde">✓ כל התאונות תוחקרו.</div>',go('acc','לתאונות'));
+
+  /* 🎉 סיימו הכשרה */
+  if(D.grads.length)html+=sec('gr','🎉','עברו טסט ועברו מ"משתלם" לאישור מלא (14 יום אחרונים)',D.grads.length,'var(--ok)',
+    `<div class="tde">${D.grads.map(g=>`<div class="tdg"><span><b>${esc(g.n)}</b> · ${esc(g.br)} · ${esc(g.to)} (${esc(g.d)})</span><button class="mail sm" data-tdgr="${esc(g.pv+':'+g.to)}">✓ ראיתי</button></div>`).join('')}<small>הרכזים מקבלים הודעה קופצת לברך אותם.</small></div>`);
+
+  /* 🎓 השתלמות שנתית + 🆕 מה השתנה */
+  html+=sec('ann','🎓',`השתלמות שנתית ${DATA.ann?DATA.ann.y:''} – עוד לא נשלחה תזכורת החודש`,D.ann.length,'var(--muted)',
+    `<div class="tde">${D.ann.length?`${D.ann.length} נהגים עוד לא קיבלו תזכורת אישית החודש.`:'✓ כולם קיבלו תזכורת החודש.'}</div>`,go('ann','להשתלמות השנתית'));
+  if(D.chg)html+=sec('chg','🆕',`שינויים בעדכון ${D.chg.d} שעוד לא ראית`,D.chg.items.length,'var(--muted)',
+    `<div class="tde">${['good','bad','info'].map(g=>{const n=D.chg.items.filter(i=>i.g===g).length;return n?({good:'🟢 שיפור / חידוש',bad:'🔴 החמרה / הוסר',info:'⚪ שינוי פרטים'})[g]+': '+n:''}).filter(Boolean).join(' · ')}</div>`,go('chg','למה השתנה'));
+
+  app.innerHTML=html;bind();
+  app.querySelectorAll('[data-tdgo]').forEach(b=>b.onclick=()=>{const t=document.getElementById('t-'+b.dataset.tdgo);if(t){t.click();window.scrollTo(0,0)}});
+  app.querySelectorAll('a[data-mz]').forEach(a=>a.addEventListener('click',()=>{ls(a.dataset.mz,'1');setTimeout(render,300)}));
+  app.querySelectorAll('[data-mzok]').forEach(b=>b.onclick=()=>{ls(b.dataset.mzok,'1');render()});
+  app.querySelectorAll('[data-tdmore]').forEach(b=>b.onclick=()=>{TDS[b.dataset.tdmore]=1;render()});
+  app.querySelectorAll('[data-tdgr]').forEach(b=>b.onclick=()=>{ls('tdgrad:'+b.dataset.tdgr,'1');render()});
+  const nb=document.getElementById('n-today');if(nb)nb.textContent=D.open||'';
+  /* תאונות ובדיקות נטענות ברקע – מרעננים כשהן מגיעות */
+  if((D.acc===null||(D.insp===null&&BDR!=='err'))&&(window._tdN=(window._tdN||0)+1)<15){clearTimeout(window._tdT);window._tdT=setTimeout(()=>{if(state.view==='today')render()},1500)}
+}
+(()=>{const st=document.createElement('style');st.textContent=`
+.tdh{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin:4px 0 10px}
+.tdh b{display:block;font-size:1.35em}.tdh span{color:var(--muted)}.tdn{font-weight:700;color:var(--fg)!important}
+.tds{margin:14px 0}.tds h2{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.tds h2 .tdgo{margin-inline-start:auto}
+.tdsub{display:flex;align-items:center;gap:6px;font-size:1em;margin:10px 0 6px}
+.tde{background:var(--card,#fff);border:1px solid var(--line,#e2e8f0);border-radius:12px;padding:10px 14px;line-height:1.8}
+.tdgo{width:auto!important;margin:0!important;padding:4px 12px!important;font-size:.85em}
+.tdg{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0;border-bottom:1px dashed var(--line,#e2e8f0)}
+a.stat{text-decoration:none;color:inherit}`;document.head.appendChild(st)})();
+/*TODAY-END*/
 </script>
 </body>
 </html>
