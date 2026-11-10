@@ -887,53 +887,84 @@ function ofcVeh(){return DATA.veh.filter(v=>!/אופניים/.test(v.type||''))}
 function ofcBookOf(v){const L=OFC.books.filter(b=>(b.veh&&b.veh===v.num)||(v.phone&&b.ph&&b.ph.replace(/\D/g,'').slice(-9)===v.phone.replace(/\D/g,'').slice(-9)));return L.sort((a,b)=>b.ts-a.ts)[0]}
 function ofcSlot(id){return (OFC.slots||[]).find(s=>s.id===id)}
 const ofcLink=()=>BOOK_URL+'?k='+encodeURIComponent(DATA.bookk||'');
-function ofcGroupMsg(){const S=(OFC.slots||[]).filter(s=>s.date>=ofcToday());
-  return `שלום לכולם,\n\nקצין הבטיחות בתעבורה, דני בן דוד, מגיע לסניף לבדיקת הכלים (אמבולנס, רכב ואופנוע).\n\n*המועדים:*\n${S.map(s=>`• ${ofcDate(s.date)}, ${s.from}–${s.to}${s.place?' · '+s.place:''}`).join('\n')}\n\nכל נהג עם כלי צמוד מתבקש לבחור שעה לבדיקה בקישור:\n${ofcLink()}\n\nיש להגיע עם הכלי בשעה שנבחרה. תודה!\n\n${DATA.coord||'רכז התחבורה'} · רכז תחבורה – ${DATA.br}`}
+function ofcGroupMsg(){const S=(OFC.slots||[]).filter(s=>s.date>=ofcToday()&&s.st==='ok');
+  return `שלום לכולם,\n\nקצין הבטיחות בתעבורה, דני בן דוד, מגיע לסניף לבדיקת הכלים (אמבולנס, רכב ואופנוע).\n\n*המועדים:*\n${S.map(s=>`• ${ofcDate(s.date)}, ${s.from}–${s.to}${s.place?' · '+s.place:''}`).join('\n')}\n\nכל נהג עם כלי צמוד מתבקש לאשר הגעה${S.length>1?' ולבחור מועד':''} בקישור:\n${ofcLink()}\n\nיש להגיע עם הכלי בשעות הבדיקה. תודה!\n\n${DATA.coord||'רכז התחבורה'} · רכז תחבורה – ${DATA.br}`}
 function ofcPersonalMsg(v,b){const sl=b&&ofcSlot(b.slot),nm=first(v.name||b&&b.n||'');
-  if(sl)return `שלום ${nm},\n\n*שים לב:* בתאריך ${ofcDate(sl.date)} בשעה ${b.time} נקבעה בדיקת קצין בטיחות לכלי ${v.num}${v.type?' ('+v.type+')':''}.\nמקום: ${sl.place||'בית המתנדב של הסניף'}.\n\nיש להגיע בזמן עם הכלי. אם השעה לא מתאימה – אפשר לבחור שעה אחרת בקישור:\n${ofcLink()}\n\nתודה,\n${DATA.coord||'רכז התחבורה'} · רכז תחבורה – ${DATA.br}`;
-  return `שלום ${nm},\n\nקצין הבטיחות בתעבורה מגיע לסניף לבדיקת הכלים, ויש לבחור שעה לבדיקת כלי ${v.num}${v.type?' ('+v.type+')':''}.\nלבחירת שעה:\n${ofcLink()}\n\nתודה,\n${DATA.coord||'רכז התחבורה'} · רכז תחבורה – ${DATA.br}`}
+  if(sl)return `שלום ${nm},\n\n*שים לב:* בתאריך ${ofcDate(sl.date)} בין השעות ${sl.from}–${sl.to} נקבעה בדיקת קצין בטיחות לכלי ${v.num}${v.type?' ('+v.type+')':''}.\nמקום: ${sl.place||'בית המתנדב של הסניף'}.\n\nיש להגיע עם הכלי בשעות הבדיקה. לאישור הגעה (או לבחירת מועד אחר, אם יש):\n${ofcLink()}\n\nתודה,\n${DATA.coord||'רכז התחבורה'} · רכז תחבורה – ${DATA.br}`;
+  return `שלום ${nm},\n\nקצין הבטיחות בתעבורה מגיע לסניף לבדיקת הכלים, ויש להגיע לבדיקת כלי ${v.num}${v.type?' ('+v.type+')':''}.\n${(OFC.slots||[]).filter(s=>s.date>=ofcToday()&&s.st==='ok').map(s=>`• ${ofcDate(s.date)}, ${s.from}–${s.to}${s.place?' · '+s.place:''}`).join('\n')}\n\nלאישור הגעה:\n${ofcLink()}\n\nתודה,\n${DATA.coord||'רכז התחבורה'} · רכז תחבורה – ${DATA.br}`}
+const OFC_ST={new:['ממתין לאישור הרכז','#b45309','#fff7e6'],ok:['✓ אושר','#1f8a4c','#e9f7ef'],no:['✗ לא מתאים','#b42318','#fdecec']};
+const ofcChip=sl=>{const [t,c,b]=OFC_ST[sl.st]||OFC_ST.new;return `<span class="ofst" style="color:${c};background:${b}">${t}</span>`};
+const ofcWhen=ts=>{const d=new Date(ts);return d.toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})};
 function ofcView(){
   if(OFC.br!==DATA.br){OFC.slots=null;OFC.books=[]}
   if(OFC.slots===null){if(!OFC.busy)ofcLoad();return `<section class="panel"><div class="empty">טוען מועדים…</div></section>`}
-  const T=ofcToday(),S=OFC.slots.filter(s=>s.date>=T),old=OFC.slots.filter(s=>s.date<T),V=ofcVeh();
+  const T=ofcToday(),S=OFC.slots.filter(s=>s.date>=T),SOK=S.filter(s=>s.st==='ok'),old=OFC.slots.filter(s=>s.date<T),V=ofcVeh();
   const taken=(sl,t)=>OFC.books.find(b=>b.slot===sl.id&&b.time===t);
-  const when=b=>{const d=new Date(b.ts);return d.toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})};
   let h=OFC.err?`<div class="annban"><b>${esc(OFC.err)}</b></div>`:'';
-  if(ADMIN)h+=`<section class="panel"><header><h2>קביעת מועד לסניף (קצין בטיחות)</h2></header><div class="ofcf">
+  if(ADMIN){const B=Object.keys(ADMIN).sort((a,b)=>a.localeCompare(b,'he'));
+    h+=`<section class="panel"><header><h2>הצעת מועד לבדיקה (קצין בטיחות)</h2></header><p class="hint">המועד נשלח לאישור הרכזים של הסניפים שבוחרים. רק אחרי שהרכז מאשר – נפתחות לו ההודעות לנהגים ודף ההרשמה.</p><div class="ofcf">
       <label>תאריך<input type="date" id="of-d" min="${T}"></label><label>משעה<input type="time" id="of-f" value="16:00"></label><label>עד שעה<input type="time" id="of-t" value="19:00"></label>
-      <label class="w">מקום<input id="of-p" value="בית המתנדב של הסניף"></label><button class="btn ok" id="of-add" type="button">הוספת מועד</button></div></section>`;
+      <label class="w">מקום<input id="of-p" value="בית המתנדב של הסניף"></label></div>
+      <details class="ofbr"><summary>לאילו סניפים · <b id="of-bn">1</b> נבחרו</summary><label class="all"><input type="checkbox" id="of-all"> כל הסניפים</label>${B.map(b=>`<label><input type="checkbox" class="of-b" value="${esc(b)}"${b===DATA.br?' checked':''}> ${esc(b)}</label>`).join('')}</details>
+      <button class="btn ok" id="of-add" type="button">שליחת המועד לאישור הרכזים</button></section>
+      <section class="panel"><header><h2>סטטוס בכל הסניפים</h2></header><div id="of-allst">${OFC.all?ofcAllHtml():'<div class="empty">טוען…</div>'}</div></section>`;
+    if(!OFC.all&&!OFC.allBusy){OFC.allBusy=true;api({action:'insp_list',all:true}).then(r=>{OFC.allBusy=false;OFC.all=r||{slots:[],books:[]};const e=$('of-allst');if(e)e.innerHTML=ofcAllHtml()})}}
   h+=`<section class="panel"><header><h2>🛡️ בדיקת קצין בטיחות בסניף</h2><span class="count">${S.length} מועדים</span></header>`;
-  if(!S.length)h+=`<div class="empty">קצין הבטיחות עוד לא קבע מועד לבדיקה בסניף. כשייקבע – הוא יופיע כאן.</div>`;
-  else{
+  if(!S.length)h+=`<div class="empty">קצין הבטיחות עוד לא הציע מועד לבדיקה בסניף. כשיוצע – תקבל הודעה לאשר אותו.</div>`;
+  S.filter(s=>s.st!=='ok').forEach(sl=>{h+=`<div class="ofcs"><div class="ofch"><b>${ofcDate(sl.date)} · <bdi dir="ltr">${sl.from}–${sl.to}</bdi></b>${ofcChip(sl)}<span>${esc(sl.place||'')}</span>${ADMIN?`<button class="btn ghost sm" type="button" data-ofdel="${esc(sl.id)}">מחיקה</button>`:''}</div>
+      ${sl.st==='no'&&sl.note?`<p class="hint" style="padding:0 12px">הערת הרכז: ${esc(sl.note)}</p>`:''}
+      ${!ADMIN||true?`<div class="acts" style="padding:8px 12px"><button class="btn ok sm" type="button" data-ofst="${esc(sl.id)}|ok">מאשר את המועד</button>${sl.st!=='no'?`<button class="btn ghost sm" type="button" data-ofst="${esc(sl.id)}|no">לא מתאים</button>`:''}</div>`:''}</div>`});
+  if(S.length&&!SOK.length)h+=`<p class="hint">אין עדיין מועד מאושר – ההודעות לנהגים ייפתחו אחרי אישור המועד.</p>`;
+  if(SOK.length){
     const m=ofcGroupMsg();
-    h+=`<p class="hint">שולחים לקבוצת הנהגים הודעה עם קישור – כל נהג בוחר שעה, ואתה רואה כאן מי נרשם ומתי.</p><div class="acts"><a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(m.replace(/[\u{1F000}-\u{1FAFF}]/gu,''))}" target="_blank" rel="noopener">${WA_ICON||''}הודעה לקבוצה בוואטסאפ</a><button class="btn ghost" type="button" data-ofcopy="g">העתקת ההודעה</button><button class="btn ghost" type="button" data-ofcopy="l">העתקת הקישור</button></div>`;
-    h+=S.map(sl=>{const ts=ofcTimes(sl),n=ts.filter(t=>taken(sl,t)).length;
-      return `<div class="ofcs"><div class="ofch"><b>${ofcDate(sl.date)} · <bdi dir="ltr">${sl.from}–${sl.to}</bdi></b><span>${esc(sl.place||'')} · ${n}/${ts.length} נרשמו</span>${ADMIN?`<button class="btn ghost sm" type="button" data-ofdel="${esc(sl.id)}">מחיקת המועד</button>`:''}</div>
-        <div class="ofct">${ts.map(t=>{const b=taken(sl,t);return `<div class="ofcr${b?' on':''}"><span class="tm">${t}</span>${b?`<span><b>${esc(b.n||'—')}</b>${b.pv?' · '+esc(b.pv):''}${b.veh?' · כלי '+esc(b.veh):''}<small>נרשם ${when(b)} · ע"י ${esc(b.by)}${b.ph?' · '+fmtPhone(b.ph):''}</small></span><button class="lnk" type="button" data-ofun="${esc(b.id)}">ביטול</button>`:'<span class="free">פנוי</span>'}</div>`}).join('')}</div></div>`}).join('');
+    h+=`<p class="hint">שולחים לקבוצת הנהגים הודעה עם קישור – כל נהג מאשר הגעה, ואתה רואה כאן מי אישר ומתי.</p><div class="acts"><a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(m.replace(/[\u{1F000}-\u{1FAFF}]/gu,''))}" target="_blank" rel="noopener">${WA_ICON||''}הודעה לקבוצה בוואטסאפ</a><button class="btn ghost" type="button" data-ofcopy="g">העתקת ההודעה</button><button class="btn ghost" type="button" data-ofcopy="l">העתקת הקישור</button></div>`;
+    h+=SOK.map(sl=>{const L=OFC.books.filter(b=>b.slot===sl.id).sort((a,b)=>a.ts-b.ts);
+      return `<div class="ofcs"><div class="ofch"><b>${ofcDate(sl.date)} · <bdi dir="ltr">${sl.from}–${sl.to}</bdi></b>${ofcChip(sl)}<span>${esc(sl.place||'')} · ${L.length} אישרו הגעה</span>${ADMIN?`<button class="btn ghost sm" type="button" data-ofdel="${esc(sl.id)}">מחיקה</button>`:''}</div>
+        <div class="ofct">${L.length?L.map(b=>`<div class="ofcr on"><span><b>${esc(b.n||'—')}</b>${b.pv?' · '+esc(b.pv):''}${b.veh?' · כלי '+esc(b.veh):''}<small>אישר ${ofcWhen(b.ts)} · ע"י ${esc(b.by)}${b.ph?' · '+fmtPhone(b.ph):''}</small></span><button class="lnk" type="button" data-ofun="${esc(b.id)}">ביטול</button></div>`).join(''):'<div class="ofcr"><span class="free">עוד אף אחד לא אישר הגעה</span></div>'}</div></div>`}).join('');
   }
   h+=`</section>`;
-  if(S.length){
-    const free=S.flatMap(sl=>ofcTimes(sl).filter(t=>!taken(sl,t)).map(t=>[sl,t]));
-    h+=`<section class="panel"><header><h2>הכלים בסניף – מי קבע</h2><span class="count">${V.filter(v=>ofcBookOf(v)).length}/${V.length}</span></header><p class="hint">אמבולנס, רכב ואופנוע (בלי אופניים). אפשר לשלוח לכל נהג הודעה אישית, או לקבוע לו שעה בעצמך ואז לשלוח לו את השעה שנקבעה.</p><div class="vlist">${V.map(v=>{const b=ofcBookOf(v),sl=b&&ofcSlot(b.slot);
-      return `<div class="ofcv"><div><b>כלי ${esc(v.num)}</b> · ${esc(v.type||'')}${v.name?' · '+esc(v.name):''}<br>${sl?`<span class="ok">✓ ${ofcDate(sl.date)} בשעה ${esc(b.time)}</span> <small>(נרשם ${when(b)})</small>`:'<span class="warn">עוד לא נקבעה שעה</span>'}</div>
-        <div class="acts">${v.phone?`<a class="btn wa sm" href="${waLink(v.phone,ofcPersonalMsg(v,b))}" target="_blank" rel="noopener">${sl?'שליחת השעה לנהג':'הודעה אישית'}</a>`:''}${free.length?`<select data-ofset="${esc(v.num)}"><option value="">${sl?'החלפת שעה…':'קביעת שעה…'}</option>${free.map(([s2,t])=>`<option value="${esc(s2.id)}|${t}">${ofcDate(s2.date).replace('יום ','')} ${t}</option>`).join('')}</select>`:''}</div></div>`}).join('')}</div></section>`;
+  if(SOK.length){
+    const free=SOK.map(sl=>[sl,sl.from]);
+    h+=`<section class="panel"><header><h2>הכלים בסניף – מי אישר הגעה</h2><span class="count">${V.filter(v=>ofcBookOf(v)).length}/${V.length}</span></header><p class="hint">אמבולנס, רכב ואופנוע (בלי אופניים). אפשר לשלוח לכל נהג הודעה אישית, או לרשום אותו בעצמך ואז לשלוח לו את המועד.</p><div class="vlist">${V.map(v=>{const b=ofcBookOf(v),sl=b&&ofcSlot(b.slot);
+      return `<div class="ofcv"><div><b>כלי ${esc(v.num)}</b> · ${esc(v.type||'')}${v.name?' · '+esc(v.name):''}<br>${sl?`<span class="ok">✓ ${ofcDate(sl.date)} · <bdi dir="ltr">${sl.from}–${sl.to}</bdi></span> <small>(אישר ${ofcWhen(b.ts)})</small>`:'<span class="warn">עוד לא אישר הגעה</span>'}</div>
+        <div class="acts">${v.phone?`<a class="btn wa sm" href="${waLink(v.phone,ofcPersonalMsg(v,b))}" target="_blank" rel="noopener">${sl?'שליחת המועד לנהג':'הודעה אישית'}</a>`:''}${free.length?`<select data-ofset="${esc(v.num)}"><option value="">${sl?'החלפת מועד…':'רישום למועד…'}</option>${free.map(([s2,t])=>`<option value="${esc(s2.id)}|${t}">${ofcDate(s2.date).replace('יום ','')} ${s2.from}–${s2.to}</option>`).join('')}</select>`:''}</div></div>`}).join('')}</div></section>`;
   }
   if(old.length)h+=`<details class="panel" style="padding:10px 14px"><summary>מועדים שעברו (${old.length})</summary>${old.map(sl=>`<p>${ofcDate(sl.date)} · <bdi dir="ltr">${sl.from}–${sl.to}</bdi> · ${OFC.books.filter(b=>b.slot===sl.id).length} נבדקו/נרשמו</p>`).join('')}</details>`;
   return h;
 }
+/* מנהל: כל המועדים בכל הסניפים */
+function ofcAllHtml(){const T=ofcToday(),S=(OFC.all.slots||[]).filter(s=>s.date>=T).sort((a,b)=>(a.date+a.from+a.br).localeCompare(b.date+b.from+b.br));
+  if(!S.length)return '<div class="empty">אין מועדים עתידיים.</div>';
+  return S.map(sl=>{const n=(OFC.all.books||[]).filter(b=>b.slot===sl.id).length;return `<div class="ofcr"><span><b>${esc(sl.br)}</b> · ${ofcDate(sl.date)} <bdi dir="ltr">${sl.from}–${sl.to}</bdi>${sl.note?`<small>הערת הרכז: ${esc(sl.note)}</small>`:''}</span>${ofcChip(sl)}${sl.st==='ok'?`<small>${n} נרשמו</small>`:''}</div>`}).join('')}
+/* הודעה קופצת לרכז: מועד חדש שממתין לאישור */
+async function ofcPopup(){if(ADMIN||!DATA)return;if(OFC.br!==DATA.br||OFC.slots===null)await ofcLoad();const T=ofcToday(),P=(OFC.slots||[]).filter(s=>s.date>=T&&s.st==='new');if(!P.length||document.getElementById('ofpop'))return;
+  const d=document.createElement('div');d.id='ofpop';d.className='ofpop';
+  d.innerHTML=`<div class="ofbox"><h3>🛡️ קצין הבטיחות מגיע לסניף</h3><p>דני בן דוד, קצין הבטיחות בתעבורה, הציע ${P.length>1?'מועדים':'מועד'} לבדיקת הכלים בסניף. נא לאשר:</p>
+    ${P.map(sl=>`<div class="ofpr"><b>${ofcDate(sl.date)}</b> · <bdi dir="ltr">${sl.from}–${sl.to}</bdi><br><small>${esc(sl.place||'')}</small><div class="acts"><button class="btn ok sm" data-ofst="${esc(sl.id)}|ok">מאשר</button><button class="btn ghost sm" data-ofst="${esc(sl.id)}|no">לא מתאים</button></div></div>`).join('')}
+    <p class="hint">אחרי האישור – בלשונית "בדיקת קצין" תוכל לשלוח לנהגים הודעה עם המועד.</p><button class="btn ghost" id="ofpx">אחר כך</button></div>`;
+  document.body.appendChild(d);$('ofpx').onclick=()=>d.remove()}
+async function ofcSetSt(id,st){let note='';if(st==='no'){note=prompt('מה לא מתאים? (למשל: מועד אחר שנוח לסניף)')||'';}
+  const r=await api({action:'insp_slot_status',id,st,note});if(!r){alert('השמירה נכשלה');return}
+  const p=$('ofpop');if(p)p.remove();OFC.all=null;await ofcLoad();if(st==='ok'&&!ADMIN){st.view='ofc'}if(document.querySelector('.tab[data-v="ofc"]')&&st==='ok')document.querySelector('.tab[data-v="ofc"]').click()}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-ofst]');if(!b)return;const [id,s2]=b.dataset.ofst.split('|');b.disabled=true;ofcSetSt(id,s2)});
 function ofcBind(){
-  const add=$('of-add');if(add)add.onclick=async()=>{const o={action:'insp_slot_add',date:$('of-d').value,from:$('of-f').value,to:$('of-t').value,step:15,place:$('of-p').value.trim()};
-    if(!o.date||!o.from||!o.to||o.to<=o.from){alert('יש לבחור תאריך ושעות');return}add.disabled=true;add.textContent='שומר…';const r=await api(o);if(!r){add.disabled=false;add.textContent='הוספת מועד';alert('השמירה נכשלה');return}OFC.slots=null;ofcLoad()};
-  document.querySelectorAll('[data-ofdel]').forEach(b=>b.onclick=async()=>{if(!confirm('למחוק את המועד ואת כל ההרשמות אליו?'))return;await api({action:'insp_slot_del',id:b.dataset.ofdel});OFC.slots=null;ofcLoad()});
+  const upd=()=>{const n=document.querySelectorAll('.of-b:checked').length,e=$('of-bn');if(e)e.textContent=n};
+  const all=$('of-all');if(all)all.onchange=()=>{document.querySelectorAll('.of-b').forEach(c=>c.checked=all.checked);upd()};document.querySelectorAll('.of-b').forEach(c=>c.onchange=upd);
+  const add=$('of-add');if(add)add.onclick=async()=>{const brs=[...document.querySelectorAll('.of-b:checked')].map(c=>c.value);const o={action:'insp_slot_add',date:$('of-d').value,from:$('of-f').value,to:$('of-t').value,step:15,place:$('of-p').value.trim(),brs};
+    if(!o.date||!o.from||!o.to||o.to<=o.from){alert('יש לבחור תאריך ושעות');return}if(!brs.length){alert('יש לבחור לפחות סניף אחד');return}
+    add.disabled=true;add.textContent='שולח…';const r=await api(o);if(!r){add.disabled=false;add.textContent='שליחת המועד לאישור הרכזים';alert('השמירה נכשלה');return}OFC.slots=null;OFC.all=null;ofcLoad()};
+  document.querySelectorAll('[data-ofdel]').forEach(b=>b.onclick=async()=>{if(!confirm('למחוק את המועד ואת כל ההרשמות אליו?'))return;await api({action:'insp_slot_del',id:b.dataset.ofdel});OFC.slots=null;OFC.all=null;ofcLoad()});
   document.querySelectorAll('[data-ofun]').forEach(b=>b.onclick=async()=>{if(!confirm('לבטל את ההרשמה?'))return;await api({action:'insp_unbook',id:b.dataset.ofun});ofcLoad()});
   document.querySelectorAll('[data-ofcopy]').forEach(b=>b.onclick=()=>navigator.clipboard.writeText(b.dataset.ofcopy==='g'?ofcGroupMsg():ofcLink()).then(()=>b.textContent='הועתק ✓'));
   document.querySelectorAll('[data-ofset]').forEach(s=>s.onchange=async()=>{if(!s.value)return;const [slot,time]=s.value.split('|'),v=DATA.veh.find(x=>x.num===s.dataset.ofset);s.disabled=true;
-    const r=await api({action:'insp_book',slot,time,pv:'',n:v.name||'',ph:v.phone||'',veh:v.num});if(!r){alert('השעה כבר נתפסה או שהשמירה נכשלה');s.disabled=false;return}await ofcLoad()});
+    const r=await api({action:'insp_book',slot,time,pv:'',n:v.name||'',ph:v.phone||'',veh:v.num});if(!r){alert('השמירה נכשלה');s.disabled=false;return}await ofcLoad()});
 }
 (()=>{const st=document.createElement('style');st.textContent=`.ofcf{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:8px 0}.ofcf label{display:flex;flex-direction:column;font-size:.85em;gap:2px}.ofcf label.w{flex:1 1 200px}.ofcf input,.ofcf select{font:inherit;padding:6px 8px;border:1px solid var(--line,#dde);border-radius:8px}
 .ofcs{border:1px solid var(--line,#e3e7ee);border-radius:12px;margin:10px 0;overflow:hidden}.ofch{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:8px 12px;background:rgba(127,127,127,.06)}.ofch span{color:var(--muted,#667);font-size:.9em}.ofch .btn{margin-inline-start:auto}
 .ofcr{display:flex;gap:10px;align-items:center;padding:6px 12px;border-top:1px dashed var(--line,#e3e7ee);font-size:.92em}.ofcr .tm{font-weight:700;min-width:44px;font-variant-numeric:tabular-nums}.ofcr.on{background:#effaf2}.ofcr small{display:block;color:var(--muted,#667)}.ofcr .free{color:var(--muted,#99a)}.ofcr .lnk{margin-inline-start:auto}
 .ofcv{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;padding:10px 4px;border-bottom:1px solid var(--line,#eee)}.ofcv .ok{color:#1f8a4c;font-weight:700}.ofcv .warn{color:#b45309}.ofcv select{font:inherit;padding:6px;border-radius:8px;border:1px solid var(--line,#dde);max-width:200px}
+.ofst{font-size:.8em;font-weight:700;padding:2px 8px;border-radius:999px}.ofbr{padding:4px 0 10px}.ofbr summary{cursor:pointer}.ofbr label{display:inline-flex;gap:4px;margin:4px 10px 0 0;font-size:.9em}.ofbr label.all{font-weight:700;display:flex}
+.ofpop{position:fixed;inset:0;z-index:200;background:rgba(10,20,40,.5);display:flex;align-items:center;justify-content:center;padding:16px}.ofbox{background:#fff;color:#1b2430;border-radius:16px;max-width:440px;width:100%;padding:16px;max-height:90vh;overflow:auto}.ofbox h3{margin:0 0 6px}.ofpr{border:1px solid #e3e7ee;border-radius:12px;padding:10px;margin:8px 0}
 .lnk{font:inherit;background:none;border:0;color:#b42318;text-decoration:underline;cursor:pointer}`;document.head.appendChild(st)})();
 
 /* ===== מפת מתנדבים – לפי כתובת המגורים ===== */
@@ -1075,7 +1106,7 @@ document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest
  if(i<0)h+='?cc='+Y;else if(/[?&]cc=/i.test(h))h=h.replace(/([?&]cc=)/i,'$1'+Y+',');else h=h.slice(0,i+1)+'cc='+Y+'&'+h.slice(i+1);
  a.setAttribute('href',h)},true)})();/*CCY-END*/
 
-function show(){setTimeout(accAlerts,600);setTimeout(gradAlerts,2600);ACKS=null;setTimeout(loadAcks,100);INVS=null;setTimeout(loadInvs,150);FU=null;setTimeout(loadFu,200);MSGS=null;setTimeout(loadMsgs,250);setTimeout(fuAlerts,1500);if(ADMIN){setTimeout(loadPending,300);if(!window._pendT)window._pendT=setInterval(loadPending,120000)}$('gsw').hidden=false;const gi=$('gs');gi.oninput=()=>gsearch(gi.value);document.documentElement.style.setProperty('--hh',document.querySelector('.appbar').offsetHeight+'px');watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
+function show(){setTimeout(accAlerts,600);OFC.slots=null;OFC.all=null;setTimeout(ofcPopup,3200);setTimeout(gradAlerts,2600);ACKS=null;setTimeout(loadAcks,100);INVS=null;setTimeout(loadInvs,150);FU=null;setTimeout(loadFu,200);MSGS=null;setTimeout(loadMsgs,250);setTimeout(fuAlerts,1500);if(ADMIN){setTimeout(loadPending,300);if(!window._pendT)window._pendT=setInterval(loadPending,120000)}$('gsw').hidden=false;const gi=$('gs');gi.oninput=()=>gsearch(gi.value);document.documentElement.style.setProperty('--hh',document.querySelector('.appbar').offsetHeight+'px');watermark();REMOTE=null;setTimeout(syncHist,0);setTimeout(()=>ping(),50);$('sub').textContent=DATA.br+(DATA.coord?' · רכז: '+DATA.coord:'');$('upd').textContent='עודכן '+DATA.upd;$('tabs').hidden=false;$('lockB').hidden=!!ADMIN;$('homeB').hidden=!ADMIN;render()}
 
 /* ===== כניסה ===== */
 function lockView(err){

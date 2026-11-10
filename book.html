@@ -26,14 +26,14 @@ button.go{width:100%;margin-top:14px;font:inherit;font-weight:700;padding:12px;b
 <header><h1>🛡️ בדיקת קצין בטיחות</h1><p id="sub">טוען…</p></header>
 <main id="app"></main>
 <script>
-/* דף הרשמה לבדיקת קצין בטיחות בסניף. הקישור (book.html?k=...) נשלח מהרכז; רואים רק שעות פנויות/תפוסות, בלי שמות. */
+/* אישור הגעה לבדיקת קצין בטיחות בסניף. הקישור (book.html?k=...) נשלח מהרכז; רואים רק את המועדים שהרכז אישר, בלי שמות. */
 const URL_='https://script.google.com/macros/s/AKfycbw03x21xEa5N4bP6REQthkOJWN85UUsVX3sBgSUvgyhl3fMKdhydg3rLcSvHsj-ke2q2A/exec';
 const K=new URLSearchParams(location.search).get('k')||'';
 const $=id=>document.getElementById(id),esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){return null}};
 const DAYS=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
 const dname=s=>{const [y,m,d]=s.split('-').map(Number),dt=new Date(y,m-1,d);return `יום ${DAYS[dt.getDay()]} ${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`};
-const times=sl=>{const m=x=>{const [h,mi]=x.split(':').map(Number);return h*60+mi},o=[];for(let t=m(sl.from);t<m(sl.to);t+=sl.step)o.push(String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0'));return o};
+const _t=sl=>{const m=x=>{const [h,mi]=x.split(':').map(Number);return h*60+mi},o=[];for(let t=m(sl.from);t<m(sl.to);t+=sl.step)o.push(String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0'));return o};
 let INFO=null,SEL=null;
 async function call(o){const r=await fetch(URL_,{method:'POST',body:JSON.stringify({k:K,...o})});return r.json()}
 async function load(){if(!K){$('sub').textContent='הקישור לא תקין';$('app').innerHTML='<div class="card empty">יש לפתוח את הקישור ששלח רכז התחבורה.</div>';return}
@@ -41,25 +41,25 @@ async function load(){if(!K){$('sub').textContent='הקישור לא תקין';$
   if(!INFO||!INFO.ok){$('sub').textContent='לא הצלחתי לטעון';$('app').innerHTML='<div class="card empty">לא הצלחתי לטעון את המועדים. נסו שוב מאוחר יותר.</div>';return}
   $('sub').textContent='סניף '+INFO.br;render()}
 function render(){
-  const mine=(()=>{try{return JSON.parse(ls('book_'+K)||'null')}catch(e){return null}})(),tk=new Set(INFO.taken.map(x=>x.slot+'|'+x.time));
-  if(!INFO.slots.length){$('app').innerHTML='<div class="card empty">אין כרגע מועדים פתוחים לבדיקה בסניף.</div>';return}
+  const mine=(()=>{try{return JSON.parse(ls('book_'+K)||'null')}catch(e){return null}})();
+  if(!INFO.slots.length){$('app').innerHTML='<div class="card empty">אין כרגע מועד פתוח לבדיקה בסניף.</div>';return}
+  if(INFO.slots.length===1)SEL=INFO.slots[0].id;
   const me=mine&&INFO.slots.find(s=>s.id===mine.slot);
-  $('app').innerHTML=`${me?`<div class="card"><h2>✓ השעה שלך</h2><p><b>${dname(me.date)} בשעה ${esc(mine.time)}</b><br>${esc(me.place||'')}</p><p style="color:var(--muted);font-size:.9em">רוצה להחליף? בחר שעה אחרת למטה ושלח שוב.</p></div>`:''}
+  $('app').innerHTML=`${me?`<div class="card"><h2>✓ אישרת הגעה</h2><p><b>${dname(me.date)}, <bdi dir="ltr">${esc(me.from)}–${esc(me.to)}</bdi></b><br>${esc(me.place||'')}</p><p style="color:var(--muted);font-size:.9em">אפשר לעדכן פרטים${INFO.slots.length>1?' או להחליף מועד':''} ולשלוח שוב.</p></div>`:''}
+    <div class="card"><h2>${INFO.slots.length>1?'בחירת מועד':'המועד'}</h2>${INFO.slots.map(sl=>`<button class="t day${SEL===sl.id?' on':''}" data-k="${esc(sl.id)}" style="width:100%;text-align:right;padding:10px 12px;margin:4px 0">${dname(sl.date)} · <bdi dir="ltr">${esc(sl.from)}–${esc(sl.to)}</bdi><br><small>${esc(sl.place||'')}</small></button>`).join('')}</div>
     <div class="card"><h2>הפרטים שלך</h2>
       <label for="n">שם מלא</label><input id="n" autocomplete="name" value="${esc(mine&&mine.n||ls('book_n')||'')}">
       <label for="pv">מספר פרייבט</label><input id="pv" inputmode="numeric" value="${esc(mine&&mine.pv||ls('book_pv')||'')}">
       <label for="ph">טלפון</label><input id="ph" inputmode="tel" autocomplete="tel" value="${esc(ls('book_ph')||'')}">
-      <label for="veh">מספר הכלי (אם ידוע)</label><input id="veh" inputmode="numeric" value="${esc(ls('book_veh')||'')}"></div>
-    <div class="card"><h2>בחירת שעה</h2>${INFO.slots.map(sl=>`<div class="day">${dname(sl.date)} <small>${esc(sl.from)}–${esc(sl.to)}${sl.place?' · '+esc(sl.place):''}</small></div>
-      <div class="times">${times(sl).map(t=>{const k=sl.id+'|'+t,own=mine&&mine.slot===sl.id&&mine.time===t,busy=tk.has(k)&&!own;return `<button class="t${SEL===k?' on':''}" data-k="${k}"${busy?' disabled':''}>${t}</button>`}).join('')}</div>`).join('')}
-      <button class="go" id="go"${SEL?'':' disabled'}>אישור השעה</button><div id="m"></div></div>`;
-  document.querySelectorAll('.t[data-k]').forEach(b=>b.onclick=()=>{SEL=b.dataset.k;const keep={};['n','pv','ph','veh'].forEach(i=>keep[i]=$(i).value);render();Object.entries(keep).forEach(([i,v])=>$(i).value=v)});
+      <label for="veh">מספר הכלי (אם ידוע)</label><input id="veh" inputmode="numeric" value="${esc(ls('book_veh')||'')}">
+      <button class="go" id="go"${SEL?'':' disabled'}>${me?'עדכון':'אישור הגעה'}</button><div id="m"></div></div>`;
+  document.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{SEL=b.dataset.k;const keep={};['n','pv','ph','veh'].forEach(i=>keep[i]=$(i).value);render();Object.entries(keep).forEach(([i,v])=>$(i).value=v)});
   $('go').onclick=async()=>{const n=$('n').value.trim(),pv=$('pv').value.replace(/\D/g,''),ph=$('ph').value.trim(),veh=$('veh').value.trim();
     if(!n||!pv){$('m').innerHTML='<div class="msg err">יש למלא שם ומספר פרייבט</div>';return}
-    const [slot,time]=SEL.split('|');$('go').disabled=true;$('go').textContent='שומר…';
-    let r=null;try{r=await call({action:'book',slot,time,n,pv,ph,veh})}catch(e){}
-    if(r&&r.ok){ls('book_'+K,JSON.stringify({slot,time,n,pv}));ls('book_n',n);ls('book_pv',pv);ls('book_ph',ph);ls('book_veh',veh);SEL=null;INFO=await call({action:'book_info'});render();window.scrollTo(0,0)}
-    else{$('go').disabled=false;$('go').textContent='אישור השעה';$('m').innerHTML=`<div class="msg err">${r&&r.error==='taken'?'השעה הזאת נתפסה הרגע – בחר שעה אחרת':'השמירה נכשלה – נסו שוב'}</div>`;if(r&&r.error==='taken'){INFO=await call({action:'book_info'});SEL=null;render()}}};
+    const slot=SEL;$('go').disabled=true;$('go').textContent='שומר…';
+    let r=null;try{r=await call({action:'book',slot,n,pv,ph,veh})}catch(e){}
+    if(r&&r.ok){ls('book_'+K,JSON.stringify({slot,n,pv}));ls('book_n',n);ls('book_pv',pv);ls('book_ph',ph);ls('book_veh',veh);render();window.scrollTo(0,0)}
+    else{$('go').disabled=false;$('go').textContent='אישור הגעה';$('m').innerHTML='<div class="msg err">השמירה נכשלה – נסו שוב</div>'}};
 }
 load();
 </script>
