@@ -1014,17 +1014,17 @@ function brrMail(br){
   return o.join('\n');
 }
 /* אותו דוח כמסמך מעוצב (HTML) – להדבקה במייל באאוטלוק */
-function brrHtml(br){const L=brrMail(br).split('\n');let h=`<div style="background:#1f3f6e;color:#fff;padding:14px 18px;border-radius:8px;margin-bottom:12px"><div style="font-size:20px;font-weight:700">דוח בטיחות ומצב נהגים</div><div style="font-size:14px;opacity:.85">סניף ${esc(br)} | ${esc(fmt(T0))}</div></div>`;let lv=0;
+function brrHtml(br){/* HTML פשוט (כותרות, הדגשות, רשימות) – כמו שאאוטלוק בטלפון שומר בהדבקה */
+  const L=brrMail(br).split('\n');let h=`<h2>דוח בטיחות ומצב נהגים – סניף ${esc(br)}</h2>`,lv=0;
   const close=to=>{while(lv>to){h+='</ul>';lv--}};
+  const fmtLi=t=>esc(t).replace(/^([^:–]{2,45}):/,'<b>$1:</b>').replace(/\(([^()]*(בחודש הקודם|מהחודש הקודם)[^()]*)\)/,'<i>($1)</i>');
   L.forEach(l=>{const m=/^( *)[•◦] (.*)$/.exec(l);
-    if(m){const d=m[1].length>=3?2:1;while(lv<d){h+=`<ul style="margin:3px 0;padding-inline-start:${lv?18:22}px">`;lv++}close(d);h+=`<li style="margin:2px 0">${esc(m[2]).replace(/^([^:–]{2,40}):/,'<b>$1:</b>')}</li>`;return}
+    if(m){const d=m[1].length>=3?2:1;while(lv<d){h+='<ul>';lv++}close(d);h+=`<li>${fmtLi(m[2])}</li>`;return}
     close(0);const t=esc(l.trim());if(!t)return;
-    if(/^\d+\. /.test(l)){h+=`<h3 style="margin:16px 0 6px;color:#1f3f6e;font-size:16px;border-bottom:2px solid #f26b21;padding-bottom:3px">${t}</h3>`;return}
-    if(l==='תקציר מנהלים'){h+=`<div style="background:#fff4ec;border-right:4px solid #f26b21;padding:8px 12px;margin:10px 0 4px;font-weight:700">${t}</div>`;return}
-    if(/^משימות נדרשות/.test(l)){h+=`<h3 style="margin:16px 0 6px;font-size:15px">${t}</h3>`;return}
-    if(/^\(/.test(l.trim())){h+=`<p style="margin:0 40px 4px 0;color:#b42318;font-size:13px">${t}</p>`;return}
-    h+=`<p style="margin:4px 0">${t}</p>`});
-  close(0);return `<div dir="rtl" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1b2430;max-width:680px;text-align:right">${h}</div>`}
+    if(/^\d+\. /.test(l)||l==='תקציר מנהלים'||/^משימות נדרשות/.test(l)){h+=`<h3>${t}</h3>`;return}
+    if(/^\(/.test(l.trim())){h+=`<p><i>${t}</i></p>`;return}
+    h+=`<p>${t}</p>`});
+  close(0);return `<div dir="rtl" style="text-align:right">${h}</div>`}
 async function brrCopyHtml(br,b){const html=brrHtml(br),txt=brrMail(br);let ok=false;
   /* העתקה של אזור מסומן בדף – כך גם בטלפון ההדבקה באאוטלוק שומרת על ההדגשות והעיצוב */
   try{const d=document.createElement('div');d.contentEditable='true';d.style.cssText='position:fixed;left:-9999px;top:0;opacity:0;background:#fff;color:#000';d.innerHTML=html;document.body.appendChild(d);
