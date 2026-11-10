@@ -444,7 +444,7 @@ function addHist(h){if(ADMIN&&(h.dec==='yes'||h.dec==='no'))h.off='1';h.id=Date.
 /* מי מחובר עכשיו */
 let ONLINE=null;const DEV_ID=(()=>{let i=ls('coord_dev');if(!i){i=Math.random().toString(36).slice(2,12);ls('coord_dev',i)}return i})(),SINCE=Date.now();
 const DEV=(()=>{const u=navigator.userAgent;return /iPhone/.test(u)?'אייפון':/Android/.test(u)?'אנדרואיד':/Windows/.test(u)?'מחשב':/Mac/.test(u)?'מק':'מכשיר'})();
-async function ping(leave){if(!DATA)return;const r=await api({action:'ping',id:DEV_ID,leave:!!leave,n:ADMIN?'דני בן דוד':(DATA.coord||''),dev:DEV,s:SINCE,view:st.view});if(r&&r.list){ONLINE=r.list.filter(x=>x.id!==DEV_ID);const el=document.getElementById('onl');if(el)el.outerHTML=onlineBox();const on=new Set(ONLINE.map(x=>x.br));document.querySelectorAll('#adm option').forEach(o=>o.textContent=(on.has(o.value)?'🟢 ':'')+o.value)}}
+async function ping(leave){if(!DATA)return;const r=await api({action:'ping',id:DEV_ID,leave:!!leave,n:ADMIN?'דני בן דוד':(DATA.coord||''),dev:DEV,s:SINCE,view:st.view});if(r&&r.list){ONLINE=r.list.filter(x=>x.id!==DEV_ID&&x.v!=='head');const el=document.getElementById('onl');if(el)el.outerHTML=onlineBox();const on=new Set(ONLINE.map(x=>x.br));document.querySelectorAll('#adm option').forEach(o=>o.textContent=(on.has(o.value)?'🟢 ':'')+o.value)}}
 setInterval(()=>{if(document.visibilityState!=='hidden')ping()},45000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')ping()});
 function delHist(id){ls(HK(),JSON.stringify(localHist().filter(h=>h.id!==id)));if(REMOTE)REMOTE=REMOTE.filter(h=>h.id!==id);api({action:'del',id})}
