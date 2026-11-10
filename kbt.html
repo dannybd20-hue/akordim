@@ -354,7 +354,7 @@ function card(r){
     const note=fr&&fr.due===i.dateStr?`<span class="chip miss">${is2?'🔁 תזכורת · ':''}הודעה ראשונה נשלחה ${fmt(new Date(fr.d))}</span>`:'';
     return `<div class="irow"><span class="chip ${i.lvl}">${esc(i.chip)}</span>${note}<span class="btns">${wa}${uPh(o)?`<a class="wa sm chat" href="https://wa.me/${waNum(uPh(o))}" target="_blank" rel="noopener" title="פתיחת שיחה בלי טקסט מוכן">${WA_ICON}צ׳אט</a>`:''}${ml}${cp}</span></div>${dov}`;
   }).join('');
-  return `<div class="card"><div class="who"><div class="name">${esc(o.name)}</div><div class="meta">${isV?'<span>נהג</span>':''}${meta}</div>${veh}${isV&&o.susp?`<span class="chip warn chgc">⚠ חשוד כתקול בסייפטי: ${o.susp.worse} מתוך ${o.susp.n} נהגים מקבלים עליו ציון נמוך מהרגיל (${o.susp.t} פניות ל־100 ק״מ מול ${o.susp.te}) – לפתוח קריאה באיתורן</span><a class="mail sm" style="margin-top:6px" href="${suspMail(o)}">✉️ מייל ליהודה לוין – בדיקה מול איתוראן</a>`:''}${isV?chgChip('veh',o.num):chgChip('p',o.priv)}${!isV&&o.mt?`<span class="chip ok chgc">🏍️ טסט פנימי אופנוע: ${esc(o.mt)}</span>`:''}${!isV&&o.sh?`<span class="chip ${o.sh.a?'warn':'bad'} chgc">🚑 לא פעיל במשמרות · ${o.sh.a} משמרות ינו–אוג, 0 ביול–אוג</span>`:''}</div>${contact}<div class="issues">${rows}</div></div>`;
+  return `<div class="card"><div class="who"><div class="name">${esc(o.name)}</div><div class="meta">${isV?'<span>נהג</span>':''}${meta}</div>${veh}${isV&&o.susp?`<span class="chip warn chgc">⚠ חשוד כתקול בסייפטי: ${o.susp.worse} מתוך ${o.susp.n} נהגים מקבלים עליו ציון נמוך מהרגיל (${o.susp.t} פניות ל־100 ק״מ מול ${o.susp.te}) – לפתוח קריאה באיתורן</span><a class="mail sm" style="margin-top:6px" href="${suspMail(o)}">✉️ מייל ליהודה לוין – בדיקה מול איתוראן</a>`:''}${isV?chgChip('veh',o.num):chgChip('p',o.priv)}${!isV&&o.mt?`<span class="chip ok chgc">🏍️ טסט פנימי אופנוע: ${esc(o.mt)}</span>`:''}${!isV&&o.sh?`<span class="chip ${o.sh.lvl} chgc">🚑 ${esc(o.sh.t)}</span>`:''}</div>${contact}<div class="issues">${rows}</div></div>`;
 }
 
 const CATS=[['','הכל'],['test','טסט'],['service','טיפול שנתי'],['check','בדיקת תקינות'],['lic','רישיון נהיגה'],['health','הצהרת בריאות'],['traffic','מידע תעבורתי']];
@@ -414,10 +414,10 @@ function render(){
     const list=(isV?DATA.vehicles:DATA.drivers).filter(o=>matches({rec:o}));
     const cell=(d,src)=>{if(!d)return '<td>—</td>';const n=diff(d);const cl=n<0?'d-bad':n===0?'d-today':n<=state.win?'d-warn':'';return `<td class="${cl}">${fmt(src||d)}</td>`};
     const head=isV?['רישוי','מס\' פנימי','סוג','נהג','סניף','טסט עד','טיפול אחרון','בדיקת תקינות','ביטוח עד','טלפון']
-                  :['שם','פרייבט','סניף','רכב','רישיון נהיגה','הצהרת בריאות','מידע תעבורתי','הדרכה שנתית','משמרות ינו–אוג','טלפון'];
+                  :['שם','פרייבט','סניף','רכב','רישיון נהיגה','הצהרת בריאות','מידע תעבורתי','הדרכה שנתית','פעילות (יציאות)','טלפון'];
     const body=list.map(o=>isV
       ?`<tr${chgOf('veh',o.num).length?` class="chgrow" title="${esc(chgTip(chgOf('veh',o.num)))}"`:''}><td><span class="plate">${esc(o.plate)}</span>${o.susp?`<br><span class="chip warn" title="${o.susp.worse} מתוך ${o.susp.n} נהגים קיבלו עליו ציון נמוך בממוצע ב־${-o.susp.d} נק׳ מהרגיל שלהם; ${o.susp.t} פניות ל־100 ק״מ מול ${o.susp.te} בכלים אחרים">⚠ חשוד כתקול בסייפטי</span>`:''}</td><td>${esc(o.num)}</td><td>${esc(o.type)}</td><td>${esc(o.name)}</td><td>${esc(o.branch)}</td>${cell(pd(o.test))}${cell(pd(o.service)?addYear(pd(o.service)):null,pd(o.service))}${cell(pd(o.check))}${cell(pd(o.ins))}<td dir="ltr">${fmtPhone(o.phone)}</td></tr>`
-      :`<tr${chgOf('p',o.priv).length?` class="chgrow" title="${esc(chgTip(chgOf('p',o.priv)))}"`:''}><td>${chgOf('p',o.priv).length?'🆕 ':''}${esc(o.name)}</td><td>${esc(o.priv)}</td><td>${esc(o.branch)}</td><td>${esc((o.cars||[]).map(c=>c.num+(c.type?' '+c.type:'')).join(', '))}</td>${cell(pd(o.lic))}${cell(pd(o.health))}${o.pp?'<td>דרכון</td>':cell(pd(o.traffic))}${cell(pd(o.train))}${o.sh?`<td class="${o.sh.a?'d-warn':'d-bad'}" title="לא ביצע משמרת מלאה כראש צוות ביולי–אוגוסט">${o.sh.a} · לא פעיל</td>`:'<td>—</td>'}<td dir="ltr">${fmtPhone(o.phone)||'—'}</td></tr>`).join('');
+      :`<tr${chgOf('p',o.priv).length?` class="chgrow" title="${esc(chgTip(chgOf('p',o.priv)))}"`:''}><td>${chgOf('p',o.priv).length?'🆕 ':''}${esc(o.name)}</td><td>${esc(o.priv)}</td><td>${esc(o.branch)}</td><td>${esc((o.cars||[]).map(c=>c.num+(c.type?' '+c.type:'')).join(', '))}</td>${cell(pd(o.lic))}${cell(pd(o.health))}${o.pp?'<td>דרכון</td>':cell(pd(o.traffic))}${cell(pd(o.train))}${o.sh?`<td class="${o.sh.lvl==='bad'?'d-bad':'d-warn'}" title="${esc(o.sh.t)}">${o.sh.lvl==='bad'?'לא פעיל':'רק מלווה'}</td>`:'<td>✓ פעיל</td>'}<td dir="ltr">${fmtPhone(o.phone)||'—'}</td></tr>`).join('');
     app.innerHTML=`${controls(false)}<div class="legend">${list.length} רשומות · <span style="color:var(--bad)">אדום</span> = פג, <span style="color:var(--warn)">כתום</span> = יפוג בקרוב · <span style="background:var(--today-bg);padding:0 4px">רקע מודגש</span> = השתנה בעדכון האחרון (לחיצה ארוכה/ריחוף מראה מה)</div><div class="tbl-wrap"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
   }
   bind();
@@ -963,43 +963,68 @@ function brrText(br){
   t+=`\n*חריגות פתוחות – פג תוקף (${bad.length})*\n`+(bad.length?bad.map(([r,L])=>line(r,L)).join('\n'):'אין 👍')+'\n';
   if(warn.length)t+=`\n*יפוג בימים הקרובים (${warn.length})*\n`+warn.map(([r,L])=>line(r,L)).join('\n')+'\n';
   t+=`\n*לא ביצעו השתלמות שנתית ${DATA.ann?DATA.ann.y:Y} (${ann.length})*\n`+(ann.length?ann.map(o=>`• ${o.name}${o.pv?' ('+o.pv+')':''} – ${o.need}`).join('\n'):'כולם ביצעו 👍')+'\n';
-  if(B.ina&&B.ina.length)t+=`\n*לא פעילים במשמרות (${B.ina.length})* – אפס משמרות ביולי–אוגוסט\n`+B.ina.map(([n,pv,a])=>`• ${n} (${pv})${a?` – ${a===1?'משמרת אחת':a+' משמרות'} בינואר–יוני`:' – אין משמרות מתחילת השנה'}`).join('\n')+'\n';
+  {const I=(B.ina||[]).filter(x=>x[3]==='bad'),C=(B.ina||[]).filter(x=>x[3]!=='bad');
+  if(I.length)t+=`\n*לא פעילים כנהגים (${I.length})* – לפי יציאה לאירועים, ${DATA.brrep.per}\n`+I.map(([n,pv,tx])=>`• ${n} (${pv}) – ${tx}`).join('\n')+'\n';
+  if(C.length)t+=`\n*מופיעים רק כמלווים, לא כנהגים (${C.length})*\n`+C.map(([n,pv,tx])=>`• ${n} (${pv}) – ${tx}`).join('\n')+'\n'}
   if(acc)t+=`\n*תאונות מתחילת ${Y}:* ${acc.length}${(n=>n?` (מתוכן ${n} באשמת נהג איחוד הצלה)`:'')(acc.filter(a=>/איחוד/.test(a.fault)).length)}\n`;
   t+=`\nאודה לך אם תעבור על הרשימה עם רכז התחבורה ותדאג שהמתנדבים יסדירו את מה שחסר. נהג עם חריגה פתוחה אינו מורשה לנהוג בכלי הארגון.\nאני זמין לכל שאלה.\n\nתודה,\n${NOSIGN}`;
   return t;
 }
-/* גרסת המייל: טקסט נקי ומסודר בסעיפים ממוספרים (מייל מקישור לא יכול להכיל עיצוב) */
+/* גרסת המייל: לפי התבנית של דני (תקציר מנהלים, סעיפים ממוספרים, משימות) */
 function brrMail(br){
-  const {B,bad,warn,ann,acc,Y}=brrData(br),h=B.h||{},M=(B.m||'').replace(/ (\d\d)$/,' 20$1'),SEP='────────────────────';
-  const who=r=>r.type==='vehicle'?`כלי ${r.rec.num}${r.rec.plate?' ('+r.rec.plate+')':''}${r.rec.name?', נהג: '+r.rec.name:''}`:`${r.rec.name}${r.rec.priv?', פרייבט '+r.rec.priv:''}`;
-  const it=(r,L)=>`   - ${who(r)}: ${L.map(i=>`${i.label} ${i.lvl==='warn'?'בתוקף עד':'פג ב־'}${i.lvl==='warn'?' ':''}${i.dateStr}`).join('; ')}`;
+  const {B,bad,warn,ann,acc,Y}=brrData(br),h=B.h||{},M=(B.m||'').replace(/ (\d\d)$/,' 20$1');
+  const I=(B.ina||[]).filter(x=>x[3]==='bad'),C=(B.ina||[]).filter(x=>x[3]!=='bad');
   const nAcc=acc?acc.length:null,fA=acc?acc.filter(a=>/איחוד/.test(a.fault)).length:0;
-  const sum=[B.n?`ציון סייפטי ${B.cur}`:'',`${B.low.length} מתחת ל־25`,(bad.length===1?'חריגה פתוחה אחת':`${bad.length} חריגות פתוחות`),`${ann.length} ללא השתלמות שנתית`,B.ina&&B.ina.length?`${B.ina.length} לא פעילים`:'',nAcc!=null?`${nAcc} תאונות ב־${Y}`:''].filter(Boolean).join(' | ');
-  const S=[];let k=0;const sec=(title,lines)=>{k++;S.push(`${k}. ${title}\n${lines.join('\n')}`)};
-  if(B.n)sec(`ציוני סייפטי – ${M}`,[`   ציון ממוצע בסניף: ${B.cur}${B.prev!=null?` (בחודש הקודם: ${B.prev})`:''}`,`   ממוצע המרחב: ${B.R}`,`   מתנדבים עם ציון: ${B.n}`,
-    ...(B.low.length?[`   מתחת ל־25 (${B.low.length}):`,...B.low.map(([n,pv,x])=>`   - ${n}, פרייבט ${pv}: ציון ${x}`)]:['   אין מתנדבים מתחת ל־25.'])]);
-  sec(`חריגות פתוחות – פג תוקף (${bad.length})`,bad.length?bad.map(([r,L])=>it(r,L)):['   אין חריגות פתוחות.']);
-  if(warn.length)sec(`יפוג בימים הקרובים (${warn.length})`,warn.map(([r,L])=>it(r,L)));
-  sec(`לא ביצעו השתלמות שנתית ${DATA.ann?DATA.ann.y:Y} (${ann.length})`,ann.length?ann.map(o=>`   - ${o.name}${o.pv?', פרייבט '+o.pv:''}: ${o.need}`):['   כל הנהגים ביצעו השתלמות.']);
-  if(B.ina&&B.ina.length)sec(`לא פעילים במשמרות (${B.ina.length})`,['   ללא משמרות ביולי–אוגוסט 2026:',...B.ina.map(([n,pv,a])=>`   - ${n}, פרייבט ${pv}: ${a?(a===1?'משמרת אחת':a+' משמרות')+' בינואר–יוני':'ללא משמרות מתחילת השנה'}`)]);
-  if(acc)sec(`תאונות מתחילת ${Y}`,[`   ${nAcc} תאונות${fA?`, מתוכן ${fA} באשמת נהג איחוד הצלה`:''}.`]);
-  return [`דוח בטיחות ומצב נהגים`,`סניף ${br} | ${fmt(T0)}`,SEP,'',`שלום ${first(h.n)||''},`,'',`להלן דוח הבטיחות ומצב הנהגים בסניף, לטיפולך.`,'',`בקצרה: ${sum}`,'',SEP,'',S.join('\n\n'),'',SEP,'',
-    `לטיפולך:`,`- לעבור על הרשימה יחד עם רכז התחבורה של הסניף.`,`- לוודא שהמתנדבים מסדירים את החריגות הפתוחות. נהג עם חריגה פתוחה אינו מורשה לנהוג בכלי הארגון.`,`- לעודד את מי שלא ביצע השתלמות שנתית להירשם עד סוף השנה (דרך האפליקציה או מחלקת הדרכה בתעבורה).`,'',
-    `אשמח לעמוד לרשותך בכל שאלה.`,'',`בברכה,`,`דני בן דוד`,`קצין בטיחות בתעבורה – מרחב ירושלים`,`איחוד הצלה`].join('\n');
+  const pl=(n,one,many)=>n===1?one:`${n} ${many}`;
+  const trend=B.prev==null?'':(d=>d>=10?`עלייה משמעותית מ־${B.prev} בחודש הקודם`:d>0?`עלייה מ־${B.prev} בחודש הקודם`:d<=-10?`ירידה משמעותית מ־${B.prev} בחודש הקודם`:d<0?`ירידה מ־${B.prev} בחודש הקודם`:`ללא שינוי מהחודש הקודם`)(B.cur-B.prev);
+  const who=r=>r.type==='vehicle'?`כלי ${r.rec.num}${r.rec.plate?` (מספר רישוי: ${r.rec.plate})`:''}${r.rec.name?` | נהג: ${r.rec.name}`:''}`:`${r.rec.name}${r.rec.priv?` (פרייבט ${r.rec.priv})`:''}`;
+  const AL=[...bad.map(([r,L])=>[r,L]),...warn.map(([r,L])=>[r,L])],byK={};AL.forEach(([r,L])=>{const k=r.type+r.key;(byK[k]=byK[k]||{r,L:[]}).L.push(...L)});
+  const recs=Object.values(byK),nOpen=bad.reduce((s,[,L])=>s+L.length,0),vBad=bad.filter(([r])=>r.type==='vehicle');
+  const ORD={'אמבולנס':0,'אופנוע':1,'רכב':2},annS=[...ann].sort((a,b)=>(ORD[a.need]??9)-(ORD[b.need]??9));
+  const per=(DATA.brrep.per||'').replace(/\//g,'.');
+  const o=[];const P=x=>o.push(x);
+  P(`שלום ${first(h.n)||''},`);P(`להלן תמונת מצב בטיחות ונהגים עדכנית עבור סניף ${br}, לטיפולך ולמעקב מול רכז התחבורה הסניפי.`);P('');
+  P('תקציר מנהלים');
+  if(B.n)P(` * ציון סייפטי ממוצע: ${B.cur} (ממוצע מרחבי: ${B.R})`);
+  P(` * ציונים קריטיים (מתחת ל־25): ${pl(B.low.length,'נהג אחד','נהגים')}`);
+  P(` * חריגות פתוחות (כלים ונהגים): ${nOpen}${warn.length?` (ועוד ${warn.length} שיפוגו בקרוב)`:''}`);
+  P(` * ללא השתלמות שנתית (${DATA.ann?DATA.ann.y:Y}): ${pl(ann.length,'מתנדב אחד','מתנדבים')}`);
+  P(` * לא פעילים כנהגים (${per}): ${pl(I.length,'מתנדב אחד','מתנדבים')}${C.length?` (ועוד ${C.length} רק כמלווים)`:''}`);
+  if(acc)P(` * תאונות מתחילת השנה: ${nAcc}${fA?` (${fA} באשמת נהג הארגון)`:''}`);
+  let k=0;const H=t=>{P('');P(`${++k}. ${t}`)};
+  if(B.n){H(`ציוני סייפטי – ${M}`);P(` * ממוצע סניף: ${B.cur}${trend?` (${trend})`:''}`);P(` * ממוצע מרחב ירושלים: ${B.R}`);P(` * סה"כ בעלי ציון בסניף: ${B.n} נהגים`);
+    if(B.low.length){P(` * מתנדבים עם ציון נמוך מ־25 (נדרש מעקב והדרכה):`);B.low.forEach(([n,pv,x])=>P(`   * ${n} (פרייבט ${pv}) – ציון: ${x}`))}else P(' * אין מתנדבים עם ציון נמוך מ־25.')}
+  H('כלי רכב וחריגות פתוחות');
+  if(!recs.length)P(' * אין חריגות פתוחות.');
+  recs.forEach(({r,L})=>{P(` * ${who(r)}`);L.forEach(i=>P(`   * ${i.label}: ${i.lvl==='warn'?`בתוקף עד ${i.dateStr} (יפוג בקרוב)`:`פג תוקף ב־${i.dateStr}`}`));
+    if(r.type==='vehicle'&&L.some(i=>i.lvl!=='warn'&&/test|service|ins/.test(i.k)))P('     (תזכורת: חל איסור מוחלט על תנועת כלי רכב ללא רישוי, ביטוח וטיפול בתוקף)');
+    else if(r.type!=='vehicle'&&L.some(i=>i.lvl!=='warn'))P('     (נהג עם מסמך שפג תוקפו אינו מורשה לנהוג בכלי הארגון עד להסדרה)')});
+  H(`נהגים ללא השתלמות שנתית ${DATA.ann?DATA.ann.y:Y} (${ann.length})`);
+  if(ann.length){P('יש להנחות את המתנדבים להירשם ולבצע את ההשתלמות בהקדם דרך האפליקציה או מול מחלקת הדרכה:');annS.forEach(x=>P(` * ${x.name}${x.pv?` (פרייבט ${x.pv})`:''} – ${x.need}`))}else P(' * כל הנהגים ביצעו השתלמות שנתית.');
+  H(`בדיקת פעילות – יציאה לאירועים (${per})`);
+  if(I.length){P('להלן נהגים שאין להם יציאות כנהגים בתקופה, לבדיקת סטטוס מול הסניף:');I.forEach(([n,pv,tx])=>P(` * ${n} (פרייבט ${pv}) – ${tx}`))}else P(' * כל הנהגים פעילים.');
+  if(C.length){P('נהגים שמופיעים ביציאות רק כמלווים ולא כנהגים:');C.forEach(([n,pv,tx])=>P(` * ${n} (פרייבט ${pv}) – ${tx}`))}
+  if(acc){H('תאונות מתחילת השנה');P(` * ${nAcc===0?`לא נרשמו תאונות בסניף במהלך ${Y}.`:`נרשמו ${nAcc===1?'תאונה אחת':nAcc+' תאונות'} בסניף במהלך ${Y}${fA?`, מתוכן ${fA===1?'תאונה אחת':fA+' תאונות'} באשמת נהג איחוד הצלה`:''}.`}`)}
+  P('');P('משימות נדרשות לטיפול:');P(' * מעבר משותף על הנתונים עם רכז התחבורה של הסניף.');
+  if(vBad.length)P(` * טיפול מיידי ב${vBad.map(([r])=>'כלי '+r.rec.num).join(', ')} – נהג/כלי עם חריגה פתוחה אינו מורשה לנהוג/לפעול במסגרת הארגון עד להסדרה מלאה.`);
+  const dB=bad.filter(([r])=>r.type!=='vehicle').length;if(dB)P(` * הסדרת המסמכים של ${pl(dB,'נהג אחד','נהגים')} עם חריגה פתוחה.`);
+  if(ann.length)P(` * הנעת ${ann.length===1?'הנהג':ann.length+' הנהגים'} לביצוע השתלמות שנתית לפני סוף השנה האזרחית.`);
+  if(I.length)P(` * בירור סטטוס הפעילות של ${I.length===1?'הנהג שאינו פעיל':I.length+' הנהגים שאינם פעילים'}.`);
+  P('');P('אשמח לעמוד לרשותך בכל שאלה והבהרה.');P('');P('בברכה,');P('דניאל בן דוד');P('קצין בטיחות בתעבורה – מרחב ירושלים');P('איחוד הצלה');
+  return o.join('\n');
 }
 /* אותו דוח כמסמך מעוצב (HTML) – להדבקה במייל באאוטלוק */
-function brrHtml(br){const L=brrMail(br).split('\n');let h='',ul=false;const cl=()=>{if(ul){h+='</ul>';ul=false}};
-  L.forEach((l,i)=>{const t=esc(l.trim());
-    if(i===0){h+=`<div style="background:#1f3f6e;color:#fff;padding:14px 18px;border-radius:8px 8px 0 0"><div style="font-size:20px;font-weight:700">${t}</div>`;return}
-    if(i===1){h+=`<div style="font-size:14px;opacity:.85">${t}</div></div>`;return}
-    if(/^─+$/.test(l)){cl();h+=i<4?'':'<hr style="border:0;border-top:1px solid #d7dde6;margin:14px 0">';return}
-    if(/^\d+\. /.test(l)){cl();h+=`<h3 style="margin:14px 0 6px;color:#1f3f6e;font-size:16px;border-bottom:2px solid #f26b21;padding-bottom:3px">${t}</h3>`;return}
-    if(/^\s*- /.test(l)){if(!ul){h+='<ul style="margin:4px 0;padding-inline-start:22px">';ul=true}h+=`<li style="margin:2px 0">${t.replace(/^- /,'')}</li>`;return}
-    cl();if(!t){return}
-    if(/^בקצרה:/.test(l)){h+=`<p style="background:#fff4ec;border-right:4px solid #f26b21;padding:8px 12px;margin:10px 0"><b>בקצרה:</b> ${t.slice(6)}</p>`;return}
-    if(/^לטיפולך:/.test(l)){h+=`<p style="margin:10px 0 4px"><b>${t}</b></p>`;return}
-    h+=`<p style="margin:3px 0">${/^(ציון ממוצע|ממוצע המרחב|מתנדבים עם ציון|מתחת ל|ללא משמרות|\d+ תאונות)/.test(l.trim())?t.replace(/^([^:]+:)/,'<b>$1</b>'):t}</p>`});
-  cl();return `<div dir="rtl" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1b2430;max-width:680px;text-align:right">${h}</div>`}
+function brrHtml(br){const L=brrMail(br).split('\n');let h=`<div style="background:#1f3f6e;color:#fff;padding:14px 18px;border-radius:8px;margin-bottom:12px"><div style="font-size:20px;font-weight:700">דוח בטיחות ומצב נהגים</div><div style="font-size:14px;opacity:.85">סניף ${esc(br)} | ${esc(fmt(T0))}</div></div>`;let lv=0;
+  const close=to=>{while(lv>to){h+='</ul>';lv--}};
+  L.forEach(l=>{const m=/^( *)\* (.*)$/.exec(l);
+    if(m){const d=m[1].length>=3?2:1;while(lv<d){h+=`<ul style="margin:3px 0;padding-inline-start:${lv?18:22}px">`;lv++}close(d);h+=`<li style="margin:2px 0">${esc(m[2]).replace(/^([^:–]{2,40}):/,'<b>$1:</b>')}</li>`;return}
+    close(0);const t=esc(l.trim());if(!t)return;
+    if(/^\d+\. /.test(l)){h+=`<h3 style="margin:16px 0 6px;color:#1f3f6e;font-size:16px;border-bottom:2px solid #f26b21;padding-bottom:3px">${t}</h3>`;return}
+    if(l==='תקציר מנהלים'){h+=`<div style="background:#fff4ec;border-right:4px solid #f26b21;padding:8px 12px;margin:10px 0 4px;font-weight:700">${t}</div>`;return}
+    if(/^משימות נדרשות/.test(l)){h+=`<h3 style="margin:16px 0 6px;font-size:15px">${t}</h3>`;return}
+    if(/^\(/.test(l.trim())){h+=`<p style="margin:0 40px 4px 0;color:#b42318;font-size:13px">${t}</p>`;return}
+    h+=`<p style="margin:4px 0">${t}</p>`});
+  close(0);return `<div dir="rtl" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1b2430;max-width:680px;text-align:right">${h}</div>`}
 async function brrCopyHtml(br,b){const html=brrHtml(br),txt=brrMail(br);
   try{await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([txt],{type:'text/plain'})})]);b.textContent='✓ הועתק – מדביקים בגוף המייל'}
   catch(e){try{await navigator.clipboard.writeText(txt);b.textContent='✓ הועתק (טקסט)'}catch(_){b.textContent='ההעתקה נכשלה'}}setTimeout(()=>b.textContent='📋 העתק דוח מעוצב',3000)}
@@ -1011,15 +1036,15 @@ function renderBrr(){
   const brs=Object.keys(DATA.brrep.B).filter(b=>!state.branch||b===state.branch);
   const cards=brs.map(br=>{const d=brrData(br),h=d.B.h||{},t=brrText(br),sk='sent:brr:'+br+':'+TODAY_KEY,sent=ls(sk);
     const last=(()=>{for(let i=0;i<60;i++){const k=new Date(T0.getTime()-i*DAY+12*3600000).toISOString().slice(0,10);if(ls('sent:brr:'+br+':'+k))return i}return null})();
-    const subj=`דוח בטיחות ומצב נהגים – סניף ${br} – ${fmt(T0)}`;
+    const subj=`דוח בטיחות ומצב נהגים – סניף ${br} | ${fmt(T0)}`;
     const body=brrMail(br).split('\n').map(l=>l?'‏'+l:l).join('\n');
     return `<div class="card"><div class="who"><div class="name">${esc(br)}</div>
       <div class="meta"><span>ראש סניף: ${esc(h.n||'—')}</span>${h.ph?`<span>${fmtPhone(h.ph)}</span>`:''}${h.em?`<span class="em">${esc(h.em)}</span>`:''}</div>
-      <div class="meta" style="margin-top:4px">${d.B.n?`<span class="chip ${d.B.cur<25?'bad':d.B.cur<d.B.R?'warn':'ok'}">סייפטי ${esc(d.B.cur)}</span>`:''}${d.B.low.length?`<span class="chip bad">${d.B.low.length} מתחת ל־25</span>`:''}<span class="chip ${d.bad.length?'bad':'ok'}">${d.bad.length} פג תוקף</span>${d.warn.length?`<span class="chip warn">${d.warn.length} יפוג בקרוב</span>`:''}<span class="chip ${d.ann.length?'warn':'ok'}">${d.ann.length} בלי השתלמות</span>${d.B.ina&&d.B.ina.length?`<span class="chip warn">${d.B.ina.length} לא פעילים</span>`:''}${last!=null?`<span class="chip ok">✓ נשלח ${last===0?'היום':`לפני ${last} ימים`}</span>`:''}</div>
+      <div class="meta" style="margin-top:4px">${d.B.n?`<span class="chip ${d.B.cur<25?'bad':d.B.cur<d.B.R?'warn':'ok'}">סייפטי ${esc(d.B.cur)}</span>`:''}${d.B.low.length?`<span class="chip bad">${d.B.low.length} מתחת ל־25</span>`:''}<span class="chip ${d.bad.length?'bad':'ok'}">${d.bad.length} פג תוקף</span>${d.warn.length?`<span class="chip warn">${d.warn.length} יפוג בקרוב</span>`:''}<span class="chip ${d.ann.length?'warn':'ok'}">${d.ann.length} בלי השתלמות</span>${(n=>n?`<span class="chip warn">${n} לא פעילים</span>`:'')((d.B.ina||[]).filter(x=>x[3]==='bad').length)}${last!=null?`<span class="chip ok">✓ נשלח ${last===0?'היום':`לפני ${last} ימים`}</span>`:''}</div>
       <details class="accq" style="margin-top:6px"><summary><b>תצוגה מקדימה של הדוח</b></summary><div class="pre">${esc(t.replace(/\*/g,''))}</div></details></div>
       <div class="issues"><div class="irow"><span class="btns">${h.em?`<a class="mail sm${sent?' done':''}" href="mailto:${esc(h.em)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}" data-sent="${esc(sk)}">✉️ מייל לראש הסניף</a>`:'<span class="chip miss">אין מייל לראש הסניף</span>'}${h.ph?`<a class="wa sm" href="${waLink(h.ph,t)}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}וואטסאפ</a>`:''}<button class="mail sm" type="button" data-brrh="${esc(br)}">📋 העתק דוח מעוצב</button><button class="mail sm" type="button" data-copy="${esc(t)}">העתק</button></span></div></div></div>`}).join('');
   app.innerHTML=`<div class="controls"><select id="branch"><option value="">כל הסניפים</option>${Object.keys(DATA.brrep.B).map(b=>`<option${b===state.branch?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
-    <div class="legend">דוח לכל סניף: סייפטי של ${esc(Object.values(DATA.brrep.B)[0].m||'')}, חריגות פתוחות (בלי בדיקות תקינות קצב"ת), מי שלא ביצע השתלמות שנתית, לא פעילים במשמרות ותאונות מתחילת השנה. המייל נפתח באפליקציית המייל שתבחר, עם יהודה לוין בעותק.</div>
+    <div class="legend">דוח לכל סניף: סייפטי של ${esc(Object.values(DATA.brrep.B)[0].m||'')}, חריגות פתוחות (בלי בדיקות תקינות קצב"ת), מי שלא ביצע השתלמות שנתית, לא פעילים (לפי יציאה לאירועים) ותאונות מתחילת השנה. המייל נפתח באפליקציית המייל שתבחר, עם יהודה לוין בעותק.</div>
     <div class="list">${cards}</div>`;
   bind();
   app.querySelectorAll('[data-brrh]').forEach(b=>b.onclick=()=>brrCopyHtml(b.dataset.brrh,b));

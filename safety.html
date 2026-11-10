@@ -402,7 +402,7 @@ function card(v,m){v=evAt(v,m);
 /* ===== מדד סיכון (מחושב ב-add_extra.py) ===== */
 const RISKL={high:['סיכון גבוה','var(--bad)'],mid:['סיכון בינוני','var(--warn)']};
 const rkKey=v=>'rk:'+v.pv+':'+DATA.months[DATA.months.length-1];
-function shChip(v){return v.sh?`<span style="color:var(--warn);font-weight:700" title="דוח משמרות מחוזי: לא ביצע משמרת מלאה כראש צוות ביולי–אוגוסט">🚑 משמרות ינו–אוג: ${v.sh.a}${v.sh.b?'':' (0 ביול–אוג)'}</span>`:''}
+function shChip(v){return v.sh?`<span style="color:var(--${v.sh.lvl==='bad'?'bad':'warn'});font-weight:700" title="לפי דוח יציאה לאירועים">🚑 ${esc(v.sh.t)}</span>`:''}
 function riskChip(v){const r=v.risk;if(!r)return '';const [l,c]=RISKL[r.lvl];return `<span style="color:${c};font-weight:700" title="${esc(r.why.join('\n'))}">🎯 ${l} (${r.p})</span>`}
 function riskMsg(v){return `מה קורה ${first(v.n)},\n\nאני עובר באופן קבוע על נתוני הבטיחות של הכוננים במרחב, ורציתי לקבוע איתך שיחה קצרה על הנהיגה. זו לא ביקורת, אלא דרך לעזור לך לנהוג בטוח יותר ולהגיע הביתה בשלום.\n\nאשמח שנדבר השבוע, או שנקבע רכיבה או נסיעה משותפת. מתי נוח לך?\n\n${SIGN}`}
 function riskBadge(){const b=$('n-risk');if(b)b.textContent=DATA.v.filter(v=>v.risk&&v.risk.lvl==='high'&&!ls(rkKey(v))).length||''}

@@ -241,7 +241,7 @@ function listView(){
     <select id="sort">${[['risk','מיון: סיכון'],['acc','מיון: תאונות'],['sc','מיון: ציון נמוך'],['km','מיון: ק"מ'],['n','מיון: שם']].map(([k,l])=>`<option value="${k}"${k===st.sort?' selected':''}>${l}</option>`).join('')}</select></div>
     <div class="legend">${L.length} נהגים · לחיצה על נהג פותחת את הפרופיל המלא</div>
     <div class="plist">${L.slice(0,300).map(p=>{const c=p._c;return `<button class="prow" data-p="${esc(p.pv||p.n+'|'+p.br)}"><span class="pn"><b>${esc(p.n)}</b><small>${esc([p.pv&&'פרייבט '+p.pv,p.br].filter(Boolean).join(' · '))}</small></span>
-      <span class="chips">${c.sc!=null?`<i class="ch ${scCls(c.sc)}">סייפטי ${c.sc}</i>`:''}${c.kmMon?`<i class="ch">${fmtN(c.kmMon)} ק"מ</i>`:''}${c.a12?`<i class="ch ${c.f12?'sc-low':''}">${c.a12} תאונות${c.f12?` (${c.f12} באשמתו)`:''}</i>`:''}${p.risk?`<i class="ch ${p.risk.lvl==='high'?'sc-low':'sc-mid'}">🎯 ${RISK[p.risk.lvl][0]}</i>`:''}${p.sh?`<i class="ch sc-mid">🚑 לא פעיל</i>`:''}</span></button>`}).join('')}</div>${L.length>300?'<p class="legend">מוצגים 300 ראשונים – צמצם בחיפוש</p>':''}`;
+      <span class="chips">${c.sc!=null?`<i class="ch ${scCls(c.sc)}">סייפטי ${c.sc}</i>`:''}${c.kmMon?`<i class="ch">${fmtN(c.kmMon)} ק"מ</i>`:''}${c.a12?`<i class="ch ${c.f12?'sc-low':''}">${c.a12} תאונות${c.f12?` (${c.f12} באשמתו)`:''}</i>`:''}${p.risk?`<i class="ch ${p.risk.lvl==='high'?'sc-low':'sc-mid'}">🎯 ${RISK[p.risk.lvl][0]}</i>`:''}${p.sh?`<i class="ch sc-mid">🚑 ${p.sh.lvl==='bad'?'לא פעיל':'רק מלווה'}</i>`:''}</span></button>`}).join('')}</div>${L.length>300?'<p class="legend">מוצגים 300 ראשונים – צמצם בחיפוש</p>':''}`;
   const qi=$('q');qi.oninput=()=>{clearTimeout(window._qt);window._qt=setTimeout(()=>{const o=$('q');if(!o)return;st.q=o.value;const pos=o.selectionStart;listView();const n=$('q');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}},350)};
   $('br').onchange=e=>{st.br=e.target.value;listView()};$('sort').onchange=e=>{st.sort=e.target.value;listView()};
   document.querySelectorAll('.prow').forEach(b=>b.onclick=()=>{location.hash='p='+encodeURIComponent(b.dataset.p)});
@@ -274,7 +274,7 @@ function profView(key){
     ${tile('תאונות ב־12 חודשים',c.a12,c.a12?`<small class="ref ${c.f12?'b':''}">${c.f12} באשמתו</small>`:'<small class="ref g">אין</small>',c.f12?'bad':'')}
     ${tile('תאונה כל',c.kmAcc?km(c.kmAcc):(c.real?c.a26:c.a12)?'—':'אין תאונות',c.kmAcc?both(c.kmAcc,'kmAcc',1,fmtN)+(c.real?'<small class="ref">תאונות 2026 / ק"מ 2026</small>':''):'')}
     ${tile('התראות ל־100 ק"מ'+(c.evM?' · '+esc(c.evM):''),c.ev100!=null?c.ev100.toFixed(1):'—',c.ev100!=null?`${cmp(c.ev100,B.ev100m[c.evM],-1,x=>x.toFixed(1)).replace('ממוצע','סניף')}${cmp(c.ev100,REG.ev100m[c.evM],-1,x=>x.toFixed(1)).replace('ממוצע','מרחב')}`:'<small class="ref">אין תעודת משוב</small>')}
-    ${tile('משמרות',p.sh?p.sh.a:'—',p.sh?`<small class="ref b">ינו–אוג 26 · 0 ביול–אוג</small>`:'<small class="ref">יתווסף בהמשך</small>',p.sh?'warn':'')}
+    ${tile('פעילות',p.sh?(p.sh.lvl==='bad'?'לא פעיל':'רק מלווה'):'פעיל',p.sh?`<small class="ref b">${esc(p.sh.t)}</small>`:'<small class="ref">לפי יציאה לאירועים</small>',p.sh?'warn':'')}
   </div>
   <div class="pgrid">
   <section class="box"><h3>סייפטי – 12 חודשים</h3>${p.s?`<div class="mrow">${DATA.months.map((M,i)=>`<span class="mc ${scCls(p.s[i])}"><small>${esc(M.split(' ')[0].slice(0,3))}</small><b>${p.s[i]??'—'}</b></span>`).join('')}</div>`:'<p class="mu">אין ציוני סייפטי</p>'}
