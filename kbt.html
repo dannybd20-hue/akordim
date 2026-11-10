@@ -882,7 +882,8 @@ function tdInspHtml(){if(TD_INSP===null){tdInspLoad();return '<div class="tde">�
   const D=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'],dn=s=>{const [y,m,d]=s.split('-').map(Number);return `יום ${D[new Date(y,m-1,d).getDay()]} ${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}`};
   const ST={ok:['✓ אושר','ok'],new:['ממתין לאישור הרכז','warn'],no:['✗ לא מתאים','bad']};
   return `<div class="tde">${S.map(s=>{const n=(TD_INSP.books||[]).filter(b=>b.slot===s.id).length,[t,c]=ST[s.st]||ST.new;
-    return `<div class="tdg"><span><b>${esc(s.br)}</b> · ${dn(s.date)} <bdi dir="ltr" style="white-space:nowrap">${esc(s.from)}–${esc(s.to)}</bdi>${s.place?' · '+esc(s.place):''}${s.st==='no'&&s.note?`<br><small>הערת הרכז: ${esc(s.note)}</small>`:''}</span><span class="chip ${c}">${t}${s.st==='ok'?` · ${n} אישרו הגעה`:''}</span></div>`}).join('')}</div>`}
+    const L=(TD_INSP.books||[]).filter(b=>b.slot===s.id).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    return `<div class="tdg"><span><b>${esc(s.br)}</b> · ${dn(s.date)} <bdi dir="ltr" style="white-space:nowrap">${esc(s.from)}–${esc(s.to)}</bdi>${s.place?' · '+esc(s.place):''}${s.st==='no'&&s.note?`<br><small>הערת הרכז: ${esc(s.note)}</small>`:''}</span><span class="chip ${c}">${t}${s.st==='ok'?` · ${n} אישרו הגעה`:''}</span></div>${L.length?`<details style="margin:2px 0 6px"><summary style="cursor:pointer;font-size:.9em">מי נרשם (${L.length})</summary>${L.map(b=>`<div style="font-size:.88em;padding:2px 0"><bdi dir="ltr">${esc(b.time||'')}</bdi> · <b>${esc(b.n||'—')}</b>${b.pv?' · '+esc(b.pv):''}${b.veh?' · כלי '+esc(b.veh):''}${b.ph?' · '+esc(b.ph):''} <small style="color:var(--muted)">(${esc(b.by||'')})</small></div>`).join('')}</details>`:''}`}).join('')}</div>`}
 function renderToday(){
   const app=document.getElementById('app'),D=tdData();
   const dl=new Intl.DateTimeFormat('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(T0);
