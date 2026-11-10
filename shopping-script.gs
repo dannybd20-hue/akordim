@@ -300,6 +300,7 @@ function hourly() {
   notify_(added.map(function (n) { return { n: n, k: 'auto' }; }));
   maaserHourly_();
   medsHourly_();
+  invHourly_();
   if (new Date().getHours() === 3) ensureReminders_(); // פעם ביום: מוודא שיש טריגרים לתזכורת ולסיכום
 }
 
@@ -804,8 +805,40 @@ function invoicesPost_(d) {
   try {
     const l = invLoad_();
     st = l.st;
-    let changed = false;
+    let changed = invInbox_(st);
     (d.ops || []).forEach(function (o) {
+      if (invApply_(st, o)) changed = true;
+    });
+    if (changed) invSave_(l.f, st);
+  } finally { lock.releaseLock(); }
+  return out_(d.rev === st.rev ? { ok: true, rev: st.rev } : { ok: true, rev: st.rev, state: st, ai: !!PropertiesService.getScriptProperties().getProperty('ANTHROPIC_KEY') });
+}
+/* תיבת דואר נכנס: Claude מעלה לדרייב קבצים בשם invoice_inbox_*.json עם {ops:[...]}.
+   הם נקלטים בכל פתיחה של האפליקציה ובבדיקה השעתית, ואז עוברים לפח. */
+function invInbox_(st) {
+  let changed = false;
+  const it = DriveApp.searchFiles("title contains 'invoice_inbox_' and trashed = false");
+  while (it.hasNext()) {
+    const f = it.next();
+    try {
+      const o = JSON.parse(f.getBlob().getDataAsString('UTF-8'));
+      (o.ops || []).forEach(function (op) { if (invApply_(st, op)) changed = true; });
+      f.setTrashed(true);
+    } catch (x) { console.warn('inbox ' + f.getName() + ': ' + x); }
+  }
+  return changed;
+}
+function invHourly_() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const l = invLoad_();
+    if (invInbox_(l.st)) invSave_(l.f, l.st);
+  } finally { lock.releaseLock(); }
+}
+function invApply_(st, o) {
+  let changed = false;
+  [o].forEach(function (o) {
       if (o.type === 'inv' && o.inv) {
         const c = invClean_(o.inv), i = st.invoices.findIndex(function (x) { return x.id === c.id; });
         if (i >= 0) st.invoices[i] = c; else st.invoices.push(c);
@@ -819,10 +852,8 @@ function invoicesPost_(d) {
         st[k] = st[k].filter(function (x) { return x.id !== String(o.id); });
         if (st[k].length !== n) changed = true;
       }
-    });
-    if (changed) invSave_(l.f, st);
-  } finally { lock.releaseLock(); }
-  return out_(d.rev === st.rev ? { ok: true, rev: st.rev } : { ok: true, rev: st.rev, state: st, ai: !!PropertiesService.getScriptProperties().getProperty('ANTHROPIC_KEY') });
+  });
+  return changed;
 }
 /* קריאת חשבונית מצילום או PDF */
 function invScan_(d) {
