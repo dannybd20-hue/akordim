@@ -985,38 +985,38 @@ function brrMail(br){
   const o=[];const P=x=>o.push(x);
   P(`שלום ${first(h.n)||''},`);P(`להלן תמונת מצב בטיחות ונהגים עדכנית עבור סניף ${br}, לטיפולך ולמעקב מול רכז התחבורה הסניפי.`);P('');
   P('תקציר מנהלים');
-  if(B.n)P(` * ציון סייפטי ממוצע: ${B.cur} (ממוצע מרחבי: ${B.R})`);
-  P(` * ציונים קריטיים (מתחת ל־25): ${pl(B.low.length,'נהג אחד','נהגים')}`);
-  P(` * חריגות פתוחות (כלים ונהגים): ${nOpen}${warn.length?` (ועוד ${warn.length} שיפוגו בקרוב)`:''}`);
-  P(` * ללא השתלמות שנתית (${DATA.ann?DATA.ann.y:Y}): ${pl(ann.length,'מתנדב אחד','מתנדבים')}`);
-  P(` * לא פעילים כנהגים (${per}): ${pl(I.length,'מתנדב אחד','מתנדבים')}${C.length?` (ועוד ${C.length} רק כמלווים)`:''}`);
-  if(acc)P(` * תאונות מתחילת השנה: ${nAcc}${fA?` (${fA} באשמת נהג הארגון)`:''}`);
+  if(B.n)P(` • ציון סייפטי ממוצע: ${B.cur} (ממוצע מרחבי: ${B.R})`);
+  P(` • ציונים קריטיים (מתחת ל־25): ${pl(B.low.length,'נהג אחד','נהגים')}`);
+  P(` • חריגות פתוחות (כלים ונהגים): ${nOpen}${warn.length?` (ועוד ${warn.length} שיפוגו בקרוב)`:''}`);
+  P(` • ללא השתלמות שנתית (${DATA.ann?DATA.ann.y:Y}): ${pl(ann.length,'מתנדב אחד','מתנדבים')}`);
+  P(` • לא פעילים כנהגים (${per}): ${pl(I.length,'מתנדב אחד','מתנדבים')}${C.length?` (ועוד ${C.length} רק כמלווים)`:''}`);
+  if(acc)P(` • תאונות מתחילת השנה: ${nAcc}${fA?` (${fA} באשמת נהג הארגון)`:''}`);
   let k=0;const H=t=>{P('');P(`${++k}. ${t}`)};
-  if(B.n){H(`ציוני סייפטי – ${M}`);P(` * ממוצע סניף: ${B.cur}${trend?` (${trend})`:''}`);P(` * ממוצע מרחב ירושלים: ${B.R}`);P(` * סה"כ בעלי ציון בסניף: ${B.n} נהגים`);
-    if(B.low.length){P(` * מתנדבים עם ציון נמוך מ־25 (נדרש מעקב והדרכה):`);B.low.forEach(([n,pv,x])=>P(`   * ${n} (פרייבט ${pv}) – ציון: ${x}`))}else P(' * אין מתנדבים עם ציון נמוך מ־25.')}
+  if(B.n){H(`ציוני סייפטי – ${M}`);P(` • ממוצע סניף: ${B.cur}${trend?` (${trend})`:''}`);P(` • ממוצע מרחב ירושלים: ${B.R}`);P(` • סה"כ בעלי ציון בסניף: ${B.n} נהגים`);
+    if(B.low.length){P(` • מתנדבים עם ציון נמוך מ־25 (נדרש מעקב והדרכה):`);B.low.forEach(([n,pv,x])=>P(`   ◦ ${n} (פרייבט ${pv}) – ציון: ${x}`))}else P(' • אין מתנדבים עם ציון נמוך מ־25.')}
   H('כלי רכב וחריגות פתוחות');
-  if(!recs.length)P(' * אין חריגות פתוחות.');
-  recs.forEach(({r,L})=>{P(` * ${who(r)}`);L.forEach(i=>P(`   * ${i.label}: ${i.lvl==='warn'?`בתוקף עד ${i.dateStr} (יפוג בקרוב)`:`פג תוקף ב־${i.dateStr}`}`));
+  if(!recs.length)P(' • אין חריגות פתוחות.');
+  recs.forEach(({r,L})=>{P(` • ${who(r)}`);L.forEach(i=>P(`   ◦ ${i.label}: ${i.lvl==='warn'?`בתוקף עד ${i.dateStr} (יפוג בקרוב)`:`פג תוקף ב־${i.dateStr}`}`));
     if(r.type==='vehicle'&&L.some(i=>i.lvl!=='warn'&&/test|service|ins/.test(i.k)))P('     (תזכורת: חל איסור מוחלט על תנועת כלי רכב ללא רישוי, ביטוח וטיפול בתוקף)');
     else if(r.type!=='vehicle'&&L.some(i=>i.lvl!=='warn'))P('     (נהג עם מסמך שפג תוקפו אינו מורשה לנהוג בכלי הארגון עד להסדרה)')});
   H(`נהגים ללא השתלמות שנתית ${DATA.ann?DATA.ann.y:Y} (${ann.length})`);
-  if(ann.length){P('יש להנחות את המתנדבים להירשם ולבצע את ההשתלמות בהקדם דרך האפליקציה או מול מחלקת הדרכה:');annS.forEach(x=>P(` * ${x.name}${x.pv?` (פרייבט ${x.pv})`:''} – ${x.need}`))}else P(' * כל הנהגים ביצעו השתלמות שנתית.');
+  if(ann.length){P('יש להנחות את המתנדבים להירשם ולבצע את ההשתלמות בהקדם דרך האפליקציה או מול מחלקת הדרכה:');annS.forEach(x=>P(` • ${x.name}${x.pv?` (פרייבט ${x.pv})`:''} – ${x.need}`))}else P(' • כל הנהגים ביצעו השתלמות שנתית.');
   H(`בדיקת פעילות – יציאה לאירועים (${per})`);
-  if(I.length){P('להלן נהגים שאין להם יציאות כנהגים בתקופה, לבדיקת סטטוס מול הסניף:');I.forEach(([n,pv,tx])=>P(` * ${n} (פרייבט ${pv}) – ${tx}`))}else P(' * כל הנהגים פעילים.');
-  if(C.length){P('נהגים שמופיעים ביציאות רק כמלווים ולא כנהגים:');C.forEach(([n,pv,tx])=>P(` * ${n} (פרייבט ${pv}) – ${tx}`))}
-  if(acc){H('תאונות מתחילת השנה');P(` * ${nAcc===0?`לא נרשמו תאונות בסניף במהלך ${Y}.`:`נרשמו ${nAcc===1?'תאונה אחת':nAcc+' תאונות'} בסניף במהלך ${Y}${fA?`, מתוכן ${fA===1?'תאונה אחת':fA+' תאונות'} באשמת נהג איחוד הצלה`:''}.`}`)}
-  P('');P('משימות נדרשות לטיפול:');P(' * מעבר משותף על הנתונים עם רכז התחבורה של הסניף.');
-  if(vBad.length)P(` * טיפול מיידי ב${vBad.map(([r])=>'כלי '+r.rec.num).join(', ')} – נהג/כלי עם חריגה פתוחה אינו מורשה לנהוג/לפעול במסגרת הארגון עד להסדרה מלאה.`);
-  const dB=bad.filter(([r])=>r.type!=='vehicle').length;if(dB)P(` * הסדרת המסמכים של ${pl(dB,'נהג אחד','נהגים')} עם חריגה פתוחה.`);
-  if(ann.length)P(` * הנעת ${ann.length===1?'הנהג':ann.length+' הנהגים'} לביצוע השתלמות שנתית לפני סוף השנה האזרחית.`);
-  if(I.length)P(` * בירור סטטוס הפעילות של ${I.length===1?'הנהג שאינו פעיל':I.length+' הנהגים שאינם פעילים'}.`);
+  if(I.length){P('להלן נהגים שאין להם יציאות כנהגים בתקופה, לבדיקת סטטוס מול הסניף:');I.forEach(([n,pv,tx])=>P(` • ${n} (פרייבט ${pv}) – ${tx}`))}else P(' • כל הנהגים פעילים.');
+  if(C.length){P('נהגים שמופיעים ביציאות רק כמלווים ולא כנהגים:');C.forEach(([n,pv,tx])=>P(` • ${n} (פרייבט ${pv}) – ${tx}`))}
+  if(acc){H('תאונות מתחילת השנה');P(` • ${nAcc===0?`לא נרשמו תאונות בסניף במהלך ${Y}.`:`נרשמו ${nAcc===1?'תאונה אחת':nAcc+' תאונות'} בסניף במהלך ${Y}${fA?`, מתוכן ${fA===1?'תאונה אחת':fA+' תאונות'} באשמת נהג איחוד הצלה`:''}.`}`)}
+  P('');P('משימות נדרשות לטיפול:');P(' • מעבר משותף על הנתונים עם רכז התחבורה של הסניף.');
+  if(vBad.length)P(` • טיפול מיידי ב${vBad.map(([r])=>'כלי '+r.rec.num).join(', ')} – נהג/כלי עם חריגה פתוחה אינו מורשה לנהוג/לפעול במסגרת הארגון עד להסדרה מלאה.`);
+  const dB=bad.filter(([r])=>r.type!=='vehicle').length;if(dB)P(` • הסדרת המסמכים של ${pl(dB,'נהג אחד','נהגים')} עם חריגה פתוחה.`);
+  if(ann.length)P(` • הנעת ${ann.length===1?'הנהג':ann.length+' הנהגים'} לביצוע השתלמות שנתית לפני סוף השנה האזרחית.`);
+  if(I.length)P(` • בירור סטטוס הפעילות של ${I.length===1?'הנהג שאינו פעיל':I.length+' הנהגים שאינם פעילים'}.`);
   P('');P('אשמח לעמוד לרשותך בכל שאלה והבהרה.');P('');P('בברכה,');P('דניאל בן דוד');P('קצין בטיחות בתעבורה – מרחב ירושלים');P('איחוד הצלה');
   return o.join('\n');
 }
 /* אותו דוח כמסמך מעוצב (HTML) – להדבקה במייל באאוטלוק */
 function brrHtml(br){const L=brrMail(br).split('\n');let h=`<div style="background:#1f3f6e;color:#fff;padding:14px 18px;border-radius:8px;margin-bottom:12px"><div style="font-size:20px;font-weight:700">דוח בטיחות ומצב נהגים</div><div style="font-size:14px;opacity:.85">סניף ${esc(br)} | ${esc(fmt(T0))}</div></div>`;let lv=0;
   const close=to=>{while(lv>to){h+='</ul>';lv--}};
-  L.forEach(l=>{const m=/^( *)\* (.*)$/.exec(l);
+  L.forEach(l=>{const m=/^( *)[•◦] (.*)$/.exec(l);
     if(m){const d=m[1].length>=3?2:1;while(lv<d){h+=`<ul style="margin:3px 0;padding-inline-start:${lv?18:22}px">`;lv++}close(d);h+=`<li style="margin:2px 0">${esc(m[2]).replace(/^([^:–]{2,40}):/,'<b>$1:</b>')}</li>`;return}
     close(0);const t=esc(l.trim());if(!t)return;
     if(/^\d+\. /.test(l)){h+=`<h3 style="margin:16px 0 6px;color:#1f3f6e;font-size:16px;border-bottom:2px solid #f26b21;padding-bottom:3px">${t}</h3>`;return}
@@ -1025,9 +1025,17 @@ function brrHtml(br){const L=brrMail(br).split('\n');let h=`<div style="backgrou
     if(/^\(/.test(l.trim())){h+=`<p style="margin:0 40px 4px 0;color:#b42318;font-size:13px">${t}</p>`;return}
     h+=`<p style="margin:4px 0">${t}</p>`});
   close(0);return `<div dir="rtl" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1b2430;max-width:680px;text-align:right">${h}</div>`}
-async function brrCopyHtml(br,b){const html=brrHtml(br),txt=brrMail(br);
-  try{await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([txt],{type:'text/plain'})})]);b.textContent='✓ הועתק – מדביקים בגוף המייל'}
-  catch(e){try{await navigator.clipboard.writeText(txt);b.textContent='✓ הועתק (טקסט)'}catch(_){b.textContent='ההעתקה נכשלה'}}setTimeout(()=>b.textContent='📋 העתק דוח מעוצב',3000)}
+async function brrCopyHtml(br,b){const html=brrHtml(br),txt=brrMail(br);let ok=false;
+  /* העתקה של אזור מסומן בדף – כך גם בטלפון ההדבקה באאוטלוק שומרת על ההדגשות והעיצוב */
+  try{const d=document.createElement('div');d.contentEditable='true';d.style.cssText='position:fixed;left:-9999px;top:0;opacity:0;background:#fff;color:#000';d.innerHTML=html;document.body.appendChild(d);
+    const r=document.createRange();r.selectNodeContents(d);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);ok=document.execCommand('copy');sel.removeAllRanges();d.remove()}catch(e){}
+  if(!ok)try{await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([txt],{type:'text/plain'})})]);ok=true}catch(e){}
+  if(!ok)try{await navigator.clipboard.writeText(txt);b.textContent='✓ הועתק (טקסט בלבד)'}catch(_){b.textContent='ההעתקה נכשלה'}
+  else b.textContent='✓ הועתק – מדביקים בגוף המייל';setTimeout(()=>b.textContent='📋 העתק דוח מעוצב',3500)}
+/* תצוגה של הדוח המעוצב בדף מלא – אפשר לסמן הכל ולהעתיק ידנית */
+function brrView(br){const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:99;background:#fff;overflow:auto;padding:14px';
+  ov.innerHTML=`<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap"><button class="mail sm" id="bvc">📋 העתק</button><button class="mail sm" id="bvx">✕ סגירה</button><small style="color:#555;align-self:center">אם ההעתקה לא שומרת עיצוב: לחיצה ארוכה על הטקסט ← "בחר הכל" ← העתק</small></div><div id="bvd">${brrHtml(br)}</div>`;
+  document.body.appendChild(ov);ov.querySelector('#bvx').onclick=()=>ov.remove();ov.querySelector('#bvc').onclick=e=>brrCopyHtml(br,e.target)}
 function renderBrr(){
   const app=document.getElementById('app');
   if(!DATA.brrep){app.innerHTML='<div class="empty">אין נתונים</div>';return}
@@ -1042,12 +1050,13 @@ function renderBrr(){
       <div class="meta"><span>ראש סניף: ${esc(h.n||'—')}</span>${h.ph?`<span>${fmtPhone(h.ph)}</span>`:''}${h.em?`<span class="em">${esc(h.em)}</span>`:''}</div>
       <div class="meta" style="margin-top:4px">${d.B.n?`<span class="chip ${d.B.cur<25?'bad':d.B.cur<d.B.R?'warn':'ok'}">סייפטי ${esc(d.B.cur)}</span>`:''}${d.B.low.length?`<span class="chip bad">${d.B.low.length} מתחת ל־25</span>`:''}<span class="chip ${d.bad.length?'bad':'ok'}">${d.bad.length} פג תוקף</span>${d.warn.length?`<span class="chip warn">${d.warn.length} יפוג בקרוב</span>`:''}<span class="chip ${d.ann.length?'warn':'ok'}">${d.ann.length} בלי השתלמות</span>${(n=>n?`<span class="chip warn">${n} לא פעילים</span>`:'')((d.B.ina||[]).filter(x=>x[3]==='bad').length)}${last!=null?`<span class="chip ok">✓ נשלח ${last===0?'היום':`לפני ${last} ימים`}</span>`:''}</div>
       <details class="accq" style="margin-top:6px"><summary><b>תצוגה מקדימה של הדוח</b></summary><div class="pre">${esc(t.replace(/\*/g,''))}</div></details></div>
-      <div class="issues"><div class="irow"><span class="btns">${h.em?`<a class="mail sm${sent?' done':''}" href="mailto:${esc(h.em)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}" data-sent="${esc(sk)}">✉️ מייל לראש הסניף</a>`:'<span class="chip miss">אין מייל לראש הסניף</span>'}${h.ph?`<a class="wa sm" href="${waLink(h.ph,t)}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}וואטסאפ</a>`:''}<button class="mail sm" type="button" data-brrh="${esc(br)}">📋 העתק דוח מעוצב</button><button class="mail sm" type="button" data-copy="${esc(t)}">העתק</button></span></div></div></div>`}).join('');
+      <div class="issues"><div class="irow"><span class="btns">${h.em?`<a class="mail sm${sent?' done':''}" href="mailto:${esc(h.em)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}" data-sent="${esc(sk)}">✉️ מייל לראש הסניף</a>`:'<span class="chip miss">אין מייל לראש הסניף</span>'}${h.ph?`<a class="wa sm" href="${waLink(h.ph,t)}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}וואטסאפ</a>`:''}<button class="mail sm" type="button" data-brrh="${esc(br)}">📋 העתק דוח מעוצב</button><button class="mail sm" type="button" data-brrv="${esc(br)}">👁 דוח מעוצב</button><button class="mail sm" type="button" data-copy="${esc(t)}">העתק</button></span></div></div></div>`}).join('');
   app.innerHTML=`<div class="controls"><select id="branch"><option value="">כל הסניפים</option>${Object.keys(DATA.brrep.B).map(b=>`<option${b===state.branch?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
     <div class="legend">דוח לכל סניף: סייפטי של ${esc(Object.values(DATA.brrep.B)[0].m||'')}, חריגות פתוחות (בלי בדיקות תקינות קצב"ת), מי שלא ביצע השתלמות שנתית, לא פעילים (לפי יציאה לאירועים) ותאונות מתחילת השנה. המייל נפתח באפליקציית המייל שתבחר, עם יהודה לוין בעותק.</div>
     <div class="list">${cards}</div>`;
   bind();
   app.querySelectorAll('[data-brrh]').forEach(b=>b.onclick=()=>brrCopyHtml(b.dataset.brrh,b));
+  app.querySelectorAll('[data-brrv]').forEach(b=>b.onclick=()=>brrView(b.dataset.brrv));
 }
 /*BRR-END*/
 </script>
