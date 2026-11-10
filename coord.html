@@ -951,7 +951,9 @@ function ofcBind(){
   const upd=()=>{const n=document.querySelectorAll('.of-b:checked').length,e=$('of-bn');if(e)e.textContent=n};
   const all=$('of-all');if(all)all.onchange=()=>{document.querySelectorAll('.of-b').forEach(c=>c.checked=all.checked);upd()};document.querySelectorAll('.of-b').forEach(c=>c.onchange=upd);
   const add=$('of-add');if(add)add.onclick=async()=>{const brs=[...document.querySelectorAll('.of-b:checked')].map(c=>c.value);const o={action:'insp_slot_add',date:$('of-d').value,from:$('of-f').value,to:$('of-t').value,step:15,place:$('of-p').value.trim(),brs};
-    if(!o.date||!o.from||!o.to||o.to<=o.from){alert('יש לבחור תאריך ושעות');return}if(!brs.length){alert('יש לבחור לפחות סניף אחד');return}
+    if(!o.date){alert('יש לבחור תאריך');return}if(!o.from||!o.to){alert('יש לבחור משעה ועד שעה');return}
+    if(o.to<o.from){const t=o.from;o.from=o.to;o.to=t;$('of-f').value=o.from;$('of-t').value=o.to}/* הוקלד הפוך – מסדרים לבד */
+    if(o.to===o.from){alert('שעת הסיום צריכה להיות אחרי שעת ההתחלה');return}if(!brs.length){alert('יש לבחור לפחות סניף אחד');return}
     add.disabled=true;add.textContent='שולח…';const r=await api(o);if(!r){add.disabled=false;add.textContent='שליחת המועד לאישור הרכזים';alert('השמירה נכשלה');return}OFC.slots=null;OFC.all=null;ofcLoad()};
   document.querySelectorAll('[data-ofdel]').forEach(b=>b.onclick=async()=>{if(!confirm('למחוק את המועד ואת כל ההרשמות אליו?'))return;await api({action:'insp_slot_del',id:b.dataset.ofdel});OFC.slots=null;OFC.all=null;ofcLoad()});
   document.querySelectorAll('[data-ofun]').forEach(b=>b.onclick=async()=>{if(!confirm('לבטל את ההרשמה?'))return;await api({action:'insp_unbook',id:b.dataset.ofun});ofcLoad()});
