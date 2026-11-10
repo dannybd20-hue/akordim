@@ -108,7 +108,7 @@ async function unlock(saved){
   if(!saved){$('ub').disabled=true;$('ub').textContent='פותח…'}
   try{D=await dec(await fileOf(pw),pw);CUR_PW=pw;setTimeout(hping,300);if(!saved&&$('rem').checked)ls('head_pw',pw);render()}
   catch(e){
-    if(!saved){try{ADMIN=await dec('head/index.bin',raw);CUR_PW=raw;setTimeout(hping,800);if($('rem').checked)ls('kbt_pw',raw);await pick(ls('head_adm_br'));return}catch(_){ADMIN=null}}
+    if(!saved){try{ADMIN=await dec('head/index.bin',raw);CUR_PW=raw;setTimeout(hping,800);if($('rem').checked&&confirm('זו סיסמת המנהל – היא פותחת את כל הסניפים. לשמור אותה במכשיר הזה? (רק אם זה המכשיר האישי שלך)'))ls('kbt_pw',raw);await pick(ls('head_adm_br'));return}catch(_){ADMIN=null}}
     if(saved)ls('head_pw',null);lockView(e.message==='pw'?(saved?'הסיסמה הוחלפה בסיסמה חזקה יותר – הקלד את הסיסמה החדשה שקיבלת בוואטסאפ':'סיסמה שגויה'):!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
 }
 async function pick(b){const br=ADMIN[b]?b:Object.keys(ADMIN)[0];ls('head_adm_br',br);D=await dec(await fileOf(ADMIN[br].pw),ADMIN[br].pw);render()}

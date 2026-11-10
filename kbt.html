@@ -182,7 +182,7 @@ function formLink(v){const d=(DATA.drivers||[]).find(x=>(v.phone&&x.phone===v.ph
 function first(n){return (n||'').split(' ')[0]}
 function carTxt(c){return `כלי מס' ${c.num}`}
 function carLine(d){return d.cars&&d.cars.length?`\n(${d.cars.map(carTxt).join(', ')})`:''}
-const DOVI={wa:'972502073341',mail:'doviD@1221.org.il',cc:'yehudalv@1221.org.il'};
+const DOVI={wa:'',mail:'doviD@1221.org.il',cc:'yehudalv@1221.org.il'};
 function doviMsg(d,i){return `שלום דובי,\n\nלנהג שפרטיו מופיעים מטה פג תוקף בדיקת המידע התעבורתי (עבר תעבורתי) בתאריך ${i.dateStr}.\nאודה לך אם תוציא עבורו בדיקה חדשה, ותעדכן אותי ברגע שהבדיקה בוצעה.\n\n*פרטי הנהג:*\nשם: ${d.name}\nת.ז.: ${(d.idn||'').replace(/-/g,'')||'________'}\nמס' רישיון נהיגה: ${d.licn||'________'}\nפרייבט: ${d.priv||'—'}\nסניף: ${d.branch||'—'}\n\nתודה רבה,\n${SIGN.replace('בברכה,\n','')}`}
 // i = {k, lvl, n, dateStr, srcStr}
 function soonTxt(i,f){return i.n===1?(f?'*תפוג מחר*':'*יפוג מחר*'):`*${f?'תפוג':'יפוג'} בעוד ${i.n} ימים*`}
@@ -243,7 +243,8 @@ const state={only:null,view:'today',cat:ls('cat')||'',kind:ls('kind')||'all',win
 
 /*UNIT*/
 // יחידות שכל ההודעות שלהן עוברות דרך הרכז ולא ישירות למתנדב
-const UNITS={'יחידת חילוץ מגילות':{n:'ארז רפאלי',ph:'0506210499',em:'erezre3@walla.com',u:'יחידת החילוץ'}};
+/* פרטי קשר של אנשים (טלפונים) מגיעים מתוך הנתונים המוצפנים – לא כתובים בקוד הגלוי */
+let UNITS={};
 function unitOf(o){return o&&UNITS[o.branch]||null}
 function uPh(o){const u=unitOf(o);return u?u.ph:o.phone}
 function uMail(o){const u=unitOf(o);return u?u.em:(o.email||'')}
@@ -278,7 +279,7 @@ async function unlock(saved){
   const pw=saved||(document.getElementById('pw')&&(s=>s.replace(/[א-ת]/g,c=>({'ק':'e','ר':'r','א':'t','ט':'y','ו':'u','ן':'i','ם':'o','פ':'p','ש':'a','ד':'s','ג':'d','כ':'f','ע':'g','י':'h','ח':'j','ל':'k','ך':'l','ז':'z','ס':'x','ב':'c','ה':'v','נ':'b','מ':'n','צ':'m'})[c]||c))(document.getElementById('pw').value.trim().toLowerCase()).replace(/\.$/,''));if(!pw)return;
   if(!saved){const b=document.getElementById('ub');b.disabled=true;b.textContent='פותח… (כמה שניות)'}
   else document.getElementById('app').innerHTML='<div class="empty">פותח את הנתונים…</div>';
-  try{DATA=await decrypt(pw);KPW=pw;setTimeout(chgBadge,50);setTimeout(tdBadge,80);setTimeout(annBadge,60);setTimeout(loadAcc,300);setTimeout(()=>loadBd(true),900);if(!window._bdT)window._bdT=setInterval(()=>loadBd(true),180000);if(!saved)ls('kbt_pw',document.getElementById('rem').checked?pw:'');document.getElementById('lockB').hidden=false;document.getElementById('upd').textContent='עודכן: '+DATA.updated;render()}
+  try{DATA=await decrypt(pw);if(DATA.pc){UNITS=DATA.pc.units||{};DOVI.wa=DATA.pc.dovi||''}KPW=pw;setTimeout(chgBadge,50);setTimeout(tdBadge,80);setTimeout(annBadge,60);setTimeout(loadAcc,300);setTimeout(()=>loadBd(true),900);if(!window._bdT)window._bdT=setInterval(()=>loadBd(true),180000);if(!saved)ls('kbt_pw',document.getElementById('rem').checked?pw:'');document.getElementById('lockB').hidden=false;document.getElementById('upd').textContent='עודכן: '+DATA.updated;render()}
   catch(e){if(saved&&e.message==='pw')ls('kbt_pw','');lockView(e.message==='pw'?'סיסמה שגויה':!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
 }
 function relock(){if(!confirm('לנעול ולשכוח את הסיסמה במכשיר הזה?'))return;ls('kbt_pw','');DATA=null;lockView()}

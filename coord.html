@@ -1095,7 +1095,7 @@ async function unlock(saved){
   try{DATA=await dec(await fileOf(pw),pw);CUR_PW=pw;if(!saved)ls('coord_pw',$('rem').checked?pw:null);show()}
   catch(e){
     /* סיסמת מנהל (קצב"ת) בכניסה מהמחשב: פותח מצב מנהל ושומר אותה במכשיר */
-    if(!saved){try{ADMIN=await dec('coord/index.bin',raw);CUR_PW=raw;if($('rem').checked)ls('kbt_pw',raw);const b=ls('coord_adm_br');const br=ADMIN[b]?b:Object.keys(ADMIN)[0];DATA=await dec(await fileOf(ADMIN[br].pw),ADMIN[br].pw);show();return}catch(_){ADMIN=null}}
+    if(!saved){try{ADMIN=await dec('coord/index.bin',raw);CUR_PW=raw;if($('rem').checked&&confirm('זו סיסמת המנהל – היא פותחת את כל הסניפים. לשמור אותה במכשיר הזה? (רק אם זה המכשיר האישי שלך)'))ls('kbt_pw',raw);const b=ls('coord_adm_br');const br=ADMIN[b]?b:Object.keys(ADMIN)[0];DATA=await dec(await fileOf(ADMIN[br].pw),ADMIN[br].pw);show();return}catch(_){ADMIN=null}}
     if(saved)ls('coord_pw',null);lockView(e.message==='pw'?(saved?'הסיסמה הוחלפה בסיסמה חזקה יותר – הקלד את הסיסמה החדשה שקיבלת בוואטסאפ':'סיסמה שגויה'):!window.DecompressionStream?'הדפדפן ישן מדי, צריך לעדכן':'אין חיבור לאינטרנט, נסה שוב')}
 }
 function relock(){ls('coord_pw',null);DATA=null;ADMIN=null;lockView()}
