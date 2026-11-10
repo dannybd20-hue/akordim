@@ -156,6 +156,7 @@ tr.chgrow td{background:var(--today-bg)}tr.chgrow td:first-child{box-shadow:inse
       <button class="tab" role="tab" id="t-veh" aria-selected="false" data-v="veh">רכבים</button>
       <button class="tab" role="tab" id="t-drv" aria-selected="false" data-v="drv">נהגים</button>
       <button class="tab" role="tab" id="t-ann" aria-selected="false" data-v="ann">השתלמות שנתית<span class="n" id="n-ann"></span></button>
+      <button class="tab" role="tab" id="t-brr" aria-selected="false" data-v="brr">דוח לסניף</button>
       <button class="tab" role="tab" id="t-route" aria-selected="false" data-v="route">מסלול בדיקות</button>
       <button class="tab" role="tab" id="t-insp" aria-selected="false" data-v="insp">בדיקות<span class="n" id="n-insp"></span></button>
       <button class="tab" role="tab" id="t-acc" aria-selected="false" data-v="acc">תאונות<span class="n" id="n-acc"></span></button>
@@ -379,6 +380,7 @@ function render(){
   document.getElementById('n-alerts').textContent=every.filter(r=>r.lvl==='today'||r.lvl==='bad').length||'';
   if(state.view==='route'){renderRoute();return}
   if(state.view==='today'){renderToday();return}
+  if(state.view==='brr'){renderBrr();return}
   if(state.view==='acc'){renderAcc();return}
   if(state.view==='ann'){renderAnn();return}
   if(state.view==='chg'){renderChg();return}
@@ -938,6 +940,55 @@ function renderToday(){
 .tdg{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0;border-bottom:1px dashed var(--line,#e2e8f0)}
 a.stat{text-decoration:none;color:inherit}`;document.head.appendChild(st)})();
 /*TODAY-END*/
+/*BRR-START*/
+/* ===== דוח לראש סניף: סייפטי + חריגות פתוחות (בלי בדיקת תקינות) + השתלמות שנתית + לא פעילים + תאונות ===== */
+let BRR_AL=null;
+function brrRows(br){
+  return (BRR_AL||buildAlerts(true)).filter(r=>r.rec.branch===br).map(r=>({...r,is:r.is.filter(i=>i.k!=='check'&&i.lvl!=='miss')})).filter(r=>r.is.length);
+}
+function brrData(br){
+  const B=(DATA.brrep&&DATA.brrep.B[br])||{h:{},low:[],ina:[]},rows=brrRows(br);
+  const who=r=>r.type==='vehicle'?`כלי ${r.rec.num}${r.rec.plate?' ('+r.rec.plate+')':''}${r.rec.name?' · נהג: '+r.rec.name:''}`:`${r.rec.name}${r.rec.priv?' ('+r.rec.priv+')':''}`;
+  const line=(r,L)=>`• ${who(r)} – ${L.map(i=>i.lvl==='warn'?`${i.label} יפוג ב־${i.dateStr}`:`${i.label} פג ב־${i.dateStr}`).join(', ')}`;
+  const bad=rows.map(r=>[r,r.is.filter(i=>i.lvl!=='warn')]).filter(x=>x[1].length),warn=rows.map(r=>[r,r.is.filter(i=>i.lvl==='warn')]).filter(x=>x[1].length);
+  const ann=DATA.ann?DATA.ann.L.filter(o=>o.branch===br):[];
+  const Y=T0.getFullYear(),acc=ACCD?ACCD.acc.filter(a=>a.br===br&&(pdh(a.d)||{getFullYear:()=>0}).getFullYear()===Y):null;
+  return {B,bad,warn,ann,acc,line,Y};
+}
+function brrText(br){
+  const {B,bad,warn,ann,acc,line,Y}=brrData(br),h=B.h||{};
+  let t=`שלום ${first(h.n)||''},\nמצרף את דוח הבטיחות ומצב הנהגים של סניף *${br}* (נכון ל־${fmt(T0)}).\n`;
+  if(B.n){t+=`\n*סייפטי – ${B.m}*\n• מתנדבים עם ציון: ${B.n}\n• ציון ממוצע בסניף: *${B.cur}*${B.prev!=null?` (בחודש הקודם: ${B.prev})`:''}\n• ממוצע המרחב: ${B.R}\n• מתחת ל־25: *${B.low.length}*\n`;
+    if(B.low.length)t+=B.low.map(([n,pv,x])=>`   – ${n} (${pv}): ${x}`).join('\n')+'\n'}
+  t+=`\n*חריגות פתוחות – פג תוקף (${bad.length})*\n`+(bad.length?bad.map(([r,L])=>line(r,L)).join('\n'):'אין 👍')+'\n';
+  if(warn.length)t+=`\n*יפוג בימים הקרובים (${warn.length})*\n`+warn.map(([r,L])=>line(r,L)).join('\n')+'\n';
+  t+=`\n*לא ביצעו השתלמות שנתית ${DATA.ann?DATA.ann.y:Y} (${ann.length})*\n`+(ann.length?ann.map(o=>`• ${o.name}${o.pv?' ('+o.pv+')':''} – ${o.need}`).join('\n'):'כולם ביצעו 👍')+'\n';
+  if(B.ina&&B.ina.length)t+=`\n*לא פעילים במשמרות (${B.ina.length})* – אפס משמרות ביולי–אוגוסט\n`+B.ina.map(([n,pv,a])=>`• ${n} (${pv})${a?` – ${a===1?'משמרת אחת':a+' משמרות'} בינואר–יוני`:' – אין משמרות מתחילת השנה'}`).join('\n')+'\n';
+  if(acc)t+=`\n*תאונות מתחילת ${Y}:* ${acc.length}${(n=>n?` (מתוכן ${n} באשמת נהג איחוד הצלה)`:'')(acc.filter(a=>/איחוד/.test(a.fault)).length)}\n`;
+  t+=`\nאודה לך אם תעבור על הרשימה עם רכז התחבורה ותדאג שהמתנדבים יסדירו את מה שחסר. נהג עם חריגה פתוחה אינו מורשה לנהוג בכלי הארגון.\nאני זמין לכל שאלה.\n\nתודה,\n${NOSIGN}`;
+  return t;
+}
+function renderBrr(){
+  const app=document.getElementById('app');
+  if(!DATA.brrep){app.innerHTML='<div class="empty">אין נתונים</div>';return}
+  if(!ACCD&&!window._brrAcc&&typeof loadAcc==='function'){window._brrAcc=1;Promise.resolve(loadAcc()).then(()=>{if(ACCD&&state.view==='brr')render()})}
+  BRR_AL=buildAlerts(true);
+  const brs=Object.keys(DATA.brrep.B).filter(b=>!state.branch||b===state.branch);
+  const cards=brs.map(br=>{const d=brrData(br),h=d.B.h||{},t=brrText(br),sk='sent:brr:'+br+':'+TODAY_KEY,sent=ls(sk);
+    const last=(()=>{for(let i=0;i<60;i++){const k=new Date(T0.getTime()-i*DAY+12*3600000).toISOString().slice(0,10);if(ls('sent:brr:'+br+':'+k))return i}return null})();
+    const subj=`דוח בטיחות ומצב נהגים – סניף ${br} – ${fmt(T0)}`;
+    const body=t.replace(/\*/g,'').split('\n').map(l=>l?'‏'+l:l).join('\n');
+    return `<div class="card"><div class="who"><div class="name">${esc(br)}</div>
+      <div class="meta"><span>ראש סניף: ${esc(h.n||'—')}</span>${h.ph?`<span>${fmtPhone(h.ph)}</span>`:''}${h.em?`<span class="em">${esc(h.em)}</span>`:''}</div>
+      <div class="meta" style="margin-top:4px">${d.B.n?`<span class="chip ${d.B.cur<25?'bad':d.B.cur<d.B.R?'warn':'ok'}">סייפטי ${esc(d.B.cur)}</span>`:''}${d.B.low.length?`<span class="chip bad">${d.B.low.length} מתחת ל־25</span>`:''}<span class="chip ${d.bad.length?'bad':'ok'}">${d.bad.length} פג תוקף</span>${d.warn.length?`<span class="chip warn">${d.warn.length} יפוג בקרוב</span>`:''}<span class="chip ${d.ann.length?'warn':'ok'}">${d.ann.length} בלי השתלמות</span>${d.B.ina&&d.B.ina.length?`<span class="chip warn">${d.B.ina.length} לא פעילים</span>`:''}${last!=null?`<span class="chip ok">✓ נשלח ${last===0?'היום':`לפני ${last} ימים`}</span>`:''}</div>
+      <details class="accq" style="margin-top:6px"><summary><b>תצוגה מקדימה של הדוח</b></summary><div class="pre">${esc(t.replace(/\*/g,''))}</div></details></div>
+      <div class="issues"><div class="irow"><span class="btns">${h.em?`<a class="mail sm${sent?' done':''}" href="mailto:${esc(h.em)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}" data-sent="${esc(sk)}">✉️ מייל לראש הסניף</a>`:'<span class="chip miss">אין מייל לראש הסניף</span>'}${h.ph?`<a class="wa sm" href="${waLink(h.ph,t)}" target="_blank" rel="noopener" data-sent="${esc(sk)}">${WA_ICON}וואטסאפ</a>`:''}<button class="mail sm" type="button" data-copy="${esc(t)}">העתק</button></span></div></div></div>`}).join('');
+  app.innerHTML=`<div class="controls"><select id="branch"><option value="">כל הסניפים</option>${Object.keys(DATA.brrep.B).map(b=>`<option${b===state.branch?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
+    <div class="legend">דוח לכל סניף: סייפטי של ${esc(Object.values(DATA.brrep.B)[0].m||'')}, חריגות פתוחות (בלי בדיקות תקינות קצב"ת), מי שלא ביצע השתלמות שנתית, לא פעילים במשמרות ותאונות מתחילת השנה. המייל נפתח באפליקציית המייל שתבחר, עם יהודה לוין בעותק.</div>
+    <div class="list">${cards}</div>`;
+  bind();
+}
+/*BRR-END*/
 </script>
 </body>
 </html>
