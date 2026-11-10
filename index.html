@@ -50,6 +50,7 @@ body::after{width:380px;height:380px;bottom:-160px;left:-120px;background:radial
 .ic.hd{background:linear-gradient(135deg,#fdba74,#f26b21)}
 .ic.kb{background:linear-gradient(135deg,#3b82c4,#1f4f8f)}
 .ic.md{background:linear-gradient(135deg,#2dd4bf,#0f766e)}
+.ic.iv{background:linear-gradient(135deg,#38bdf8,#123d4f)}
 .ordering .app{outline:2px dashed var(--c);cursor:default}.ordering .app .go{display:none}.mv{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:6px;z-index:2}.mv i{font-style:normal;width:36px;height:30px;border-radius:10px;background:var(--c);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer}
 .app b{display:block;font:800 18px Rubik,Heebo,sans-serif;margin-bottom:4px}
 .app span{font-size:13px;color:var(--mut);line-height:1.4}
@@ -142,6 +143,7 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
 <div class="apps">
   <button class="app" data-app="chords" onclick="enter('chords')"><i class="go" aria-hidden="true">←</i><div class="ic ch">♬</div><b>ספריית אקורדים</b><span>שירים, טרנספוזיציה וקאפו</span></button>
   <button class="app" data-app="maaser" onclick="enter('maaser')"><i class="go" aria-hidden="true">←</i><div class="ic ms">₪</div><b>מעשר כספי</b><span>חישוב ומעקב מעשרות</span></button>
+  <button class="app" data-app="invoices" onclick="enter('invoices')"><i class="go" aria-hidden="true">←</i><div class="ic iv">🧾</div><b>חשבוניות</b><span>הוצאות, השוואת מחירים וייצוא לרו״ח</span></button>
   <button class="app" data-app="tromot" onclick="enter('tromot')"><i class="go" aria-hidden="true">←</i><div class="ic tr">🕍</div><b>תרומות בית כנסת</b><span>מי תרם, על מה, ומה שומש</span></button>
   <button class="app" data-app="shopping" onclick="enter('shopping')"><i class="go" aria-hidden="true">←</i><div class="ic sp">🛒</div><b>קניות לבית</b><span>רשימה משותפת לכל המשפחה</span></button>
   <button class="app" data-app="forms" onclick="enter('forms')"><i class="go" aria-hidden="true">←</i><div class="ic fm">📝</div><b>טפסים</b><span>מילוי שאלונים ותוצאות בזמן אמת</span></button>
@@ -164,7 +166,7 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
 <script>
 /* כניסה אחת לאתר: הסיסמה שמוקלדת קובעת לאילו אפליקציות יש גישה. נשמרים כאן רק הגיבובים.
    הגישה נשמרת ב-sessionStorage עד סגירת הדפדפן, וכל אפליקציה בודקת את הסימון gate_<שם> שלה. */
-const PAGES={chords:'chords.html',maaser:'maaser.html',tromot:'tromot.html',shopping:'shopping.html',forms:'forms.html',game:'host.html',meds:'meds.html',phonebook:'phonebook.html',kbt:'kbt.html',safety:'safety.html',coord:'coord.html',profile:'profile.html',head:'head.html'};
+const PAGES={chords:'chords.html',maaser:'maaser.html',tromot:'tromot.html',shopping:'shopping.html',forms:'forms.html',game:'host.html',meds:'meds.html',invoices:'invoices.html',phonebook:'phonebook.html',kbt:'kbt.html',safety:'safety.html',coord:'coord.html',profile:'profile.html',head:'head.html'};
 const ACCESS={
   'dc953dd72494b2201ec33d2bf0c0078e2b4d4fc7cbd747580535dfc54234b0d7':['forms'],    // 1221
   'f88d20e9aaa147427706f242d11b143befcf2038efdd026d1e890fea9ce1535c':['tromot'],   // 1234
@@ -193,7 +195,7 @@ async function hash(s){
 function access(){try{return JSON.parse(sget('hub_access'))||[]}catch(e){return[]}}
 function enter(a){if(ORD_EDIT)return;if(access().includes(a))location.href=PAGES[a]}
 /* סידור האפליקציות: נשמר במכשיר. ברירת מחדל – ניהול הבטיחות למעלה */
-const ORD_DEF=['kbt','safety','coord','head','profile','phonebook','forms','chords','maaser','tromot','shopping','game','meds'];
+const ORD_DEF=['kbt','safety','coord','head','profile','phonebook','forms','chords','maaser','invoices','tromot','shopping','game','meds'];
 let ORD_EDIT=false;
 function ordGet(){let o=[];try{o=JSON.parse(get('hub_order'))||[]}catch(e){}const all=[...document.querySelectorAll('.app')].map(b=>b.dataset.app);return [...o.filter(x=>all.includes(x)),...ORD_DEF.filter(x=>all.includes(x)&&!o.includes(x)),...all.filter(x=>!o.includes(x)&&!ORD_DEF.includes(x))]}
 function ordApply(){const box=document.querySelector('.apps');ordGet().forEach(a=>{const b=box.querySelector(`.app[data-app="${a}"]`);if(b)box.append(b)})}
@@ -358,7 +360,7 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(
 <script src="presence.js"></script>
 <script>
 /* כמה מכשירים מחוברים עכשיו, ובאיזו אפליקציה (לחיצה על התווית מציגה פירוט) */
-const LIVE_NAMES={home:'בדף הבית',chords:'באקורדים',maaser:'במעשר',tromot:'בתרומות',shopping:'בקניות',forms:'בטפסים',game:'במשחק חי',meds:'בתרופות',phonebook:'בספר הטלפונים'};
+const LIVE_NAMES={home:'בדף הבית',chords:'באקורדים',maaser:'במעשר',tromot:'בתרומות',shopping:'בקניות',forms:'בטפסים',game:'במשחק חי',meds:'בתרופות',invoices:'בחשבוניות',phonebook:'בספר הטלפונים'};
 const escH=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function ago(t){const m=Math.max(0,Math.round((Date.now()-t)/60000));return m<1?'עכשיו':m<60?'לפני '+m+' דק׳':'לפני '+Math.floor(m/60)+' שע׳ ו-'+(m%60)+' דק׳'}
 dbdPresence('home',(r,me)=>{

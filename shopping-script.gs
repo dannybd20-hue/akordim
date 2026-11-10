@@ -205,7 +205,7 @@ function isAdmin_(p) { return typeof ADMIN_PASSWORD === 'string' && ADMIN_PASSWO
 
 /* "מי מחובר עכשיו" בדף הבית: כל דף פתוח באתר שולח מזהה מכשיר אקראי, שם האפליקציה ופרטי מכשיר.
    לכולם מוחזר רק מספר המכשירים בכל אפליקציה. רשימה מפורטת מוחזרת רק עם ADMIN_PASSWORD. */
-const PRESENCE_PAGES = ['home', 'chords', 'maaser', 'tromot', 'shopping', 'forms', 'game', 'meds'];
+const PRESENCE_PAGES = ['home', 'chords', 'maaser', 'tromot', 'shopping', 'forms', 'game', 'meds', 'invoices'];
 function presence_(d) {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(5000)) return out_({ ok: false, error: 'busy' });
@@ -242,6 +242,7 @@ function doPost(e) {
   if (d.app === 'presence') return presence_(d);
   if (d.app === 'maaser') return maaserPost_(d);
   if (d.app === 'meds') return medsPost_(d);
+  if (d.app === 'invoices') return invoicesPost_(d);
   if (!isAdmin_(d.password)) {
     if (locked_('shop')) return out_({ ok: false, error: 'locked' });
     if (d.password !== SHOP_PASSWORD && !(EN_PASSWORD && d.password === EN_PASSWORD)) { failed_('shop'); return out_({ ok: false, error: 'password' }); }
@@ -749,3 +750,103 @@ function medsDaily() {
 }
 // לבדיקה מהעורך: מריצים ומקבלים הודעת ניסיון
 function testMeds() { Logger.log(waOn_() ? (waSend_('💊 *תרופות בבית*\nהודעת ניסיון ✅', PropertiesService.getScriptProperties().getProperty('MEDS_CHAT')) ? 'נשלח ✅' : 'לא נשלח') : 'חסרים מאפייני GREEN_…'); }
+
+/* ---------------- חשבוניות והשוואת מחירים ----------------
+   הנתונים בקובץ invoices_data.json בדרייב: חשבוניות ששולמו (עם שורות מוצרים) והצעות מחיר.
+   הגישה רק עם הסיסמה הראשית (ADMIN_PASSWORD), או עם INVOICES_PASSWORD אם מגדירים.
+   סריקת חשבונית מצילום משתמשת באותו מפתח ANTHROPIC_KEY של התרופות. */
+const INVOICES_PASSWORD = '';
+const INVOICES_FILE = 'invoices_data.json';
+
+function invLoad_() {
+  const it = DriveApp.getFilesByName(INVOICES_FILE);
+  if (!it.hasNext()) return { f: null, st: { invoices: [], quotes: [], rev: 0 } };
+  const f = it.next();
+  const st = JSON.parse(f.getBlob().getDataAsString('UTF-8'));
+  st.invoices = st.invoices || []; st.quotes = st.quotes || [];
+  return { f: f, st: st };
+}
+function invSave_(f, st) {
+  st.rev = (st.rev || 0) + 1;
+  const body = JSON.stringify(st);
+  if (f) f.setContent(body); else DriveApp.createFile(INVOICES_FILE, body, MimeType.PLAIN_TEXT);
+}
+function invClean_(x) {
+  const n = function (v) { v = Number(v); return isFinite(v) ? Math.round(v * 100) / 100 : 0; };
+  const s = function (v, k) { return String(v == null ? '' : v).slice(0, k || 120); };
+  return {
+    id: s(x.id || Utilities.getUuid().slice(0, 8), 20), date: s(x.date, 10), supplier: s(x.supplier, 80), supplierId: s(x.supplierId, 20),
+    invoiceNo: s(x.invoiceNo, 40), category: s(x.category, 40), payMethod: s(x.payMethod, 40), notes: s(x.notes, 300),
+    vatExempt: !!x.vatExempt, total: n(x.total), vat: x.vat == null || x.vat === '' ? null : n(x.vat),
+    items: (Array.isArray(x.items) ? x.items : []).slice(0, 200).map(function (i) {
+      const q = n(i.qty || 1), p = n(i.unitPrice);
+      return { name: s(i.name, 120), qty: q, unit: s(i.unit, 20), unitPrice: p, total: i.total == null || i.total === '' ? n(q * p) : n(i.total) };
+    }),
+    added: x.added || Date.now()
+  };
+}
+function invQuote_(x) {
+  const s = function (v, k) { return String(v == null ? '' : v).slice(0, k || 120); };
+  const p = Number(x.unitPrice);
+  return { id: s(x.id || Utilities.getUuid().slice(0, 8), 20), date: s(x.date, 10), supplier: s(x.supplier, 80), product: s(x.product, 120),
+    unit: s(x.unit, 20), unitPrice: isFinite(p) ? Math.round(p * 100) / 100 : 0, notes: s(x.notes, 300), added: x.added || Date.now() };
+}
+function invoicesPost_(d) {
+  if (!isAdmin_(d.password)) {
+    if (locked_('inv')) return out_({ ok: false, error: 'locked' });
+    if (!INVOICES_PASSWORD || d.password !== INVOICES_PASSWORD) { failed_('inv'); return out_({ ok: false, error: 'password' }); }
+  }
+  passed_('inv');
+  if (d.op === 'scan') return invScan_(d);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  let st;
+  try {
+    const l = invLoad_();
+    st = l.st;
+    let changed = false;
+    (d.ops || []).forEach(function (o) {
+      if (o.type === 'inv' && o.inv) {
+        const c = invClean_(o.inv), i = st.invoices.findIndex(function (x) { return x.id === c.id; });
+        if (i >= 0) st.invoices[i] = c; else st.invoices.push(c);
+        changed = true;
+      } else if (o.type === 'q' && o.q) {
+        const c = invQuote_(o.q), i = st.quotes.findIndex(function (x) { return x.id === c.id; });
+        if (i >= 0) st.quotes[i] = c; else st.quotes.push(c);
+        changed = true;
+      } else if (o.type === 'del') {
+        const k = o.kind === 'q' ? 'quotes' : 'invoices', n = st[k].length;
+        st[k] = st[k].filter(function (x) { return x.id !== String(o.id); });
+        if (st[k].length !== n) changed = true;
+      }
+    });
+    if (changed) invSave_(l.f, st);
+  } finally { lock.releaseLock(); }
+  return out_(d.rev === st.rev ? { ok: true, rev: st.rev } : { ok: true, rev: st.rev, state: st, ai: !!PropertiesService.getScriptProperties().getProperty('ANTHROPIC_KEY') });
+}
+/* קריאת חשבונית מצילום או PDF */
+function invScan_(d) {
+  const key = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_KEY');
+  if (!key) return out_({ ok: false, error: 'nokey' });
+  const raw = String(d.file || ''), m = /^data:([\w\/+.-]+);base64,/.exec(raw), mt = m ? m[1] : 'image/jpeg', data = raw.replace(/^data:[^,]+,/, '');
+  if (data.length < 200) return out_({ ok: false, error: 'noimage' });
+  const part = mt === 'application/pdf' ? { type: 'document', source: { type: 'base64', media_type: mt, data: data } } : { type: 'image', source: { type: 'base64', media_type: mt, data: data } };
+  const prompt = 'זו חשבונית מס / קבלה ישראלית על רכישה. החזר JSON בלבד, בלי טקסט נוסף, בשדות:\n' +
+    '"date": תאריך החשבונית YYYY-MM-DD, "supplier": שם העסק המוכר, "supplierId": ח.פ או מספר עוסק של המוכר אם מופיע,\n' +
+    '"invoiceNo": מספר החשבונית, "total": הסכום הסופי לתשלום כולל מע״מ (מספר), "vat": סכום המע״מ (מספר, 0 אם פטור, null אם לא מופיע),\n' +
+    '"payMethod": אמצעי התשלום אם מופיע ("אשראי", "מזומן", "העברה", "צ׳ק"), אחרת "",\n' +
+    '"category": קטגוריה קצרה בעברית שמתאימה לרכישה (למשל "ציוד", "חומרי גלם", "תחזוקה", "משרד", "רכב"),\n' +
+    '"items": מערך של שורות מוצרים: {"name": שם המוצר, "qty": כמות, "unit": יחידה ("יח׳", "ק״ג", "מטר"...), "unitPrice": מחיר ליחידה כולל מע״מ, "total": סה״כ השורה כולל מע״מ}.\n' +
+    'אם המחירים בשורות לפני מע״מ, הוסף להם מע״מ לפי שיעור המע״מ בחשבונית. אל תמציא: אם משהו לא נראה, השאר "" או null.';
+  const res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+    payload: JSON.stringify({ model: MEDS_MODEL, max_tokens: 3000, messages: [{ role: 'user', content: [part, { type: 'text', text: prompt }] }] })
+  });
+  if (res.getResponseCode() !== 200) { console.warn('invscan ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 300)); return out_({ ok: false, error: 'ai' + res.getResponseCode() }); }
+  try {
+    const txt = JSON.parse(res.getContentText()).content.map(function (c) { return c.text || ''; }).join('');
+    const a = txt.indexOf('{'), b = txt.lastIndexOf('}');
+    return out_({ ok: true, inv: JSON.parse(txt.slice(a, b + 1)) });
+  } catch (x) { return out_({ ok: false, error: 'parse' }); }
+}
