@@ -122,11 +122,11 @@ function headMsg(b,o){o=o||people(b)[0];return `שלום ${first(o.n)},\n\nפת�
 const sentKey=o=>'hpw_sent:'+o.k+':'+o.pw;
 const pRow=(b,o)=>{const sent=ls(sentKey(o));return `<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 0;border-bottom:1px dashed #ccc"><span><span data-hon="${esc(o.k)}">${ONLINE&&ONLINE.some(x=>x.k===o.k)?'🟢 ':''}</span><b>${esc(b)}</b> · ${esc(o.role)}: ${esc(o.n||'—')} <span dir="ltr" style="font-family:monospace;white-space:nowrap">${esc(o.pw)}</span></span>${o.ph?`<a class="abtn wa" style="white-space:nowrap" href="${waLink(o.ph,headMsg(b,o))}" target="_blank" rel="noopener" data-hsent="${esc(sentKey(o))}">${sent?'✓ נשלח':'שליחה'}</a>`:'<span class="bad">אין טלפון</span>'}</div>`};
 function adminBar(){const b=D.br;
-  return `<div class="note admin">${onlineBox()}<b>מצב מנהל</b> · סניף ${esc(b)}${people(b).map(o=>pRow(b,o)).join('')}${allHeads()}</div>`}
+  return `<div class="note admin">${onlineBox()}<details class="wabox"${ls('head_wa_open')?' open':''} ontoggle="ls('head_wa_open',this.open?'1':null)"><summary>🔑 סיסמאות ושליחה בוואטסאפ <small>מצב מנהל · ${esc(b)}</small></summary>${people(b).map(o=>pRow(b,o)).join('')}${allHeads()}</details></div>`}
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('[data-hsent]');if(a){ls(a.dataset.hsent,'1');setTimeout(()=>render(),400)}});
 /* כל ראשי הסניפים והסגנים במקום אחד: שליחת הסיסמה + סימון מי כבר קיבל את הסיסמה הנוכחית */
 function allHeads(){const B=Object.keys(ADMIN).sort((a,b)=>a.localeCompare(b,'he')),P=B.flatMap(b=>people(b).map(o=>[b,o])),left=P.filter(([,o])=>o.ph&&!ls(sentKey(o))).length;
-  return `<details style="margin-top:8px"${left?' open':''}><summary><b>שליחת הסיסמאות לכל ראשי הסניפים והסגנים</b> · ${left?left+' עוד לא נשלחו':'✓ נשלח לכולם'}</summary>${P.map(([b,o])=>pRow(b,o)).join('')}</details>`}
+  return `<details style="margin-top:8px"><summary><b>שליחת הסיסמאות לכל ראשי הסניפים והסגנים</b> · ${left?left+' עוד לא נשלחו':'✓ נשלח לכולם'}</summary>${P.map(([b,o])=>pRow(b,o)).join('')}</details>`}
 function logout(){hping(true);ls('head_pw',null);CUR_PW='';D=null;ADMIN=null;lockView()}
 
 /* גרף ציון ממוצע לפי חודש: הסניף מול המרחב */
@@ -150,6 +150,7 @@ function render(){
   <div class="note title"><img class="logo" src="brand/uh-logo.png" alt="איחוד הצלה" width="690" height="428"><h1>${esc(d.br)}</h1><p>לוח ראש סניף${d.head?' · ראש סניף: '+esc(d.head):''}${d.dep?' · סגן: '+esc(d.dep):''} · רכז תחבורה: ${esc(d.coord||'—')}${d.me&&!ADMIN?`<br>מחובר/ת: ${esc(d.me)}`:''}<br>עודכן ${esc(d.upd)} · צפייה בלבד</p>
     ${ADMIN?`<select onchange="pick(this.value)">${Object.keys(ADMIN).map(b=>`<option${b===d.br?' selected':''}>${esc(b)}</option>`).join('')}</select>`:''}</div>
   ${ADMIN?adminBar():''}
+  <div class="note" style="padding:0;background:none;box-shadow:none;border:0">${newsBox(d.news)}</div>
   <div class="stats">
     <div class="note stat"><span>נהגים פעילים</span><b>${d.n}</b><small>${d.trn?d.trn+' בהכשרה · ':''}${d.moto} אופנוענים</small></div>
     <div class="note stat"><span>ציון סייפטי · ${esc(last)}</span><b>${s.avg??'—'}</b>${cmp(s.avg,regLast,true)}</div>
@@ -190,6 +191,23 @@ function render(){
   const k=ls('kbt_pw');if(k){try{ADMIN=await dec('head/index.bin',k);CUR_PW=k;setTimeout(hping,800);await pick(ls('head_adm_br'));return}catch(e){ADMIN=null}}
   const p=ls('head_pw');p?unlock(p):lockView();
 })();
+(()=>{const st=document.createElement('style');st.textContent='.wabox>summary{cursor:pointer;display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border:1px solid #d7dde6;border-radius:10px;background:#fff;font-weight:700;list-style:none}.wabox>summary::-webkit-details-marker{display:none}.wabox>summary small{font-weight:400;color:#6b7480}.wabox[open]>summary{margin-bottom:6px;background:#fff4ec;border-color:#f26b21}';document.head.appendChild(st)})();
+/*NEWS-START*/
+/* ===== מה חדש בסניף (שינויים מ־14 הימים האחרונים) – קוביות לפי נושא, לחיצה פותחת את הרשימה ===== */
+const NEWS_C=[['new','🆕','מתנדבים חדשים'],['perm','🚑','אישורי נהיגה'],['course','🎓','קורסים והשתלמויות'],['docs','📄','מסמכי נהגים'],['veh','🚗','כלים'],['move','🔀','עברו סניף']];
+let NEWS_OPEN='';
+function newsBox(L){L=L||[];if(!L.length)return '';const e=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+  const cnt=k=>L.filter(i=>i.c===k).length,G={good:'#1f8a4c',bad:'#c62828',info:'#5b6573'};
+  const row=i=>`<div class="nwr"><span class="nwd">${e(i.d)}</span><span><b>${e(i.n||(i.t==='veh'?'כלי '+i.k:''))}</b>${i.t==='veh'?` · כלי ${e(i.k)}`:i.k?` · ${e(i.k)}`:''}<br><span style="color:${G[i.g]||G.info}">${e(i.f)}</span>${i.o?`: <s>${e(i.o)}</s> ←`:i.v?':':''} ${e(i.v||'')}</span></div>`;
+  return `<section class="nws" id="nws"><h3>✨ מה חדש בסניף <small>14 הימים האחרונים</small></h3><div class="nwt">${NEWS_C.filter(([k])=>cnt(k)).map(([k,ic,t])=>`<button type="button" class="nwc${NEWS_OPEN===k?' on':''}" data-nw="${k}"><span>${ic}</span><b>${cnt(k)}</b><small>${t}</small></button>`).join('')}</div>
+    ${NEWS_OPEN?`<div class="nwl">${L.filter(i=>i.c===NEWS_OPEN).map(row).join('')}</div>`:''}</section>`}
+document.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('[data-nw]');if(!b)return;NEWS_OPEN=NEWS_OPEN===b.dataset.nw?'':b.dataset.nw;const s=document.getElementById('nws');if(s){const L=(typeof NEWS_SRC==='function'?NEWS_SRC():[]);s.outerHTML=newsBox(L)}});
+(()=>{const st=document.createElement('style');st.textContent=`.nws{background:#fff;border:1px solid #e3e7ee;border-radius:14px;padding:10px 12px;margin:10px 0;color:#1b2430}.nws h3{margin:0 0 8px;font-size:1.05em}.nws h3 small{font-weight:400;color:#6b7480;font-size:.8em}
+.nwt{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}.nwc{font:inherit;border:1px solid #e3e7ee;background:#f7f9fc;border-radius:12px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;color:inherit}
+.nwc b{font-size:1.35em;line-height:1.1}.nwc small{font-size:.75em;color:#5b6573;text-align:center}.nwc.on{border-color:#f26b21;background:#fff4ec;box-shadow:0 0 0 2px #f26b2133}
+.nwl{margin-top:8px;max-height:340px;overflow:auto}.nwr{display:flex;gap:8px;padding:6px 2px;border-bottom:1px dashed #e3e7ee;font-size:.9em;line-height:1.45}.nwd{color:#6b7480;font-size:.85em;min-width:38px}`;document.head.appendChild(st)})();
+const NEWS_SRC=()=>D&&D.news;
+/*NEWS-END*/
 </script>
 </body>
 </html>

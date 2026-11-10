@@ -513,6 +513,7 @@ function render(){
       ${kpi(IC.doc,'השתלמות שנתית '+ANN_Y,P.filter(annMiss).length,P.filter(annMiss).length?'לא ביצעו – יש להירשם':'כולם ביצעו',P.filter(annMiss).length?'bad':'ok','ann')}
       ${kpi(IC.alert,'תאונות 2025–2026',(DATA.acc||[]).length,(DATA.acc||[]).length?'לחץ לפירוט':'לא דווחו תאונות',(DATA.acc||[]).length?'bad':'ok','acc')}
     </section>
+    ${newsBox(DATA.news)}
     ${(()=>{const n=P.filter(annMiss).length;return n?`<button type="button" class="annban" data-k="ann"><b>שים לב – ${n} מתנדבים לא ביצעו את ההשתלמות השנתית ${ANN_Y}</b><span>יש להירשם בהקדם להשתלמות. לחיצה לרשימה ולשליחת הודעה לכל אחד.</span></button>`:''})()}
     <section class="panel"><header><h2>דורשים תשומת לב</h2><span class="count">${att.length}</span></header>
       <p class="hint">סייפטי מתחת ל־25, מסמך שפג, או ציון הדרכה נמוך.</p>
@@ -847,6 +848,22 @@ function gradAlerts(){if(ADMIN||document.querySelector('.ov.center'))return;cons
   ov.querySelector('#gcp').onclick=async e=>{try{await navigator.clipboard.writeText(tx.value);e.target.textContent='הועתק ✓'}catch(_){e.target.textContent='לא הועתק'}};
   ov.querySelector('#glater').onclick=()=>ov.remove();ov.querySelector('#gok').onclick=done;
 }
+
+/* ===== מה חדש בסניף (שינויים מ־14 הימים האחרונים) – קוביות לפי נושא, לחיצה פותחת את הרשימה ===== */
+const NEWS_C=[['new','🆕','מתנדבים חדשים'],['perm','🚑','אישורי נהיגה'],['course','🎓','קורסים והשתלמויות'],['docs','📄','מסמכי נהגים'],['veh','🚗','כלים'],['move','🔀','עברו סניף']];
+let NEWS_OPEN='';
+function newsBox(L){L=L||[];if(!L.length)return '';const e=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+  const cnt=k=>L.filter(i=>i.c===k).length,G={good:'#1f8a4c',bad:'#c62828',info:'#5b6573'};
+  const row=i=>`<div class="nwr"><span class="nwd">${e(i.d)}</span><span><b>${e(i.n||(i.t==='veh'?'כלי '+i.k:''))}</b>${i.t==='veh'?` · כלי ${e(i.k)}`:i.k?` · ${e(i.k)}`:''}<br><span style="color:${G[i.g]||G.info}">${e(i.f)}</span>${i.o?`: <s>${e(i.o)}</s> ←`:i.v?':':''} ${e(i.v||'')}</span></div>`;
+  return `<section class="nws" id="nws"><h3>✨ מה חדש בסניף <small>14 הימים האחרונים</small></h3><div class="nwt">${NEWS_C.filter(([k])=>cnt(k)).map(([k,ic,t])=>`<button type="button" class="nwc${NEWS_OPEN===k?' on':''}" data-nw="${k}"><span>${ic}</span><b>${cnt(k)}</b><small>${t}</small></button>`).join('')}</div>
+    ${NEWS_OPEN?`<div class="nwl">${L.filter(i=>i.c===NEWS_OPEN).map(row).join('')}</div>`:''}</section>`}
+document.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('[data-nw]');if(!b)return;NEWS_OPEN=NEWS_OPEN===b.dataset.nw?'':b.dataset.nw;const s=document.getElementById('nws');if(s){const L=(typeof NEWS_SRC==='function'?NEWS_SRC():[]);s.outerHTML=newsBox(L)}});
+(()=>{const st=document.createElement('style');st.textContent=`.nws{background:#fff;border:1px solid #e3e7ee;border-radius:14px;padding:10px 12px;margin:10px 0;color:#1b2430}.nws h3{margin:0 0 8px;font-size:1.05em}.nws h3 small{font-weight:400;color:#6b7480;font-size:.8em}
+.nwt{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}.nwc{font:inherit;border:1px solid #e3e7ee;background:#f7f9fc;border-radius:12px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;color:inherit}
+.nwc b{font-size:1.35em;line-height:1.1}.nwc small{font-size:.75em;color:#5b6573;text-align:center}.nwc.on{border-color:#f26b21;background:#fff4ec;box-shadow:0 0 0 2px #f26b2133}
+.nwl{margin-top:8px;max-height:340px;overflow:auto}.nwr{display:flex;gap:8px;padding:6px 2px;border-bottom:1px dashed #e3e7ee;font-size:.9em;line-height:1.45}.nwd{color:#6b7480;font-size:.85em;min-width:38px}`;document.head.appendChild(st)})();
+
+const NEWS_SRC=()=>DATA&&DATA.news;
 
 /* ===== מפת מתנדבים – לפי כתובת המגורים ===== */
 const MAP={el:null,map:null,layer:null,br:null,run:0,done:0,total:0,miss:[],flt:'all'};
