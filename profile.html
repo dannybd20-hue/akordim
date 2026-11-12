@@ -261,7 +261,7 @@ function profView(key){
   $('app').innerHTML=`<button class="back" onclick="location.hash=''">→ חזרה לרשימה</button>
   <section class="ph"><div><h2>${esc(p.n)}</h2><p>${esc([p.pv&&'פרייבט '+p.pv,p.br,age&&'גיל '+age,p.city].filter(Boolean).join(' · '))}</p>
     <p class="mu">${p.coordn?'רכז: '+esc(p.coordn)+' · ':''}${(p.cars||[]).map(x=>'כלי '+esc(x.num)+(x.type?' '+esc(x.type):'')).join(', ')||'אין כלי צמוד'}</p>
-    ${p.risk?`<p class="rk ${RISK[p.risk.lvl][1]}">🎯 ${RISK[p.risk.lvl][0]} (${p.risk.p}) · ${p.risk.why.map(esc).join(' · ')}</p>`:''}
+    ${(p.notes||[]).map(x=>`<p class="rk" style="background:#e0f2f7;color:#0e7490">📌 ${esc(x.d)}${x.tag?' · '+esc(x.tag):''}: ${esc(x.t)}</p>`).join('')}${p.risk?`<p class="rk ${RISK[p.risk.lvl][1]}">🎯 ${RISK[p.risk.lvl][0]} (${p.risk.p}) · ${p.risk.why.map(esc).join(' · ')}</p>`:''}
     ${p.doubt?`<p class="rk bad">❓ ${esc(p.doubt)}</p>`:''}
     ${p.yr&&p.yr.susp.length?`<p class="rk warn">⚠ ${Math.round(p.yr.sh*100)}% מהנסיעות מתחילת השנה בכלי חשוד כתקול: ${p.yr.susp.map(x=>`${esc(x.car)} (${fmtN(x.km)} ק"מ, ציון ${x.sc??'—'})`).join(', ')}${p.scx!=null?` · הציון שלו בשאר הכלים: <b>${p.scx}</b>`:''}</p>`:''}</div>
     ${p.ph?`<div class="acts"><a class="btn wa" href="${waLink(p.ph,'')}" target="_blank" rel="noopener">וואטסאפ</a><a class="btn" href="tel:${esc(p.ph)}">${fmtPhone(p.ph)}</a></div>`:''}</section>
