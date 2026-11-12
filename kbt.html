@@ -927,6 +927,9 @@ function renderToday(){
   if(D.grads.length)html+=sec('gr','🎉','עברו טסט ועברו מ"משתלם" לאישור מלא (14 יום אחרונים)',D.grads.length,'var(--ok)',
     `<div class="tde">${D.grads.map(g=>`<div class="tdg"><span><b>${esc(g.n)}</b> · ${esc(g.br)} · ${esc(g.to)} (${esc(g.d)})</span><button class="mail sm" data-tdgr="${esc(g.pv+':'+g.to)}">✓ ראיתי</button></div>`).join('')}<small>הרכזים מקבלים הודעה קופצת לברך אותם.</small></div>`);
 
+  /* 👁 מעקב סייפטי */
+  if((DATA.watch||[]).length)html+=sec('watch','👁','מעקב ציון סייפטי',DATA.watch.length,'#7c3aed',`<div class="tde">${DATA.watch.map(w=>{const got=w.after.filter(x=>x[1]!=null),last=got[got.length-1];
+    return `<div class="tdg"><span><b>${esc(w.n)}</b> · ${esc(w.br)} · פרייבט ${esc(w.pv)}<br><small>בסיס ${esc(w.base)}: ${w.bs??'—'}${w.note?' · '+esc(w.note):''} · במעקב מ־${esc(w.added)}</small></span>${last?`<span class="chip ${last[1]>=(w.bs??0)+10?'ok':last[1]>(w.bs??0)?'warn':'bad'}">${esc(last[0])}: ${last[1]} ${last[1]>(w.bs??0)?'▲':last[1]<(w.bs??0)?'▼':'='}</span>`:'<span class="chip warn">ממתין לציון החודש הבא</span>'}</div>`}).join('')}</div>`);
   /* 🛡️ בדיקות קצין בטיחות */
   {const S=TD_INSP&&TD_INSP.slots?TD_INSP.slots.filter(s=>s.date>=new Date().toISOString().slice(0,10)):[];html+=sec('insp2','🛡️','בדיקות קצין בטיחות בסניפים',S.length||'','var(--ok)',tdInspHtml())}
   /* 🎓 השתלמות שנתית + 🆕 מה השתנה */
