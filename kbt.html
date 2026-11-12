@@ -777,7 +777,7 @@ const rtlMail=t=>t.split('\n').map(l=>l?'\u200F'+l:l).join('\n');
 function annGroupMail(t,L){const ride=t==='אופנוע',v=ride?'לרכוב':'לנהוג',kli=t==='אופנוע'?'באופנועי':t==='אמבולנס'?'באמבולנסים של':'ברכבי';
   const subj=`חובה להירשם להשתלמות השנתית ${DATA.ann.y} – ${t}`;
   const body=`שלום רב,\n\nלפי הרישומים שלנו טרם השתתפת בהשתלמות השנתית לשנת ${DATA.ann.y} – השתלמות ${t} כביש ${DATA.ann.y}.\n\nההשתלמות היא תנאי להמשך ה${ride?'רכיבה':'נהיגה'} בכלי הארגון. מי שלא יירשם וישלים את ההשתלמות עד סוף השנה, לא יוכל להמשיך ${v} ${kli} הארגון בשנה הבאה.\n\nחשוב מאוד להירשם כמה שיותר מהר – ההרשמה דרך האפליקציה או דרך מחלקת הדרכה בתעבורה.\n\nאם כבר ביצעת השתלמות והיא לא מופיעה במערכת – עדכן אותי ואבדוק.\n\nבברכה,\nדני בן דוד\nקצין בטיחות בתעבורה – מרחב ירושלים`;
-  const em=[...new Set(L.map(o=>(o.email||'').trim()).filter(x=>/@/.test(x)))];
+  const em=[...new Set(L.filter(o=>!o.reg).map(o=>(o.email||'').trim()).filter(x=>/@/.test(x)))];/* מי שכבר נרשם לקורס – לא במייל */
   return {em,miss:L.filter(o=>!/@/.test(o.email||'')).length,href:`mailto:?cc=${encodeURIComponent(ANN_CC)}&bcc=${em.map(encodeURIComponent).join(',')}&subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(rtlMail(body))}`}}
 function annBadge(){const b=document.getElementById('n-ann');if(b&&DATA&&DATA.ann)b.textContent=DATA.ann.L.filter(o=>!ls(annKey(o))).length||''}
 function renderAnn(){
@@ -789,11 +789,11 @@ function renderAnn(){
   const sent=L.filter(o=>ls(annKey(o))).length;
   const row=o=>{const t=uTxt(o,annMsgK(o)),k=annKey(o),s=ls(k),ph=uPh(o);
     return `<div class="card"><div class="who"><div class="name">${esc(o.name)}</div>${(o.perm||[]).length?`<div class="perms">${o.perm.map(x=>`<span class="perm${/משתלם/.test(x)?' tr':''}">${esc(x)}</span>`).join('')}</div>`:''}<div class="meta">${o.pv?`<span>פרייבט ${esc(o.pv)}</span>`:''}<span>${esc(o.branch)}</span>${o.coord?`<span>רכז: ${esc(o.coord)}</span>`:''}</div>
-      <div class="veh">חסר: ${esc(o.course)}</div>
+      <div class="veh">חסר: ${esc(o.course)}${o.reg?` · <span class="chip warn">📝 נרשם ל${esc(o.reg.course)} ב־${esc(o.reg.date.slice(0,5))}</span>`:''}</div>
       <div class="crsl"><b>קורסים והשתלמויות:</b> ${o.crs.length?o.crs.map(x=>`<span class="crs${/2026/.test(x)?' y':''}">${esc(x)}</span>`).join(''):'<span style="color:var(--muted)">אין רשומים</span>'}</div></div>
       <div class="tel">${unitOf(o)?`<b style="color:var(--accent)">↪ דרך הרכז ${esc(unitOf(o).n)}</b><br>`:''}${ph?fmtPhone(ph):'אין טלפון'}</div>
       <div class="issues"><div class="irow"><span class="chip ${s?'ok':'bad'}">${s?'✓ נשלחה תזכורת החודש':'לא ביצע השתלמות '+DATA.ann.y}</span><span class="btns">${ph?`<a class="wa sm${s?' done':''}" href="${waLink(ph,t)}" target="_blank" rel="noopener" data-ak="${esc(k)}">${WA_ICON}${s?'נשלח':unitOf(o)?'לרכז '+first(unitOf(o).n):'וואטסאפ'}</a>`:''}<a class="mail sm" href="mailto:${esc(uMail(o))}?subject=${encodeURIComponent('השתלמות שנתית '+DATA.ann.y)}&body=${encodeURIComponent(rtlMail(t.replace(/\*/g,'')))}" data-ak="${esc(k)}">מייל</a><button class="mail sm" type="button" data-copy="${esc(t)}">העתק</button></span></div></div></div>`};
-  const G=['אופנוע','אמבולנס','רכב'].map(t=>[t,L.filter(o=>o.need===t).sort((a,b)=>(!!ls(annKey(a)))-(!!ls(annKey(b)))||a.branch.localeCompare(b.branch,'he')||a.name.localeCompare(b.name,'he'))]).filter(g=>g[1].length);
+  const G=['אופנוע','אמבולנס','רכב'].map(t=>[t,L.filter(o=>o.need===t).sort((a,b)=>(!!a.reg)-(!!b.reg)||(!!ls(annKey(a)))-(!!ls(annKey(b)))||a.branch.localeCompare(b.branch,'he')||a.name.localeCompare(b.name,'he'))]).filter(g=>g[1].length);
   app.innerHTML=`<div class="summary">
       <div class="stat bad"><b>${n('')}</b><span>לא ביצעו השתלמות ${DATA.ann.y}${state.branch?' בסניף':' במרחב'}</span></div>
       <div class="stat"><b>${n('אופנוע')}</b><span>אופנוע</span></div><div class="stat"><b>${n('אמבולנס')}</b><span>אמבולנס</span></div><div class="stat"><b>${n('רכב')}</b><span>רכב</span></div></div>
@@ -1018,7 +1018,7 @@ function brrMail(br){
     if(r.type==='vehicle'&&L.some(i=>i.lvl!=='warn'&&/test|service|ins/.test(i.k)))P('     (תזכורת: חל איסור מוחלט על תנועת כלי רכב ללא רישוי, ביטוח וטיפול בתוקף)');
     else if(r.type!=='vehicle'&&L.some(i=>i.lvl!=='warn'))P('     (נהג עם מסמך שפג תוקפו אינו מורשה לנהוג בכלי הארגון עד להסדרה)')});
   H(`נהגים ללא השתלמות שנתית ${DATA.ann?DATA.ann.y:Y} (${ann.length})`);
-  if(ann.length){P('יש להנחות את המתנדבים להירשם ולבצע את ההשתלמות בהקדם דרך האפליקציה או מול מחלקת הדרכה:');annS.forEach(x=>P(` • ${x.name}${x.pv?` (פרייבט ${x.pv})`:''} – ${x.need}`))}else P(' • כל הנהגים ביצעו השתלמות שנתית.');
+  if(ann.length){P('יש להנחות את המתנדבים להירשם ולבצע את ההשתלמות בהקדם דרך האפליקציה או מול מחלקת הדרכה:');annS.forEach(x=>P(` • ${x.name}${x.pv?` (פרייבט ${x.pv})`:''} – ${x.need}${x.reg?` (נרשם לקורס ב־${x.reg.date.slice(0,5)})`:''}`))}else P(' • כל הנהגים ביצעו השתלמות שנתית.');
   H(`בדיקת פעילות – יציאה לאירועים (${per})`);
   if(I.length){P('להלן נהגים שאין להם יציאות כנהגים בתקופה, לבדיקת סטטוס מול הסניף:');I.forEach(([n,pv,tx])=>P(` • ${n} (פרייבט ${pv}) – ${tx}`))}else P(' • כל הנהגים פעילים.');
   if(C.length){P('נהגים שמופיעים ביציאות רק כמלווים ולא כנהגים:');C.forEach(([n,pv,tx])=>P(` • ${n} (פרייבט ${pv}) – ${tx}`))}
