@@ -161,7 +161,7 @@ function render(){
     <div class="note stat"><span>כלים בסניף</span><b>${d.veh.n}</b><small>${d.veh.issues.length?d.veh.issues.length+' דורשים טיפול':'הכל תקין'}</small></div>
   </div>
   <div class="grid">
-    <div class="note b"><h2>🛡️ ציוני סייפטי</h2><p class="sub">${s.n} נהגים עם ציון ב${esc(last)}. ציון 70 ומעלה – נהיגה בטוחה; מתחת ל־25 – נדרש טיפול.</p>${chart()}
+    <div class="note b" id="safCard" style="cursor:pointer" title="לחיצה – כל הציונים של כל המתנדבים"><h2>🛡️ ציוני סייפטי <small style="font-weight:400;font-size:.7em;color:#1f3f6e">· לחצו לכל הציונים ›</small></h2><p class="sub">${s.n} נהגים עם ציון ב${esc(last)}. ציון 70 ומעלה – נהיגה בטוחה; מתחת ל־25 – נדרש טיפול.</p>${chart()}
       <div class="dist"><div style="background:#fde2e0"><b class="bad">${s.dist.a}</b><span>מתחת ל־25</span></div><div style="background:#fff0d6"><b class="warn">${s.dist.b}</b><span>25–49</span></div><div style="background:#eef3fb"><b>${s.dist.c}</b><span>50–69</span></div><div style="background:#e1f2e2"><b class="ok">${s.dist.d}</b><span>70 ומעלה</span></div></div>
       ${s.top.length?`<p class="sub" style="margin:6px 0 0">🏆 הכי בטוחים החודש: ${s.top.map(t=>`<b>${esc(t.n)}</b> (${t.x})`).join(', ')}</p>`:''}
       ${s.up.length?`<p class="sub" style="margin:4px 0 0">📈 השתפרו מאוד: ${s.up.map(t=>`${esc(t.n)} (+${t.d})`).join(', ')}</p>`:''}
@@ -228,6 +228,29 @@ document.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.clos
 .nwl{margin-top:8px;max-height:340px;overflow:auto}.nwr{display:flex;gap:8px;padding:6px 2px;border-bottom:1px dashed #e3e7ee;font-size:.9em;line-height:1.45}.nwd{color:#6b7480;font-size:.85em;min-width:38px}`;document.head.appendChild(st)})();
 const NEWS_SRC=()=>D&&D.news;
 /*NEWS-END*/
+
+/* 🛡️ טבלת כל ציוני הסייפטי של מתנדבי הסניף, לכל החודשים */
+function safAll(){const d=D,s=d.saf,M=d.months,A=(s.all||[]).slice();if(!A.length)return;
+  const cls=x=>x==null?'':x<25?'background:#fde2e0;color:#b42318;font-weight:700':x<50?'background:#fff0d6':x>=70?'background:#e1f2e2;color:#1f7a3a':'background:#eef3fb';
+  let srt='n';try{srt=localStorage.getItem('saf_srt')||'n'}catch(e){}
+  const draw=()=>{const L=M.length-1,lastOf=o=>{for(let i=L;i>=0;i--)if(o.s[i]!=null)return o.s[i];return null};
+    const R=A.slice().sort(srt==='n'?(a,b)=>a.n.localeCompare(b.n,'he'):srt==='lo'?(a,b)=>(lastOf(a)??999)-(lastOf(b)??999):(a,b)=>(lastOf(b)??-1)-(lastOf(a)??-1));
+    const q=(document.getElementById('safQ')||{}).value||'';
+    box.querySelector('.sb').innerHTML=`<table style="border-collapse:collapse;font-size:13px;min-width:100%"><thead><tr><th style="position:sticky;right:0;top:0;background:#fff;text-align:right;padding:6px;z-index:2">שם</th>${M.slice().reverse().map(m=>`<th style="position:sticky;top:0;background:#fff;padding:6px 4px;white-space:nowrap;font-weight:600">${esc(m)}</th>`).join('')}<th style="position:sticky;top:0;background:#fff;padding:6px 4px">ממוצע</th></tr></thead><tbody>${R.filter(o=>!q||o.n.includes(q)).map(o=>{const v=o.s.filter(x=>x!=null),av=v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length):null;
+      return `<tr style="border-top:1px solid #e3e7ee"><td style="position:sticky;right:0;background:#fff;padding:5px 6px;white-space:nowrap;font-weight:600">${esc(o.n)}</td>${o.s.slice().reverse().map(x=>`<td style="text-align:center;padding:5px 4px;${cls(x)}">${x??'·'}</td>`).join('')}<td style="text-align:center;padding:5px 4px;font-weight:700">${av??'—'}</td></tr>`}).join('')}</tbody></table>`};
+  const box=document.createElement('div');box.id='safAll';
+  box.style.cssText='position:fixed;inset:0;background:rgba(15,25,40,.55);z-index:999;display:flex;align-items:center;justify-content:center;padding:12px';
+  box.innerHTML=`<div style="background:#fff;border-radius:14px;max-width:1100px;width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:12px 14px;border-bottom:1px solid #e3e7ee;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="font-size:1.05em">🛡️ ציוני סייפטי – כל המתנדבים (${A.length})</b>
+      <input id="safQ" placeholder="חיפוש שם" style="flex:1;min-width:120px;font:inherit;padding:6px 10px;border:1px solid #e3e7ee;border-radius:8px">
+      <select id="safS" style="font:inherit;padding:6px;border:1px solid #e3e7ee;border-radius:8px"><option value="n">מיון: שם</option><option value="lo">מיון: ציון אחרון נמוך</option><option value="hi">מיון: ציון אחרון גבוה</option></select>
+      <button id="safX" style="font:inherit;border:0;background:#eef0f3;border-radius:8px;padding:6px 12px;cursor:pointer">✕ סגירה</button></div>
+    <div class="sb" style="overflow:auto;flex:1"></div>
+    <div style="padding:8px 14px;font-size:12px;color:#5b6573;border-top:1px solid #e3e7ee">אדום – מתחת ל־25 · כתום – 25–49 · ירוק – 70 ומעלה · ״·״ – אין ציון באותו חודש (לא נהג / אין נתון)</div></div>`;
+  document.body.appendChild(box);const S=box.querySelector('#safS');S.value=srt;
+  S.onchange=()=>{srt=S.value;try{localStorage.setItem('saf_srt',srt)}catch(e){}draw()};box.querySelector('#safQ').oninput=draw;
+  const close=()=>box.remove();box.querySelector('#safX').onclick=close;box.onclick=e=>{if(e.target===box)close()};draw()}
+document.addEventListener('click',e=>{const c=e.target.closest&&e.target.closest('#safCard');if(c&&!e.target.closest('details'))safAll()});
 </script>
 </body>
 </html>
