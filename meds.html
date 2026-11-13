@@ -166,7 +166,9 @@ const EN=lg('shop_lang')==='en';
 const T=(h,e)=>EN?e:h;
 const LOC_EN={'מטבח':'Kitchen','שירותי הורים':"Parents' bathroom",'שירותי ילדים':"Kids' bathroom"};
 const locName=l=>EN&&LOC_EN[l]?LOC_EN[l]:l;
-function goBack(){if(EN)location.href='shopping.html';else goHome()}
+function goBack(){goHome()}
+/* באנגלית רואים רק את התרופות, אז אין לאן לחזור */
+if(EN)addEventListener('DOMContentLoaded',()=>{const b=document.getElementById('hbk');if(b)b.style.visibility='hidden'});
 if(EN){document.documentElement.lang='en';document.documentElement.dir='ltr';document.title='Home medicines';
   document.querySelectorAll('[data-en]').forEach(e=>e.textContent=e.dataset.en);
   document.querySelectorAll('[data-enp]').forEach(e=>e.placeholder=e.dataset.enp);}

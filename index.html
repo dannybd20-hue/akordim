@@ -145,7 +145,6 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
   <button class="app" data-app="maaser" onclick="enter('maaser')"><i class="go" aria-hidden="true">←</i><div class="ic ms">₪</div><b>מעשר כספי</b><span>חישוב ומעקב מעשרות</span></button>
   <button class="app" data-app="invoices" onclick="enter('invoices')"><i class="go" aria-hidden="true">←</i><div class="ic iv">🧾</div><b>חשבוניות</b><span>הוצאות, השוואת מחירים וייצוא לרו״ח</span></button>
   <button class="app" data-app="tromot" onclick="enter('tromot')"><i class="go" aria-hidden="true">←</i><div class="ic tr">🕍</div><b>תרומות בית כנסת</b><span>מי תרם, על מה, ומה שומש</span></button>
-  <button class="app" data-app="shopping" onclick="enter('shopping')"><i class="go" aria-hidden="true">←</i><div class="ic sp">🛒</div><b>קניות לבית</b><span>רשימה משותפת לכל המשפחה</span></button>
   <button class="app" data-app="forms" onclick="enter('forms')"><i class="go" aria-hidden="true">←</i><div class="ic fm">📝</div><b>טפסים</b><span>מילוי שאלונים ותוצאות בזמן אמת</span></button>
   <button class="app" data-app="game" onclick="enter('game')"><i class="go" aria-hidden="true">←</i><div class="ic gm">🎮</div><b>משחק חי</b><span>חידון בסגנון קהוט עם ברקוד וטבלת מובילים</span></button>
   <button class="app" data-app="meds" onclick="enter('meds')"><i class="go" aria-hidden="true">←</i><div class="ic md">💊</div><b>תרופות בבית</b><span>מלאי, מקומות ותוקף עם התראות</span></button>
@@ -166,17 +165,17 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
 <script>
 /* כניסה אחת לאתר: הסיסמה שמוקלדת קובעת לאילו אפליקציות יש גישה. נשמרים כאן רק הגיבובים.
    הגישה נשמרת ב-sessionStorage עד סגירת הדפדפן, וכל אפליקציה בודקת את הסימון gate_<שם> שלה. */
-const PAGES={chords:'chords.html',maaser:'maaser.html',tromot:'tromot.html',shopping:'shopping.html',forms:'forms.html',game:'host.html',meds:'meds.html',invoices:'invoices.html',phonebook:'phonebook.html',kbt:'kbt.html',safety:'safety.html',coord:'coord.html',profile:'profile.html',head:'head.html'};
+const PAGES={chords:'chords.html',maaser:'maaser.html',tromot:'tromot.html',forms:'forms.html',game:'host.html',meds:'meds.html',invoices:'invoices.html',phonebook:'phonebook.html',kbt:'kbt.html',safety:'safety.html',coord:'coord.html',profile:'profile.html',head:'head.html'};
 const ACCESS={
   'dc953dd72494b2201ec33d2bf0c0078e2b4d4fc7cbd747580535dfc54234b0d7':['forms'],
   'f88d20e9aaa147427706f242d11b143befcf2038efdd026d1e890fea9ce1535c':['tromot'],
   '4dae21a70492747b3bb2d310f2ae89ed81c9eff99e61d6e3e53d4e19abd24f9c':['chords'],
-  '1e2a0c4093555199db513fd138cc9268faaf441ccaa9090fe3a485f042891700':['shopping'],
+  '1e2a0c4093555199db513fd138cc9268faaf441ccaa9090fe3a485f042891700':['meds'],
   'd8acc45287fb852ef048950cf2edfc575614ffa5437f90d6780ae251058d723a':Object.keys(PAGES) // הסיסמה הראשית
 };
 const $=id=>document.getElementById(id);
 /* קוד כניסה שפותח ישר את הקניות באנגלית (נשמר רק הגיבוב שלו) */
-const EN_HASHES=new Set(['1e2a0c4093555199db513fd138cc9268faaf441ccaa9090fe3a485f042891700']); // פותח את הקניות רק באנגלית
+const EN_HASHES=new Set(['1e2a0c4093555199db513fd138cc9268faaf441ccaa9090fe3a485f042891700']); // הקוד של אשתי: רק התרופות, באנגלית
 
 /* כפתור העין: מציג או מסתיר את הסיסמה שמקלידים */
 function eye(b,show){const i=b.previousElementSibling;show=show===undefined?i.type==='password':show;i.type=show?'text':'password';b.textContent=show?'🙈':'👁️';b.title=show?'הסתר סיסמה':'הצג סיסמה'}
@@ -187,7 +186,7 @@ function lput(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k
 /* פותח גישה בדפדפן הנוכחי: הסימונים שהאפליקציות בודקות */
 /* גישה ראשית (4 אפליקציות ומעלה) נשמרה אולי לפני שנוספו אפליקציות חדשות: תמיד פותחים את כולן */
 function fullA(A){return A.length>=4?Object.keys(PAGES):A}
-function grant(A,pw){A=fullA(A);sput('hub_access',JSON.stringify(A));A.forEach(a=>sput('gate_'+a,'1'));if(pw&&(A.includes('shopping')||A.includes('forms')))sput('hub_pw',pw)}
+function grant(A,pw){A=fullA(A);sput('hub_access',JSON.stringify(A));A.forEach(a=>sput('gate_'+a,'1'));if(pw&&(A.includes('meds')||A.includes('forms')))sput('hub_pw',pw)}
 async function hash(s){
   const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('dbd-gate:'+s));
   return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
@@ -195,9 +194,7 @@ async function hash(s){
 function access(){try{return JSON.parse(sget('hub_access'))||[]}catch(e){return[]}}
 function enter(a){if(ORD_EDIT)return;if(access().includes(a))location.href=PAGES[a]}
 /* סידור האפליקציות: נשמר במכשיר. ברירת מחדל – ניהול הבטיחות למעלה */
-/* אפליקציות שנסגרו: הכרטיס לא מוצג בדף הבית (הקבצים והנתונים נשארים) */
-const CLOSED=['shopping'];
-const ORD_DEF=['kbt','safety','coord','head','profile','phonebook','forms','chords','maaser','invoices','tromot','shopping','game','meds'];
+const ORD_DEF=['kbt','safety','coord','head','profile','phonebook','forms','chords','maaser','invoices','tromot','game','meds'];
 let ORD_EDIT=false;
 function ordGet(){let o=[];try{o=JSON.parse(get('hub_order'))||[]}catch(e){}const all=[...document.querySelectorAll('.app')].map(b=>b.dataset.app);return [...o.filter(x=>all.includes(x)),...ORD_DEF.filter(x=>all.includes(x)&&!o.includes(x)),...all.filter(x=>!o.includes(x)&&!ORD_DEF.includes(x))]}
 function ordApply(){const box=document.querySelector('.apps');ordGet().forEach(a=>{const b=box.querySelector(`.app[data-app="${a}"]`);if(b)box.append(b)})}
@@ -230,25 +227,25 @@ function show(){
   const A=access();
   $('lockv').hidden=A.length>0;$('appsv').hidden=!A.length;$('biov').hidden=true;$('biolock').hidden=true;$('namev').hidden=true;
   if(A.length){bioUi();boardReq()}else if(bioData()){only('biolock')}
-  document.querySelectorAll('.app').forEach(b=>b.hidden=!A.includes(b.dataset.app)||CLOSED.includes(b.dataset.app));ordApply();
+  document.querySelectorAll('.app').forEach(b=>b.hidden=!A.includes(b.dataset.app));ordApply();
   if(!A.length)setTimeout(()=>$('p1').focus(),50);
 }
 async function submit(){
   const v=$('p1').value.trim();err('');
   if(!v){err('נא להקליד סיסמה');return}
   const h=await hash(v),isEn=EN_HASHES.has(h);
-  const A=isEn?['shopping','meds']:ACCESS[h];
+  const A=isEn?['meds']:ACCESS[h];
   if(!A){err('סיסמה שגויה');$('p1').select();return}
-  /* אפליקציית הקניות מתחברת לענן עם הסיסמה המשפחתית; מנסים קודם את מה שהוקלד כאן */
+  /* אפליקציית התרופות מתחברת לענן עם הסיסמה שהוקלדה כאן */
   grant(A,v);
   /* הסיסמה הראשית משמשת גם לבקש מהסקריפט את רשימת המחוברים המפורטת */
   if(A.length>=4){sput('hub_admin',v);if($('rem').checked)lput('hub_admin',v)}
   /* "לזכור במכשיר": הגישה נשמרת גם אחרי סגירת הדפדפן, עד שלוחצים יציאה */
-  if($('rem').checked){lput('hub_access',JSON.stringify(A));lput('hub_pw',A.includes('shopping')||A.includes('forms')?v:null)}
+  if($('rem').checked){lput('hub_access',JSON.stringify(A));lput('hub_pw',A.includes('meds')||A.includes('forms')?v:null)}
   sput('hub_seen','1');saveGrace();
   $('p1').value='';
-  lput('shop_lang',isEn?'en':null); /* קוד באנגלית: הקניות נפתחות ישר באנגלית; כל קוד אחר מחזיר לעברית */
-  if(isEn){location.replace('shopping.html');return}
+  lput('shop_lang',isEn?'en':null); /* קוד באנגלית: התרופות נפתחות ישר באנגלית; כל קוד אחר מחזיר לעברית */
+  if(isEn){location.replace('meds.html');return}
   if(!myName()){$('lockv').hidden=true;$('namev').hidden=false;setTimeout(()=>$('nmIn').focus(),50);return}
   bioOffer();
 }
@@ -352,7 +349,7 @@ $('nmIn').addEventListener('keyup',e=>{if(e.key==='Enter')saveName()});
   /* מכשיר שכבר נכנס אבל עוד לא נתן שם: מבקשים את השם פעם אחת */
   if(A.length&&!myName()&&get('shop_lang')!=='en'){$('lockv').hidden=true;$('namev').hidden=false;setTimeout(()=>$('nmIn').focus(),50);return}
   if(A.includes(want)){location.replace(dest(want));return}
-  if(get('shop_lang')==='en'&&A.includes('shopping')){location.replace('shopping.html');return}
+  if(get('shop_lang')==='en'&&A.includes('meds')){grant(A);location.replace('meds.html');return}
   if(A.length===1&&!sget('hub_seen')){sput('hub_seen','1');location.replace(dest(A[0]));return}
   sput('hub_seen','1');
   show();
@@ -362,7 +359,7 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(
 <script src="presence.js"></script>
 <script>
 /* כמה מכשירים מחוברים עכשיו, ובאיזו אפליקציה (לחיצה על התווית מציגה פירוט) */
-const LIVE_NAMES={home:'בדף הבית',chords:'באקורדים',maaser:'במעשר',tromot:'בתרומות',shopping:'בקניות',forms:'בטפסים',game:'במשחק חי',meds:'בתרופות',invoices:'בחשבוניות',phonebook:'בספר הטלפונים'};
+const LIVE_NAMES={home:'בדף הבית',chords:'באקורדים',maaser:'במעשר',tromot:'בתרומות',forms:'בטפסים',game:'במשחק חי',meds:'בתרופות',invoices:'בחשבוניות',phonebook:'בספר הטלפונים'};
 const escH=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function ago(t){const m=Math.max(0,Math.round((Date.now()-t)/60000));return m<1?'עכשיו':m<60?'לפני '+m+' דק׳':'לפני '+Math.floor(m/60)+' שע׳ ו-'+(m%60)+' דק׳'}
 dbdPresence('home',(r,me)=>{
