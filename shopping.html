@@ -10,7 +10,9 @@
 <meta name="theme-color" content="#db2777">
 <link rel="icon" href="icons/apps-192.png">
 <link rel="apple-touch-icon" href="icons/apps-apple-180.png">
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=Rubik:wght@700;900&display=swap" rel="stylesheet">
+<!-- הגופנים נטענים בלי לעכב את הציור הראשון של הדף -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=Rubik:wght@700;900&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&family=Rubik:wght@700;900&display=swap"></noscript>
 <style>
 :root{--bg:#fdf7fa;--card:#fff;--tx:#1e293b;--mut:#64748b;--bd:#f1e4ea;--pr:#db2777;--pl:#fdf2f8;--pk:#fde8f0;--pkb:#f9c9da;--in:#fff;--ib:#e9d5df;--ok:#16a34a}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0f0a10;--card:#1a1219;--tx:#f8fafc;--mut:#a59aa3;--bd:#2c2029;--pl:rgba(219,39,119,.14);--pk:rgba(236,72,153,.13);--pkb:rgba(236,72,153,.32);--in:#221821;--ib:#3a2b36}}
@@ -58,6 +60,11 @@ h3{font:800 14px Heebo,sans-serif;color:var(--mut);margin:22px 4px 8px}
 .x{border:0;background:none;color:var(--mut);font-size:16px;padding:6px;border-radius:10px}
 .x:hover{background:var(--pl);color:#e11d48}
 .empty{text-align:center;color:var(--mut);padding:40px 10px}
+/* שלד טעינה: צורות אפורות עד שהרשימה מגיעה מהענן */
+.skel{pointer-events:none}
+.skel .pic,.skel .nm b,.skel .nm small{background:linear-gradient(90deg,var(--pk) 25%,var(--bd) 50%,var(--pk) 75%);background-size:200% 100%;animation:shim 1.2s infinite linear;border-radius:8px;color:transparent}
+.skel .nm b{width:55%;height:16px;margin-bottom:6px}.skel .nm small{display:block;width:35%;height:11px}
+@keyframes shim{to{background-position:-200% 0}}
 .empty div{font-size:46px}
 .rec{display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 10px;border-radius:12px;background:var(--card);border:1px dashed var(--ib);margin-bottom:6px}
 .rec span{flex:1}
@@ -240,6 +247,8 @@ function getJ(k){try{return JSON.parse(get(k))}catch(e){return null}}
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
 if(get('shop_me')==='אשתי')put('shop_me','ציפי');
+/* waiting: עוד אין עותק במכשיר, ומחכים לרשימה מהענן (מציגים שלד טעינה) */
+let waiting=!getJ('shop_state');
 let st=getJ('shop_state')||shopNew(),queue=getJ('shop_queue')||[],pw=get('shop_pw')||'',me=get('shop_me')||'',tab=get('shop_tab')||'list',busy=false;
 function persist(){put('shop_state',JSON.stringify(st));put('shop_queue',JSON.stringify(queue))}
 
@@ -248,7 +257,7 @@ const emojiFor=shopEmoji;
 function prodFor(name){const k=shopKey(name);return st.products.find(p=>shopKey(p.name)===k)}
 function picEl(cls,name,p){
   const d=el('div',cls);p=p||prodFor(name);
-  if(p&&p.img){const i=new Image();i.src=p.img;i.alt='';d.append(i)}else d.textContent=(p&&p.emoji)||emojiFor(name);
+  if(p&&p.img){const i=new Image();i.loading='lazy';i.decoding='async';i.src=p.img;i.alt='';d.append(i)}else d.textContent=(p&&p.emoji)||emojiFor(name);
   return d;
 }
 
@@ -324,12 +333,13 @@ async function sync(){
   busy=true;const sent=queue.slice();
   try{
     const r=await fetch(SHOP_CLOUD,{method:'POST',body:JSON.stringify({password:pw,by:me,ops:sent,rev:sent.length?-1:st.rev})}).then(r=>r.json());
-    if(!r.ok){if(r.error==='password')logout('הסיסמה השתנתה, נא להיכנס שוב');else dot('err');return}
+    if(!r.ok){if(r.error==='password')logout('הסיסמה השתנתה, נא להיכנס שוב');else{waiting=false;render();dot('err')}return}
     queue=queue.slice(sent.length);
     if(r.wa!==undefined&&r.wa!==waAuto){waAuto=!!r.wa;put('shop_wa_auto',waAuto?'1':'0')}
+    waiting=false;
     if(r.state){st=r.state;const now=Date.now();queue.forEach(o=>shopApply(st,o,now))}
     persist();render();dot('ok');
-  }catch(e){dot('off')}
+  }catch(e){waiting=false;render();dot('off')}
   finally{busy=false;if(queue.length)setTimeout(sync,2000)}
 }
 async function login(){
@@ -337,7 +347,7 @@ async function login(){
   try{
     const r=await fetch(SHOP_CLOUD,{method:'POST',body:JSON.stringify({password:v,ops:[],rev:-1})}).then(r=>r.json());
     if(!r.ok){e.textContent=r.error==='locked'?'🔒 יותר מדי ניסיונות שגויים. נסה שוב בעוד רבע שעה, או עם הסיסמה הראשית':'סיסמה שגויה';e.style.display='block';return}
-    pw=v;put('shop_pw',v);st=r.state;persist();document.body.classList.remove('locked');seed();render();dot('ok');if(!me)askMe();
+    pw=v;put('shop_pw',v);waiting=false;st=r.state;persist();document.body.classList.remove('locked');seed();render();dot('ok');if(!me)askMe();
   }catch(x){e.textContent='אין חיבור לאינטרנט, נסו שוב';e.style.display='block'}
 }
 /* התנתקות מלאה: מוחקים את הכניסה לאתר ואת השפה, וחוזרים למסך הסיסמה בדף הבית (שם אפשר להיכנס מחדש, למשל עם הסיסמה הראשית) */
@@ -386,6 +396,7 @@ function toggleDept(){deptOn=!deptOn;put('shop_dept',deptOn?'1':'0');renderList(
 function renderList(){
   const box=$('items');box.innerHTML='';
   const db=$('deptB');db.textContent=deptOn?'🧭 מסודר לפי מחלקות':'🧭 סדר לפי מחלקות';db.classList.toggle('on',deptOn);
+  if(!st.items.length&&waiting&&SHOP_CLOUD&&pw){for(let k=0;k<5;k++){const r=el('div','it skel');const n=el('div','nm');n.append(el('b',null,'.'),el('small',null,'.'));r.append(el('span','chk'),el('div','pic'),n);box.append(r)}return}
   if(!st.items.length){const e=el('div','empty');e.append(el('div',null,'🧺'),el('p',null,'הרשימה ריקה. מה צריך לקנות?'));box.append(e)}
   let lastD=-1;
   [...st.items].map(x=>({x,d:deptOn?shopDept(x.name):0})).sort((a,b)=>a.d-b.d||b.x.at-a.x.at).forEach(({x:it,d})=>{

@@ -15,8 +15,10 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
     <!-- Google Fonts & Font Awesome Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- גופנים וסמלים נטענים בלי לעכב את הציור הראשון של הדף -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&display=swap"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
 
     <style>
         :root {
@@ -798,7 +800,6 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="maaser-core.js?v=1"></script><!-- להעלות את המספר בכל שינוי ב-maaser-core.js -->
 
 <script>
@@ -1096,7 +1097,22 @@ function goHome(){try{sessionStorage.removeItem('gate_maaser')}catch(e){}locatio
     // ============================
     // ייצוא לאקסל
     // ============================
-    function exportToExcel() {
+    let xlsxP = null;
+    function loadXlsx() {
+        return xlsxP || (xlsxP = new Promise((ok, fail) => {
+            const sc = document.createElement('script');
+            sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+            sc.onload = ok; sc.onerror = () => { xlsxP = null; fail(); };
+            document.head.appendChild(sc);
+        }));
+    }
+    async function exportToExcel() {
+        const btn = document.querySelector('.btn-excel'), label = btn.innerHTML;
+        if (!window.XLSX) {
+            btn.disabled = true; btn.textContent = 'מכין את הדוח…';
+            try { await loadXlsx(); } catch (e) { alert('אין חיבור לאינטרנט, נסה שוב'); return; }
+            finally { btn.disabled = false; btn.innerHTML = label; }
+        }
         const { totalOwed, totalPaid, balance } = getTotals();
         const wb = XLSX.utils.book_new();
 
