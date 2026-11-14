@@ -38,7 +38,7 @@ header{background:linear-gradient(135deg,var(--head),var(--head2));color:#fff;pa
 header h1{font-family:'Assistant',sans-serif;font-size:1.7rem;font-weight:700}
 header p{opacity:.85;font-size:.95rem}
 .wrap{max-width:900px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
-.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:14px 0}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:14px 0}
 .tab{min-width:0;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:700;font-size:.86rem;padding:11px 4px;line-height:1.2;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.06);cursor:pointer}
 .tab.on{background:var(--acc);color:#fff}
 .bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
@@ -484,7 +484,7 @@ function pCalc(p){
   const price=o?oCalc(o).net:(p.amtVat?num(p.amount)/(1+VAT):num(p.amount));
   return{cost,price,o,profit:price-cost,pct:cost>0?(price-cost)/cost*100:null,has:price>0};
 }
-function pSum(x){return `<span>עלות הפרויקט (לפני מע״מ)</span><span class="n">${money(x.cost)}</span><span>מחיר ללקוח (לפני מע״מ)</span><span class="n">${x.has?money(x.price):'—'}</span>`}
+function pSum(x){return `<span>עלות הפרויקט (לפני מע״מ)</span><span class="n">${money(x.cost)}</span><span>עלות הפרויקט (אחרי מע״מ)</span><span class="n">${money(x.cost*(1+VAT))}</span><span>מחיר ללקוח (לפני מע״מ)</span><span class="n">${x.has?money(x.price):'—'}</span>`}
 function pProf(x){if(!x.has)return 'הכנס את הצעת המחיר ששלחת ללקוח כדי לראות כמה הרווחת';
   return `${x.profit>=0?'💰 רווח':'⚠️ הפסד'}: <span class="n">${money(Math.abs(x.profit))}</span>${x.pct!=null?` · ${Math.round(x.pct)}% על העלות`:''}`}
 function pUpd(){const x=pCalc(pj);pj.lines.forEach((l,k)=>{const t=$('pt'+k);if(t)t.textContent=money((num(l.qty)||0)*num(l.cost))});const s=$('psum');if(s)s.innerHTML=pSum(x);const f=$('pprof');if(f){f.innerHTML=pProf(x);f.style.color=x.has&&x.profit<0?'var(--bad)':''}pSave()}
@@ -512,7 +512,8 @@ function vProj(){
   const lines=p.lines.map((l,k)=>`<div class="oline">
     <label class="nm">פריט<div class="ac"><input value="${esc(l.name)}" autocomplete="off" placeholder="הקלד, למשל מצלמה, או בחר מהרשימה" oninput="pSet(${k},'name',this.value);acJ(${k},this)" onfocus="acJ(${k},this)" onblur="setTimeout(()=>{const e=$('pl${k}');if(e)e.hidden=true},350)"><div id="pl${k}" class="acl" hidden></div></div></label>
     <label>כמות<input inputmode="decimal" value="${esc(l.qty)}" oninput="pSet(${k},'qty',this.value)"></label>
-    <label>מחיר ליח׳ <small>לפני מע״מ</small><input inputmode="decimal" value="${esc(l.cost)}" oninput="pSet(${k},'cost',this.value)"></label>
+    <label>מחיר ליח׳ <small>לפני מע״מ</small><input id="pc${k}" inputmode="decimal" value="${esc(l.cost)}" oninput="pSet(${k},'cost',this.value);const v=$('pv${k}');if(v)v.value=this.value===''?'':r2(num(this.value)*(1+VAT))"></label>
+    <label>אחרי מע״מ <small>ליח׳</small><input id="pv${k}" inputmode="decimal" value="${l.cost===''||l.cost==null?'':r2(num(l.cost)*(1+VAT))}" oninput="const c=this.value===''?'':String(r2(num(this.value)/(1+VAT)));pSet(${k},'cost',c);const e=$('pc${k}');if(e)e.value=c"></label>
     <div class="res"><span></span><span><b class="n" id="pt${k}">${money((num(l.qty)||0)*num(l.cost))}</b> <button class="btn sm" style="color:var(--bad)" onclick="pDel(${k})" aria-label="מחיקת פריט">✕</button></span></div></div>`).join('');
   const OL=offers.slice().sort((a,b)=>(b.updated||0)-(a.updated||0));
   return `<div class="acts" style="justify-content:space-between;margin:0 0 10px"><button class="btn sm" onclick="pjList=true;render()">← כל הפרויקטים (${projects.length})</button><label class="muted" style="display:flex;gap:6px;align-items:center"><input type="checkbox" ${p.done?'checked':''} onchange="pj.done=this.checked;pSave()"> הפרויקט הסתיים</label></div>
