@@ -121,6 +121,7 @@ details.inv summary::-webkit-details-marker{display:none}
     <button class="tab" data-v="list">חשבוניות</button>
     <button class="tab" data-v="prices">השוואת מחירים</button>
     <button class="tab" data-v="offer">הצעת מחיר</button>
+    <button class="tab" data-v="proj">פרויקטים</button>
     <button class="tab" data-v="add">+ הוספה</button>
   </nav>
   <div id="cloud">טוען…</div>
@@ -187,14 +188,14 @@ let mode=lg('inv_mode')==='don'?'don':'biz';
 const isDon=i=>(i.category||'')==='תרומות';
 function inM(i){return mode==='don'?isDon(i):!isDon(i)}
 function inC(i){if(!inM(i))return false;const c=$('fc').value;return c==='all'||!c?true:(i.category||'כללי')===c}
-function setMode(m){mode=m;lp('inv_mode',m);if(m==='don'&&(view==='prices'||view==='offer'))view='sum';$('fc').value='all';fill();render()}
+function setMode(m){mode=m;lp('inv_mode',m);if(m==='don'&&(view==='prices'||view==='offer'||view==='proj'))view='sum';$('fc').value='all';fill();render()}
 function cubes(){
   const y=$('fy').value,inY=i=>y==='all'||(i.date||'').slice(0,4)===y,yl=y==='all'?'כל השנים':y;
   const B=st.invoices.filter(i=>!isDon(i)&&inY(i)),D=st.invoices.filter(i=>isDon(i)&&inY(i));
   const sum=L=>L.reduce((a,i)=>a+tot(i).total,0);
   $('cubes').innerHTML=`<button class="cube ${mode==='biz'?'on':''}" onclick="setMode('biz')"><b>🧾 חשבוניות העסק</b><span class="n">${money(sum(B))}</span><small>${B.length} חשבוניות · ${yl}</small></button>
   <button class="cube don ${mode==='don'?'on':''}" onclick="setMode('don')"><b>💝 תרומות</b><span class="n">${money(sum(D))}</span><small>${D.length} תרומות · ${yl}</small></button>`;
-  document.querySelector('.tab[data-v="prices"]').hidden=mode==='don';document.querySelector('.tab[data-v="offer"]').hidden=mode==='don';
+  document.querySelector('.tab[data-v="prices"]').hidden=mode==='don';document.querySelector('.tab[data-v="offer"]').hidden=mode==='don';document.querySelector('.tab[data-v="proj"]').hidden=mode==='don';
   $('tabs').style.gridTemplateColumns=mode==='don'?'repeat(3,1fr)':'';
 }
 function inP(d){const y=$('fy').value,m=$('fm').value;if(y!=='all'&&(d||'').slice(0,4)!==y)return false;if(m!=='all'&&(d||'').slice(5,7)!==m)return false;return true}
@@ -213,9 +214,9 @@ function fill(){
 function render(){
   cubes();
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
-  $('filters').hidden=view==='add'||view==='offer';
+  $('filters').hidden=view==='add'||view==='offer'||view==='proj';
   const a=$('app');
-  a.innerHTML=view==='sum'?vSum():view==='list'?vList():view==='prices'?vPrices():view==='offer'?vOffer():vAdd();
+  a.innerHTML=view==='sum'?vSum():view==='list'?vList():view==='prices'?vPrices():view==='offer'?vOffer():view==='proj'?vProj():vAdd();
 }
 const emptyAll=()=>`<div class="empty">עוד אין חשבוניות.<br>לחץ ״+ הוספה״ כדי לסרוק צילום של חשבונית, או שלח את החשבונית ל-Claude בצ׳אט וקבל קוד להדבקה.</div>`;
 function vSum(){
@@ -453,6 +454,72 @@ function vOfferList(){
   <label class="muted" style="display:block;margin-top:8px">תנאים קבועים בתחתית ההצעה<textarea style="direction:rtl;font-family:inherit;font-size:16px;min-height:60px" oninput="biz.terms=this.value;lp(OB,JSON.stringify(biz))">${esc(biz.terms)}</textarea></label>
   <p class="muted" style="margin-top:6px">ההצעות נשמרות בטלפון הזה.</p></div>`;
 }
+/* ---------- פרויקטים: מה עלה לי מול כמה הלקוח משלם ----------
+   פריטים: מהמוצרים שבחשבוניות (עם המחיר האחרון ששילמת) או חדשים עם מחיר. עלויות לפני מע״מ, כמו בהצעת המחיר.
+   מחיר ללקוח: הצעה מהלשונית "הצעת מחיר" או סכום ידני. נשמר בטלפון הזה, כמו ההצעות. */
+const PK='inv_projects';
+let projects=(()=>{try{const x=JSON.parse(lg(PK)||'[]');return Array.isArray(x)?x:[]}catch(e){return[]}})();
+let pj=null,pjList=true;
+function newProj(){return{id:uid(),name:'',cust:'',date:today(),done:false,lines:[{name:'',qty:1,cost:''}],offerId:'',amount:'',amtVat:false,notes:''}}
+function pSave(){if(!pj)return;pj.updated=Date.now();const k=projects.findIndex(x=>x.id===pj.id);if(k<0)projects.unshift(pj);else projects[k]=pj;lp(PK,JSON.stringify(projects))}
+function pCalc(p){
+  const cost=p.lines.reduce((s,l)=>s+(num(l.qty)||0)*num(l.cost),0);
+  const o=p.offerId?offers.find(z=>z.id===p.offerId):null;
+  const price=o?oCalc(o).net:(p.amtVat?num(p.amount)/(1+VAT):num(p.amount));
+  return{cost,price,o,profit:price-cost,pct:cost>0?(price-cost)/cost*100:null,has:price>0};
+}
+function pSum(x){return `<span>עלות הפרויקט (לפני מע״מ)</span><span class="n">${money(x.cost)}</span><span>מחיר ללקוח (לפני מע״מ)</span><span class="n">${x.has?money(x.price):'—'}</span>`}
+function pProf(x){if(!x.has)return 'הכנס את הצעת המחיר ששלחת ללקוח כדי לראות כמה הרווחת';
+  return `${x.profit>=0?'💰 רווח':'⚠️ הפסד'}: <span class="n">${money(Math.abs(x.profit))}</span>${x.pct!=null?` · ${Math.round(x.pct)}% על העלות`:''}`}
+function pUpd(){const x=pCalc(pj);pj.lines.forEach((l,k)=>{const t=$('pt'+k);if(t)t.textContent=money((num(l.qty)||0)*num(l.cost))});const s=$('psum');if(s)s.innerHTML=pSum(x);const f=$('pprof');if(f){f.innerHTML=pProf(x);f.style.color=x.has&&x.profit<0?'var(--bad)':''}pSave()}
+function pSet(k,f,v){pj.lines[k][f]=v;pUpd()}
+function pAdd(){pj.lines.push({name:'',qty:1,cost:''});pSave();render()}
+function pDel(k){pj.lines.splice(k,1);if(!pj.lines.length)pj.lines.push({name:'',qty:1,cost:''});pSave();render()}
+/* העתקת הפריטים מהצעת המחיר לפרויקט, עם העלויות שהיו בהצעה */
+function pFromOffer(){const o=offers.find(z=>z.id===pj.offerId);if(!o)return;
+  const L=o.lines.filter(l=>l.name&&num(l.cost)>0).map(l=>({name:l.name,qty:l.qty,cost:l.cost}));if(!L.length){alert('אין בהצעה הזו מוצרים עם עלות');return}
+  pj.lines=pj.lines.filter(l=>l.name||num(l.cost)).concat(L);if(!pj.name)pj.name=o.title||'';if(!pj.cust)pj.cust=o.cust||'';pSave();render()}
+/* הצעות למילוי: מוצרים מהחשבוניות (המחיר האחרון ששילמת) וגם פריטים מפרויקטים קודמים */
+function acJ(k,inp){
+  const l=$('pl'+k);if(!l)return;const T=terms(inp.value);if(!T.length){l.hidden=true;return}
+  const seen=new Set(),P=[];
+  Object.values(priceMap()).filter(p=>T.some(t=>norm(p.name).includes(t)||norm(p.key).includes(t))).forEach(p=>{const c=costOf(p);seen.add(norm(p.name));P.push({name:p.name,cost:c?c.c:'',info:c?(c.k==='inv'?'קנית ':'הצעה ')+fd(c.d)+' · '+(c.sup||''):''})});
+  projects.filter(x=>x.id!==pj.id).forEach(x=>x.lines.forEach(z=>{if(z.name&&num(z.cost)>0&&!seen.has(norm(z.name))&&T.some(t=>norm(z.name).includes(t))){seen.add(norm(z.name));P.push({name:z.name,cost:z.cost,info:'מפרויקט '+(x.name||'קודם')})}}));
+  const Q=P.sort((a,b)=>a.name.localeCompare(b.name,'he')).slice(0,12);if(!Q.length){l.hidden=true;return}
+  l.innerHTML=Q.map((p,j)=>`<button type="button" class="pick" data-j="${j}"><span><b>${esc(p.name)}</b><small>${esc(p.info)}</small></span><span class="n">${p.cost!==''?money(p.cost):''}</span></button>`).join('');
+  l.querySelectorAll('.pick').forEach(b=>b.onclick=e=>{e.preventDefault();const p=Q[+b.dataset.j];pj.lines[k].name=p.name;pj.lines[k].cost=p.cost;l.hidden=true;pSave();render()});
+  l.hidden=false;
+}
+function vProj(){
+  if(pjList||!pj)return vProjList();
+  const p=pj,x=pCalc(p);
+  const lines=p.lines.map((l,k)=>`<div class="oline">
+    <label class="nm">פריט<div class="ac"><input value="${esc(l.name)}" autocomplete="off" placeholder="הקלד, למשל מצלמה, או בחר מהרשימה" oninput="pSet(${k},'name',this.value);acJ(${k},this)" onfocus="acJ(${k},this)" onblur="setTimeout(()=>{const e=$('pl${k}');if(e)e.hidden=true},350)"><div id="pl${k}" class="acl" hidden></div></div></label>
+    <label>כמות<input inputmode="decimal" value="${esc(l.qty)}" oninput="pSet(${k},'qty',this.value)"></label>
+    <label>מחיר ליח׳ <small>לפני מע״מ</small><input inputmode="decimal" value="${esc(l.cost)}" oninput="pSet(${k},'cost',this.value)"></label>
+    <div class="res"><span></span><span><b class="n" id="pt${k}">${money((num(l.qty)||0)*num(l.cost))}</b> <button class="btn sm" style="color:var(--bad)" onclick="pDel(${k})" aria-label="מחיקת פריט">✕</button></span></div></div>`).join('');
+  const OL=offers.slice().sort((a,b)=>(b.updated||0)-(a.updated||0));
+  return `<div class="acts" style="justify-content:space-between;margin:0 0 10px"><button class="btn sm" onclick="pjList=true;render()">← כל הפרויקטים (${projects.length})</button><label class="muted" style="display:flex;gap:6px;align-items:center"><input type="checkbox" ${p.done?'checked':''} onchange="pj.done=this.checked;pSave()"> הפרויקט הסתיים</label></div>
+  <div class="card"><h2>פרטי הפרויקט</h2><div class="grid"><label>שם הפרויקט<input value="${esc(p.name)}" placeholder="למשל: מצלמות אצל כהן" oninput="pj.name=this.value;pSave()"></label><label>לקוח<input value="${esc(p.cust)}" oninput="pj.cust=this.value;pSave()"></label><label>תאריך<input type="date" value="${esc(p.date)}" oninput="pj.date=this.value;pSave()"></label></div></div>
+  <div class="card"><h2>פריטים בפרויקט</h2><p class="muted" style="margin-bottom:8px">התחל להקליד ובחר מוצר ששמור בחשבוניות (המחיר מתמלא לפי הפעם האחרונה ששילמת), או כתוב פריט חדש עם מחיר.</p>
+  <div class="ol">${lines}</div><div class="acts" style="justify-content:flex-start"><button class="btn" onclick="pAdd()">➕ פריט</button>${p.offerId?`<button class="btn" onclick="pFromOffer()">📋 העתקת המוצרים מההצעה</button>`:''}</div></div>
+  <div class="card"><h2>הצעת המחיר ששלחת ללקוח</h2><div class="grid">
+    <label>הצעה מהלשונית ״הצעת מחיר״<select id="pOffer" onchange="pj.offerId=this.value;pSave();render()"><option value="">— סכום ידני —</option>${OL.map(o=>`<option value="${o.id}" ${o.id===p.offerId?'selected':''}>${esc(o.no)} · ${esc(o.cust||'ללא שם')}${o.title?' · '+esc(o.title):''} · ${money(oCalc(o).net)}</option>`).join('')}</select></label>
+    ${p.offerId?'':`<label>סכום ההצעה<input inputmode="decimal" value="${esc(p.amount)}" placeholder="0" oninput="pj.amount=this.value;pUpd()"></label><label class="muted" style="flex-direction:row;align-items:center;gap:6px;margin-top:18px"><input type="checkbox" ${p.amtVat?'checked':''} onchange="pj.amtVat=this.checked;pUpd()"> הסכום כולל מע״מ</label>`}
+  </div>${x.o?`<p class="muted" style="margin-top:6px">לפי הצעה ${esc(x.o.no)}: ${money(x.price)} לפני מע״מ (${money(x.price*(1+VAT))} כולל מע״מ)</p>`:''}</div>
+  <div class="card"><h2>כמה הרווחתי</h2><div class="osum" id="psum">${pSum(x)}</div><div class="prof" id="pprof" style="${x.has&&x.profit<0?'color:var(--bad)':''}">${pProf(x)}</div>
+  <label class="muted" style="display:block;margin-top:10px">הערות<textarea style="direction:rtl;font-family:inherit;font-size:16px;min-height:60px" oninput="pj.notes=this.value;pSave()">${esc(p.notes)}</textarea></label>
+  <div class="acts"><button class="btn sm" style="color:var(--bad)" onclick="if(delId==='pj'){projects=projects.filter(z=>z.id!==pj.id);lp(PK,JSON.stringify(projects));pj=null;pjList=true;delId=null}else delId='pj';render()">${delId==='pj'?'כן, למחוק את הפרויקט':'🗑️ מחיקת הפרויקט'}</button></div></div>`;
+}
+function vProjList(){
+  const L=projects.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.updated||0)-(a.updated||0));
+  const T=L.map(pCalc),sum=T.filter(x=>x.has).reduce((s,x)=>s+x.profit,0);
+  return `<div class="acts" style="justify-content:flex-start;margin:0 0 10px"><button class="btn p" onclick="pj=newProj();pjList=false;delId=null;pSave();render()">➕ פרויקט חדש</button></div>
+  ${L.length?`<div class="tiles" style="grid-template-columns:repeat(2,1fr)"><div class="tile"><div class="k">פרויקטים</div><div class="v n">${L.length}</div></div><div class="tile"><div class="k">רווח כולל</div><div class="v n" style="color:${sum<0?'var(--bad)':'var(--good)'}">${money(sum)}</div></div></div>
+  <div class="card" style="padding:4px 0">${L.map((p,i)=>{const x=T[i];return `<button class="pick" onclick="pj=projects.find(z=>z.id==='${p.id}');pjList=false;delId=null;render()"><span><b>${esc(p.name||'פרויקט ללא שם')}${p.cust?' · '+esc(p.cust):''}${p.done?' ✓':''}</b><small>${fd(p.date)} · עלות ${money(x.cost)}${x.has?' · ללקוח '+money(x.price):' · עוד אין הצעת מחיר'}</small></span><span class="n" style="font-weight:800;color:${x.has?(x.profit<0?'var(--bad)':'var(--good)'):'var(--muted)'}">${x.has?money(x.profit):'—'}</span></button>`}).join('')}</div>`
+  :`<div class="empty">עוד אין פרויקטים.<br>פרויקט מרכז את הפריטים שקנית לעבודה ואת הצעת המחיר ששלחת ללקוח, ומחשב כמה הרווחת.</div>`}
+  <p class="muted" style="margin-top:6px">הפרויקטים נשמרים בטלפון הזה, כמו הצעות המחיר. המחירים לפני מע״מ.</p>`;
+}
 function oDup(){const c=JSON.parse(JSON.stringify(of)),n=newOffer();c.id=n.id;c.no=n.no;c.date=today();c.cust='';c.custPhone='';of=c;ofList=false;oSave();render()}
 function oText(){const o=of,x=oCalc(o);const rows=o.lines.map((l,k)=>({l,r:x.L[k]})).filter(z=>z.l.name||z.r.t);
   return `*הצעת מחיר ${o.no}*${o.title?'\n'+o.title:''}\n${o.cust?'לכבוד: '+o.cust+'\n':''}תאריך: ${fd(o.date)}\n\n`+rows.map(({l,r})=>`• ${l.name}${r.q!==1?` × ${r.q}`:''} — ${money(r.t)}`).join('\n')+`\n\nסה״כ לפני מע״מ: ${money(x.net)}\nמע״מ 18%: ${money(x.vat)}\n*סה״כ לתשלום: ${money(x.total)}*${o.notes?'\n\n'+o.notes:''}${biz.terms?'\n\n'+biz.terms:''}\n\n${biz.name}${biz.phone?' · '+biz.phone:''}`}
@@ -468,7 +535,7 @@ function oPrint(){const o=of,x=oCalc(o);const rows=o.lines.map((l,k)=>({l,r:x.L[
   window.print();
 }
 
-$('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;view=b.dataset.v;delId=null;if(view==='offer'&&!of)ofList=true;if(view!=='add')draft=null;render()};
+$('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;view=b.dataset.v;delId=null;if(view==='offer'&&!of)ofList=true;if(view==='proj'&&!pj)pjList=true;if(view!=='add')draft=null;render()};
 ['fy','fm','fc'].forEach(id=>$(id).onchange=render);$('fs').oninput=()=>{pick=null;render()};
 fill();render();sync();
 </script>
