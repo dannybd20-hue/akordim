@@ -173,7 +173,7 @@ async function sync(ops){
     const r=await call({ops:ops||[],rev:ops&&ops.length?-1:st.rev});
     if(!r.ok){if(r.error==='password'){pw='';lp('inv_pw',null);$('login').hidden=false;$('pwErr').textContent='צריך להזין סיסמה';cloud('')}else if(r.error==='locked'){cloud('🔒 יותר מדי ניסיונות. נסה שוב בעוד רבע שעה','#c0392b')}else cloud('⚠️ שגיאה: '+r.error,'#c0392b');return false}
     if(r.state){st=okSt(r.state);ai=!!r.ai;lp('invoices_state',JSON.stringify(st));lp('inv_ai',ai?'1':null)}
-    $('login').hidden=true;cloud('☁️ מסונכרן בענן','#1e7e48');fill();render();return true;
+    $('login').hidden=true;cloud('☁️ מסונכרן בענן','#1e7e48');fill();render();importOffers();return true;
   }catch(e){cloud('📴 אין חיבור לשרת. אם זו הפעם הראשונה, צריך לעדכן את הסקריפט בגוגל','#b4610e');return false}
 }
 async function login(){const v=$('pw').value.trim();if(!v)return;pw=v;$('pwErr').textContent='';if(await sync()){lp('inv_pw',v);$('pw').value=''}else if(!pw)$('pwErr').textContent='סיסמה שגויה (או שהסקריפט בגוגל עוד לא עודכן)'}
@@ -401,8 +401,24 @@ const OK='inv_offers',OB='inv_biz';
 let offers=(()=>{try{const x=JSON.parse(lg(OK)||'[]');return Array.isArray(x)?x:[]}catch(e){return[]}})();
 let biz=(()=>{try{return Object.assign({name:'דני בן דוד',phone:'',bid:'',terms:'ההצעה בתוקף ל-14 יום. המחירים כוללים התקנה אלא אם צוין אחרת.'},JSON.parse(lg(OB)||'{}'))}catch(e){return{name:'דני בן דוד',phone:'',bid:'',terms:''}}})();
 let of=null,ofList=false;
-function newOffer(){const y=new Date().getFullYear(),n=offers.filter(o=>(o.no||'').startsWith(y+'-')).length+1;return{id:uid(),no:y+'-'+String(n).padStart(3,'0'),date:today(),cust:'',custPhone:'',title:'',m:30,notes:'',lines:[{name:'',qty:1,cost:'',m:'',price:''}]}}
+function newOffer(){const nums=offers.map(o=>/^\d+$/.test(o.no||'')?+o.no:0).filter(Boolean);let no;if(nums.length)no=String(Math.max(...nums)+1);else{const y=new Date().getFullYear(),n=offers.filter(o=>(o.no||'').startsWith(y+'-')).length+1;no=y+'-'+String(n).padStart(3,'0')}return{id:uid(),no,date:today(),cust:'',custPhone:'',title:'',m:30,notes:'',lines:[{name:'',qty:1,cost:'',m:'',price:''}]}}
 function saveOffers(){lp(OK,JSON.stringify(offers))}
+/* הצעות ש-Claude מכין מקבצים ששלחת: קובץ JSON בתיקיית המסמכים בדרייב, נקלט פעם אחת */
+const OFFER_FILES=['13pE-3lxVhcncPag8bCddAUG8t4c1URxy'];
+async function importOffers(){
+  let done=[];try{done=JSON.parse(lg('inv_off_imp')||'[]')}catch(e){}
+  let got=0;
+  for(const id of OFFER_FILES){if(done.includes(id))continue;
+    try{const r=await call({op:'file',fileId:id});if(!r.ok)continue;
+      const bin=atob(r.data),u=new Uint8Array(bin.length);for(let k=0;k<bin.length;k++)u[k]=bin.charCodeAt(k);
+      const d=JSON.parse(new TextDecoder().decode(u));
+      (d.offers||[]).forEach(o=>{if(!offers.some(z=>z.id===o.id)){o.updated=Date.now();offers.unshift(o);got++}});
+      if(d.biz&&!biz.bid){biz=Object.assign(biz,d.biz);lp(OB,JSON.stringify(biz))}
+      done.push(id);
+    }catch(e){}
+  }
+  lp('inv_off_imp',JSON.stringify(done));if(got){saveOffers();if(view==='offer')render()}
+}
 function oCalc(o){
   let cost=0,net=0;
   const L=o.lines.map(l=>{const q=num(l.qty)||0,c=num(l.cost),m=l.m===''||l.m==null?num(o.m):num(l.m);
@@ -420,20 +436,20 @@ function vOffer(){
     <label>עלות ליח׳ <small>לפני מע״מ</small><input id="oc${k}" inputmode="decimal" value="${esc(l.cost)}" oninput="oSet(${k},'cost',this.value)"></label>
     <label>רווח %<input id="om${k}" inputmode="decimal" placeholder="${esc(o.m)}" value="${esc(l.m)}" oninput="oSet(${k},'m',this.value)"></label>
     <label>מחיר ללקוח<input id="op${k}" inputmode="decimal" placeholder="${x.L[k].p}" value="${esc(l.price)}" oninput="oSet(${k},'price',this.value)"></label>
-    <div class="res"><span class="muted" id="oi${k}">${oInfo(x.L[k])}</span><span><b class="n" id="ot${k}">${money(x.L[k].t)}</b> <button class="btn sm" style="color:var(--bad)" onclick="oDel(${k})" aria-label="מחיקת שורה">✕</button></span></div></div>`).join('');
+    <div class="res"><span class="muted" id="oi${k}">${oInfo(x.L[k],l)}</span><span><b class="n" id="ot${k}">${money(x.L[k].t)}</b> <button class="btn sm" style="color:var(--bad)" onclick="oDel(${k})" aria-label="מחיקת שורה">✕</button></span></div></div>`).join('');
   return `<div class="acts" style="justify-content:space-between;margin:0 0 10px"><button class="btn sm" onclick="ofList=true;render()">← כל ההצעות (${offers.length})</button><span class="muted">הצעה מס׳ ${esc(o.no)}</span></div>
   <div class="card"><h2>פרטי הלקוח</h2><div class="grid"><label>שם הלקוח<input value="${esc(o.cust)}" oninput="of.cust=this.value;oSave()"></label><label>טלפון<input inputmode="tel" value="${esc(o.custPhone)}" oninput="of.custPhone=this.value;oSave()"></label><label>נושא העבודה<input value="${esc(o.title)}" placeholder="למשל: התקנת 4 מצלמות" oninput="of.title=this.value;oSave()"></label><label>תאריך<input type="date" value="${esc(o.date)}" oninput="of.date=this.value;oSave()"></label><label>רווח ברירת מחדל %<input inputmode="decimal" value="${esc(o.m)}" oninput="of.m=this.value;oUpd(1)"></label></div></div>
   <div class="card"><h2>מוצרים ועבודה</h2><p class="muted" style="margin-bottom:8px">בחר מוצר מהרשימה והעלות תתמלא לפי המחיר האחרון ששילמת. המחיר ללקוח מחושב לפי אחוז הרווח, ואפשר לשנות אותו ידנית.</p>
   <div class="ol" id="olines">${lines}</div><div class="acts" style="justify-content:flex-start"><button class="btn" onclick="oAdd()">➕ שורה</button><button class="btn" onclick="oAdd('עבודה והתקנה')">🔧 עבודה</button></div></div>
   <div class="card"><h2>סיכום</h2><div class="osum" id="osum">${oSum(x)}</div><div class="prof" id="oprof">${oProf(x)}</div>
   <label class="muted" style="display:block;margin-top:10px">הערות ללקוח<textarea style="direction:rtl;font-family:inherit;font-size:16px;min-height:70px" oninput="of.notes=this.value;oSave()">${esc(o.notes)}</textarea></label>
-  <div class="acts"><button class="btn" onclick="oShare()">📲 שליחה בוואטסאפ</button><button class="btn" onclick="oCopy()">📋 העתקה</button><button class="btn p" onclick="oPrint()">🖨️ הדפסה / PDF</button></div><div class="msg" id="oMsg"></div></div>`;
+  <div class="acts"><button class="btn" onclick="oShare()">📲 שליחה בוואטסאפ</button><button class="btn" onclick="oCopy()">📋 העתקה</button><button class="btn p" onclick="oPrint()">🖨️ הדפסה / PDF</button></div>${o.fileId?`<div class="acts"><button class="btn sm" onclick="oDoc()">📄 ההצעה המקורית (PDF)</button></div>`:''}<div class="msg" id="oMsg"></div></div>`;
 }
-function oInfo(r){return r.c>0?`עלות ${money(r.c)} · רווח ${r.mm==null?'':Math.round(r.mm)+'%'} (${money((r.p-r.c)*r.q)})`:(r.p>0?'ללא עלות (עבודה)':'')}
+function oInfo(r,l){if(l&&(l.cost===''||l.cost==null)&&r.p>0)return '⚠️ לא הוזנה עלות';return r.c>0?`עלות ${money(r.c)} · רווח ${r.mm==null?'':Math.round(r.mm)+'%'} (${money((r.p-r.c)*r.q)})`:(r.p>0?'ללא עלות (עבודה)':'')}
 function oSum(x){return `<span>עלות שלך</span><span class="n">${money(x.cost)}</span><span>מחיר ללקוח לפני מע״מ</span><span class="n">${money(x.net)}</span><span>מע״מ 18%</span><span class="n">${money(x.vat)}</span><span class="big">סה״כ ללקוח</span><span class="n big">${money(x.total)}</span>`}
-function oProf(x){return `💰 רווח: <span class="n">${money(x.profit)}</span>${x.pct!=null?` · ${Math.round(x.pct)}% על העלות`:''}`}
+function oProf(x){const miss=of?of.lines.filter((l,k)=>(l.cost===''||l.cost==null)&&x.L[k]&&x.L[k].p>0).length:0;return `💰 רווח: <span class="n">${money(x.profit)}</span>${x.pct!=null?` · ${Math.round(x.pct)}% על העלות`:''}${miss?`<div style="color:var(--warn);font-weight:600;font-size:.9rem">חסרה עלות ב-${miss} שורות, אז הרווח האמיתי נמוך יותר</div>`:''}`}
 function oSave(){if(!of)return;of.updated=Date.now();const k=offers.findIndex(o=>o.id===of.id);if(k<0)offers.unshift(of);else offers[k]=of;saveOffers()}
-function oUpd(all){const x=oCalc(of);x.L.forEach((r,k)=>{const p=$('op'+k);if(p)p.placeholder=r.p;const i=$('oi'+k);if(i)i.textContent=oInfo(r);const t=$('ot'+k);if(t)t.textContent=money(r.t);if(all){const m=$('om'+k);if(m)m.placeholder=of.m}});const s=$('osum');if(s)s.innerHTML=oSum(x);const pf=$('oprof');if(pf)pf.innerHTML=oProf(x);oSave()}
+function oUpd(all){const x=oCalc(of);x.L.forEach((r,k)=>{const p=$('op'+k);if(p)p.placeholder=r.p;const i=$('oi'+k);if(i)i.textContent=oInfo(r,of.lines[k]);const t=$('ot'+k);if(t)t.textContent=money(r.t);if(all){const m=$('om'+k);if(m)m.placeholder=of.m}});const s=$('osum');if(s)s.innerHTML=oSum(x);const pf=$('oprof');if(pf)pf.innerHTML=oProf(x);oSave()}
 function oSet(k,f,v){const l=of.lines[k];l[f]=v;if(f==='cost'||f==='m'){if(l.price!==''){l.price='';const p=$('op'+k);if(p)p.value=''}}oUpd()}
 function oAdd(n){of.lines.push({name:n||'',qty:1,cost:n?0:'',m:'',price:''});oSave();render();const e=document.querySelectorAll('.oline input');}
 function oDel(k){of.lines.splice(k,1);if(!of.lines.length)of.lines.push({name:'',qty:1,cost:'',m:'',price:''});oSave();render()}
@@ -450,7 +466,7 @@ function vOfferList(){
   return `<div class="acts" style="justify-content:flex-start;margin:0 0 10px"><button class="btn p" onclick="of=newOffer();ofList=false;render()">➕ הצעת מחיר חדשה</button></div>
   ${L.length?`<div class="card" style="padding:4px 0">${L.map(o=>{const x=oCalc(o);return `<button class="pick" onclick="of=offers.find(z=>z.id==='${o.id}');ofList=false;render()"><span><b>${esc(o.cust||'ללא שם לקוח')}${o.title?' · '+esc(o.title):''}</b><small>מס׳ ${esc(o.no)} · ${fd(o.date)} · רווח ${money(x.profit)}</small></span><span class="n" style="font-weight:800">${money(x.total)}</span></button>`}).join('')}</div>`:'<div class="empty">עוד אין הצעות מחיר. לחץ ״הצעת מחיר חדשה״.</div>'}
   ${of&&offers.some(z=>z.id===of.id)?`<div class="acts"><button class="btn sm" onclick="oDup()">שכפול ההצעה האחרונה שפתחת</button><button class="btn sm" style="color:var(--bad)" onclick="if(delId==='of'){offers=offers.filter(z=>z.id!==of.id);saveOffers();of=null;delId=null}else delId='of';render()">${delId==='of'?'כן, למחוק את '+esc(of.no):'מחיקת ההצעה האחרונה שפתחת'}</button></div>`:''}
-  <div class="card" style="margin-top:12px"><h2>פרטי העסק שלך בהצעה</h2><div class="grid"><label>שם העסק<input value="${esc(biz.name)}" oninput="biz.name=this.value;lp(OB,JSON.stringify(biz))"></label><label>טלפון<input inputmode="tel" value="${esc(biz.phone)}" oninput="biz.phone=this.value;lp(OB,JSON.stringify(biz))"></label><label>ע.מ / ח.פ<input value="${esc(biz.bid)}" oninput="biz.bid=this.value;lp(OB,JSON.stringify(biz))"></label></div>
+  <div class="card" style="margin-top:12px"><h2>פרטי העסק שלך בהצעה</h2><div class="grid"><label>שם העסק<input value="${esc(biz.name)}" oninput="biz.name=this.value;lp(OB,JSON.stringify(biz))"></label><label>טלפון<input inputmode="tel" value="${esc(biz.phone)}" oninput="biz.phone=this.value;lp(OB,JSON.stringify(biz))"></label><label>ע.מ / ח.פ<input value="${esc(biz.bid)}" oninput="biz.bid=this.value;lp(OB,JSON.stringify(biz))"></label><label>כתובת<input value="${esc(biz.addr||'')}" oninput="biz.addr=this.value;lp(OB,JSON.stringify(biz))"></label><label>אימייל<input value="${esc(biz.email||'')}" oninput="biz.email=this.value;lp(OB,JSON.stringify(biz))"></label></div>
   <label class="muted" style="display:block;margin-top:8px">תנאים קבועים בתחתית ההצעה<textarea style="direction:rtl;font-family:inherit;font-size:16px;min-height:60px" oninput="biz.terms=this.value;lp(OB,JSON.stringify(biz))">${esc(biz.terms)}</textarea></label>
   <p class="muted" style="margin-top:6px">ההצעות נשמרות בטלפון הזה.</p></div>`;
 }
@@ -520,18 +536,23 @@ function vProjList(){
   :`<div class="empty">עוד אין פרויקטים.<br>פרויקט מרכז את הפריטים שקנית לעבודה ואת הצעת המחיר ששלחת ללקוח, ומחשב כמה הרווחת.</div>`}
   <p class="muted" style="margin-top:6px">הפרויקטים נשמרים בטלפון הזה, כמו הצעות המחיר. המחירים לפני מע״מ.</p>`;
 }
-function oDup(){const c=JSON.parse(JSON.stringify(of)),n=newOffer();c.id=n.id;c.no=n.no;c.date=today();c.cust='';c.custPhone='';of=c;ofList=false;oSave();render()}
+async function oDoc(){const m=$('oMsg');m.className='msg';m.textContent='⏳ טוען את המסמך…';
+  try{const r=await call({op:'file',fileId:of.fileId});if(!r.ok){m.className='msg err';m.textContent='המסמך לא נמצא';return}
+    const bin=atob(r.data),u=new Uint8Array(bin.length);for(let k=0;k<bin.length;k++)u[k]=bin.charCodeAt(k);
+    const url=URL.createObjectURL(new Blob([u],{type:r.mime}));m.innerHTML=`<a class="btn sm p" href="${url}" target="_blank" rel="noopener">📄 לחץ לפתיחה</a> <a class="btn sm" href="${url}" download="${esc(r.name)}">⬇ הורדה</a>`;try{m.querySelector('a').click()}catch(e){}}
+  catch(e){m.className='msg err';m.textContent='אין חיבור לשרת'}}
+function oDup(){const c=JSON.parse(JSON.stringify(of)),n=newOffer();c.id=n.id;c.no=n.no;c.date=today();c.cust='';c.custPhone='';delete c.fileId;of=c;ofList=false;oSave();render()}
 function oText(){const o=of,x=oCalc(o);const rows=o.lines.map((l,k)=>({l,r:x.L[k]})).filter(z=>z.l.name||z.r.t);
   return `*הצעת מחיר ${o.no}*${o.title?'\n'+o.title:''}\n${o.cust?'לכבוד: '+o.cust+'\n':''}תאריך: ${fd(o.date)}\n\n`+rows.map(({l,r})=>`• ${l.name}${r.q!==1?` × ${r.q}`:''} — ${money(r.t)}`).join('\n')+`\n\nסה״כ לפני מע״מ: ${money(x.net)}\nמע״מ 18%: ${money(x.vat)}\n*סה״כ לתשלום: ${money(x.total)}*${o.notes?'\n\n'+o.notes:''}${biz.terms?'\n\n'+biz.terms:''}\n\n${biz.name}${biz.phone?' · '+biz.phone:''}`}
 function oShare(){const t=oText(),ph=String(of.custPhone||'').replace(/\D/g,'').replace(/^0/,'972');window.open('https://wa.me/'+(ph.length>=11?ph:'')+'?text='+encodeURIComponent(t),'_blank')}
 async function oCopy(){const m=$('oMsg');try{await navigator.clipboard.writeText(oText());m.className='msg ok';m.textContent='✓ הועתק. אפשר להדביק בכל מקום'}catch(e){m.className='msg err';m.textContent='לא הצלחתי להעתיק'}}
 function oPrint(){const o=of,x=oCalc(o);const rows=o.lines.map((l,k)=>({l,r:x.L[k]})).filter(z=>z.l.name||z.r.t);
   let pr=$('pr');if(!pr){pr=document.createElement('div');pr.id='pr';document.body.appendChild(pr)}
-  pr.innerHTML=`<div class="doc"><div class="hd"><div><h1>הצעת מחיר</h1><div>מס׳ ${esc(o.no)} · ${fd(o.date)}</div>${o.title?`<div><b>${esc(o.title)}</b></div>`:''}</div><div style="text-align:left"><b>${esc(biz.name)}</b>${biz.bid?'<div>ע.מ '+esc(biz.bid)+'</div>':''}${biz.phone?'<div>'+esc(biz.phone)+'</div>':''}</div></div>
+  pr.innerHTML=`<div class="doc"><div class="hd"><div><h1>הצעת מחיר</h1><div>מס׳ ${esc(o.no)} · ${fd(o.date)}</div>${o.title?`<div><b>${esc(o.title)}</b></div>`:''}</div><div style="text-align:left"><b>${esc(biz.name)}</b>${biz.bid?'<div>עוסק מורשה '+esc(biz.bid)+'</div>':''}${biz.addr?'<div>'+esc(biz.addr)+'</div>':''}${biz.phone?'<div>נייד '+esc(biz.phone)+'</div>':''}${biz.email?'<div>'+esc(biz.email)+'</div>':''}</div></div>
   ${o.cust?`<p style="margin-bottom:10px">לכבוד: <b>${esc(o.cust)}</b>${o.custPhone?' · '+esc(o.custPhone):''}</p>`:''}
   <table><thead><tr><th>#</th><th>תיאור</th><th class="l">כמות</th><th class="l">מחיר ליח׳</th><th class="l">סה״כ</th></tr></thead><tbody>${rows.map(({l,r},i)=>`<tr><td>${i+1}</td><td>${esc(l.name)}</td><td class="l n">${r.q}</td><td class="l n">${money(r.p)}</td><td class="l n">${money(r.t)}</td></tr>`).join('')}</tbody></table>
   <div class="tt"><div><span>סה״כ לפני מע״מ</span><span class="n">${money(x.net)}</span></div><div><span>מע״מ 18%</span><span class="n">${money(x.vat)}</span></div><div class="g"><span>סה״כ לתשלום</span><span class="n">${money(x.total)}</span></div></div>
-  ${o.notes?`<p style="margin-top:14px;white-space:pre-wrap">${esc(o.notes)}</p>`:''}${biz.terms?`<p style="margin-top:10px;font-size:13px;color:#444;white-space:pre-wrap">${esc(biz.terms)}</p>`:''}</div>`;
+  ${o.notes?`<p style="margin-top:14px;white-space:pre-wrap">${esc(o.notes)}</p>`:''}${biz.terms?`<h3 style="margin-top:16px;font-size:15px">תנאי התקשרות, תשלום ואחריות</h3><p style="margin-top:4px;font-size:13px;color:#333;white-space:pre-wrap">${esc(biz.terms)}</p><p style="margin-top:28px">חתימה: ____________________</p>`:''}</div>`;
   window.print();
 }
 
