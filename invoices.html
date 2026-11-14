@@ -487,14 +487,16 @@ function pCalc(p){
 function pSum(x){return `<span>עלות הפרויקט (לפני מע״מ)</span><span class="n">${money(x.cost)}</span><span>עלות הפרויקט (אחרי מע״מ)</span><span class="n">${money(x.cost*(1+VAT))}</span><span>מחיר ללקוח (לפני מע״מ)</span><span class="n">${x.has?money(x.price):'—'}</span>`}
 function pProf(x){if(!x.has)return 'הכנס את הצעת המחיר ששלחת ללקוח כדי לראות כמה הרווחת';
   return `${x.profit>=0?'💰 רווח':'⚠️ הפסד'}: <span class="n">${money(Math.abs(x.profit))}</span>${x.pct!=null?` · ${Math.round(x.pct)}% על העלות`:''}`}
-function pUpd(){const x=pCalc(pj);pj.lines.forEach((l,k)=>{const t=$('pt'+k);if(t)t.textContent=money((num(l.qty)||0)*num(l.cost))});const s=$('psum');if(s)s.innerHTML=pSum(x);const f=$('pprof');if(f){f.innerHTML=pProf(x);f.style.color=x.has&&x.profit<0?'var(--bad)':''}pSave()}
+function pUpd(){const x=pCalc(pj);pj.lines.forEach((l,k)=>{const t=$('pt'+k);if(t)t.textContent=money((num(l.qty)||0)*num(l.cost));const w=$('pw'+k);if(w)w.textContent=l.name&&(l.cost===''||l.cost==null)?'⚠️ חסרה עלות':''});const s=$('psum');if(s)s.innerHTML=pSum(x);const f=$('pprof');if(f){f.innerHTML=pProf(x);f.style.color=x.has&&x.profit<0?'var(--bad)':''}pSave()}
 function pSet(k,f,v){pj.lines[k][f]=v;pUpd()}
 function pAdd(){pj.lines.push({name:'',qty:1,cost:''});pSave();render()}
 function pDel(k){pj.lines.splice(k,1);if(!pj.lines.length)pj.lines.push({name:'',qty:1,cost:''});pSave();render()}
 /* העתקת הפריטים מהצעת המחיר לפרויקט, עם העלויות שהיו בהצעה */
 function pFromOffer(){const o=offers.find(z=>z.id===pj.offerId);if(!o)return;
-  const L=o.lines.filter(l=>l.name&&num(l.cost)>0).map(l=>({name:l.name,qty:l.qty,cost:l.cost}));if(!L.length){alert('אין בהצעה הזו מוצרים עם עלות');return}
-  pj.lines=pj.lines.filter(l=>l.name||num(l.cost)).concat(L);if(!pj.name)pj.name=o.title||'';if(!pj.cust)pj.cust=o.cust||'';pSave();render()}
+  const have=new Set(pj.lines.map(l=>norm(l.name)).filter(Boolean));
+  /* כל המוצרים מההצעה, עם העלות אם הוזנה. שורות עבודה (עלות 0) לא נכנסות, וגם מה שכבר קיים בפרויקט */
+  const L=o.lines.filter(l=>l.name&&!(l.cost!==''&&l.cost!=null&&num(l.cost)===0)&&!have.has(norm(l.name))).map(l=>({name:l.name,qty:l.qty,cost:l.cost===''||l.cost==null?'':l.cost}));
+  pj.lines=pj.lines.filter(l=>l.name||num(l.cost)).concat(L);if(!pj.lines.length)pj.lines.push({name:'',qty:1,cost:''});if(!pj.name)pj.name=o.title||'';if(!pj.cust)pj.cust=o.cust||'';pSave();render()}
 /* הצעות למילוי: מוצרים מהחשבוניות (המחיר האחרון ששילמת) וגם פריטים מפרויקטים קודמים */
 function acJ(k,inp){
   const l=$('pl'+k);if(!l)return;const T=terms(inp.value);if(!T.length){l.hidden=true;return}
@@ -514,7 +516,7 @@ function vProj(){
     <label>כמות<input inputmode="decimal" value="${esc(l.qty)}" oninput="pSet(${k},'qty',this.value)"></label>
     <label>מחיר ליח׳ <small>לפני מע״מ</small><input id="pc${k}" inputmode="decimal" value="${esc(l.cost)}" oninput="pSet(${k},'cost',this.value);const v=$('pv${k}');if(v)v.value=this.value===''?'':r2(num(this.value)*(1+VAT))"></label>
     <label>אחרי מע״מ <small>ליח׳</small><input id="pv${k}" inputmode="decimal" value="${l.cost===''||l.cost==null?'':r2(num(l.cost)*(1+VAT))}" oninput="const c=this.value===''?'':String(r2(num(this.value)/(1+VAT)));pSet(${k},'cost',c);const e=$('pc${k}');if(e)e.value=c"></label>
-    <div class="res"><span></span><span><b class="n" id="pt${k}">${money((num(l.qty)||0)*num(l.cost))}</b> <button class="btn sm" style="color:var(--bad)" onclick="pDel(${k})" aria-label="מחיקת פריט">✕</button></span></div></div>`).join('');
+    <div class="res"><span class="muted" id="pw${k}">${l.name&&(l.cost===''||l.cost==null)?'⚠️ חסרה עלות':''}</span><span><b class="n" id="pt${k}">${money((num(l.qty)||0)*num(l.cost))}</b> <button class="btn sm" style="color:var(--bad)" onclick="pDel(${k})" aria-label="מחיקת פריט">✕</button></span></div></div>`).join('');
   const OL=offers.slice().sort((a,b)=>(b.updated||0)-(a.updated||0));
   return `<div class="acts" style="justify-content:space-between;margin:0 0 10px"><button class="btn sm" onclick="pjList=true;render()">← כל הפרויקטים (${projects.length})</button><label class="muted" style="display:flex;gap:6px;align-items:center"><input type="checkbox" ${p.done?'checked':''} onchange="pj.done=this.checked;pSave()"> הפרויקט הסתיים</label></div>
   <div class="card"><h2>פרטי הפרויקט</h2><div class="grid"><label>שם הפרויקט<input value="${esc(p.name)}" placeholder="למשל: מצלמות אצל כהן" oninput="pj.name=this.value;pSave()"></label><label>לקוח<input value="${esc(p.cust)}" oninput="pj.cust=this.value;pSave()"></label><label>תאריך<input type="date" value="${esc(p.date)}" oninput="pj.date=this.value;pSave()"></label></div></div>
