@@ -244,7 +244,24 @@ function vList(){
     return `<details class="inv" id="d_${i.id}" ${delId===i.id?'open':''}><summary><span class="sup">${esc(i.supplier||'ספק לא ידוע')}</span><span class="amt n">${money(x.total)}</span><span class="muted">${fd(i.date)}${i.invoiceNo?' · מס׳ '+esc(i.invoiceNo):''}${i.category?' · <span class="pill">'+esc(i.category)+'</span>':''}</span></summary>
     <div class="body">${rows?`<div class="scroll"><table><thead><tr><th>מוצר</th><th class="l">כמות</th><th class="l">מחיר ליח׳</th><th class="l">סה״כ</th></tr></thead><tbody>${rows}</tbody></table></div>`:''}
     <p class="muted" style="margin-top:6px">לפני מע״מ <span class="n">${money(x.net)}</span> · מע״מ <span class="n">${money(x.vat)}</span>${i.supplierId?' · ח.פ '+esc(i.supplierId):''}${i.payMethod?' · '+esc(i.payMethod):''}${i.notes?' · '+esc(i.notes):''}</p>
-    <div class="acts" style="justify-content:flex-start">${docBtns(i)}</div><div class="msg" id="fm_${i.id}"></div><div class="acts">${del}</div></div></details>`}).join('');
+    <div class="acts" style="justify-content:flex-start">${docBtns(i)}</div><div class="msg" id="fm_${i.id}"></div>${isDon(i)?'':projBox(i)}<div class="acts">${del}</div></div></details>`}).join('');
+}
+/* הוספת פריטי חשבונית להוצאות של פרויקט (עלות ליח׳ לפני מע״מ) */
+function projBox(i){
+  if(typeof projects==='undefined'||!(i.items||[]).length)return'';
+  const inP=projects.filter(p=>p.lines.some(l=>l.src===i.id));
+  if(!projects.length)return '';
+  const P=projects.slice().sort((a,b)=>(b.updated||0)-(a.updated||0));
+  return `<div class="acts" style="justify-content:flex-start;align-items:center">${inP.length?`<span class="muted">✓ בפרויקט: ${inP.map(p=>esc(p.name||'ללא שם')).join(', ')}</span>`:''}
+    <select id="pp_${i.id}" style="width:auto;flex:1;min-width:0">${P.map(p=>`<option value="${p.id}">${esc(p.name||'פרויקט ללא שם')}${p.cust?' · '+esc(p.cust):''}</option>`).join('')}</select>
+    <button class="btn sm" onclick="invToProj('${i.id}',$('pp_${i.id}').value)">➕ להוצאות הפרויקט</button></div>`;
+}
+function invToProj(iid,pid,quiet){
+  const i=st.invoices.find(z=>z.id===iid),p=projects.find(z=>z.id===pid);if(!i||!p)return false;
+  if(p.lines.some(l=>l.src===iid)){if(!quiet){const m=$('fm_'+iid);if(m){m.className='msg';m.textContent='החשבונית הזו כבר בפרויקט'}}return false}
+  const L=(i.items||[]).filter(it=>it.name).map(it=>{const q=num(it.qty||1)||1,t=it.total!=null&&it.total!==''?num(it.total):q*num(it.unitPrice);return{name:it.name,qty:q,cost:String(r2(t/q/(1+VAT))),src:iid}});
+  p.lines=p.lines.filter(l=>l.name||num(l.cost)).concat(L);p.updated=Date.now();
+  lp(PK,JSON.stringify(projects));if(!quiet)render();return true;
 }
 function docBtns(i){
   const b=[];
@@ -404,7 +421,7 @@ let of=null,ofList=false;
 function newOffer(){const nums=offers.map(o=>/^\d+$/.test(o.no||'')?+o.no:0).filter(Boolean);let no;if(nums.length)no=String(Math.max(...nums)+1);else{const y=new Date().getFullYear(),n=offers.filter(o=>(o.no||'').startsWith(y+'-')).length+1;no=y+'-'+String(n).padStart(3,'0')}return{id:uid(),no,date:today(),cust:'',custPhone:'',title:'',m:30,notes:'',lines:[{name:'',qty:1,cost:'',m:'',price:''}]}}
 function saveOffers(){lp(OK,JSON.stringify(offers))}
 /* הצעות ש-Claude מכין מקבצים ששלחת: קובץ JSON בתיקיית המסמכים בדרייב, נקלט פעם אחת */
-const OFFER_FILES=['13pE-3lxVhcncPag8bCddAUG8t4c1URxy'];
+const OFFER_FILES=['13pE-3lxVhcncPag8bCddAUG8t4c1URxy','1Fc6cVwlac4-p5VUPrLf5m-fsN_aw3dy7'];
 async function importOffers(){
   let done=[];try{done=JSON.parse(lg('inv_off_imp')||'[]')}catch(e){}
   let got=0;
@@ -414,10 +431,16 @@ async function importOffers(){
       const d=JSON.parse(new TextDecoder().decode(u));
       (d.offers||[]).forEach(o=>{if(!offers.some(z=>z.id===o.id)){o.updated=Date.now();offers.unshift(o);got++}});
       if(d.biz&&!biz.bid){biz=Object.assign(biz,d.biz);lp(OB,JSON.stringify(biz))}
+      if(d.projAdd){/* להוסיף חשבונית לפרויקט הפעיל האחרון; מחכה עד שגם החשבונית וגם פרויקט קיימים */
+        const P=projects.filter(p=>!p.done).sort((a,b)=>(b.updated||0)-(a.updated||0))[0];
+        const ids=[].concat(d.projAdd.inv||[]);
+        if(!P||!ids.every(x=>st.invoices.some(z=>z.id===x)))continue;
+        ids.forEach(x=>{if(invToProj(x,P.id,1))got++});
+      }
       done.push(id);
     }catch(e){}
   }
-  lp('inv_off_imp',JSON.stringify(done));if(got){saveOffers();if(view==='offer')render()}
+  lp('inv_off_imp',JSON.stringify(done));if(got){saveOffers();render()}
 }
 function oCalc(o){
   let cost=0,net=0;
