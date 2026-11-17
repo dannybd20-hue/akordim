@@ -23,7 +23,7 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 29; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 30; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
 const CHANGE_SECONDS = 10; // ברירת מחדל: כמה שניות מהתשובה הראשונה שחקן יכול לשנות תשובה (המארח יכול לשנות במשחק)
 function chs_(g) { const n = Number(g.chs); return n > 0 ? n : CHANGE_SECONDS; }
 function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
@@ -260,7 +260,7 @@ function game_(d, admin) {
     const def = gget_('gd:' + pin), pid = String(d.pid || ''), pl = gget_('gp:' + pin) || {};
     if (!pl[pid]) return { ok: true, kicked: true, phase: g.phase };
     const r = { ok: true, now: now, phase: g.phase, q: g.q, n: g.n, qStart: g.qStart, dur: g.dur, title: g.title, name: pl[pid],
-      score: g.scores[pid] || 0, last: g.last[pid] || null, closed: !!g.closed, chg: g.chg !== false, chs: chs_(g), buzz: !!g.buzz, force: !!g.force };
+      score: g.scores[pid] || 0, last: g.last[pid] || null, closed: !!g.closed, paused: g.paused || 0, chg: g.chg !== false, chs: chs_(g), buzz: !!g.buzz, force: !!g.force };
     if (g.phase === 'question' && def) {
       const Q = def.qs[g.q]; r.text = Q.t; r.ch = Q.ch; r.img = gget_('gi:' + pin + ':' + g.q) || null; // התמונה של השאלה (כתובת באתר), כדי שהשחקן יראה אותה גם בטלפון
       const my = gget_('ga:' + pin + ':' + g.q + ':' + pid);
@@ -281,6 +281,7 @@ function game_(d, admin) {
   if (a === 'g_answer') {
     const c = Number(d.c);
     if (g.phase !== 'question') return { ok: false, error: 'late' };
+    if (g.paused) return { ok: false, error: 'paused' }; // הזמן עצור: עונים רק אחרי שהמארח ממשיך
     const st = now - g.qStart;
     if (st > g.dur * 1000 + 4000) return { ok: false, error: 'late' };
     /* זמן הוגן: הטלפון מודד מהרגע שהשאלה הופיעה אצלו; מקבלים אותו רק עד 3 שניות פחות ממה שהשרת מדד (השהיית רשת) */
@@ -356,6 +357,17 @@ function game_(d, admin) {
     } finally { lock.releaseLock(); }
   }
 
+  if (a === 'g_pause' || a === 'g_resume') { // עצירת הזמן באמצע שאלה (למשל עד שהשאלה עולה בכל הטלפונים) והמשך מאותה נקודה
+    const lock = LockService.getScriptLock(); lock.waitLock(10000);
+    try {
+      const g2 = gget_('g:' + pin);
+      if (a === 'g_pause') { if (g2.phase === 'question' && !g2.paused) g2.paused = now; }
+      else if (g2.paused) { g2.qStart += now - g2.paused; delete g2.paused; } // השעון ממשיך מאיפה שעצר
+      gput_('g:' + pin, g2);
+      return { ok: true, now: now, game: g2 };
+    } finally { lock.releaseLock(); }
+  }
+
   if (a === 'g_set') { // הגדרות המארח באמצע המשחק: chg = האם מותר לשנות תשובה עד שהזמן נגמר
     const lock = LockService.getScriptLock(); lock.waitLock(10000);
     try { const g2 = gget_('g:' + pin); if ('chg' in d) g2.chg = !!d.chg; if ('buzz' in d) g2.buzz = !!d.buzz; if ('force' in d) g2.force = !!d.force; if ('chs' in d) { const n = Math.round(Number(d.chs)); if (n > 0 && n <= 600) g2.chs = n; } gput_('g:' + pin, g2); return { ok: true, now: now, game: g2 }; }
@@ -382,7 +394,7 @@ function game_(d, admin) {
       if (g2.phase === 'end') return { ok: false, error: 'המשחק כבר הסתיים' };
       const keys = Object.keys(gget_('gp:' + pin) || {}).map(function (p) { return 'ga:' + pin + ':' + q + ':' + p; });
       if (keys.length) CacheService.getScriptCache().removeAll(keys); // מנקים תשובות קודמות לשאלה הזאת
-      g2.q = q; g2.phase = 'question'; g2.qStart = now + 800; g2.dist = null; g2.right = null; g2.last = {};
+      g2.q = q; g2.phase = 'question'; g2.qStart = now + 800; g2.dist = null; g2.right = null; g2.last = {}; delete g2.paused;
       gput_('g:' + pin, g2);
       return { ok: true, now: now, game: g2 };
     } finally { lock.releaseLock(); }
@@ -406,6 +418,7 @@ function gnext_(pin, d, now, pids) {
   const g = gget_('g:' + pin), def = gget_('gd:' + pin);
   /* אם המחשב והטלפון לחצו "הבא" ביחד – רק הלחיצה הראשונה נחשבת */
   if (d.from && d.from !== g.phase + ':' + g.q) return { ok: true, now: now, game: g, stale: true };
+  delete g.paused; // מעבר שלב משחרר עצירה
   const nextQ = function () {
     g.q++;
     if (g.q >= g.n) { g.phase = 'end'; }
