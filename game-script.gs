@@ -334,7 +334,7 @@ function game_(d, admin) {
     return { ok: true, now: now, game: g, players: pids.map(function (p) { return { pid: p, name: pl[p], phone: phs[p] || '', score: g.scores[p] || 0 }; }), answered: answered, done: done };
   }
 
-  if (a === 'g_rename' || a === 'g_kick') { // ניהול שחקנים: שינוי שם או הוצאה מהמשחק
+  if (a === 'g_rename' || a === 'g_kick' || a === 'g_phone') { // ניהול שחקנים: שינוי שם, שינוי מס' כונן או הוצאה מהמשחק
     const lock = LockService.getScriptLock(); lock.waitLock(10000);
     try {
       const pl2 = gget_('gp:' + pin) || {}, id = String(d.pid || '');
@@ -343,6 +343,11 @@ function game_(d, admin) {
         const nm = String(d.name || '').trim().slice(0, 20);
         if (!nm) return { ok: false, error: 'נא לכתוב שם' };
         pl2[id] = nm;
+      } else if (a === 'g_phone') {
+        const ph = String(d.phone || '').replace(/\D/g, '');
+        if (ph.length < 1 || ph.length > 10) return { ok: false, error: 'נא לכתוב מס\' כונן (1 עד 10 ספרות)' };
+        const phs = gget_('gph:' + pin) || {}; phs[id] = ph; gput_('gph:' + pin, phs);
+        return { ok: true };
       } else {
         const g2 = gget_('g:' + pin); delete g2.scores[id]; if (g2.last) delete g2.last[id]; gput_('g:' + pin, g2); delete pl2[id];
       }

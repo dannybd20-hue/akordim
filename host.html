@@ -500,12 +500,19 @@ function manage(){
   const o=$('ov')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'ov',className:'ov'}));
   o.onclick=e=>{if(e.target===o)o.remove()};
   o.innerHTML=`<div class="card"><div style="display:flex;align-items:center"><b style="flex:1;font-size:20px;text-align:start">👥 שחקנים (${players.length})</b><button class="hb" onclick="$('ov').remove()">✕</button></div>
-    <div class="pl">${[...players].sort((a,b)=>a.name.localeCompare(b.name,'he')).map(p=>`<div><span>${esc(p.name)}${p.phone?`<small class="ph">כונן ${esc(p.phone)}</small>`:''}</span><small>${p.score.toLocaleString('he-IL')}</small><button onclick="ren('${p.pid}')">✏️ שם</button><button onclick="kick('${p.pid}')">✖ הוצא</button></div>`).join('')||'אין עדיין שחקנים'}</div></div>`;
+    <div class="pl">${[...players].sort((a,b)=>a.name.localeCompare(b.name,'he')).map(p=>`<div><span>${esc(p.name)}${p.phone?`<small class="ph">כונן ${esc(p.phone)}</small>`:''}</span><small>${p.score.toLocaleString('he-IL')}</small><button onclick="ren('${p.pid}')">✏️ שם</button><button onclick="rephone('${p.pid}')">✏️ כונן</button><button onclick="kick('${p.pid}')">✖ הוצא</button></div>`).join('')||'אין עדיין שחקנים'}</div></div>`;
 }
 async function ren(id){
   const p=players.find(x=>x.pid===id);if(!p)return;const n=prompt('שם חדש עבור '+p.name,p.name);if(!n||!n.trim()||n.trim()===p.name)return;
   const r=await api({action:'g_rename',pin:G.pin,pid:id,name:n.trim()}).catch(()=>null);
   if(r&&r.ok){p.name=n.trim().slice(0,20);shown=shown.startsWith('rm:')?'':shown;manage();await loop()}else alert(r?r.error:'אין חיבור');
+}
+async function rephone(id){
+  const p=players.find(x=>x.pid===id);if(!p)return;let n=prompt('מס\' כונן חדש עבור '+p.name,p.phone||'');if(n==null)return;n=n.replace(/\D/g,'');
+  if(n.length<1||n.length>10){alert('מס\' כונן: 1 עד 10 ספרות');return}if(n===String(p.phone||''))return;
+  const r=await api({action:'g_phone',pin:G.pin,pid:id,phone:n}).catch(()=>null);
+  if(r&&r.ok){p.phone=n;manage();await loop()}
+  else alert(!r?'אין חיבור':/unknown|לא מוכר/i.test(String(r.error))?'צריך לעדכן את סקריפט המשחק בגוגל כדי לשנות מס\' כונן':r.error);
 }
 async function kick(id){
   const p=players.find(x=>x.pid===id);if(!p||!confirm('להוציא את '+p.name+' מהמשחק?'))return;
