@@ -5,7 +5,10 @@ set -e
 GFR=${1:-git-filter-repo}
 cd "$(git rev-parse --show-toplevel)"
 URL=$(git remote get-url origin)
-git fetch -q origin && git reset -q --hard origin/main
+git fetch -q origin
+# בטיחות: לא ממשיכים אם יש שינויים שלא נדחפו (אחרת הם היו נמחקים)
+[ -z "$(git status --porcelain)" ] || { echo 'יש שינויים שלא נשמרו – קודם commit+push'; exit 1; }
+[ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo 'הענף המקומי שונה מ-origin/main – קודם pull/push'; exit 1; }
 [ "$(git rev-parse --is-shallow-repository)" = true ] && git fetch -q --unshallow origin
 KEEP=$(mktemp); ALL=$(mktemp); STRIP=$(mktemp)
 git ls-tree -r HEAD | awk '$4 ~ /\.bin$/ {print $3}' | sort -u > $KEEP
