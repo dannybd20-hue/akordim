@@ -133,7 +133,7 @@ function draw(){
     const rk='ready:'+st.q+':'+st.qStart;
     if(shown!==rk){shown=rk;clearInterval(timer);document.body.classList.remove('hot');
       M.innerHTML=`<div class="qt">${esc(st.text||'')}</div><div class="mid" style="margin-top:12px">מתכוננים…</div><div class="big" id="rdy" style="font-size:64px"></div>`;
-      const rt=()=>{const ms=st.qStart-(Date.now()+off),e=$('rdy');if(ms<=150||shown!==rk){clearInterval(timer);if(shown===rk){shown='';draw()}return}if(e)e.textContent=Math.ceil(ms/1000)};
+      const rt=()=>{const ms=st.qStart-(Date.now()+off),e=$('rdy');if(ms<=150||shown!==rk){clearInterval(timer);if(shown===rk){shown='';draw()}return}if(e)e.textContent=Math.min(3,Math.ceil(ms/1000))};
       timer=setInterval(rt,100);rt()}
     return}
   if(st.phase==='question'){

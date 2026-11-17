@@ -324,7 +324,7 @@ function startTimer(){
   clearInterval(tmr);
   tmr=setInterval(()=>{const ref=G.paused||(Date.now()+off),left=Math.max(0,Math.ceil((G.qStart+G.dur*1000-ref)/1000));const t=$('tm');
     /* ספירה לאחור לפני השאלה: מציגים 3, 2, 1 ומעמעמים את התשובות עד שהשעון מתחיל */
-    const rdy=!G.paused&&ref<G.qStart;M.classList.toggle('ready',rdy);if(t)t.textContent=rdy?'מתכוננים':G.paused?'⏸ '+left:left;const rb=$('rdyN');if(rb)rb.textContent=rdy?Math.ceil((G.qStart-ref)/1000):'';
+    const rdy=!G.paused&&ref<G.qStart;M.classList.toggle('ready',rdy);if(t)t.textContent=rdy?'מתכוננים':G.paused?'⏸ '+left:left;const rb=$('rdyN');if(rb)rb.textContent=rdy?Math.min(3,Math.ceil((G.qStart-ref)/1000)):'';
     hot(G.paused||rdy?99:left);if(!left&&!G.paused){clearInterval(tmr);if(G.phase==='question')setTimeout(next,600)}},250);
 }
 /* כפתורי החשיפה: הכפתור הראשי לפי ההגדרה, והשני עוקף אותה (מקש B בשלט) */
@@ -360,13 +360,16 @@ function updLobby(){
 let nexting=false;
 async function next(show){
   if(nexting)return;nexting=true;$('nextB').disabled=$('altB').disabled=true;
-  try{const r=await api({action:'g_next',pin:G.pin,from:G.phase+':'+G.q,show:typeof show==='string'?show:undefined});if(r.ok){G=r.game;off=r.now-Date.now();render()}}catch(e){}
+  try{const r=await api({action:'g_next',pin:G.pin,from:G.phase+':'+G.q,show:typeof show==='string'?show:undefined});if(r.ok){G=r.game;off=r.now-Date.now();useQd(r);render()}}catch(e){}
   nexting=false;$('nextB').disabled=$('altB').disabled=false;
 }
+/* השאלה החדשה מגיעה עם התשובה ל"הבא" (סקריפט מגרסה 33), כך שלא צריך לחכות לבקשה נוספת */
+function useQd(r){if(r&&r.qd&&r.qd.q&&r.game&&r.game.phase==='question'){Q=r.qd.q;Q.img=r.qd.img;Q.rimg=r.qd.rimg;QI=r.game.q}}
 async function showQ(){
   shown=qk();seen=new Set();clearInterval(tmr);nb('דלג ←');pauseLbl();
-  M.innerHTML='<div class="spin"></div>';
-  if(QI!==G.q){const r=await api({action:'g_q',pin:G.pin});if(r.ok){Q=r.q;Q.img=r.img;Q.rimg=r.rimg;QI=G.q}}
+  if(QI!==G.q){ // סקריפט ישן: מביאים את השאלה, ובינתיים כבר מציגים את הספירה לאחור
+    const k=shown;M.innerHTML=`<div class="qhead">…</div><div class="qmid"><div class="side"><div class="circle" id="tm">${G.dur}</div></div></div><div class="rdyn" id="rdyN"></div>`;startTimer();
+    const r=await api({action:'g_q',pin:G.pin}).catch(()=>null);if(r&&r.ok){Q=r.q;Q.img=r.img;Q.rimg=r.rimg;QI=G.q}if(shown!==k||QI!==G.q)return}
   M.innerHTML=`<div class="qhead">${esc(Q.t)}</div>
     <div class="qmid"><div class="side"><div class="circle" id="tm">${G.dur}</div></div>${Q.img?`<img class="qimg" src="${Q.img}" alt="">`:''}<div class="side"><b id="ansN">${answered}</b>תשובות</div></div>
     <div class="tiles">${Q.ch.map((c,i)=>`<div class="tile c${i}"><span class="s">${SH[i]}</span>${esc(c)}</div>`).join('')}</div>
@@ -501,7 +504,7 @@ async function jumpQ(i){
   if(!confirm('לקפוץ לשאלה '+(i+1)+'?'+(G.phase==='question'||G.phase==='reveal'?'\nהשאלה הנוכחית תיפסק.':'')))return;
   const d=$('drw');if(d)d.remove();
   let r=null;try{r=await api({action:'g_goto',pin:G.pin,q:i})}catch(e){}
-  if(r&&r.ok){G=r.game;off=r.now-Date.now();shown='';clearInterval(tmr);render()}else alert(r&&r.error==='unknown action'?'צריך לעדכן את סקריפט המשחק':(r&&r.error)||'אין חיבור');
+  if(r&&r.ok){G=r.game;off=r.now-Date.now();useQd(r);shown='';clearInterval(tmr);render()}else alert(r&&r.error==='unknown action'?'צריך לעדכן את סקריפט המשחק':(r&&r.error)||'אין חיבור');
 }
 /* ברקוד גדול להוספת שחקן באמצע המשחק */
 function joinQR(){

@@ -23,10 +23,10 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 32; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 33; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
 /* ספירה לאחור לפני כל שאלה: השאלה מופיעה מיד, והתשובות והשעון מתחילים רק אחרי READY_MS.
    בזמן הזה השאלה מספיקה להגיע לכל הטלפונים, כך שכולם מתחילים יחד */
-const READY_MS = 3000;
+const READY_MS = 4500; // המסך מציג 3, 2, 1. השנייה וחצי הנוספות מכסות את זמן התגובה של גוגל
 /* המארח יכול לכבות את הספירה לאחור בתפריט ההגדרות (g.ready = false), ואז השאלה מתחילה כמעט מיד */
 function readyMs_(g) { return g.ready === false ? 800 : READY_MS; }
 const CHANGE_SECONDS = 10; // ברירת מחדל: כמה שניות מהתשובה הראשונה שחקן יכול לשנות תשובה (המארח יכול לשנות במשחק)
@@ -382,7 +382,11 @@ function game_(d, admin) {
 
   if (a === 'g_next') { // לובי ← שאלה ← חשיפה ← (טבלת מובילים לפי ההגדרה) ← שאלה ← ... ← סיום
     const lock = LockService.getScriptLock(); lock.waitLock(10000);
-    try { return gnext_(pin, d, now, pids); } finally { lock.releaseLock(); }
+    try {
+      const r = gnext_(pin, d, now, pids);
+      if (r.ok && !r.stale && r.game && r.game.phase === 'question') r.qd = qPack_(pin, r.game.q); // השאלה החדשה מגיעה כבר עם התשובה, בלי בקשה נוספת
+      return r;
+    } finally { lock.releaseLock(); }
   }
 
   if (a === 'g_sheet') return gsheet_(pin, g, pl);
@@ -402,7 +406,7 @@ function game_(d, admin) {
       if (keys.length) CacheService.getScriptCache().removeAll(keys); // מנקים תשובות קודמות לשאלה הזאת
       g2.q = q; g2.phase = 'question'; g2.qStart = now + readyMs_(g2); g2.dist = null; g2.right = null; g2.last = {}; delete g2.paused;
       gput_('g:' + pin, g2);
-      return { ok: true, now: now, game: g2 };
+      return { ok: true, now: now, game: g2, qd: qPack_(pin, q) };
     } finally { lock.releaseLock(); }
   }
 
@@ -413,11 +417,18 @@ function game_(d, admin) {
   }
 
   if (a === 'g_q') { // המארח: השאלה הנוכחית עם התמונה
-    const def = gget_('gd:' + pin), i = g.q;
-    if (!def || i < 0 || i >= g.n) return { ok: false, error: 'no question' };
-    return { ok: true, q: def.qs[i], img: gget_('gi:' + pin + ':' + i), rimg: gget_('gri:' + pin + ':' + i) };
+    const qd = qPack_(pin, g.q);
+    if (!qd) return { ok: false, error: 'no question' };
+    return { ok: true, q: qd.q, img: qd.img, rimg: qd.rimg };
   }
   return { ok: false, error: 'unknown action' };
+}
+
+/* שאלה מספר i עם התמונות שלה, בשביל מסך המארח */
+function qPack_(pin, i) {
+  const def = gget_('gd:' + pin);
+  if (!def || !(i >= 0 && i < def.qs.length)) return null;
+  return { q: def.qs[i], img: gget_('gi:' + pin + ':' + i), rimg: gget_('gri:' + pin + ':' + i) };
 }
 
 function gnext_(pin, d, now, pids) {
