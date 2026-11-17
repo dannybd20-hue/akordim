@@ -421,7 +421,7 @@ let of=null,ofList=false;
 function newOffer(){const nums=offers.map(o=>/^\d+$/.test(o.no||'')?+o.no:0).filter(Boolean);let no;if(nums.length)no=String(Math.max(...nums)+1);else{const y=new Date().getFullYear(),n=offers.filter(o=>(o.no||'').startsWith(y+'-')).length+1;no=y+'-'+String(n).padStart(3,'0')}return{id:uid(),no,date:today(),cust:'',custPhone:'',title:'',m:30,notes:'',lines:[{name:'',qty:1,cost:'',m:'',price:''}]}}
 function saveOffers(){lp(OK,JSON.stringify(offers))}
 /* הצעות ש-Claude מכין מקבצים ששלחת: קובץ JSON בתיקיית המסמכים בדרייב, נקלט פעם אחת */
-const OFFER_FILES=['13pE-3lxVhcncPag8bCddAUG8t4c1URxy','1Fc6cVwlac4-p5VUPrLf5m-fsN_aw3dy7','1cv8smYvYa5mL4LMlIGpSaZLqbSIVxyrn','1Y4n0bvb3Jr_306B4K4jkjW3csIrVLihw','1hIGQ3TnbU9xv6MlsVyU_eMKRh5TUy6ze'];
+const OFFER_FILES=['13pE-3lxVhcncPag8bCddAUG8t4c1URxy','1Fc6cVwlac4-p5VUPrLf5m-fsN_aw3dy7','1cv8smYvYa5mL4LMlIGpSaZLqbSIVxyrn','1Y4n0bvb3Jr_306B4K4jkjW3csIrVLihw','1MHJuhKJPDiLDEaKy_nafSyf9sHSlM97O'];
 async function importOffers(){
   let done=[];try{done=JSON.parse(lg('inv_off_imp')||'[]')}catch(e){}
   let got=0;
@@ -436,6 +436,16 @@ async function importOffers(){
         const ids=[].concat(d.projAdd.inv||[]);
         if(!P||!ids.every(x=>st.invoices.some(z=>z.id===x)))continue;
         ids.forEach(x=>{if(invToProj(x,P.id,1,d.projAdd.items))got++});
+      }
+      if(d.projFix){/* מוצר מההצעה שנקנה בפועל: העלות מהחשבונית נכנסת לשורה של ההצעה במקום שורה כפולה */
+        const P=projects.filter(p=>!p.done).sort((a,b)=>(b.updated||0)-(a.updated||0))[0];
+        const ids=[].concat(d.projFix.inv||[]);
+        if(!P||!ids.every(x=>st.invoices.some(z=>z.id===x)))continue;
+        ids.forEach(x=>invToProj(x,P.id,1));
+        (d.projFix.keys||[]).forEach(k=>{const K=norm(k);
+          const has=l=>norm(l.name).split(' ').some(w=>w.startsWith(K));const L=P.lines.find(l=>l.src&&has(l)),O=P.lines.find(l=>!l.src&&has(l));
+          if(L&&O){O.cost=L.cost;O.src=L.src;O.paid=L.name;P.lines.splice(P.lines.indexOf(L),1)}});
+        P.updated=Date.now();lp(PK,JSON.stringify(projects));got++;
       }
       done.push(id);
     }catch(e){}
@@ -539,7 +549,7 @@ function vProj(){
     <label>כמות<input inputmode="decimal" value="${esc(l.qty)}" oninput="pSet(${k},'qty',this.value)"></label>
     <label>מחיר ליח׳ <small>לפני מע״מ</small><input id="pc${k}" inputmode="decimal" value="${esc(l.cost)}" oninput="pSet(${k},'cost',this.value);const v=$('pv${k}');if(v)v.value=this.value===''?'':r2(num(this.value)*(1+VAT))"></label>
     <label>אחרי מע״מ <small>ליח׳</small><input id="pv${k}" inputmode="decimal" value="${l.cost===''||l.cost==null?'':r2(num(l.cost)*(1+VAT))}" oninput="const c=this.value===''?'':String(r2(num(this.value)/(1+VAT)));pSet(${k},'cost',c);const e=$('pc${k}');if(e)e.value=c"></label>
-    <div class="res"><span class="muted" id="pw${k}">${l.name&&(l.cost===''||l.cost==null)?'⚠️ חסרה עלות':''}</span><span><b class="n" id="pt${k}">${money((num(l.qty)||0)*num(l.cost))}</b> <button class="btn sm" style="color:var(--bad)" onclick="pDel(${k})" aria-label="מחיקת פריט">✕</button></span></div></div>`).join('');
+    <div class="res"><span class="muted" id="pw${k}">${l.name&&(l.cost===''||l.cost==null)?'⚠️ חסרה עלות':l.paid?'🧾 בפועל: '+esc(l.paid):''}</span><span><b class="n" id="pt${k}">${money((num(l.qty)||0)*num(l.cost))}</b> <button class="btn sm" style="color:var(--bad)" onclick="pDel(${k})" aria-label="מחיקת פריט">✕</button></span></div></div>`).join('');
   const OL=offers.slice().sort((a,b)=>(b.updated||0)-(a.updated||0));
   return `<div class="acts" style="justify-content:space-between;margin:0 0 10px"><button class="btn sm" onclick="pjList=true;render()">← כל הפרויקטים (${projects.length})</button><label class="muted" style="display:flex;gap:6px;align-items:center"><input type="checkbox" ${p.done?'checked':''} onchange="pj.done=this.checked;pSave()"> הפרויקט הסתיים</label></div>
   <div class="card"><h2>פרטי הפרויקט</h2><div class="grid"><label>שם הפרויקט<input value="${esc(p.name)}" placeholder="למשל: מצלמות אצל כהן" oninput="pj.name=this.value;pSave()"></label><label>לקוח<input value="${esc(p.cust)}" oninput="pj.cust=this.value;pSave()"></label><label>תאריך<input type="date" value="${esc(p.date)}" oninput="pj.date=this.value;pSave()"></label></div></div>
