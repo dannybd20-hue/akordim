@@ -23,10 +23,12 @@ function locked_() { return Number(CacheService.getScriptCache().get('fails') ||
 function failed_() { const c = CacheService.getScriptCache(); c.put('fails', String(Number(c.get('fails') || 0) + 1), LOCK_MINUTES * 60); }
 
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
-const VERSION = 31; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
+const VERSION = 32; // עולה בכל עדכון, כדי לוודא שהפריסה הפעילה היא החדשה (פותחים את כתובת ה-exec בדפדפן)
 /* ספירה לאחור לפני כל שאלה: השאלה מופיעה מיד, והתשובות והשעון מתחילים רק אחרי READY_MS.
    בזמן הזה השאלה מספיקה להגיע לכל הטלפונים, כך שכולם מתחילים יחד */
 const READY_MS = 3000;
+/* המארח יכול לכבות את הספירה לאחור בתפריט ההגדרות (g.ready = false), ואז השאלה מתחילה כמעט מיד */
+function readyMs_(g) { return g.ready === false ? 800 : READY_MS; }
 const CHANGE_SECONDS = 10; // ברירת מחדל: כמה שניות מהתשובה הראשונה שחקן יכול לשנות תשובה (המארח יכול לשנות במשחק)
 function chs_(g) { const n = Number(g.chs); return n > 0 ? n : CHANGE_SECONDS; }
 function doGet() { return out_({ ok: true, app: 'game', version: VERSION }); }
@@ -374,7 +376,7 @@ function game_(d, admin) {
 
   if (a === 'g_set') { // הגדרות המארח באמצע המשחק: chg = האם מותר לשנות תשובה עד שהזמן נגמר
     const lock = LockService.getScriptLock(); lock.waitLock(10000);
-    try { const g2 = gget_('g:' + pin); if ('chg' in d) g2.chg = !!d.chg; if ('buzz' in d) g2.buzz = !!d.buzz; if ('force' in d) g2.force = !!d.force; if ('chs' in d) { const n = Math.round(Number(d.chs)); if (n > 0 && n <= 600) g2.chs = n; } gput_('g:' + pin, g2); return { ok: true, now: now, game: g2 }; }
+    try { const g2 = gget_('g:' + pin); if ('chg' in d) g2.chg = !!d.chg; if ('buzz' in d) g2.buzz = !!d.buzz; if ('force' in d) g2.force = !!d.force; if ('ready' in d) g2.ready = !!d.ready; if ('chs' in d) { const n = Math.round(Number(d.chs)); if (n > 0 && n <= 600) g2.chs = n; } gput_('g:' + pin, g2); return { ok: true, now: now, game: g2 }; }
     finally { lock.releaseLock(); }
   }
 
@@ -398,7 +400,7 @@ function game_(d, admin) {
       if (g2.phase === 'end') return { ok: false, error: 'המשחק כבר הסתיים' };
       const keys = Object.keys(gget_('gp:' + pin) || {}).map(function (p) { return 'ga:' + pin + ':' + q + ':' + p; });
       if (keys.length) CacheService.getScriptCache().removeAll(keys); // מנקים תשובות קודמות לשאלה הזאת
-      g2.q = q; g2.phase = 'question'; g2.qStart = now + READY_MS; g2.dist = null; g2.right = null; g2.last = {}; delete g2.paused;
+      g2.q = q; g2.phase = 'question'; g2.qStart = now + readyMs_(g2); g2.dist = null; g2.right = null; g2.last = {}; delete g2.paused;
       gput_('g:' + pin, g2);
       return { ok: true, now: now, game: g2 };
     } finally { lock.releaseLock(); }
@@ -426,7 +428,7 @@ function gnext_(pin, d, now, pids) {
   const nextQ = function () {
     g.q++;
     if (g.q >= g.n) { g.phase = 'end'; }
-    else { g.phase = 'question'; g.qStart = now + READY_MS; g.dist = null; g.right = null; }
+    else { g.phase = 'question'; g.qStart = now + readyMs_(g); g.dist = null; g.right = null; }
   };
   if (g.phase === 'lobby' || g.phase === 'leader') {
     nextQ();
