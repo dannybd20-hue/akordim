@@ -136,7 +136,9 @@ body.hot::after{opacity:1;animation:hotf 1s infinite}
   .lobby{gap:16px}.pod{gap:8px}.pod div{width:30vw}
   .who{grid-template-columns:1fr}
 }
-main.paused .tiles{opacity:.45;filter:grayscale(.4)}
+main.paused .tiles,main.ready .tiles{opacity:.45;filter:grayscale(.4)}
+.rdyn{display:none}main.ready .rdyn{display:block;position:fixed;inset:0;margin:auto;width:220px;height:220px;line-height:220px;text-align:center;border-radius:50%;font-size:130px;font-weight:900;color:#fff;background:linear-gradient(135deg,#4f46e5,#0ea5e9);box-shadow:0 20px 60px rgba(79,70,229,.45);pointer-events:none;z-index:5}
+main.ready .qmid{visibility:hidden}
 </style>
 </head>
 <body>
@@ -317,7 +319,10 @@ function hot(left){
 }
 function startTimer(){
   clearInterval(tmr);
-  tmr=setInterval(()=>{const ref=G.paused||(Date.now()+off),left=Math.max(0,Math.ceil((G.qStart+G.dur*1000-ref)/1000));const t=$('tm');if(t)t.textContent=G.paused?'⏸ '+left:left;hot(G.paused?99:left);if(!left&&!G.paused){clearInterval(tmr);if(G.phase==='question')setTimeout(next,600)}},250);
+  tmr=setInterval(()=>{const ref=G.paused||(Date.now()+off),left=Math.max(0,Math.ceil((G.qStart+G.dur*1000-ref)/1000));const t=$('tm');
+    /* ספירה לאחור לפני השאלה: מציגים 3, 2, 1 ומעמעמים את התשובות עד שהשעון מתחיל */
+    const rdy=!G.paused&&ref<G.qStart;M.classList.toggle('ready',rdy);if(t)t.textContent=rdy?'מתכוננים':G.paused?'⏸ '+left:left;const rb=$('rdyN');if(rb)rb.textContent=rdy?Math.ceil((G.qStart-ref)/1000):'';
+    hot(G.paused||rdy?99:left);if(!left&&!G.paused){clearInterval(tmr);if(G.phase==='question')setTimeout(next,600)}},250);
 }
 /* כפתורי החשיפה: הכפתור הראשי לפי ההגדרה, והשני עוקף אותה (מקש B בשלט) */
 function revealBtns(){
@@ -362,7 +367,7 @@ async function showQ(){
   M.innerHTML=`<div class="qhead">${esc(Q.t)}</div>
     <div class="qmid"><div class="side"><div class="circle" id="tm">${G.dur}</div></div>${Q.img?`<img class="qimg" src="${Q.img}" alt="">`:''}<div class="side"><b id="ansN">${answered}</b>תשובות</div></div>
     <div class="tiles">${Q.ch.map((c,i)=>`<div class="tile c${i}"><span class="s">${SH[i]}</span>${esc(c)}</div>`).join('')}</div>
-    <div class="waitl" id="waitL"></div><div class="hint">שאלה ${G.q+1} מתוך ${G.n} · 📱 עונים מהטלפון</div>`;
+    <div class="rdyn" id="rdyN"></div><div class="waitl" id="waitL"></div><div class="hint">שאלה ${G.q+1} מתוך ${G.n} · 📱 עונים מהטלפון</div>`;
   waitList();startTimer();
 }
 async function showReveal(){

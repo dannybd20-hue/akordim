@@ -129,6 +129,13 @@ function draw(){
       const left=Math.max(0,Math.ceil((st.qStart+st.dur*1000-st.paused)/1000));
       M.innerHTML=`<span class="timer">⏸ ${left}</span><div class="qt">${esc(st.text||'')}</div><div class="big" style="margin-top:14px">⏸ הזמן עצור</div><div class="mid">המארח עצר את השעון לרגע. התשובות יופיעו כשהוא ימשיך</div><div class="spin"></div>`}
     return}
+  if(st.phase==='question'&&!st.answered&&!pend&&st.qStart-(Date.now()+off)>150){ // ספירה לאחור: השאלה כבר כאן, התשובות נפתחות לכולם יחד
+    const rk='ready:'+st.q+':'+st.qStart;
+    if(shown!==rk){shown=rk;clearInterval(timer);document.body.classList.remove('hot');
+      M.innerHTML=`<div class="qt">${esc(st.text||'')}</div><div class="mid" style="margin-top:12px">מתכוננים…</div><div class="big" id="rdy" style="font-size:64px"></div>`;
+      const rt=()=>{const ms=st.qStart-(Date.now()+off),e=$('rdy');if(ms<=150||shown!==rk){clearInterval(timer);if(shown===rk){shown='';draw()}return}if(e)e.textContent=Math.ceil(ms/1000)};
+      timer=setInterval(rt,100);rt()}
+    return}
   if(st.phase==='question'){
     const tl=()=>Math.min(st.qStart+st.dur*1000,st.until||Infinity)-(Date.now()+off); // כמה זמן עוד אפשר לשנות תשובה
     if(st.answered&&!(changing===st.q&&tl()>0&&st.chg!==false)){if(shown!==key){shown=key;pend=null;M.innerHTML=`<span class="timer" id="tm"></span><div class="big">✓ התשובה התקבלה</div>${mine()}${st.chg!==false?`<button class="go" id="chg" style="max-width:380px;background:#fff;color:var(--pr);border:2px solid var(--pr);box-shadow:none" onclick="changeAns()">🔄 שינוי תשובה</button><div class="mid" id="chgT"></div>`:'<div class="mid">מחכים לשאר השחקנים…</div>'}<div class="spin"></div>`;clearInterval(timer);timer=setInterval(tick,250);tick()}return}
@@ -255,6 +262,7 @@ async function answer(i){
     if(k){const s=$('snd');if(s)s.textContent='📶 הקליטה חלשה, מנסה שוב ('+k+')…';await new Promise(r=>setTimeout(r,Math.min(4000,700*k)))}
     try{const r=await api({action:'g_answer',pin,pid,c:i,el});lastOk=Date.now();
       if(!pend)return;
+      if(!r.ok&&r.error==='early'){pend=null;shown='';draw();return}
       if(!r.ok&&r.error==='paused'){pend=null;st.paused=st.paused||Date.now()+off;shown='';draw();return}
       if(!r.ok&&r.error==='late'){pend=null;shown=st.phase+':'+st.q+':1';M.innerHTML=`<div class="big">הזמן נגמר ⌛</div><div class="spin"></div>`;return}
       if(r.ok){st.answered=true;st.ac=i;if(r.until)st.until=r.until;changing=-1;shown='';pend=null;draw();return}
