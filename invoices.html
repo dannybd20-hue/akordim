@@ -256,10 +256,10 @@ function projBox(i){
     <select id="pp_${i.id}" style="width:auto;flex:1;min-width:0">${P.map(p=>`<option value="${p.id}">${esc(p.name||'פרויקט ללא שם')}${p.cust?' · '+esc(p.cust):''}</option>`).join('')}</select>
     <button class="btn sm" onclick="invToProj('${i.id}',$('pp_${i.id}').value)">➕ להוצאות הפרויקט</button></div>`;
 }
-function invToProj(iid,pid,quiet){
+function invToProj(iid,pid,quiet,only){
   const i=st.invoices.find(z=>z.id===iid),p=projects.find(z=>z.id===pid);if(!i||!p)return false;
   if(p.lines.some(l=>l.src===iid)){if(!quiet){const m=$('fm_'+iid);if(m){m.className='msg';m.textContent='החשבונית הזו כבר בפרויקט'}}return false}
-  const L=(i.items||[]).filter(it=>it.name).map(it=>{const q=num(it.qty||1)||1,t=it.total!=null&&it.total!==''?num(it.total):q*num(it.unitPrice);return{name:it.name,qty:q,cost:String(r2(t/q/(1+VAT))),src:iid}});
+  const L=(i.items||[]).filter(it=>it.name&&(!only||only.includes(it.name))).map(it=>{const q=num(it.qty||1)||1,t=it.total!=null&&it.total!==''?num(it.total):q*num(it.unitPrice);return{name:it.name,qty:q,cost:String(r2(t/q/(1+VAT))),src:iid}});
   p.lines=p.lines.filter(l=>l.name||num(l.cost)).concat(L);p.updated=Date.now();
   lp(PK,JSON.stringify(projects));if(!quiet)render();return true;
 }
@@ -421,7 +421,7 @@ let of=null,ofList=false;
 function newOffer(){const nums=offers.map(o=>/^\d+$/.test(o.no||'')?+o.no:0).filter(Boolean);let no;if(nums.length)no=String(Math.max(...nums)+1);else{const y=new Date().getFullYear(),n=offers.filter(o=>(o.no||'').startsWith(y+'-')).length+1;no=y+'-'+String(n).padStart(3,'0')}return{id:uid(),no,date:today(),cust:'',custPhone:'',title:'',m:30,notes:'',lines:[{name:'',qty:1,cost:'',m:'',price:''}]}}
 function saveOffers(){lp(OK,JSON.stringify(offers))}
 /* הצעות ש-Claude מכין מקבצים ששלחת: קובץ JSON בתיקיית המסמכים בדרייב, נקלט פעם אחת */
-const OFFER_FILES=['13pE-3lxVhcncPag8bCddAUG8t4c1URxy','1Fc6cVwlac4-p5VUPrLf5m-fsN_aw3dy7','1cv8smYvYa5mL4LMlIGpSaZLqbSIVxyrn'];
+const OFFER_FILES=['13pE-3lxVhcncPag8bCddAUG8t4c1URxy','1Fc6cVwlac4-p5VUPrLf5m-fsN_aw3dy7','1cv8smYvYa5mL4LMlIGpSaZLqbSIVxyrn','1Y4n0bvb3Jr_306B4K4jkjW3csIrVLihw'];
 async function importOffers(){
   let done=[];try{done=JSON.parse(lg('inv_off_imp')||'[]')}catch(e){}
   let got=0;
@@ -435,7 +435,7 @@ async function importOffers(){
         const P=projects.filter(p=>!p.done).sort((a,b)=>(b.updated||0)-(a.updated||0))[0];
         const ids=[].concat(d.projAdd.inv||[]);
         if(!P||!ids.every(x=>st.invoices.some(z=>z.id===x)))continue;
-        ids.forEach(x=>{if(invToProj(x,P.id,1))got++});
+        ids.forEach(x=>{if(invToProj(x,P.id,1,d.projAdd.items))got++});
       }
       done.push(id);
     }catch(e){}
