@@ -97,6 +97,7 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
 .eye{position:absolute;inset-inline-end:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;padding:0;border:0;border-radius:10px;background:none;font-size:18px;line-height:1;cursor:pointer;opacity:.75}
 .eye:hover{opacity:1;background:#0284c71a}
 .link{background:none;border:0;color:var(--pr);font:inherit;font-size:12px;cursor:pointer;padding:0;margin-top:10px;text-decoration:underline}
+.app.gone{display:none!important}
 </style>
 </head>
 <body>
@@ -375,6 +376,11 @@ dbdPresence('home',(r,me)=>{
 });
 try{$('devName').value=localStorage.getItem('dbd_name')||localStorage.getItem('shop_me')||''}catch(e){}
 function setDevName(v){try{localStorage.setItem('dbd_name',v.trim())}catch(e){}if(window.dbdPing)dbdPing()}
+</script>
+<script>
+/* אפליקציות הבטיחות קיימות רק בשרת במחשב של דני. כשהקובץ לא קיים (למשל ב-GitHub) – הכפתור לא מוצג בכלל */
+(async()=>{for(const a of ['kbt','safety','profile','phonebook']){let ok=false;try{ok=(await fetch(PAGES[a],{method:'HEAD',cache:'no-store'})).ok}catch(e){}
+  if(!ok){document.querySelectorAll('.app[data-app="'+a+'"]').forEach(b=>b.classList.add('gone'));delete PAGES[a]}}})();
 </script>
 </body>
 </html>
