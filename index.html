@@ -149,10 +149,10 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
   <button class="app" data-app="forms" onclick="enter('forms')"><i class="go" aria-hidden="true">←</i><div class="ic fm">📝</div><b>טפסים</b><span>מילוי שאלונים ותוצאות בזמן אמת</span></button>
   <button class="app" data-app="game" onclick="enter('game')"><i class="go" aria-hidden="true">←</i><div class="ic gm">🎮</div><b>משחק חי</b><span>חידון בסגנון קהוט עם ברקוד וטבלת מובילים</span></button>
   <button class="app" data-app="meds" onclick="enter('meds')"><i class="go" aria-hidden="true">←</i><div class="ic md">💊</div><b>תרופות בבית</b><span>מלאי, מקומות ותוקף עם התראות</span></button>
-  <button class="app" data-app="phonebook" onclick="enter('phonebook')"><i class="go" aria-hidden="true">←</i><div class="ic pb">📇</div><b>ספר טלפונים</b><span>מתנדבי איחוד הצלה · חיפוש וחיוג</span></button>
-  <button class="app" data-app="kbt" onclick="enter('kbt')"><i class="go" aria-hidden="true">←</i><div class="ic kb">🚑</div><b>ניהול קצב"ת י"ם</b><span>טסטים, טיפולים, רישיונות וחריגות יומיות</span></button>
-  <button class="app" data-app="safety" onclick="enter('safety')"><i class="go" aria-hidden="true">←</i><div class="ic sf">🛡️</div><b>דוח סייפטי</b><span>ציוני בטיחות, מגמות והודעות למתנדבים</span></button>
-  <button class="app" data-app="profile" onclick="enter('profile')"><i class="go" aria-hidden="true">←</i><div class="ic pf">🪪</div><b>פרופיל נהג</b><span>כל הנתונים על נהג במקום אחד · השוואה לסניף ולמרחב</span></button>
+  <button class="app gone" data-app="phonebook" onclick="enter('phonebook')"><i class="go" aria-hidden="true">←</i><div class="ic pb">📇</div><b>ספר טלפונים</b><span>מתנדבי איחוד הצלה · חיפוש וחיוג</span></button>
+  <button class="app gone" data-app="kbt" onclick="enter('kbt')"><i class="go" aria-hidden="true">←</i><div class="ic kb">🚑</div><b>ניהול קצב"ת י"ם</b><span>טסטים, טיפולים, רישיונות וחריגות יומיות</span></button>
+  <button class="app gone" data-app="safety" onclick="enter('safety')"><i class="go" aria-hidden="true">←</i><div class="ic sf">🛡️</div><b>דוח סייפטי</b><span>ציוני בטיחות, מגמות והודעות למתנדבים</span></button>
+  <button class="app gone" data-app="profile" onclick="enter('profile')"><i class="go" aria-hidden="true">←</i><div class="ic pf">🪪</div><b>פרופיל נהג</b><span>כל הנתונים על נהג במקום אחד · השוואה לסניף ולמרחב</span></button>
 </div>
 <button class="link" id="ordBtn" onclick="ordToggle()">↕ סידור האפליקציות</button>
 <label class="nm">📛 השם שלך: <input id="devName" maxlength="30" placeholder="לדוגמה: הטלפון של דני" onchange="setDevName(this.value)"></label>
@@ -378,9 +378,15 @@ try{$('devName').value=localStorage.getItem('dbd_name')||localStorage.getItem('s
 function setDevName(v){try{localStorage.setItem('dbd_name',v.trim())}catch(e){}if(window.dbdPing)dbdPing()}
 </script>
 <script>
-/* אפליקציות הבטיחות קיימות רק בשרת במחשב של דני. כשהקובץ לא קיים (למשל ב-GitHub) – הכפתור לא מוצג בכלל */
-(async()=>{for(const a of ['kbt','safety','profile','phonebook']){let ok=false;try{ok=(await fetch(PAGES[a],{method:'HEAD',cache:'no-store'})).ok}catch(e){}
-  if(!ok){document.querySelectorAll('.app[data-app="'+a+'"]').forEach(b=>b.classList.add('gone'));delete PAGES[a]}}})();
+/* אפליקציות הבטיחות קיימות רק בשרת במחשב של דני: מוסתרות כברירת מחדל, ומוצגות רק אם הקובץ קיים.
+   התשובה נזכרת במכשיר כדי שבפעם הבאה הכפתורים יופיעו מיד, בלי קפיצה */
+(()=>{const S=['kbt','safety','profile','phonebook'],K='hub_here',show=a=>document.querySelectorAll('.app[data-app="'+a+'"]').forEach(b=>b.classList.remove('gone')),
+  hide=a=>{document.querySelectorAll('.app[data-app="'+a+'"]').forEach(b=>b.classList.add('gone'))};
+  let mem={};try{mem=JSON.parse(localStorage.getItem(K))||{}}catch(e){}
+  S.forEach(a=>{if(mem[a])show(a)});
+  Promise.all(S.map(a=>fetch(PAGES[a],{method:'HEAD',cache:'no-store'}).then(r=>r.ok).catch(()=>null))).then(R=>{
+    const m={};S.forEach((a,i)=>{if(R[i]===null){m[a]=mem[a];return}m[a]=R[i];R[i]?show(a):hide(a)});
+    try{localStorage.setItem(K,JSON.stringify(m))}catch(e){}})})();
 </script>
 </body>
 </html>
