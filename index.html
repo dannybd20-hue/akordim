@@ -384,7 +384,8 @@ function setDevName(v){try{localStorage.setItem('dbd_name',v.trim())}catch(e){}i
   hide=a=>{document.querySelectorAll('.app[data-app="'+a+'"]').forEach(b=>b.classList.add('gone'))};
   let mem={};try{mem=JSON.parse(localStorage.getItem(K))||{}}catch(e){}
   S.forEach(a=>{if(mem[a])show(a)});
-  Promise.all(S.map(a=>fetch(PAGES[a],{method:'HEAD',cache:'no-store'}).then(r=>r.ok).catch(()=>null))).then(R=>{
+  /* קובץ סימון קטן שקיים רק בשרת במחשב (לא ב-GitHub) */
+  fetch('kbt/here.txt',{cache:'no-store'}).then(r=>r.ok).catch(()=>null).then(ok=>S.map(()=>ok)).then(R=>{
     const m={};S.forEach((a,i)=>{if(R[i]===null){m[a]=mem[a];return}m[a]=R[i];R[i]?show(a):hide(a)});
     try{localStorage.setItem(K,JSON.stringify(m))}catch(e){}})})();
 </script>
