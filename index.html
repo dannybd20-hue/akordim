@@ -153,6 +153,8 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
   <button class="app gone" data-app="kbt" onclick="enter('kbt')"><i class="go" aria-hidden="true">←</i><div class="ic kb">🚑</div><b>ניהול קצב"ת י"ם</b><span>טסטים, טיפולים, רישיונות וחריגות יומיות</span></button>
   <button class="app gone" data-app="safety" onclick="enter('safety')"><i class="go" aria-hidden="true">←</i><div class="ic sf">🛡️</div><b>דוח סייפטי</b><span>ציוני בטיחות, מגמות והודעות למתנדבים</span></button>
   <button class="app gone" data-app="profile" onclick="enter('profile')"><i class="go" aria-hidden="true">←</i><div class="ic pf">🪪</div><b>פרופיל נהג</b><span>כל הנתונים על נהג במקום אחד · השוואה לסניף ולמרחב</span></button>
+<button class="app gone" data-app="coord" onclick="enter('coord')"><i class="go" aria-hidden="true">←</i><div class="ic co">🛡️</div><b>בטיחות בסניף</b><span>מסך הרכזים · יציאות מגזרה, בדיקות ותאונות לכל סניף</span></button>
+<button class="app gone" data-app="head" onclick="enter('head')"><i class="go" aria-hidden="true">←</i><div class="ic hd">📊</div><b>לוח ראש סניף</b><span>ציוני בטיחות, נהגים וכלים לפי סניף</span></button>
 </div>
 <button class="link" id="ordBtn" onclick="ordToggle()">↕ סידור האפליקציות</button>
 <label class="nm">📛 השם שלך: <input id="devName" maxlength="30" placeholder="לדוגמה: הטלפון של דני" onchange="setDevName(this.value)"></label>
@@ -164,7 +166,7 @@ button.pr{background:var(--pr);border-color:var(--pr);color:#fff}
 <script>
 /* כניסה אחת לאתר: הסיסמה שמוקלדת קובעת לאילו אפליקציות יש גישה. נשמרים כאן רק הגיבובים.
    הגישה נשמרת ב-sessionStorage עד סגירת הדפדפן, וכל אפליקציה בודקת את הסימון gate_<שם> שלה. */
-const PAGES={chords:'chords.html',maaser:'maaser.html',tromot:'tromot.html',forms:'forms.html',game:'host.html',meds:'meds.html',invoices:'invoices.html',phonebook:'phonebook.html',kbt:'kbt.html',safety:'safety.html',profile:'profile.html'};
+const PAGES={chords:'chords.html',maaser:'maaser.html',tromot:'tromot.html',forms:'forms.html',game:'host.html',meds:'meds.html',invoices:'invoices.html',phonebook:'phonebook.html',kbt:'kbt.html',safety:'safety.html',profile:'profile.html',coord:'coord-b6add0e190cf72de.html',head:'head-8a85112b0cd0a8db.html'};
 const ACCESS={
   'dc953dd72494b2201ec33d2bf0c0078e2b4d4fc7cbd747580535dfc54234b0d7':['forms'],
   'f88d20e9aaa147427706f242d11b143befcf2038efdd026d1e890fea9ce1535c':['tromot'],
@@ -380,7 +382,7 @@ function setDevName(v){try{localStorage.setItem('dbd_name',v.trim())}catch(e){}i
 <script>
 /* אפליקציות הבטיחות קיימות רק בשרת במחשב של דני: מוסתרות כברירת מחדל, ומוצגות רק אם הקובץ קיים.
    התשובה נזכרת במכשיר כדי שבפעם הבאה הכפתורים יופיעו מיד, בלי קפיצה */
-(()=>{const S=['kbt','safety','profile','phonebook'],K='hub_here',show=a=>document.querySelectorAll('.app[data-app="'+a+'"]').forEach(b=>b.classList.remove('gone')),
+(()=>{const S=['kbt','safety','profile','phonebook','coord','head'],K='hub_here',show=a=>document.querySelectorAll('.app[data-app="'+a+'"]').forEach(b=>b.classList.remove('gone')),
   hide=a=>{document.querySelectorAll('.app[data-app="'+a+'"]').forEach(b=>b.classList.add('gone'))};
   let mem={};try{mem=JSON.parse(localStorage.getItem(K))||{}}catch(e){}
   S.forEach(a=>{if(mem[a])show(a)});
