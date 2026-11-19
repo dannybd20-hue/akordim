@@ -191,7 +191,7 @@ async function hash(s){
   return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 function access(){try{return JSON.parse(sget('hub_access'))||[]}catch(e){return[]}}
-function enter(a){if(ORD_EDIT)return;if(access().includes(a))location.href=PAGES[a]}
+function enter(a){if(ORD_EDIT)return;if(access().includes(a)){sput('gate_'+a,'1');location.href=PAGES[a]}}
 /* סידור האפליקציות: נשמר במכשיר. ברירת מחדל – ניהול הבטיחות למעלה */
 const ORD_DEF=['kbt','safety','coord','head','profile','phonebook','forms','chords','maaser','invoices','tromot','game','meds'];
 let ORD_EDIT=false;
@@ -257,7 +257,7 @@ function saveName(){
 }
 function afterLogin(){
   const A=access();
-  if(WANT&&A.includes(WANT)){location.href=dest(WANT);return}
+  if(WANT&&A.includes(WANT)){sput('gate_'+WANT,'1');location.href=dest(WANT);return}
   if(A.length===1){location.href=dest(A[0]);return}
   show();
 }
@@ -347,9 +347,9 @@ $('nmIn').addEventListener('keyup',e=>{if(e.key==='Enter')saveName()});
   const A=access(),want=new URLSearchParams(location.search).get('open');
   /* מכשיר שכבר נכנס אבל עוד לא נתן שם: מבקשים את השם פעם אחת */
   if(A.length&&!myName()&&get('shop_lang')!=='en'){$('lockv').hidden=true;$('namev').hidden=false;setTimeout(()=>$('nmIn').focus(),50);return}
-  if(A.includes(want)){location.replace(dest(want));return}
+  if(A.includes(want)){sput('gate_'+want,'1');location.replace(dest(want));return}
   if(get('shop_lang')==='en'&&A.includes('meds')){grant(A);location.replace('meds.html');return}
-  if(A.length===1&&!sget('hub_seen')){sput('hub_seen','1');location.replace(dest(A[0]));return}
+  if(A.length===1&&!sget('hub_seen')){sput('hub_seen','1');sput('gate_'+A[0],'1');location.replace(dest(A[0]));return}
   sput('hub_seen','1');
   show();
 })();
