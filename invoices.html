@@ -421,7 +421,7 @@ let of=null,ofList=false;
 function newOffer(){const nums=offers.map(o=>/^\d+$/.test(o.no||'')?+o.no:0).filter(Boolean);let no;if(nums.length)no=String(Math.max(...nums)+1);else{const y=new Date().getFullYear(),n=offers.filter(o=>(o.no||'').startsWith(y+'-')).length+1;no=y+'-'+String(n).padStart(3,'0')}return{id:uid(),no,date:today(),cust:'',custPhone:'',title:'',m:30,notes:'',lines:[{name:'',qty:1,cost:'',m:'',price:''}]}}
 function saveOffers(){lp(OK,JSON.stringify(offers))}
 /* הצעות ש-Claude מכין מקבצים ששלחת: קובץ JSON בתיקיית המסמכים בדרייב, נקלט פעם אחת */
-const OFFER_FILES=['13pE-3lxVhcncPag8bCddAUG8t4c1URxy','1Fc6cVwlac4-p5VUPrLf5m-fsN_aw3dy7','1cv8smYvYa5mL4LMlIGpSaZLqbSIVxyrn','1Y4n0bvb3Jr_306B4K4jkjW3csIrVLihw','1MHJuhKJPDiLDEaKy_nafSyf9sHSlM97O'];
+const OFFER_FILES=['13pE-3lxVhcncPag8bCddAUG8t4c1URxy','1Fc6cVwlac4-p5VUPrLf5m-fsN_aw3dy7','1cv8smYvYa5mL4LMlIGpSaZLqbSIVxyrn','1Y4n0bvb3Jr_306B4K4jkjW3csIrVLihw','1MHJuhKJPDiLDEaKy_nafSyf9sHSlM97O','1vuK0KcljDqYRxA9KncyaRMpAW2rMp_IW'];
 async function importOffers(){
   let done=[];try{done=JSON.parse(lg('inv_off_imp')||'[]')}catch(e){}
   let got=0;
